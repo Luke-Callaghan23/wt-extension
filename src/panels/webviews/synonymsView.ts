@@ -107,10 +107,15 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider {
 					break;
 				case 'requestDictionaryApiKey': 
 					const dictionaryApi = process.env.DICTIONARY_API;
+					if (!dictionaryApi) {
+						vscode.window.showWarningMessage(`WARN: The synonyms view uses a dictionary API to function.  If you forked this code from github, you need to get your own API key from 'https://dictionaryapi.dev/'`);
+						return;
+					}
 					webviewView.webview.postMessage({
 						type: 'deliveredApiKey',
 						dicationatyApi: dictionaryApi
-					})
+					});
+					break;
 			}
 		});
 	}
