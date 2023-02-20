@@ -16,9 +16,7 @@
 				"${workspaceFolder}/out/**/*.js"
 			],
 			"preLaunchTask": "${defaultBuildTask}",
-			"env": {
-				"DICTIONARY_API": "29029b50-e0f1-4be6-ac00-77ab8233e66b"
-			}
+			"envFile": "${workspaceFolder}/.env"
 		},
 		{
 			"name": "Extension Tests",
