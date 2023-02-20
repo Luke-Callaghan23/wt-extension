@@ -1,0 +1,121 @@
+body {
+	background-color: transparent;
+}
+
+.color-list {
+	list-style: none;
+	padding: 0;
+}
+
+.color-entry {
+	width: 100%;
+	display: flex;
+	margin-bottom: 0.4em;
+	border: 1px solid var(--vscode-input-border);
+}
+
+.color-preview {
+	width: 2em;
+	height: 2em;
+}
+
+.color-preview:hover {
+	outline: inset white;
+}
+
+.color-input {
+	display: block;
+	flex: 1;
+	width: 100%;
+	color: var(--vscode-input-foreground);
+	background-color: var(--vscode-input-background);
+	border: none;
+	padding: 0 0.6em;
+	border-radius: 20px;
+}
+
+.add-color-button {
+	display: block;
+	border: none;
+	margin: 0 auto;
+}
+
+.bar {
+	background-color: var(--vscode-activityBar-inactiveForeground);
+	margin-top: 3px;
+	height: 2px;
+	border-radius: 1px;
+	margin-top: 10px; 
+	width: 100%;
+}
+
+.collapsible-container {
+	border-radius: 10px;
+	margin-top: 10px;
+}
+
+.collapsible {
+	background-color: inherit;
+	color: white;
+	cursor: pointer;
+	padding-top: 0px;
+	padding-bottom: 2.5px;
+	position: relative;
+	width: 100%;
+	border: none;
+	text-align: left;
+	outline: none;
+	font-size: 13px;
+	font-family: Segoe WPC,Segoe UI,sans-serif;
+}
+
+.collapsible:hover {
+	background-color: #555555;
+}
+
+.sub {
+	background-color: #303030;
+}
+
+.content {
+	/* padding: 0 10px; */
+	padding-left: 10px;
+	display: none;
+	overflow-y: scroll;
+	background-color: inherit;
+	border-bottom-left-radius: 10px;
+	border-bottom-right-radius: 10px;
+	padding-bottom: 10px;
+	max-height: 231.3333333px;
+}
+
+.synonym-container {
+	color: #007acc;
+	font-size: 13px;
+	
+}
+
+.synonym {
+	font-weight: 600;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.remove {
+	display: none;
+}
+
+.collapsible:hover .remove {
+	font-size: 10px;
+	display: inline;
+	color: red;
+	float: right;
+	position: absolute;
+	top: 5px;
+	right: 10px;
+	z-index: 10000;
+}
+
+.remove:hover {
+	-webkit-filter: brightness(60%)
+}

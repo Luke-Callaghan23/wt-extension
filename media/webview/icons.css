@@ -1,0 +1,30 @@
+
+#icons {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+    justify-content: center;
+}
+
+#icons .icon {
+	width: 140px;
+	padding: 20px;
+	font-size: 14px;
+	display: flex;
+	flex-direction: column;
+	text-align: center;
+}
+
+#icons .icon .codicon {
+	font-size: 32px;
+	padding-bottom: 16px;
+}
+
+.input-icons i {
+	position: absolute;
+}
+
+.icon {
+	padding: 10px;
+	min-width: 40px;
+}

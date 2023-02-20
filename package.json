@@ -1,0 +1,522 @@
+{
+	"name": "wt-an-integrated-writing-Environment",
+	"displayName": "WTANIWE",
+	"description": "Writing Tool, An Integrated Writing Environment",
+	"version": "0.0.1",
+	"publisher": "luke-callaghan",
+	"private": true,
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Luke-Callaghan23/wt-writingtool-vscode"
+	},
+	"engines": {
+		"vscode": "^1.74.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onLanguage:json",
+		"onLanguage:jsonc"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"viewsWelcome": [
+			{
+				"view": "wt.outline",
+				"contents": "No WT workspace found.\n[Create Workspace](command:wt.createWorkspace)\nImport a workspace from a .iwe file.\n[Import Workspace](command:wt.importWorkspace)\nAttempt to reload the current workspace.\n[Reload](command:wt.reload)",
+				"when": "!wt.valid"
+			},
+			{
+				"view": "wt.export",
+				"contents": "Export your work into documents.\n[Export Documents](command:wt.export.exportDocuments)\nExport your work into a single .iwe file for portability.\n[Export Workspace](command:wt.export.exportWorkspace)"
+			}
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "wt",
+					"title": "Writing Tool",
+					"icon": "$(bookmark)"
+				}
+			]
+		},
+		"views": {
+			"wt": [
+				{
+					"id": "wt.outline",
+					"name": "Outline",
+					"icon": "media/dep.svg",
+					"contextualTitle": "Outline"
+				},
+				{
+					"id": "wt.wordWatcher",
+					"name": "Word Watcher",
+					"icon": "media/dep.svg",
+					"contextualTitle": "Word Watcher",
+					"when": "wt.valid"
+				},
+				{
+					"id": "wt.todo",
+					"name": "TODOs",
+					"icon": "media/dep.svg",
+					"contextualTitle": "TODOs",
+					"when": "wt.valid"
+				},
+				{
+					"type": "webview",
+					"id": "wt.synonyms",
+					"name": "Synonyms",
+					"icon": "media/dep.svg",
+					"contextualTitle": "Synonyms",
+					"when": "wt.valid"
+				},
+				{
+					"id": "wt.import.fileExplorer",
+					"name": "Import",
+					"icon": "media/dep.svg",
+					"contextualTitle": "Import",
+					"when": "wt.valid"
+				},
+				{
+					"id": "wt.export",
+					"name": "Export",
+					"icon": "media/dep.svg",
+					"contextualTitle": "Export",
+					"when": "wt.valid"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "wt.createWorkspace",
+				"title": "Create"
+			},
+			{
+				"command": "wt.outline.refresh",
+				"title": "Refresh",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "wt.outline.moveDown",
+				"title": "Move Down",
+				"icon": "$(diff-editor-next-change)"
+			},
+			{
+				"command": "wt.outline.moveUp",
+				"title": "Move Up",
+				"icon": "$(diff-editor-previous-change)"
+			},
+			{
+				"command": "wt.outline.help",
+				"title": "Outline Help",
+				"icon": "$(question)"
+			},
+			{
+				"command": "wt.outline.openFile",
+				"title": "Open File"
+			},
+			{
+				"command": "wt.outline.renameFile",
+				"title": "Rename File"
+			},
+			{
+				"command": "wt.outline.newSnip",
+				"title": "New Snip",
+				"icon": "$(output-view-icon)"
+			},
+			{
+				"command": "wt.outline.newChapter",
+				"title": "New Chapter",
+				"icon": "$(open-editors-view-icon)"
+			},
+			{
+				"command": "wt.outline.newFragment",
+				"title": "New Fragment",
+				"icon": "$(search-new-editor)"
+			},
+			{
+				"command": "wt.outline.removeResource",
+				"title": "Delete"
+			},
+			{
+				"command": "wt.import.fileExplorer.refresh",
+				"title": "Refresh",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "wt.import.fileExplorer.importFiles",
+				"title": "Import All Files",
+				"icon": "$(ports-forward-icon)"
+			},
+			{
+				"command": "wt.import.fileExplorer.importFile",
+				"title": "Import File"
+			},
+			{
+				"command": "wt.import.fileExplorer.removeResource",
+				"title": "Delete"
+			},
+			{
+				"command": "wt.import.fileExplorer.help",
+				"title": "Help",
+				"icon": "$(question)"
+			},
+			{
+				"command": "wt.import.fileExplorer.openImportWindow",
+				"title": "Writing Tool: Import Files",
+				"icon": "$(folder-active)"
+			},
+			{
+				"command": "wt.import.fileExplorer.filter",
+				"title": "Filter",
+				"icon": "$(close)"
+			},
+			{
+				"command": "wt.import.fileExplorer.defilter",
+				"title": "Add",
+				"icon": "$(check)"
+			},
+			{
+				"command": "wt.import.fileExplorer.openFileExplorer",
+				"title": "Open File Explorer",
+				"icon": "$(file-directory)"
+			},
+			{
+				"command": "wt.todo.refresh",
+				"title": "Refresh",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "wt.todo.help",
+				"title": "Help",
+				"icon": "$(question)"
+			},
+			{
+				"command": "wt.wordWatcher.help",
+				"title": "Help",
+				"icon": "$(question)"
+			},
+			{
+				"command": "wt.wordWatcher.wordSearch",
+				"title": "Watch out for a new Word",
+				"icon": "$(plus)"
+			},
+			{
+				"command": "wt.wordWatcher.delete",
+				"title": "Delete word"
+			},
+			{
+				"command": "wt.wordWatcher.jumpNextInstanceOf",
+				"title": "Jump to Next Instance of Word"
+			},
+			{
+				"command": "wt.synonyms.help",
+				"title": "Synonyms Help",
+				"icon": "$(question)"
+			},
+			{
+				"command": "wt.synonyms.searchWord",
+				"title": "Synonyms Search"
+			},
+			{
+				"command": "wt.editor.remove",
+				"title": "Clear Selection",
+				"icon": "$(trash)"
+			},
+			{
+				"command": "wt.editor.save",
+				"title": "Commit File (to local git)",
+				"icon": "$(save)"
+			},
+			{
+				"command": "wt.editor.saveAll",
+				"title": "Commit All Files (to local git)",
+				"icon": "$(save-all)"
+			},
+			{
+				"command": "wt.editor.italisize",
+				"title": "Italisize",
+				"icon": "$(italic)"
+			},
+			{
+				"command": "wt.editor.bold",
+				"title": "Bold",
+				"icon": "$(bold)"
+			},
+			{
+				"command": "wt.editor.strikethrough",
+				"title": "Strikethrough",
+				"icon": "$(zap)"
+			},
+			{
+				"command": "wt.editor.header",
+				"title": "Header",
+				"icon": "$(text-size)"
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "wt.outline.newFragment",
+					"when": "wt.valid && view == wt.outline",
+					"group": "navigation@1"
+				},
+				{
+					"command": "wt.outline.newSnip",
+					"when": "wt.valid && view == wt.outline",
+					"group": "navigation@2"
+				},
+				{
+					"command": "wt.outline.newChapter",
+					"when": "wt.valid && view == wt.outline",
+					"group": "navigation@3"
+				},
+				{
+					"command": "wt.outline.refresh",
+					"when": "wt.valid && view == wt.outline",
+					"group": "navigation@4"
+				},
+				{
+					"command": "wt.outline.help",
+					"when": "wt.valid && view == wt.outline",
+					"group": "navigation@5"
+				},
+				{
+					"command": "wt.synonyms.help",
+					"when": "wt.valid && view == wt.synonyms",
+					"group": "navigation"
+				},
+				{
+					"command": "wt.todo.refresh",
+					"when": "wt.valid && view == wt.todo",
+					"group": "navigation@1"
+				},
+				{
+					"command": "wt.todo.help",
+					"when": "wt.valid && view == wt.todo",
+					"group": "navigation@2"
+				},
+				{
+					"command": "wt.import.fileExplorer.help",
+					"when": "wt.valid && view == wt.import.fileExplorer",
+					"group": "navigation@5"
+				},
+				{
+					"command": "wt.import.fileExplorer.openImportWindow",
+					"when": "wt.valid && view == wt.import.fileExplorer",
+					"group": "navigation@4"
+				},
+				{
+					"command": "wt.import.fileExplorer.openFileExplorer",
+					"when": "wt.valid && view == wt.import.fileExplorer",
+					"group": "navigation@3"
+				},
+				{
+					"command": "wt.import.fileExplorer.refresh",
+					"when": "wt.valid && view == wt.import.fileExplorer",
+					"group": "navigation@2"
+				},
+				{
+					"command": "wt.import.fileExplorer.importFiles",
+					"when": "wt.valid && view == wt.import.fileExplorer",
+					"group": "navigation@1"
+				},
+				{
+					"command": "wt.wordWatcher.wordSearch",
+					"when": "wt.valid && view == wt.wordWatcher",
+					"group": "navigation@1"
+				},
+				{
+					"command": "wt.wordWatcher.help",
+					"when": "wt.valid && view == wt.wordWatcher",
+					"group": "navigation@2"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "wt.outline.refresh",
+					"when": "view == wt.outline && viewItem == dir || viewItem == container",
+					"group": "inline@3"
+				},
+				{
+					"command": "wt.outline.moveUp",
+					"when": "view == wt.outline && viewItem != container",
+					"group": "inline@1"
+				},
+				{
+					"command": "wt.outline.moveDown",
+					"when": "view == wt.outline && viewItem != container",
+					"group": "inline@2"
+				},
+				{
+					"command": "wt.outline.renameFile",
+					"when": "view == wt.outline"
+				},
+				{
+					"command": "wt.outline.removeResource",
+					"when": "view == wt.outline"
+				},
+				{
+					"command": "wt.wordWatcher.delete",
+					"when": "view == wt.wordWatcher && viewItem == word"
+				},
+				{
+					"command": "wt.import.fileExplorer.removeResource",
+					"when": "view == wt.import.fileExplorer"
+				},
+				{
+					"command": "wt.import.fileExplorer.filter",
+					"when": "view == wt.import.fileExplorer && viewItem == unfiltered",
+					"group": "inline"
+				},
+				{
+					"command": "wt.import.fileExplorer.defilter",
+					"when": "view == wt.import.fileExplorer && viewItem == filtered",
+					"group": "inline"
+				}
+			],
+			"editor/title": [
+				{
+					"command": "wt.editor.italisize",
+					"group": "navigation@1"
+				},
+				{
+					"command": "wt.editor.bold",
+					"group": "navigation@2"
+				},
+				{
+					"command": "wt.editor.strikethrough",
+					"group": "navigation@3"
+				},
+				{
+					"command": "wt.editor.header",
+					"group": "navigation@4"
+				},
+				{
+					"command": "wt.editor.remove",
+					"group": "navigation@5"
+				},
+				{
+					"command": "wt.editor.save",
+					"group": "navigation@6"
+				},
+				{
+					"command": "wt.editor.saveAll",
+					"group": "navigation@7"
+				}
+			]
+		},
+		"keybindings": [
+			{
+				"command": "wt.outline.renameFile",
+				"key": "f2",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+			},
+			{
+				"command": "wt.outline.removeResource",
+				"key": "delete",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+			},
+			{
+				"command": "wt.wordWatcher.delete",
+				"key": "delete",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == word"
+			},
+			{
+				"command": "wt.synonyms.searchWord",
+				"key": "ctrl+alt+f",
+				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+			},
+			{
+				"command": "wt.editor.save",
+				"key": "ctrl+alt+s",
+				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+			},
+			{
+				"command": "wt.editor.saveAll",
+				"key": "ctrl+alt+shift+s",
+				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+			},
+			{
+				"command": "wt.editor.italisize",
+				"key": "ctrl+alt+i",
+				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+			},
+			{
+				"command": "wt.editor.bold",
+				"key": "ctrl+alt+b",
+				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+			},
+			{
+				"command": "wt.editor.strikethrough",
+				"key": "ctrl+alt+d",
+				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+			},
+			{
+				"command": "wt.editor.header",
+				"key": "ctrl+alt+h",
+				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+			}
+		],
+		"languages": [
+			{
+				"id": "wt",
+				"extensions": [
+					".wt"
+				],
+				"aliases": [
+					"writingTool",
+					"fragment"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"lint": "eslint \"src/**/*.ts\""
+	},
+	"devDependencies": {
+		"@types/fs-extra": "^11.0.1",
+		"@types/ftp": "^0.3.33",
+		"@types/html-pdf": "^3.0.0",
+		"@types/html-pdf-node": "^1.0.0",
+		"@types/jsdom": "^21.1.0",
+		"@types/mkdirp": "^0.5.2",
+		"@types/node": "^16.11.7",
+		"@types/rimraf": "^2.0.2",
+		"@types/showdown": "^2.0.0",
+		"@types/uuid": "^9.0.0",
+		"@types/vscode": "^1.73.0",
+		"@typescript-eslint/eslint-plugin": "^5.42.0",
+		"@typescript-eslint/parser": "^5.42.0",
+		"eslint": "^8.26.0",
+		"typescript": "^4.8.4"
+	},
+	"dependencies": {
+		"@bendera/vscode-webview-elements": "^0.8.1",
+		"@types/markdown-it": "^12.2.3",
+		"@vscode/codicons": "^0.0.32",
+		"child_process": "^1.0.2",
+		"dotenv": "^16.0.3",
+		"fs-extra": "^11.1.0",
+		"ftp": "^0.3.10",
+		"html-docx-js": "^0.3.1",
+		"html-pdf": "^3.0.1",
+		"html-to-docx": "^1.6.5",
+		"jsdom": "^21.1.0",
+		"jsonc-parser": "^0.4.2",
+		"mammoth": "^1.5.1",
+		"markdown-to-document": "^0.27.0",
+		"minimist": "^1.2.6",
+		"mkdirp": "^0.5.1",
+		"pdf2html": "^3.1.0",
+		"rimraf": "^2.6.2",
+		"showdown": "^2.1.0",
+		"uuid": "^9.0.0"
+	}
+}
