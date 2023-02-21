@@ -4,11 +4,9 @@ import * as path from 'path';
 import { Workspace } from '../../../workspace/workspace';
 import { FileSystem } from '../fileSystem/fileSystem';
 import * as fsFunctions from '../fileSystem/fileSystemProviderFunctions';
-import { ImportDocumentProvider } from './importDropProvider';
 import * as console from './../../../vsconsole';
 import { _ } from '../fileSystem/fileSystemDefault';
 import { ImportForm } from '../../webviews/import/importFormView';
-import { throws } from 'assert';
 
 
 export interface Entry {

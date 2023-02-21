@@ -380,30 +380,37 @@
 			"editor/title": [
 				{
 					"command": "wt.editor.italisize",
+					"when": "editorLangId == wt",
 					"group": "navigation@1"
 				},
 				{
 					"command": "wt.editor.bold",
+					"when": "editorLangId == wt",
 					"group": "navigation@2"
 				},
 				{
 					"command": "wt.editor.strikethrough",
+					"when": "editorLangId == wt",
 					"group": "navigation@3"
 				},
 				{
 					"command": "wt.editor.header",
+					"when": "editorLangId == wt",
 					"group": "navigation@4"
 				},
 				{
 					"command": "wt.editor.remove",
+					"when": "editorLangId == wt",
 					"group": "navigation@5"
 				},
 				{
 					"command": "wt.editor.save",
+					"when": "editorLangId == wt",
 					"group": "navigation@6"
 				},
 				{
 					"command": "wt.editor.saveAll",
+					"when": "editorLangId == wt",
 					"group": "navigation@7"
 				}
 			]
@@ -427,37 +434,37 @@
 			{
 				"command": "wt.synonyms.searchWord",
 				"key": "ctrl+alt+f",
-				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
 				"command": "wt.editor.save",
 				"key": "ctrl+alt+s",
-				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
 				"command": "wt.editor.saveAll",
 				"key": "ctrl+alt+shift+s",
-				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
 				"command": "wt.editor.italisize",
 				"key": "ctrl+alt+i",
-				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
 				"command": "wt.editor.bold",
 				"key": "ctrl+alt+b",
-				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
 				"command": "wt.editor.strikethrough",
 				"key": "ctrl+alt+d",
-				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
 				"command": "wt.editor.header",
 				"key": "ctrl+alt+h",
-				"when": "activeViewlet == workbench.view.extension.wt && editorAreaVisible"
+				"when": "editorAreaVisible && editorLangId == wt"
 			}
 		],
 		"languages": [

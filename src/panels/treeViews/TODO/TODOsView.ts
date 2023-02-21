@@ -1,7 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as fsFunctions from '../fileSystem/fileSystemProviderFunctions';
-import * as path from 'path';
 import { Workspace } from '../../../workspace/workspace';
 import { TODOData, TODONode } from './TODONode';
 import { OutlineTreeProvider } from '../outlineTreeProvider';

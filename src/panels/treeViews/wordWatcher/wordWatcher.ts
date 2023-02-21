@@ -224,7 +224,10 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
         const activeEditor = vscode.window.activeTextEditor;
         
         // Create a single regex for all words in this.words
-		const regex = new RegExp(this.words.join('|'), 'g');
+        // TOTEST: does this prevent substring matching?
+        const wordSeparator = '[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-]';
+        const regexString = wordSeparator + this.words.join(`${wordSeparator}|${wordSeparator}`) + wordSeparator;
+		const regex = new RegExp(regexString, 'g');
         
 		const text = activeEditor.document.getText();
 		

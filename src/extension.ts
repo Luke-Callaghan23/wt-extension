@@ -60,6 +60,9 @@ export function activate(context: vscode.ExtensionContext) {
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
 		? vscode.workspace.workspaceFolders[0].uri.fsPath : '.';
 
+	// TOTEST: does this make it work for windows?
+	rootPath = rootPath.replaceAll('\\', '/');
+
 	vscode.commands.registerCommand('wt.reload', () => {
 		let workspace = loadWorkspace(context);
 		if (workspace !== null) {

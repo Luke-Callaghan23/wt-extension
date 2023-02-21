@@ -1,9 +1,7 @@
 /* eslint-disable curly */
 
 
-import * as path from 'path';
 import * as extension from './../../../extension';
-import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { InitializeNode, initializeOutline } from "../initialize";
 import { OutlineNode, ContainerNode, RootNode } from "./outlineNodes";
@@ -13,7 +11,6 @@ import * as reorderFunctions from './reorderNodes';
 import * as removeFunctions from './removeNodes';
 import * as createFunctions from './createNodes';
 import * as renameFunctions from './renameNodes';
-import * as console from '../../../vsconsole';
 import { Workspace } from '../../../workspace/workspace';
 import { NodeTypes } from '../fsNodes';
 import { FileSystem } from '../fileSystem/fileSystem';
