@@ -205,6 +205,14 @@
 				"icon": "$(question)"
 			},
 			{
+				"command": "wt.wordWatcher.disableWatchedWord",
+				"title": "Disable"
+			},
+			{
+				"command": "wt.wordWatcher.enableWatchedWord",
+				"title": "Enable"
+			},
+			{
 				"command": "wt.wordWatcher.newWatchedWord",
 				"title": "Watch out for a new Word",
 				"icon": "$(plus)"
@@ -385,14 +393,26 @@
 					"command": "wt.outline.removeResource",
 					"when": "view == wt.outline"
 				},
+
+
 				{
 					"command": "wt.wordWatcher.deleteWord",
-					"when": "view == wt.wordWatcher && viewItem == watchedWord"
+					"when": "view == wt.wordWatcher && (viewItem == watchedWord_disabled || viewItem == watchedWord_enabled)"
+				},
+				{
+					"command": "wt.wordWatcher.disableWatchedWord",
+					"when": "view == wt.wordWatcher && viewItem == watchedWord_enabled"
+				},
+				{
+					"command": "wt.wordWatcher.enabledWatchedWord",
+					"when": "view == wt.wordWatcher && viewItem == watchedWord_disabled"
 				},
 				{
 					"command": "wt.wordWatcher.deleteUnwatchedWord",
 					"when": "view == wt.wordWatcher && viewItem == unwatchedWord"
 				},
+
+
 				{
 					"command": "wt.import.fileExplorer.removeResource",
 					"when": "view == wt.import.fileExplorer"
