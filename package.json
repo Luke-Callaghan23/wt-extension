@@ -2,9 +2,9 @@
 	"name": "wtaniwe",
 	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
 	"description": "Writing Tool, An Integrated Writing Environment",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"publisher": "luke-callaghan",
-	"private": true,
+	"private": false,
 	"license": "MIT",
 	"repository": {
 		"type": "git",
