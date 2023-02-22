@@ -7,7 +7,7 @@ import { isInvalidated, todo, todoNodes } from './TODOsView';
 import { v4 as uuidv4 } from 'uuid';
 
 export function convertToTODOData (this: TODONode): TODONode[] {
-    const uri = this.getUri();
+    const uri = this.getUri().fsPath;
     if (!isInvalidated(uri) && todoNodes[uri]) {
         return todoNodes[uri];
     }

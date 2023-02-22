@@ -40,7 +40,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
 				type: vscode.FileType;
 			}[] = [];
 			children.forEach(([ name, type ]) => {
-				const uri = vscode.Uri.parse(
+				const uri = vscode.Uri.file(
 					type === vscode.FileType.Directory
 						? path.join(element.uri.fsPath, name) + '/'
 						: path.join(element.uri.fsPath, name)

@@ -119,6 +119,8 @@ export async function newSnip (
     // If the current resource is a chapter, insert the snip in that chapter
     // If the current resource is unavailable, insert the snip in the work snips folder
 
+    console.log(resource)
+
     let parentNode: OutlineNode;
     if (!resource) {
         parentNode = (this.tree.data as RootNode).snips;
@@ -252,9 +254,11 @@ export async function newFragment (
     options?: CreateOptions
 ): Promise<string | null> {
     if (!resource) {
+        console.log("1");
         // If there is no selected resource, get the last opened file access from the FileAccessManager
         const lastAccessedFragmentUri = FileAccessManager.lastAccess;
         if (lastAccessedFragmentUri === undefined) {
+            console.log("  1.1");
             vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
             return null;
         }
@@ -262,6 +266,7 @@ export async function newFragment (
         // If there is a last accessed fragment, use that
         resource = this._getTreeElementByUri(lastAccessedFragmentUri);
         if (!resource) {
+            console.log("  1.2");
             vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
             return null;
         }
@@ -276,10 +281,12 @@ export async function newFragment (
         parentNode = this._getTreeElement(parentId);
     }
     else if (resource.data.ids.type === 'container') {
+        console.log("2");
         // Get the last fragment of the selected container that was accessed
         const lastAccessedFragmentInContainerUri = FileAccessManager.containerLastAccessedDocument(resource);
         resource = this._getTreeElementByUri(lastAccessedFragmentInContainerUri);
         if (!resource) {
+            console.log("  2.1");
             // Since a container is a something that holds other folder nodes, you cannot add a fragment direcly to a container
             vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
             return null;
@@ -328,7 +335,8 @@ export async function newFragment (
 
     if (!options?.preventRefresh) {
         this.refresh();
-        vscode.window.showTextDocument(vscode.Uri.parse(fragmentFullPath));
+        console.log(fragmentFullPath);
+        vscode.window.showTextDocument(vscode.Uri.file(fragmentFullPath));
         vscode.window.showInformationMessage('Successfully created new fragment');
     }
     return fragmentFullPath;

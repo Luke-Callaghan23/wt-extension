@@ -62,6 +62,14 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// TOTEST: does this make it work for windows?
 	rootPath = rootPath.replaceAll('\\', '/');
+	rootPath = rootPath.replaceAll('c:/', 'C:\\');
+
+	console.log(rootPath)
+	console.log(rootPath)
+	console.log(rootPath)
+	console.log(rootPath)
+	console.log(rootPath)
+	console.log(rootPath)
 
 	vscode.commands.registerCommand('wt.reload', () => {
 		let workspace = loadWorkspace(context);

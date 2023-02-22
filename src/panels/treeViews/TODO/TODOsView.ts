@@ -156,7 +156,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
 		
 		const document = activeEditor.document;
 		
-		let uri: string | undefined = document.uri.fsPath;
+		let uri: vscode.Uri | undefined = document.uri;
 		let editedNode: TODONode | undefined | null = this._getTreeElementByUri(uri);
 		
 		if (!editedNode) {
@@ -166,8 +166,8 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
 		while (editedNode && uri) {
 
 			// Invalidate the current node
-			todo[uri] = invalid;
-			delete todoNodes[uri];
+			todo[uri.fsPath] = invalid;
+			delete todoNodes[uri.fsPath];
 			
 			// Break once the root node's records have been removed
 			if (editedNode.data.ids.type === 'root') {

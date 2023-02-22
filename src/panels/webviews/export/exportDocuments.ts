@@ -49,7 +49,7 @@ async function stitchFragments (node: ChapterNode, combineString: string | null)
         const fragmentUri = fragment.getUri();
         try {
             // Read the fragment markdown string
-            const fragmentBuffer = await fs.promises.readFile(fragmentUri);
+            const fragmentBuffer = await fs.promises.readFile(fragmentUri.fsPath);
             fragmentsData.push(fragmentBuffer.toString());
         }
         catch (e) {

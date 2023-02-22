@@ -32,9 +32,9 @@ export class TODONode extends TreeNode {
         }
 
         const uri = this.getUri();
-        if (!isInvalidated(uri)) {
+        if (!isInvalidated(uri.fsPath)) {
             // If the TODO count for the uri is not invalidated, then use that count
-            const thisTodo = getTODO(uri);
+            const thisTodo = getTODO(uri.fsPath);
             if (thisTodo.type === 'count') {
                 return thisTodo.data;
             }
@@ -63,7 +63,7 @@ export class TODONode extends TreeNode {
                 const rootTODOs = chaptersTODOs + snipsTODOs;
 
                 // Set the count for the root node in the todo tree and return the new count
-                todo[uri] = {
+                todo[uri.fsPath] = {
                     type: 'count',
                     data: rootTODOs
                 };
@@ -81,7 +81,7 @@ export class TODONode extends TreeNode {
 
                 // Set the count of TODOs for this container to the sum of the TODOs for all of
                 //      its contents and return the new count
-                todo[uri] = {
+                todo[uri.fsPath] = {
                     type: 'count',
                     data: containerTODOs
                 };
@@ -108,7 +108,7 @@ export class TODONode extends TreeNode {
                 const chapterTODOs = snipsTODOs + fragementsTODOs;
 
                 // Store the todo counts for the chapter, and return
-                todo[uri] = {
+                todo[uri.fsPath] = {
                     type: 'count',
                     data: chapterTODOs
                 };
@@ -123,7 +123,7 @@ export class TODONode extends TreeNode {
                     return accumulatedFragmentTODOs + currentFragment.getTODOCounts();
                 }, 0);
 
-                todo[uri] = {
+                todo[uri.fsPath] = {
                     type: 'count',
                     data: fragmentsTODOs
                 };
@@ -133,10 +133,10 @@ export class TODONode extends TreeNode {
                 const fragmentNode: FragmentData = this.data as FragmentData;
 
                 // Scan the text of the fragment for all TODOs
-                const [ fragmentTODOs, count ]: [ Validated, number ] = scanFragment(uri, fragmentNode);
+                const [ fragmentTODOs, count ]: [ Validated, number ] = scanFragment(uri.fsPath, fragmentNode);
 
                 // Insert the new fragment TODOs into todo object
-                todo[uri] = fragmentTODOs;
+                todo[uri.fsPath] = fragmentTODOs;
                 return count;
             }
             
@@ -232,8 +232,8 @@ export class TODONode extends TreeNode {
         return false;
     }
 
-    getUri (): string {
-        return `${extension.rootPath}/${this.data.ids.relativePath}/${this.data.ids.fileName}`;
+    getUri (): vscode.Uri {
+        return vscode.Uri.file(`${extension.rootPath}/${this.data.ids.relativePath}/${this.data.ids.fileName}`);
     }
     getDisplayString (): string {
         return this.data.ids.display;

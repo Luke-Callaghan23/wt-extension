@@ -234,8 +234,8 @@ export class OutlineNode extends TreeNode {
         return this.data.ids.type !== 'fragment';
     }
 
-    getUri(): string {
-        return `${extension.rootPath}/${this.data.ids.relativePath}/${this.data.ids.fileName}`;
+    getUri(): vscode.Uri {
+        return vscode.Uri.file(`${extension.rootPath}/${this.data.ids.relativePath}/${this.data.ids.fileName}`);
     }
     getDisplayString (): string {
         return this.data.ids.display;

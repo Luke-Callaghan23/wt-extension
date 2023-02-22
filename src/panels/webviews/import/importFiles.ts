@@ -367,7 +367,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
         // Find the chapter by its uri and use that as the parent node
         const chapterFullPath = `${extension.rootPath}${output.outputChapter}`;
         const cleanedChapterPath = chapterFullPath.replaceAll('//', '/');
-        const chapterNode: OutlineNode = outlineView._getTreeElementByUri(cleanedChapterPath);
+        const chapterNode: OutlineNode = outlineView._getTreeElementByUri(vscode.Uri.file(cleanedChapterPath));
         parentNode = chapterNode;
     }
 

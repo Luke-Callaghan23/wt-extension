@@ -5,7 +5,7 @@ import * as console from '../../vsconsole';
 export abstract class TreeNode {
 	abstract getParentId(): string;
 	abstract getTooltip(): string | vscode.MarkdownString;
-	abstract getUri(): string;
+	abstract getUri(): vscode.Uri;
 	abstract getDisplayString(): string;
 	abstract getId(): string;
 	abstract getChildren(): TreeNode[];
@@ -51,14 +51,14 @@ export abstract class OutlineTreeProvider<T extends TreeNode> implements vscode.
 		//		or opened
 		view.onDidExpandElement((event: vscode.TreeViewExpansionEvent<T>) => {
 			const expandedElementUri = event.element.getUri();
-			uriToVisibility[expandedElementUri] = true;
+			uriToVisibility[expandedElementUri.fsPath] = true;
 			// Also save the state of all collapse and expands to workspace context state
 			context.workspaceState.update('collapseState', uriToVisibility);
 		});
 
 		view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
 			const collapsedElementUri = event.element.getUri();
-			uriToVisibility[collapsedElementUri] = false;			
+			uriToVisibility[collapsedElementUri.fsPath] = false;			
 			context.workspaceState.update('collapseState', uriToVisibility);
 		});	
 	}
@@ -98,7 +98,7 @@ export abstract class OutlineTreeProvider<T extends TreeNode> implements vscode.
 		let collapseState: vscode.TreeItemCollapsibleState;
 		if (treeElement.hasChildren()) {
 			// If the tree element has children, look that element up in the uri map to find the collapsability
-			const isCollapsed: boolean | undefined = uriToVisibility[treeElement.getUri()];
+			const isCollapsed: boolean | undefined = uriToVisibility[treeElement.getUri().fsPath];
 			if (isCollapsed === undefined || isCollapsed === false) {
 				collapseState = vscode.TreeItemCollapsibleState.Collapsed;
 			}
@@ -120,7 +120,7 @@ export abstract class OutlineTreeProvider<T extends TreeNode> implements vscode.
 			// An example of how to use codicons in a MarkdownString in a tree item tooltip.
 			tooltip: treeElement.getTooltip(),
 			collapsibleState: collapseState,
-			resourceUri: vscode.Uri.parse(treeElement.getUri()),
+			resourceUri: treeElement.getUri(),
 		};
 	}
 
@@ -161,7 +161,7 @@ export abstract class OutlineTreeProvider<T extends TreeNode> implements vscode.
 		}
 	}
 
-	_getTreeElementByUri (targetUri: string | undefined, tree?: TreeNode): any {
+	_getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: TreeNode): any {
 		// If there is not targeted key, then assume that the caller is targeting
 		//		the entire tree
 		if (!targetUri) {
@@ -172,16 +172,16 @@ export abstract class OutlineTreeProvider<T extends TreeNode> implements vscode.
 		const currentNode = tree ?? this.tree;
 		const currentChildren = currentNode.getChildren();
 
-		if (currentNode.getUri() === targetUri) {
+		if (currentNode.getUri().fsPath === targetUri.fsPath) {
 			return currentNode;
 		}
 		
 		// Iterate over all keys-value mappings in the current node
 		for (const subtree of currentChildren) {
-			const subtreeId = subtree.getUri();
+			const subtreeId = subtree.getUri().fsPath;
 
 			// If the current key matches the targeted key, return the value mapping
-			if (subtreeId === targetUri) {
+			if (subtreeId === targetUri.fsPath) {
 				return subtree;
 			} 
 			// Otherwise, recurse into this function again, using the current

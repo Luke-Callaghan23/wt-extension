@@ -15,7 +15,7 @@ async function recordFragmentContainer (node: (ChapterNode | SnipNode)): Promise
 
     // Read all the fragments from dist
     const fragmentBuffers: Buffer[] = await Promise.all(fragments.map(fragment => {
-        return fs.promises.readFile(fragment.getUri());
+        return fs.promises.readFile(fragment.getUri().fsPath);
     }));
 
     // Pair sorted fragments with their data buffers

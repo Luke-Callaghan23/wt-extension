@@ -54,14 +54,14 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             const removedFragmentAbsPath = target.getUri();
             const recycleBinName = `deleted-${target.data.ids.type}-${timestamp}-${Math.random()}`;
             try {
-                await fs.promises.rename(removedFragmentAbsPath, `${extension.rootPath}/data/recycling/${recycleBinName}`);
+                await fs.promises.rename(removedFragmentAbsPath.fsPath, `${extension.rootPath}/data/recycling/${recycleBinName}`);
             }
             catch (e) {
                 vscode.window.showErrorMessage(`Error deleting fragment: ${e}`);
             }
 
             const logItem = {
-                oldUri: removedFragmentAbsPath,
+                oldUri: removedFragmentAbsPath.fsPath,
                 deleteTimestamp: timestamp,
                 title: title,
                 resourceType: target.data.ids.type,
@@ -78,14 +78,14 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             const removedNodeAbsPath = target.getUri();
             const recycleBinName = `deleted-${target.data.ids.type}-${timestamp}-${Math.random()}`;
             try {
-                fsExtra.moveSync(removedNodeAbsPath, `${extension.rootPath}/data/recycling/${recycleBinName}`);
+                fsExtra.moveSync(removedNodeAbsPath.fsPath, `${extension.rootPath}/data/recycling/${recycleBinName}`);
             }
             catch (e) {
                 vscode.window.showErrorMessage(`Error deleting ${target.data.ids.type}: ${e}`);
             }
 
             const logItem = {
-                oldUri: removedNodeAbsPath,
+                oldUri: removedNodeAbsPath.fsPath,
                 deleteTimestamp: timestamp,
                 resourceType: target.data.ids.type,
                 recycleBinName: recycleBinName
@@ -100,7 +100,7 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
 
             // Get the abs path of the container
             const clearedContainerAbsPath = target.getUri();
-            const allEntries = await fs.promises.readdir(clearedContainerAbsPath, { withFileTypes: true });
+            const allEntries = await fs.promises.readdir(clearedContainerAbsPath.fsPath, { withFileTypes: true });
 
             // Find the entries to clear and the .config file
             const clearedEntries: fs.Dirent[] = [];

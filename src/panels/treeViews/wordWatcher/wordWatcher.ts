@@ -43,7 +43,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
                 id: element.type,
                 label: "Watch out for a new word",
                 collapsibleState: vscode.TreeItemCollapsibleState.None,
-                resourceUri: vscode.Uri.parse(element.uri),
+                resourceUri: vscode.Uri.file(element.uri),
                 command: { 
                     title: "Search",
                     command: 'wt.wordWatcher.wordSearch', 
@@ -58,7 +58,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
                 id: element.type,
                 label: "Watched Words",
                 collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
-                resourceUri: vscode.Uri.parse(element.type),
+                resourceUri: vscode.Uri.file(element.type),
                 contextValue: 'wordContainer'
             } as vscode.TreeItem;
         }
@@ -67,7 +67,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
                 id: element.uri,
                 label: element.uri,
                 collapsibleState: vscode.TreeItemCollapsibleState.None,
-                resourceUri: vscode.Uri.parse(element.uri),
+                resourceUri: vscode.Uri.file(element.uri),
                 command: { 
                     command: 'wt.wordWatcher.jumpNextInstanceOf', 
                     title: "Search", 
