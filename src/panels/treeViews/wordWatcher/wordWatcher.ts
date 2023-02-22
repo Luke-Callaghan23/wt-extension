@@ -225,7 +225,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
         
         // Create a single regex for all words in this.words
         // TOTEST: does this prevent substring matching?
-        const wordSeparator = '[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-]';
+        const wordSeparator = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
         const regexString = wordSeparator + this.words.join(`${wordSeparator}|${wordSeparator}`) + wordSeparator;
 		const regex = new RegExp(regexString, 'g');
         
@@ -233,10 +233,18 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
 		
         // While there are more matches within the text of the document, collect the match selection
         const matched: vscode.DecorationOptions[] = [];
-        let match;
+        let match: RegExpExecArray | null;
 		while ((match = regex.exec(text))) {
-			const startPos = activeEditor.document.positionAt(match.index);
-			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
+            let start: number = match.index;
+            if (match.index !== 0) {
+                start += 1;
+            }
+            let end: number = match.index + match[0].length;
+            if (match.index + match[0].length !== text.length) {
+                end -= 1;
+            }
+			const startPos = activeEditor.document.positionAt(start);
+			const endPos = activeEditor.document.positionAt(end);
 			const decoration = { 
                 range: new vscode.Range(startPos, endPos), 
                 hoverMessage: '**' + match[0] + '**' 
