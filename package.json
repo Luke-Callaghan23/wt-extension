@@ -193,24 +193,46 @@
 				"title": "Help",
 				"icon": "$(question)"
 			},
+
+
+
+
+
+
 			{
 				"command": "wt.wordWatcher.help",
 				"title": "Help",
 				"icon": "$(question)"
 			},
 			{
-				"command": "wt.wordWatcher.wordSearch",
+				"command": "wt.wordWatcher.newWatchedWord",
 				"title": "Watch out for a new Word",
 				"icon": "$(plus)"
 			},
 			{
-				"command": "wt.wordWatcher.delete",
-				"title": "Delete word"
+				"command": "wt.wordWatcher.newUnwatchedWord",
+				"title": "Stop watching a word",
+				"icon": "$(dash)"
+			},
+			{
+				"command": "wt.wordWatcher.deleteWord",
+				"title": "Delete Word"
+			},
+			{
+				"command": "wt.wordWatcher.deleteUnwatchedWord",
+				"title": "Delete Unwatched Word"
 			},
 			{
 				"command": "wt.wordWatcher.jumpNextInstanceOf",
 				"title": "Jump to Next Instance of Word"
 			},
+
+
+
+
+
+
+
 			{
 				"command": "wt.synonyms.help",
 				"title": "Synonyms Help",
@@ -324,14 +346,19 @@
 					"group": "navigation@1"
 				},
 				{
-					"command": "wt.wordWatcher.wordSearch",
+					"command": "wt.wordWatcher.newWatchedWord",
 					"when": "wt.valid && view == wt.wordWatcher",
 					"group": "navigation@1"
 				},
 				{
-					"command": "wt.wordWatcher.help",
+					"command": "wt.wordWatcher.newUnwatchedWord",
 					"when": "wt.valid && view == wt.wordWatcher",
 					"group": "navigation@2"
+				},
+				{
+					"command": "wt.wordWatcher.help",
+					"when": "wt.valid && view == wt.wordWatcher",
+					"group": "navigation@3"
 				}
 			],
 			"view/item/context": [
@@ -359,8 +386,12 @@
 					"when": "view == wt.outline"
 				},
 				{
-					"command": "wt.wordWatcher.delete",
-					"when": "view == wt.wordWatcher && viewItem == word"
+					"command": "wt.wordWatcher.deleteWord",
+					"when": "view == wt.wordWatcher && viewItem == watchedWord"
+				},
+				{
+					"command": "wt.wordWatcher.deleteUnwatchedWord",
+					"when": "view == wt.wordWatcher && viewItem == unwatchedWord"
 				},
 				{
 					"command": "wt.import.fileExplorer.removeResource",
@@ -427,9 +458,14 @@
 				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
 			},
 			{
-				"command": "wt.wordWatcher.delete",
+				"command": "wt.wordWatcher.deleteWord",
 				"key": "delete",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == word"
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == watchedWord"
+			},
+			{
+				"command": "wt.wordWatcher.deleteUnwatchedWord",
+				"key": "delete",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == unwatchedWord"
 			},
 			{
 				"command": "wt.synonyms.searchWord",

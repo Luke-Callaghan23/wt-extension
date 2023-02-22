@@ -5,10 +5,38 @@ import * as console from './../../../vsconsole';
 
 export interface WordEnrty {
 	uri: string;
-	type: 'wordSearch' | 'wordContainer' | 'word';
+	type: 'wordSearch' | 'wordContainer' | 'unwatchedWordContainer' | 'watchedWord' | 'unwatchedWord';
 }
 
+
+// TOTEST
+// TOTEST
+// TOTEST
+// TOTEST
+// TOTEST
+// TOTEST
+// TOTEST
+// TOTEST
+// TOTEST
+// TOTEST
+// TOTEST
+// TOTEST
+
 export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
+
+    private static wordSeparator = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
+
+    // Words or word patterns that the user wants to watch out for -- will
+    //      be highlighted in the editor
+    private watchedWords: string[];
+
+    // Words that we *don't* want to watch out for, but may be caught by a 
+    //      pattern in watchedWords
+    private unwatchedWords: string[];
+
+
+    private wasUpdated: boolean = true;
+
     
     async getChildren (element?: WordEnrty): Promise<WordEnrty[]> {
 		if (!element) {
@@ -22,19 +50,31 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
                 {
                     uri: 'word-container',
                     type: 'wordContainer'
+                },
+                {
+                    uri: 'unwatched-container',
+                    type: 'unwatchedWordContainer'
                 }
             ];
         }
         // Both the search bar and watched words do not have children
-        if (element.type === 'wordSearch' || element.type === 'word') {
+        if (element.type === 'wordSearch' || element.type === 'watchedWord' || element.type === 'unwatchedWord') {
             return [];
         }
-
-        // The word container has entries for each word in this.words
-        return this.words.map(word => ({
-            type: 'word',
-            uri: word
-        }));
+        // Create word entries for watched words
+        else if (element.type === 'wordContainer') {
+            return this.watchedWords.map(word => ({
+                type: 'watchedWord',
+                uri: word
+            }));
+        }
+        else if (element.type === 'unwatchedWordContainer') {
+            return this.unwatchedWords.map(word => ({
+                type: 'unwatchedWord',
+                uri: word
+            }));
+        }
+        throw new Error('Not implemented WordWatcher.getChildren()');
 	}
 
 	getTreeItem (element: WordEnrty): vscode.TreeItem {
@@ -62,7 +102,16 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
                 contextValue: 'wordContainer'
             } as vscode.TreeItem;
         }
-        else if (element.type === 'word') {
+        else if (element.type ==='unwatchedWordContainer') {
+            return {
+                id: element.type,
+                label: "Unwatched Words",
+                collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
+                resourceUri: vscode.Uri.file(element.type),
+                contextValue: 'wordContainer'
+            }
+        }
+        else if (element.type === 'watchedWord') {
             return {
                 id: element.uri,
                 label: element.uri,
@@ -73,20 +122,31 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
                     title: "Search", 
                     arguments: [ element.uri ],
                 },
-                contextValue: 'word',
+                contextValue: 'watchedWord',
                 iconPath: new vscode.ThemeIcon('warning', new vscode.ThemeColor('debugConsole.warningForeground'))
+            } as vscode.TreeItem;
+        }
+        else if (element.type === 'unwatchedWord') {
+            return {
+                id: element.uri,
+                label: element.uri,
+                collapsibleState: vscode.TreeItemCollapsibleState.None,
+                resourceUri: vscode.Uri.file(element.uri),
+                contextValue: 'unwatchedWord',
+                iconPath: new vscode.ThemeIcon('check', new vscode.ThemeColor('debugConsole.warningForeground'))
             } as vscode.TreeItem;
         }
         throw new Error('Not possible');
 	}
 
-    private words: string[];
-    private async wordSearch () {
+    private async newWatchedWord (watchedWord: boolean = true) {
+        const not = !watchedWord ? 'not' : '';
+        const un = !watchedWord ? 'un-' : '';
         while (true) {
             const response = await vscode.window.showInputBox({
                 placeHolder: 'very',
                 ignoreFocusOut: false,
-                prompt: 'Enter the word or word pattern that you would like to watch out for (note: only alphabetical characters are allowed inside of watched words)',
+                prompt: `Enter the word or word pattern that you would like to ${not} watch out for (note: only alphabetical characters are allowed inside of watched words)`,
                 title: 'Add word'
             });
             if (!response) return;
@@ -108,9 +168,13 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
                 continue;
             }
 
+            const targetWords = watchedWord
+                ? this.watchedWords
+                : this.unwatchedWords;
+
             // Check if the word is already in the word list
-            if (this.words.find(existing => existing === response)) {
-                const proceed = await vscode.window.showInformationMessage(`Word '${response}' already in list of watched words!`, {
+            if (targetWords.find(existing => existing === response)) {
+                const proceed = await vscode.window.showInformationMessage(`Word '${response}' already in list of ${un}watched words!`, {
                     modal: true
                 }, 'Okay', 'Cancel');
                 if (proceed === 'Cancel') return;
@@ -131,7 +195,12 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
             }
 
             // If the word is valid and doesn't already exist in the word list, then continue adding the words
-            this.addWord(response);
+            if (watchedWord) {
+                this.addWord(response);
+            }
+            else {
+                this.filterWord(response);
+            }
             this.triggerUpdateDecorations(true);
             this.refresh();
             return;
@@ -154,7 +223,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
 
 
         // Create a single regex for all words in this.words
-		const regEx = new RegExp(word, 'g');
+		const regEx = new RegExp(`${WordWatcher.wordSeparator}${word}${WordWatcher.wordSeparator}`, 'g');
+
+        const unwatchedRegeces: RegExp[] = this.unwatchedWords.map(unwatched => new RegExp(`${WordWatcher.wordSeparator}${unwatched}${WordWatcher.wordSeparator}`));
         
 		const text = this.activeEditor.document.getText();
 		
@@ -165,6 +236,12 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
             //      match instance
             let match;
             while ((match = regEx.exec(text)) && matchIndex < this.lastJumpInstance) {
+
+                // Skip if the match also matches an unwatched word
+                if (unwatchedRegeces.find(re => re.test(match[0]))) {
+                    continue;
+                }
+
                 startPos = this.activeEditor.document.positionAt(match.index);
                 endPos = this.activeEditor.document.positionAt(match.index + match[0].length);
                 matchIndex++;
@@ -225,9 +302,10 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
         
         // Create a single regex for all words in this.words
         // TOTEST: does this prevent substring matching?
-        const wordSeparator = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
-        const regexString = wordSeparator + this.words.join(`${wordSeparator}|${wordSeparator}`) + wordSeparator;
+        const regexString = WordWatcher.wordSeparator + this.watchedWords.join(`${WordWatcher.wordSeparator}|${WordWatcher.wordSeparator}`) + WordWatcher.wordSeparator;
 		const regex = new RegExp(regexString, 'g');
+
+        const unwatchedRegeces: RegExp[] = this.unwatchedWords.map(unwatched => new RegExp(`${WordWatcher.wordSeparator}${unwatched}${WordWatcher.wordSeparator}`));
         
 		const text = activeEditor.document.getText();
 		
@@ -235,6 +313,12 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
         const matched: vscode.DecorationOptions[] = [];
         let match: RegExpExecArray | null;
 		while ((match = regex.exec(text))) {
+
+            // Skip if the match also matches an unwatched word
+            if (unwatchedRegeces.find(re => re.test(match[0]))) {
+                continue;
+            }
+
             let start: number = match.index;
             if (match.index !== 0) {
                 start += 1;
@@ -268,7 +352,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
 	}
     
     registerCommands () {
-        vscode.commands.registerCommand('wt.wordWatcher.wordSearch', () => this.wordSearch());
+        vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.newWatchedWord(true));
+        vscode.commands.registerCommand('wt.wordWatcher.newUnwatchedWord', () => this.newWatchedWord(false));
+        
         vscode.commands.registerCommand('wt.wordWatcher.jumpNextInstanceOf', (word: string) => {
             this.jumpNextInstanceOf(word);
         });
@@ -279,8 +365,8 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
             }, 'Okay');
         });
 
-        vscode.commands.registerCommand('wt.wordWatcher.delete', (resource: WordEnrty) => {
-            const resourceIndex = this.words.findIndex(word => word === resource.uri);
+        vscode.commands.registerCommand('wt.wordWatcher.deleteWord', (resource: WordEnrty) => {
+            const resourceIndex = this.watchedWords.findIndex(word => word === resource.uri);
             if (resourceIndex === -1) {
                 vscode.window.showErrorMessage(`ERROR: could not find word with uri: '${resource.uri}'`);
                 return;
@@ -289,6 +375,17 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
             this.triggerUpdateDecorations(true);
             this.refresh();
         });
+
+        vscode.commands.registerCommand('wt.wordWatcher.deleteUnwatchedWord', (resource: WordEnrty) => {
+            const resourceIndex = this.watchedWords.findIndex(word => word === resource.uri);
+            if (resourceIndex === -1) {
+                vscode.window.showErrorMessage(`ERROR: could not find word with uri: '${resource.uri}'`);
+                return;
+            }
+            this.removeFilteredWord(resourceIndex);
+            this.triggerUpdateDecorations(true);
+            this.refresh();
+        })
 	}
 
     // Refresh the word tree
@@ -299,26 +396,37 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
 	}
 
     private addWord (word: string) {
-        this.words.push(word);
-        this.context.workspaceState.update('watchedWords', this.words);
+        this.watchedWords.push(word);
+        this.context.workspaceState.update('watchedWords', this.watchedWords);
     }
-
+    
     private removeWord (index: number) {
-        this.words.splice(index, 1);
-        this.context.workspaceState.update('watchedWords', this.words);
+        this.watchedWords.splice(index, 1);
+        this.context.workspaceState.update('watchedWords', this.watchedWords);
+    }
+    
+    private filterWord (word: string) {
+        this.unwatchedWords.push(word);
+        this.context.workspaceState.update('unwatchedWords', this.unwatchedWords);
     }
 
+    private removeFilteredWord (index: number) {
+        this.unwatchedWords.splice(index, 1);
+        this.context.workspaceState.update('unwatchedWords', this.unwatchedWords);
+    }
 
 	constructor(
         private context: vscode.ExtensionContext,
         private workspace: Workspace,
     ) {
         const words: string[] | undefined = context.workspaceState.get('watchedWords');
+        const unwatched: string[] | undefined = context.workspaceState.get('unwatchedWords');
         this.lastJumpWord = undefined;
         this.lastJumpInstance = 0;
 
         // Initial words are 'very' and 'any
-        this.words = words ?? [ 'very', '[a-zA-Z]+ly' ];
+        this.watchedWords = words ?? [ 'very', '[a-zA-Z]+ly' ];
+        this.unwatchedWords = unwatched ?? [];
 
 		context.subscriptions.push(vscode.window.createTreeView('wt.wordWatcher', { treeDataProvider: this }));
         this.registerCommands();

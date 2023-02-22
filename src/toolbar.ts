@@ -68,7 +68,26 @@ function surroundSelectionWith (surround: string) {
         // Replace selected text with the surrounded text
         editor.edit(editBuilder => {
             editBuilder.replace(selection, surrounded);
-        });
+        }).then(() => {
+            // TOTEST
+            if (selection.isEmpty) {
+                // If the selection is empty, then move the cursor into the middle of the surround strings
+                //      that were added
+                // After the edits, the current position of the cursor is at the end of the surround string
+                const curEditor = vscode.window.activeTextEditor;
+                const end = curEditor.selection.end;
+                const surroundLength = surround.length;
+
+                // The new position is the same as the current position, minus the amount of characters in the 
+                //      surround string
+                const newPosition = new vscode.Position(end.line, end.character - surroundLength);
+
+                // New selection is the desired position of the cursor (provided to the constructor twice, to
+                //      get an empty selection)
+                curEditor.selection = new vscode.Selection(newPosition, newPosition);
+            }
+        })
+
     }
 
 
