@@ -1,15 +1,22 @@
 import * as vscode from 'vscode';
 import * as console from '../../vsconsole';
 import { getNonce } from '../../help';
+import { Packageable } from '../../packageable';
+import { Workspace } from '../../workspace/workspace';
 
-export class SynonymViewProvider implements vscode.WebviewViewProvider {
+export class SynonymViewProvider implements vscode.WebviewViewProvider, Packageable {
 
 	private _view?: vscode.WebviewView;
+	private synonyms: string[] | undefined;
+	private readonly _extensionUri: string;
 
-	constructor(
-		private readonly _extensionUri: vscode.Uri,
-        context: vscode.ExtensionContext
+	constructor (
+        context: vscode.ExtensionContext,
+		workspace: Workspace
 	) { 
+
+		this._extensionUri = context.extensionUri;
+
         context.subscriptions.push (
 			vscode.window.registerWebviewViewProvider('wt.synonyms', this)
 		);
@@ -28,6 +35,16 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider {
 
 		this.registerCommands();
     }
+
+	getPackageItems (): { [index: string]: any; } {
+		this._view?.webview.postMessage({ type: 'requestSynonyms' });
+		while (this.synonyms === undefined) {}
+		const synonyms = this.synonyms;
+		this.synonyms = undefined;
+		return {
+			synonyms: synonyms
+		}
+	}
 
 	private registerCommands () {
 		vscode.commands.registerCommand("wt.synonyms.help", () => {
@@ -116,6 +133,8 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider {
 						dicationatyApi: dictionaryApi
 					});
 					break;
+				case 'deliveredSynonyms':
+					this.synonyms = (data.synonyms as string[]);
 			}
 		});
 	}

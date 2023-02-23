@@ -22,6 +22,10 @@ export class Workspace {
         title: "Nothing"
     };
 
+    public proximityEnabled?: boolean;
+    public wordWatcherEnabled?: boolean;
+    public todosEnabled?: boolean;
+
     // Path to the .wtconfig file that supplies the above `Config` information for the workspace
     public dotWtconfigPath: string;
 
@@ -31,6 +35,7 @@ export class Workspace {
     public importFolder: string;
     public exportFolder: string;
     public recyclingBin: string;
+    public contextValuesFilePath: string;
 
     // Returns a list of all 
     getFolders() {
@@ -96,6 +101,7 @@ export class Workspace {
         this.importFolder = `${extension.rootPath}/data/import`;
         this.exportFolder = `${extension.rootPath}/data/export`;
         this.recyclingBin = `${extension.rootPath}/data/recycling`;
+        this.contextValuesFilePath = `${extension.rootPath}/data/contextValues.json`
     }
 }
 
@@ -189,7 +195,7 @@ export async function createWorkspace (
 
 // Function for loading an existing workspace from the root path of the user's vscode workspace
 // If there is no existing workspace at the rootpath, then this function will return null
-export function loadWorkspace (context: vscode.ExtensionContext): Workspace | null {
+export async function loadWorkspace (context: vscode.ExtensionContext): Promise<Workspace | null> {
     // Check if the workspace is initialized already
     let valid = false;
 
@@ -197,9 +203,8 @@ export function loadWorkspace (context: vscode.ExtensionContext): Workspace | nu
     
     // If anything in the try block, then valid will remain false
     try {
-
         // Try to read the /.wtconfig file
-        const wtconfigJSON = fs.readFileSync(workspace.dotWtconfigPath);
+        const wtconfigJSON = await fs.promises.readFile(workspace.dotWtconfigPath);
         const wtconfig = JSON.parse(wtconfigJSON.toString());
 
         // Read config info
@@ -211,13 +216,29 @@ export function loadWorkspace (context: vscode.ExtensionContext): Workspace | nu
         workspace.config = config;
 
         // Check for the existence of all the necessary folders
-        const x = workspace.getFolders().map((folder) => {
+        const anyFoldersInvalid = workspace.getFolders().map((folder) => {
             const folderStat = fs.statSync(folder);
             return folderStat.isDirectory();
         })
         .find(isDir => !isDir);
+        valid = !anyFoldersInvalid;
 
-        valid = !x;
+        try {
+            // Attempt to read context values from the context values file on disk
+            // Context values file may not exist, so allow a crash to happen
+            const contextValuesBuffer: Buffer = await fs.promises.readFile(workspace.contextValuesFilePath);
+            const contextValuesJSON = contextValuesBuffer.toString();
+            const contextValues: { [index: string]: any } = JSON.parse(contextValuesJSON);
+            await Promise.all(Object.entries(contextValues).map(([ contextKey, contextValue ]) => {
+                return vscode.commands.executeCommand('setContext', contextKey, contextValue);
+            }));
+
+            // Store enabled variables
+            workspace.todosEnabled = contextValues['wt.todo.enabled'];
+            workspace.wordWatcherEnabled = contextValues['wt.wordWatcher.enabled'];
+            workspace.proximityEnabled = contextValues['wt.proximity.enabled'];
+        }
+        catch (e) {}
     }
     catch (e) {
         let message: string | undefined = undefined;

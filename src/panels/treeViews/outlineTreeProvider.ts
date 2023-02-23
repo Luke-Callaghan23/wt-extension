@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as extension from '../../extension';
+import { Packageable, PackagedItem } from '../../packageable';
 import * as console from '../../vsconsole';
 
 export abstract class TreeNode {
@@ -15,7 +16,8 @@ export abstract class TreeNode {
 
 let uriToVisibility: { [index: string]: boolean };
 
-export abstract class OutlineTreeProvider<T extends TreeNode> implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T> {
+export abstract class OutlineTreeProvider<T extends TreeNode> 
+implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Packageable {
 
     public tree: T;
 	protected view: vscode.TreeView<T>;
@@ -26,11 +28,11 @@ export abstract class OutlineTreeProvider<T extends TreeNode> implements vscode.
 
 	constructor (
 		protected context: vscode.ExtensionContext, 
-		viewName: string
+		private viewName: string
 	) {
 		this.tree = this.initializeTree();
 
-		const uriMap: { [index: string]: boolean } | undefined = context.workspaceState.get('collapseState');
+		const uriMap: { [index: string]: boolean } | undefined = context.workspaceState.get(`${this.viewName}.collapseState`);
 		if (uriMap) {
 			uriToVisibility = uriMap;
 		}
@@ -53,14 +55,20 @@ export abstract class OutlineTreeProvider<T extends TreeNode> implements vscode.
 			const expandedElementUri = event.element.getUri();
 			uriToVisibility[expandedElementUri.fsPath] = true;
 			// Also save the state of all collapse and expands to workspace context state
-			context.workspaceState.update('collapseState', uriToVisibility);
+			context.workspaceState.update(`${this.viewName}.collapseState`, uriToVisibility);
 		});
 
 		view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
 			const collapsedElementUri = event.element.getUri();
 			uriToVisibility[collapsedElementUri.fsPath] = false;			
-			context.workspaceState.update('collapseState', uriToVisibility);
+			context.workspaceState.update(`${this.viewName}.collapseState`, uriToVisibility);
 		});	
+	}
+
+	getPackageItems(): { [index: string]: any } {
+		return {
+			[`${this.viewName}.collapseState`]: uriToVisibility
+		}
 	}
 
 	private _onDidChangeTreeData: vscode.EventEmitter<T | undefined> = new vscode.EventEmitter<T | undefined>();

@@ -13,6 +13,7 @@ import { importWorkspace } from './workspace/importExport/importWorkspace';
 
 import { loadWorkspace, createWorkspace, Workspace } from './workspace/workspace';
 import { FileAccessManager } from './fileAccesses';
+import { packageForExport } from './packageable';
 
 export let rootPath: string;
 
@@ -21,10 +22,10 @@ export let rootPath: string;
 function loadExtensionWorkspace (context: vscode.ExtensionContext, workspace: Workspace) {
 	try {
 		const outline = new OutlineView(context, workspace);											// wt.outline
-		new TODOsView(context, workspace);																// wt.todo
-		new ImportFileSystemView(context, workspace);													// wt.import.fileSystem
-		new SynonymViewProvider(context.extensionUri, context);											// wt.synonyms
-		new WordWatcher(context, workspace);															// wt.wordWatcher
+		const todo = new TODOsView(context, workspace);																// wt.todo
+		const importFS = new ImportFileSystemView(context, workspace);													// wt.import.fileSystem
+		const synonyms = new SynonymViewProvider(context, workspace);											// wt.synonyms
+		const wordWatcher = new WordWatcher(context, workspace);															// wt.wordWatcher
 	
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
@@ -36,8 +37,8 @@ function loadExtensionWorkspace (context: vscode.ExtensionContext, workspace: Wo
 		// Manages any accesses of .wt fragments, for various uses such as drag/drop in outline view or creating new
 		//		fragment/snips/chapters in the outline view
 		FileAccessManager.initialize();
-
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
+		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport(outline, todo, importFS, synonyms, wordWatcher));
 	}
 	catch (e) {
 		handleLoadFailure(e);
@@ -54,7 +55,11 @@ function handleLoadFailure (err: Error | string | unknown) {
 	vscode.window.showErrorMessage(`Error loading the IWE workspace: ${err}`);
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate (context: vscode.ExtensionContext) {
+	activateImpl(context);
+}
+
+async function activateImpl (context: vscode.ExtensionContext) {
 
 	// Load the root path of file system where the extension was loaded
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
@@ -64,22 +69,15 @@ export function activate(context: vscode.ExtensionContext) {
 	rootPath = rootPath.replaceAll('\\', '/');
 	rootPath = rootPath.replaceAll('c:/', 'C:\\');
 
-	console.log(rootPath)
-	console.log(rootPath)
-	console.log(rootPath)
-	console.log(rootPath)
-	console.log(rootPath)
-	console.log(rootPath)
-
-	vscode.commands.registerCommand('wt.reload', () => {
-		let workspace = loadWorkspace(context);
+	vscode.commands.registerCommand('wt.reload', async () => {
+		const workspace = await loadWorkspace(context);
 		if (workspace !== null) {
 			loadExtensionWorkspace(context, workspace);
 		}
 	});
 
 	// Attempt to load a workspace from the current location
-	let workspace = loadWorkspace(context);
+	const workspace = await loadWorkspace(context);
 	if (workspace !== null) {
 		loadExtensionWorkspace(context, workspace);
 	}
@@ -89,7 +87,6 @@ export function activate(context: vscode.ExtensionContext) {
 		//		at the current location
 		vscode.commands.registerCommand('wt.importWorkspace', () => {
 			importWorkspace(context).then((ws) => {
-				console.log(ws);
 				if (ws) {
 					loadExtensionWorkspace(context, ws);
 					return;

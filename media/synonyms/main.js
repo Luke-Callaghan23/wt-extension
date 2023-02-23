@@ -58,6 +58,11 @@
                 case 'deliveredApiKey':
                     dicationatyApi = message.dicationatyApi;
                     startup();
+                case 'requestSynonyms':
+                    vscode.postMessage({ 
+                        type: 'deliveredSynonyms',
+                        synonyms: synonyms
+                    });
             }
         });
     }

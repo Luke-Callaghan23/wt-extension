@@ -2,6 +2,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from './../../../workspace/workspace';
 import * as console from './../../../vsconsole';
+import { Packageable } from '../../../packageable';
 
 export interface WordEnrty {
 	uri: string;
@@ -22,7 +23,7 @@ export interface WordEnrty {
 // TOTEST
 // TOTEST
 
-export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
+export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packageable {
 
     // Static variable that indicates whether decorations are currently being drawn
     private static decorationsEnabled: boolean = true;
@@ -531,6 +532,16 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
 
         // TOTEST
         // Enable word watcher decorations
-        vscode.commands.executeCommand('setContext', 'wt.wordWatcher.enabled', true);
+		const enabled = workspace.wordWatcherEnabled === undefined ? false : workspace.wordWatcherEnabled;
+		vscode.commands.executeCommand('setContext', 'wt.wordWatcher.enabled', enabled);
 	}
+
+    getPackageItems(): { [index: string]: any; } {
+        return {
+            'wt.wordWatcher.enabled': WordWatcher.decorationsEnabled,
+            watchedWords: this.watchedWords,
+            disabledWatchedWords: this.disabledWatchedWords,
+            unwatchedWords: this.unwatchedWords,
+        }
+    }
 }

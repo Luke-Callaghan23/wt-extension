@@ -1,7 +1,9 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import { gitCommitAll, gitCommitFile, gitiniter } from './gitTransactions';
 import * as console from './vsconsole';
+import * as extension from './extension';
 
 // Function for surrounding selected text with a specified string
 function surroundSelectionWith (surround: string) {
@@ -121,11 +123,20 @@ export function header () {
     vscode.commands.executeCommand('editor.action.commentLine');
 }
 
-export function save () {
+async function packageContextItems () {
+    // Write context items to the file system before git save
+    const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
+    const contextJSON = JSON.stringify(contextItems);
+    await fs.promises.writeFile(`${extension.rootPath}/data/contextValues.json`, contextJSON);
+}
+
+export async function save () {
+    await packageContextItems();
     gitCommitFile();
 }
 
-export function saveAll () {
+export async function saveAll () {
+    await packageContextItems();
     gitCommitAll();
 }
 

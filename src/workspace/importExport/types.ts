@@ -3,7 +3,8 @@ import { Config } from "../workspace";
 export type WorkspaceExport = {
     config: Config,
     chapters: ChaptersRecord,
-    snips: SnipsRecord
+    snips: SnipsRecord,
+    packageableItems: { [index: string]: any }
 };
 
 // Ordered array of chapters data

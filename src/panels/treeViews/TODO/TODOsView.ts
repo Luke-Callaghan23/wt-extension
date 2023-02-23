@@ -69,6 +69,14 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
 	delete = fsFunctions.deleteFile;
 	rename = fsFunctions.renameFile;
 
+	getPackageItems (): { [index: string]: any } {
+		const providerItems = super.getPackageItems();
+		return {
+			...providerItems,
+			'wt.todo.enabled': TODOsView.todoQueriesEnabled
+		}
+	}
+
 	
     // Overriding the parent getTreeItem method to add FS API to it
 	getTreeItem(element: TODONode): vscode.TreeItem {
@@ -112,8 +120,6 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
 			? 'edit'
 			: 'symbol-folder';
 
-		
-			
 		treeItem.iconPath = new vscode.ThemeIcon(icon);
 		return treeItem;
 	}
@@ -255,6 +261,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
 
 		// TOTEST
 		// Enable todo querying
-		vscode.commands.registerCommand('wt.todo.enabled', true);
+		const enabled = workspace.todosEnabled === undefined ? false : workspace.todosEnabled;
+		vscode.commands.executeCommand('setContext', 'wt.todo.enabled', enabled);
 	}
 }

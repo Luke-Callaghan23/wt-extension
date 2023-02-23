@@ -119,12 +119,16 @@ export async function handleWorkspaceExport (
     const chaptersRecord: ChaptersRecord = await recordChaptersContainer(chaptersContainer);
     const snipsRecord: SnipsRecord = await recordSnipsContainer(snipsContainer);
 
+    // Get the packageable items to be transported in the workspace
+    const packageableItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
+
     // Create the iwe object
-    const iwe = {
+    const iwe: WorkspaceRecord = {
         config: workspace.config,
         chapters: chaptersRecord,
-        snips: snipsRecord
-    } as WorkspaceRecord;
+        snips: snipsRecord,
+        packageableItems: packageableItems
+    };
 
     // Write the workspace to disk
     const iweJSON = JSON.stringify(iwe, null, 2);

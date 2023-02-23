@@ -109,6 +109,11 @@ async function initializeChapters (
     await fs.promises.writeFile(dotConfigFullPath, dotConfigJSON);
 }
 
+async function initializeContextItems (packageableItems: { [index: string]: any }) {
+    await Promise.all(Object.entries(packageableItems).map(([contextKey, contextItem]) => {
+        return vscode.commands.executeCommand ('setContext', contextKey, contextItem);
+    }));
+}
 
 
 
@@ -150,6 +155,13 @@ export async function importWorkspace (context: vscode.ExtensionContext): Promis
     // Create all work snips
     const workSnipsContainer = workspace.workSnipsFolder;
     await initializeSnips(iweRecord.snips, workSnipsContainer);
+
+    // Insert packageable workspace items into the current workspace context
+    await initializeContextItems(iweRecord.packageableItems);
+
+    workspace.todosEnabled = iweRecord.packageableItems['wt.todo.enabled'];
+    workspace.proximityEnabled = iweRecord.packageableItems['wt.proximity.enabled'];
+    workspace.wordWatcherEnabled = iweRecord.packageableItems['wt.wordWatcher.enabled'];
 
     return workspace;
 }
