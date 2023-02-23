@@ -45,6 +45,13 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
 
     private wasUpdated: boolean = true;
 
+    private lastCalculatedRegeces: {
+        watchedAndEnabled: string[],
+        regexString: string,
+        regex: RegExp,
+        unwatchedRegeces: RegExp[],
+    } | undefined;
+
     async getChildren (element?: WordEnrty): Promise<WordEnrty[]> {
 		if (!element) {
             // If there is no element, assume that vscode is requesting the root element
@@ -209,14 +216,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
             }
 
             // If the word is valid and doesn't already exist in the word list, then continue adding the words
-            if (watchedWord) {
-                this.addWord(response);
-            }
-            else {
-                this.filterWord(response);
-            }
-            this.triggerUpdateDecorations(true);
-            this.refresh();
+            this.updateWords('add', response, watchedWord ? 'watchedWords' : 'unwatchedWords');
             return;
         }
     }
@@ -321,16 +321,34 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
         
         // Create a single regex for all words in this.words
         // TOTEST: does this prevent substring matching?
-        
-        // Filter out the disabled words
-        const watchedAndEnabled = this.watchedWords.filter(watched => !this.disabledWatchedWords.find(disabled => watched === disabled));
 
-        // Create the regex string from the still-enabled watched words
-        const regexString = WordWatcher.wordSeparator + watchedAndEnabled.join(`${WordWatcher.wordSeparator}|${WordWatcher.wordSeparator}`) + WordWatcher.wordSeparator;
-		const regex = new RegExp(regexString, 'g');
+        let watchedAndEnabled: string[];
+        let regexString: string;
+        let regex: RegExp;
+        let unwatchedRegeces: RegExp[];
+        if (this.wasUpdated || !this.lastCalculatedRegeces) {
+            // Filter out the disabled words
+            watchedAndEnabled = this.watchedWords.filter(watched => !this.disabledWatchedWords.find(disabled => watched === disabled));
+    
+            // Create the regex string from the still-enabled watched words
+            regexString = WordWatcher.wordSeparator + watchedAndEnabled.join(`${WordWatcher.wordSeparator}|${WordWatcher.wordSeparator}`) + WordWatcher.wordSeparator;
+            regex = new RegExp(regexString, 'g');
+            unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${WordWatcher.wordSeparator}${unwatched}${WordWatcher.wordSeparator}`));
 
-        const unwatchedRegeces: RegExp[] = this.unwatchedWords.map(unwatched => new RegExp(`${WordWatcher.wordSeparator}${unwatched}${WordWatcher.wordSeparator}`));
-        
+            this.lastCalculatedRegeces = {
+                watchedAndEnabled,
+                regexString,
+                regex,
+                unwatchedRegeces
+            };
+        }
+        else {
+            watchedAndEnabled = this.lastCalculatedRegeces.watchedAndEnabled;
+            regexString = this.lastCalculatedRegeces.regexString;
+            regex = this.lastCalculatedRegeces.regex;
+            unwatchedRegeces = this.lastCalculatedRegeces.unwatchedRegeces;
+        }
+
 		const text = activeEditor.document.getText();
 		
         // While there are more matches within the text of the document, collect the match selection
@@ -391,10 +409,18 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
             }, 'Okay');
         });
 
-        vscode.commands.registerCommand('wt.wordWatcher.deleteWord', (resource: WordEnrty) => this.removeWord(resource, true));
-        vscode.commands.registerCommand('wt.wordWatcher.deleteUnwatchedWord', (resource: WordEnrty) => this.removeWord(resource, false));
-        vscode.commands.registerCommand('wt.wordWatcher.disableWatchedWord', (resource: WordEnrty) => this.disableWord(resource));
-        vscode.commands.registerCommand('wt.wordWatcher.enableWatchedWord', (resource: WordEnrty) => this.enableWord(resource));
+        vscode.commands.registerCommand('wt.wordWatcher.deleteWord', (resource: WordEnrty) => {
+            this.updateWords('delete', resource.uri, 'watchedWords');
+        });
+        vscode.commands.registerCommand('wt.wordWatcher.deleteUnwatchedWord', (resource: WordEnrty) => {
+            this.updateWords('delete', resource.uri, 'unwatchedWords');
+        });
+        vscode.commands.registerCommand('wt.wordWatcher.disableWatchedWord', (resource: WordEnrty) => {
+            this.updateWords('add', resource.uri, 'disabledWatchedWords');
+        });
+        vscode.commands.registerCommand('wt.wordWatcher.enableWatchedWord', (resource: WordEnrty) => {
+            this.updateWords('delete', resource.uri, 'disabledWatchedWords')
+        });
 
         vscode.commands.registerCommand('wt.wordWatcher.enable', () => {
             vscode.commands.executeCommand('wt.wordWatcher.enabled', true);
@@ -418,50 +444,43 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
 		this._onDidChangeTreeData.fire(undefined);
 	}
 
-    private addWord (word: string) {
-        this.watchedWords.push(word);
-        this.context.workspaceState.update('watchedWords', this.watchedWords);
-    }
-    
-    private filterWord (word: string) {
-        this.unwatchedWords.push(word);
-        this.context.workspaceState.update('unwatchedWords', this.unwatchedWords);
-    }
-
-    private removeWord (resource: WordEnrty, watched: boolean = true) {
-        const info = watched 
-            ? {
-                targetWords: this.watchedWords,
-                stateItem: 'watchedWords'
-            }
-            : {
-                targetWords: this.unwatchedWords,
-                stateItem: 'unwatchedWords'
-            };
-
-        const resourceIndex = this.watchedWords.findIndex(word => word === resource.uri);
-        if (resourceIndex === -1) {
-            vscode.window.showErrorMessage(`ERROR: could not find word with uri: '${resource.uri}'`);
-            return;
+    private updateWords (
+        operation: 'add' | 'delete',
+        target: string,
+        contextItem: 'watchedWords' | 'unwatchedWords' | 'disabledWatchedWords'
+    ) {
+        let targetArray: string[];
+        if (contextItem === 'watchedWords') {
+            targetArray = this.watchedWords;
         }
-        info.targetWords.splice(resourceIndex, 1);
-        this.context.workspaceState.update(info.stateItem, info.targetWords);
-        this.triggerUpdateDecorations(true);
-        this.refresh();
-    }
+        else if (contextItem === 'unwatchedWords') {
+            targetArray = this.unwatchedWords;
+        }
+        else if (contextItem === 'disabledWatchedWords') {
+            targetArray = this.disabledWatchedWords;
+        }
+        else {
+            throw new Error(`Not possible -- context item '${contextItem}' is invalid`);
+        }
 
-    private disableWord (resource: WordEnrty) {
-        this.disabledWatchedWords.push(resource.uri);
-        this.context.workspaceState.update('disabledWatchedWords', this.disabledWatchedWords);
-        this.triggerUpdateDecorations(true);
-        this.refresh();
-    }
-
-    private enableWord (resource: WordEnrty) {
-        const resourceIndex = this.disabledWatchedWords.findIndex(word => word === resource.uri);
-        if (resourceIndex === -1) return;
-        this.context.workspaceState.update('disavledWatchedWords', this.disabledWatchedWords);
-        this.disabledWatchedWords.splice(resourceIndex, 1);
+        if (operation === 'add') {
+            targetArray.push(target);
+        }
+        else if (operation === 'delete') {
+            const targetIndex = targetArray.findIndex(item => item === target);
+            if (targetIndex === -1) {
+                vscode.window.showErrorMessage(`Error could not find '${target}' in '${contextItem}'`);
+                return;
+            }
+            targetArray.splice(targetIndex, 1);
+        }
+        else {
+            throw new Error(`Not possible -- operation '${operation}' is invalid`);
+        }
+        
+        // Do updates
+        this.wasUpdated = true;
+        this.context.workspaceState.update(contextItem, targetArray);
         this.triggerUpdateDecorations(true);
         this.refresh();
     }
