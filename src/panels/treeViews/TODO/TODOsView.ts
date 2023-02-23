@@ -69,6 +69,56 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
 	delete = fsFunctions.deleteFile;
 	rename = fsFunctions.renameFile;
 
+	
+    // Overriding the parent getTreeItem method to add FS API to it
+	getTreeItem(element: TODONode): vscode.TreeItem {
+		const treeItem = super.getTreeItem(element);
+		if (element.data.ids.type === 'fragment') {
+			if (element.data.ids.internal.startsWith('dummy')) {
+				// Fragments with an internal id of 'dummy' are TODO nodes
+				// They store TODO data and when clicked they should open into the tree where
+				//		the TODO string was found
+
+				// Convert generic node data to a TODONode
+				const asTODO: TODOData = element.data as TODOData;
+				const todoData = asTODO.todo;
+
+				treeItem.command = { 
+					command: 'wt.todo.openFile', 
+					title: "Open File", 
+					// Pass the resource url to the fragment and the 
+					arguments: [treeItem.resourceUri, todoData], 
+				};
+				treeItem.contextValue = 'file';
+			}
+			else {
+				// Fragments whose internal ids are not 'dummy' are actual fragments
+				// In the TODO tree, fragments are actually treated as folders, so 
+				//		they cannot be clicked and opened like they can in the outline
+				//		view
+				treeItem.contextValue = 'dir';
+				treeItem.collapseState = vscode.TreeItemCollapsibleState.Expanded;
+			}
+		}
+		else if (element.data.ids.type === 'container') {
+			treeItem.contextValue = 'container';
+		}
+		else {
+			treeItem.contextValue = 'dir';
+		}
+
+		// Add the icon, depending on whether this node represents a folder or a text fragment
+		const icon = element.data.ids.type === 'fragment'
+			? 'edit'
+			: 'symbol-folder';
+
+		
+			
+		treeItem.iconPath = new vscode.ThemeIcon(icon);
+		return treeItem;
+	}
+
+
     // Register all the commands needed for the outline view to work
     registerCommands() {
         vscode.commands.registerCommand('wt.todo.openFile', (resourceUri: vscode.Uri, todoData: TODO) => {
@@ -114,52 +164,6 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
             TODOsView.todoQueriesEnabled = false;
         });
     }
-
-    // Overriding the parent getTreeItem method to add FS API to it
-	getTreeItem(element: TODONode): vscode.TreeItem {
-		const treeItem = super.getTreeItem(element);
-		if (element.data.ids.type === 'fragment') {
-			if (element.data.ids.internal.startsWith('dummy')) {
-				// Fragments with an internal id of 'dummy' are TODO nodes
-				// They store TODO data and when clicked they should open into the tree where
-				//		the TODO string was found
-
-				// Convert generic node data to a TODONode
-				const asTODO: TODOData = element.data as TODOData;
-				const todoData = asTODO.todo;
-
-				treeItem.command = { 
-					command: 'wt.todo.openFile', 
-					title: "Open File", 
-					// Pass the resource url to the fragment and the 
-					arguments: [treeItem.resourceUri, todoData], 
-				};
-				treeItem.contextValue = 'file';
-			}
-			else {
-				// Fragments whose internal ids are not 'dummy' are actual fragments
-				// In the TODO tree, fragments are actually treated as folders, so 
-				//		they cannot be clicked and opened like they can in the outline
-				//		view
-				treeItem.contextValue = 'dir';
-			}
-		}
-		else if (element.data.ids.type === 'container') {
-			treeItem.contextValue = 'container';
-		}
-		else {
-			treeItem.contextValue = 'dir';
-		}
-
-		// Add the icon, depending on whether this node represents a folder or a text fragment
-		const icon = element.data.ids.type === 'fragment'
-			? 'edit'
-			: 'symbol-folder';
-
-			
-		treeItem.iconPath = new vscode.ThemeIcon(icon);
-		return treeItem;
-	}
 
 	
     // Updates the decorations for watched words -- colors them in a little red box

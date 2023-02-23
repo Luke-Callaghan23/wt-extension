@@ -348,6 +348,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
             regex = this.lastCalculatedRegeces.regex;
             unwatchedRegeces = this.lastCalculatedRegeces.unwatchedRegeces;
         }
+        this.wasUpdated = false;
 
 		const text = activeEditor.document.getText();
 		
@@ -449,6 +450,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
         target: string,
         contextItem: 'watchedWords' | 'unwatchedWords' | 'disabledWatchedWords'
     ) {
+        // Get the targeted array, depending on the context that this updateWords function call was made in
         let targetArray: string[];
         if (contextItem === 'watchedWords') {
             targetArray = this.watchedWords;
@@ -463,6 +465,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
             throw new Error(`Not possible -- context item '${contextItem}' is invalid`);
         }
 
+        // Either add or remove the target word from the target array, depending on the opration
         if (operation === 'add') {
             targetArray.push(target);
         }
@@ -478,7 +481,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
             throw new Error(`Not possible -- operation '${operation}' is invalid`);
         }
         
-        // Do updates
+        // Do updates 
         this.wasUpdated = true;
         this.context.workspaceState.update(contextItem, targetArray);
         this.triggerUpdateDecorations(true);
