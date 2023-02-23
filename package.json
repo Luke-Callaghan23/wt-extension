@@ -194,7 +194,38 @@
 				"icon": "$(question)"
 			},
 
+			{
+				"command": "wt.todo.enable",
+				"title": "Writing Tool: Enable Automatic TODO Querying",
+				"enablement": "!wt.todo.enabled"
+			},
+			{
+				"command": "wt.todo.disable",
+				"title": "Writing Tool: Disable Automatic TODO Querying (hit the refresh button to query TODOs manually)",
+				"enablement": "wt.todo.enabled"
+			},
 
+			{
+				"command": "wt.wordWatcher.enable",
+				"title": "Writing Tool: Enable Word Watching",
+				"enablement": "!wt.wordWatcher.enabled"
+			},
+			{
+				"command": "wt.wordWatcher.disable",
+				"title": "Writing Tool: Disable Word Watching (highlights for watched words will not appear)",
+				"enablement": "wt.wordWatcher.enabled"
+			},
+
+			{
+				"command": "wt.proximity.enable",
+				"title": "Writing Tool: Enable Word Proximity Checks",
+				"enablement": "!wt.proximity.enabled"
+			},
+			{
+				"command": "wt.proximity.disable",
+				"title": "Writing Tool: Disable Word Proximity Checks (removes highlights on duplicate words in close proximity)",
+				"enablement": "wt.proximity.enabled"
+			},
 
 
 

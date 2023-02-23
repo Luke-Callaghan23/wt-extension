@@ -24,8 +24,11 @@ export interface WordEnrty {
 
 export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
 
-    private static wordSeparator = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
+    // Static variable that indicates whether decorations are currently being drawn
+    private static decorationsEnabled: boolean = true;
 
+    private static wordSeparator = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
+    
     // Words or word patterns that the user wants to watch out for -- will
     //      be highlighted in the editor
     private watchedWords: string[];
@@ -38,7 +41,6 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
     // Words that we *don't* want to watch out for, but may be caught by a 
     //      pattern in watchedWords
     private unwatchedWords: string[];
-
 
 
     private wasUpdated: boolean = true;
@@ -362,6 +364,8 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
 
     private timeout: NodeJS.Timer | undefined = undefined;
 	private triggerUpdateDecorations(throttle = false) {
+        if (!WordWatcher.decorationsEnabled) return;
+
 		if (this.timeout) {
 			clearTimeout(this.timeout);
 			this.timeout = undefined;
@@ -390,7 +394,21 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
         vscode.commands.registerCommand('wt.wordWatcher.deleteWord', (resource: WordEnrty) => this.removeWord(resource, true));
         vscode.commands.registerCommand('wt.wordWatcher.deleteUnwatchedWord', (resource: WordEnrty) => this.removeWord(resource, false));
         vscode.commands.registerCommand('wt.wordWatcher.disableWatchedWord', (resource: WordEnrty) => this.disableWord(resource));
-        vscode.commands.registerCommand('wt.wordWatched.enableWatchedWord', (resource: WordEnrty) => this.enableWord(resource));
+        vscode.commands.registerCommand('wt.wordWatcher.enableWatchedWord', (resource: WordEnrty) => this.enableWord(resource));
+
+        vscode.commands.registerCommand('wt.wordWatcher.enable', () => {
+            vscode.commands.executeCommand('wt.wordWatcher.enabled', true);
+            WordWatcher.decorationsEnabled = true;
+            // Draw decorations
+            this.triggerUpdateDecorations(true);
+        });
+
+        vscode.commands.registerCommand('wt.wordWatcher.disable', () => {
+            vscode.commands.executeCommand('wt.wordWatcher.enabled', false);
+            WordWatcher.decorationsEnabled = false;
+            // Clear decorations
+            vscode.window.activeTextEditor?.setDecorations(WordWatcher.watchedWordDecoration, []);
+        });
 	}
 
     // Refresh the word tree
@@ -488,5 +506,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty> {
                 this.triggerUpdateDecorations(true);
             }
         }, null, context.subscriptions);
+
+        // TOTEST
+        // Enable word watcher decorations
+        vscode.commands.executeCommand('setContext', 'wt.wordWatcher.enabled', true);
 	}
 }

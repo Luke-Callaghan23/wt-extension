@@ -50,6 +50,8 @@ export function getTODONodes (fragmentUri: string): TODONode[] {
 
 export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.FileSystemProvider, FileSystem {
 
+	private static todoQueriesEnabled: boolean = true;
+
 	disposables: vscode.Disposable[] = [];
 
     initializeTree(): TODONode {
@@ -98,6 +100,19 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
                 detail: `The TODO panel is an area that logs all areas you've marked as 'to do' in your work.  The default (and only (for now)) way to mark a TODO in your work is to enclose the area you want to mark with square brackets '[]'`
             }, 'Okay');
 		});
+
+		vscode.commands.registerCommand('wt.wordWatcher.enable', () => {
+            vscode.commands.executeCommand('wt.wordWatcher.enabled', true);
+            TODOsView.todoQueriesEnabled = true;
+
+			// Do a refresh right away to gather all the TODOs that might have been missed while querying was disabled
+            vscode.commands.executeCommand('wt.wordWatcher.refresh', true);
+        });
+
+        vscode.commands.registerCommand('wt.wordWatcher.disable', () => {
+            vscode.commands.executeCommand('wt.wordWatcher.enabled', false);
+            TODOsView.todoQueriesEnabled = false;
+        });
     }
 
     // Overriding the parent getTreeItem method to add FS API to it
@@ -186,6 +201,8 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
 
     private timeout: NodeJS.Timer | undefined = undefined;
 	private triggerTODOUpdates (throttle = false) {
+		if (!TODOsView.todoQueriesEnabled) return;
+
 		if (this.timeout) {
 			clearTimeout(this.timeout);
 			this.timeout = undefined;
@@ -231,5 +248,9 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
                 this.triggerTODOUpdates(true);
             }
         }, null, context.subscriptions);
+
+		// TOTEST
+		// Enable todo querying
+		vscode.commands.registerCommand('wt.todo.enabled', true);
 	}
 }
