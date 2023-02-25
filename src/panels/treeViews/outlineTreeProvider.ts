@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as extension from '../../extension';
-import { Packageable, PackagedItem } from '../../packageable';
+import { Packageable } from '../../packageable';
 import * as console from '../../vsconsole';
 
 export abstract class TreeNode {
@@ -14,10 +14,10 @@ export abstract class TreeNode {
 	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): boolean;
 }
 
-let uriToVisibility: { [index: string]: boolean };
 
 export abstract class OutlineTreeProvider<T extends TreeNode> 
 implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Packageable {
+	private uriToVisibility: { [index: string]: boolean };
 
     public tree: T;
 	protected view: vscode.TreeView<T>;
@@ -34,10 +34,10 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 		const uriMap: { [index: string]: boolean } | undefined = context.workspaceState.get(`${this.viewName}.collapseState`);
 		if (uriMap) {
-			uriToVisibility = uriMap;
+			this.uriToVisibility = uriMap;
 		}
 		else { 
-			uriToVisibility = {};
+			this.uriToVisibility = {};
 		}
 
 		const view = vscode.window.createTreeView(viewName, { 
@@ -53,21 +53,21 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		//		or opened
 		view.onDidExpandElement((event: vscode.TreeViewExpansionEvent<T>) => {
 			const expandedElementUri = event.element.getUri();
-			uriToVisibility[expandedElementUri.fsPath] = true;
+			this.uriToVisibility[expandedElementUri.fsPath] = true;
 			// Also save the state of all collapse and expands to workspace context state
-			context.workspaceState.update(`${this.viewName}.collapseState`, uriToVisibility);
+			context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
 		});
 
 		view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
 			const collapsedElementUri = event.element.getUri();
-			uriToVisibility[collapsedElementUri.fsPath] = false;			
-			context.workspaceState.update(`${this.viewName}.collapseState`, uriToVisibility);
+			this.uriToVisibility[collapsedElementUri.fsPath] = false;			
+			context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
 		});	
 	}
 
 	getPackageItems(): { [index: string]: any } {
 		return {
-			[`${this.viewName}.collapseState`]: uriToVisibility
+			[`${this.viewName}.collapseState`]: this.uriToVisibility
 		}
 	}
 
@@ -76,7 +76,15 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
 	
 	refresh(): void {
-		this.tree = this.initializeTree();
+		try {
+			this.tree = this.initializeTree();
+		}
+		catch (e) {
+			// If error occurs in initializing the tree, then dispose of this view
+			// (So that the outline view can return to the home screen)
+			this.view.dispose();
+			throw e;
+		}
 		this._onDidChangeTreeData.fire(undefined);
 	}
 
@@ -106,7 +114,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		let collapseState: vscode.TreeItemCollapsibleState;
 		if (treeElement.hasChildren()) {
 			// If the tree element has children, look that element up in the uri map to find the collapsability
-			const isCollapsed: boolean | undefined = uriToVisibility[treeElement.getUri().fsPath];
+			const isCollapsed: boolean | undefined = this.uriToVisibility[treeElement.getUri().fsPath];
 			if (isCollapsed === undefined || isCollapsed === false) {
 				collapseState = vscode.TreeItemCollapsibleState.Collapsed;
 			}

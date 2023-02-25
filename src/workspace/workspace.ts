@@ -22,10 +22,6 @@ export class Workspace {
         title: "Nothing"
     };
 
-    public proximityEnabled?: boolean;
-    public wordWatcherEnabled?: boolean;
-    public todosEnabled?: boolean;
-
     // Path to the .wtconfig file that supplies the above `Config` information for the workspace
     public dotWtconfigPath: string;
 
@@ -230,13 +226,18 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
             const contextValuesJSON = contextValuesBuffer.toString();
             const contextValues: { [index: string]: any } = JSON.parse(contextValuesJSON);
             await Promise.all(Object.entries(contextValues).map(([ contextKey, contextValue ]) => {
-                return vscode.commands.executeCommand('setContext', contextKey, contextValue);
-            }));
+                return [
+                    vscode.commands.executeCommand('setContext', contextKey, contextValue),
+                    context.workspaceState.update(contextKey, contextValue),
+                ];
+            }).flat());
 
-            // Store enabled variables
-            workspace.todosEnabled = contextValues['wt.todo.enabled'];
-            workspace.wordWatcherEnabled = contextValues['wt.wordWatcher.enabled'];
-            workspace.proximityEnabled = contextValues['wt.proximity.enabled'];
+            context.workspaceState.update('wt.todo.enabled', contextValues['wt.todo.enabled']);
+            context.workspaceState.update('wt.wordWatcher.enabled', contextValues['wt.wordWatcher.enabled']);
+            context.workspaceState.update('wt.proximity.enabled', contextValues['wt.proximity.enabled']);
+
+            // Then make sure to delete the workspace file when finished
+            fs.promises.rm(workspace.contextValuesFilePath);
         }
         catch (e) {}
     }

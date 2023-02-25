@@ -105,7 +105,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
 				//		they cannot be clicked and opened like they can in the outline
 				//		view
 				treeItem.contextValue = 'dir';
-				treeItem.collapseState = vscode.TreeItemCollapsibleState.Expanded;
+				treeItem.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
 			}
 		}
 		else if (element.data.ids.type === 'container') {
@@ -157,16 +157,19 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
             }, 'Okay');
 		});
 
-		vscode.commands.registerCommand('wt.wordWatcher.enable', () => {
-            vscode.commands.executeCommand('wt.wordWatcher.enabled', true);
+		vscode.commands.registerCommand('wt.todo.enable', () => {            
+			vscode.commands.executeCommand('setContext', 'wt.todo.enabled', true);     
+			this.context.workspaceState.update('wt.todo.enabled', true);
+
             TODOsView.todoQueriesEnabled = true;
 
 			// Do a refresh right away to gather all the TODOs that might have been missed while querying was disabled
-            vscode.commands.executeCommand('wt.wordWatcher.refresh', true);
+            vscode.commands.executeCommand('wt.todo.refresh', true);
         });
 
-        vscode.commands.registerCommand('wt.wordWatcher.disable', () => {
-            vscode.commands.executeCommand('wt.wordWatcher.enabled', false);
+        vscode.commands.registerCommand('wt.todo.disable', () => {     
+			vscode.commands.executeCommand('setContext', 'wt.todo.enabled', false);     
+			this.context.workspaceState.update('wt.todo.enabled', false);
             TODOsView.todoQueriesEnabled = false;
         });
     }
@@ -238,6 +241,14 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
 
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 
+		
+		// TOTEST
+		// Enable todo querying
+		const todosEnabled: boolean | undefined = context.workspaceState.get('wt.todo.enabled');
+		const enabled = todosEnabled === undefined ? true : todosEnabled;
+		vscode.commands.executeCommand('setContext', 'wt.todo.enabled', enabled);
+		TODOsView.todoQueriesEnabled = enabled;
+
 		// If there is an active editor, then trigger decarator updates off the bat
         this.activeEditor = vscode.window.activeTextEditor;
         if (this.activeEditor) {
@@ -258,10 +269,5 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements vscode.F
                 this.triggerTODOUpdates(true);
             }
         }, null, context.subscriptions);
-
-		// TOTEST
-		// Enable todo querying
-		const enabled = workspace.todosEnabled === undefined ? false : workspace.todosEnabled;
-		vscode.commands.executeCommand('setContext', 'wt.todo.enabled', enabled);
 	}
 }

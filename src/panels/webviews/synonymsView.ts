@@ -7,46 +7,40 @@ import { Workspace } from '../../workspace/workspace';
 export class SynonymViewProvider implements vscode.WebviewViewProvider, Packageable {
 
 	private _view?: vscode.WebviewView;
-	private synonyms: string[] | undefined;
-	private readonly _extensionUri: string;
+	private synonyms: string[];
+	private readonly _extensionUri: vscode.Uri;
 
 	constructor (
-        context: vscode.ExtensionContext,
+        private context: vscode.ExtensionContext,
 		workspace: Workspace
 	) { 
+		this.synonyms = this.context.workspaceState.get('wt.synonyms.synonyms') ?? ['big', 'sad', 'great'];
 
+		
 		this._extensionUri = context.extensionUri;
-
         context.subscriptions.push (
 			vscode.window.registerWebviewViewProvider('wt.synonyms', this)
 		);
 
-        context.subscriptions.push(
-            vscode.commands.registerCommand('wt.synonyms.addSynonym', (term) => {
-                this.addSynonym(term);
-            })
-		);
-    
-        context.subscriptions.push(
-            vscode.commands.registerCommand('wt.synonyms.clearSynonyms', () => {
-                this.clearSynonyms();
-            })
-		);
-
 		this.registerCommands();
-    }
-
-	getPackageItems (): { [index: string]: any; } {
-		this._view?.webview.postMessage({ type: 'requestSynonyms' });
-		while (this.synonyms === undefined) {}
-		const synonyms = this.synonyms;
-		this.synonyms = undefined;
-		return {
-			synonyms: synonyms
-		}
 	}
 
+	getPackageItems (): { [index: string]: any; } {
+		return {
+			'wt.synonyms.synonyms': this.synonyms
+		}
+	}
+		
 	private registerCommands () {
+			
+		vscode.commands.registerCommand('wt.synonyms.clearSynonyms', () => {
+			this.clearSynonyms();
+		});
+		
+		vscode.commands.registerCommand('wt.synonyms.addSynonym', (term) => {
+			this.addSynonym(term);
+		});
+
 		vscode.commands.registerCommand("wt.synonyms.help", () => {
 			vscode.window.showInformationMessage(`Synonyms`, {
                 modal: true,
@@ -129,12 +123,15 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 						return;
 					}
 					webviewView.webview.postMessage({
-						type: 'deliveredApiKey',
-						dicationatyApi: dictionaryApi
+						type: 'startupDelivery',
+						dicationatyApi: dictionaryApi,
+						synonyms: this.synonyms
 					});
 					break;
 				case 'deliveredSynonyms':
 					this.synonyms = (data.synonyms as string[]);
+					this.context.workspaceState.update('wt.synonyms.synonyms', this.synonyms);
+					break;
 			}
 		});
 	}

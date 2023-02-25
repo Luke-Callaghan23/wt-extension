@@ -14,8 +14,6 @@ export class FileAccessManager {
 
     static async documentOpened (document: vscode.TextDocument, view?: OutlineView) {
         
-        console.log(`opened: ${document.uri}`);
-        
         let outlineView: OutlineView;
         if (!view) {
             // Get the outline view for querying nodes, if not provided by caller
@@ -30,7 +28,6 @@ export class FileAccessManager {
         const openedUri = document.uri;
         let uri: vscode.Uri | undefined = document.uri;
 		let node: OutlineNode | undefined | null = outlineView._getTreeElementByUri(document.uri);
-        console.log(`node: ${node}`);
 		while (node && uri) {
 			// Break once the current node is a container
 			if (node.data.ids.type === 'container') {

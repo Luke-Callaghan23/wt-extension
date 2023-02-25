@@ -194,6 +194,8 @@
 				"icon": "$(question)"
 			},
 
+			
+
 			{
 				"command": "wt.todo.enable",
 				"title": "Writing Tool: Enable Automatic TODO Querying",
@@ -435,7 +437,7 @@
 					"when": "view == wt.wordWatcher && viewItem == watchedWord_enabled"
 				},
 				{
-					"command": "wt.wordWatcher.enabledWatchedWord",
+					"command": "wt.wordWatcher.enableWatchedWord",
 					"when": "view == wt.wordWatcher && viewItem == watchedWord_disabled"
 				},
 				{

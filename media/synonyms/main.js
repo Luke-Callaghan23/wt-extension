@@ -4,8 +4,7 @@
 (function () {
     const vscode = acquireVsCodeApi();
 
-    const oldState = vscode.getState() || { synonyms: ['big', 'sad', 'great'] };
-    let synonyms = oldState.synonyms || [ 'big', 'sad', 'great' ];
+    let synonyms = [];
 
     let dicationatyApi;
 
@@ -41,6 +40,10 @@
         for (const syn of syns) {
             await addSynonym(syn);
         }
+        vscode.postMessage({ 
+            type: 'deliveredSynonyms',
+            synonyms: synonyms
+        });
     }
 
     // Message handling
@@ -55,14 +58,12 @@
                 case 'clearSynonyms':
                     clearSynonyms();
                     break;
-                case 'deliveredApiKey':
+                case 'startupDelivery':
+                    synonyms = message.synonyms;
+                    console.log(synonyms);
                     dicationatyApi = message.dicationatyApi;
                     startup();
-                case 'requestSynonyms':
-                    vscode.postMessage({ 
-                        type: 'deliveredSynonyms',
-                        synonyms: synonyms
-                    });
+                    break;
             }
         });
     }
@@ -74,6 +75,10 @@
             addContent(term).then(() => {
                 synonyms.push(term.word);
                 vscode.setState({ synonyms: synonyms });
+                vscode.postMessage({ 
+                    type: 'deliveredSynonyms',
+                    synonyms: synonyms
+                });
             });
         });
     }
@@ -89,6 +94,10 @@
         showStartupMessage();
         synonyms = [];
         vscode.setState({ synonyms: synonyms });
+        vscode.postMessage({ 
+            type: 'deliveredSynonyms',
+            synonyms: synonyms
+        });
     }
 
     function showStartupMessage () {
@@ -276,6 +285,10 @@
 
                 synonyms = synonyms.filter(syn => syn !== term.word);
                 vscode.setState({ synonyms: synonyms });
+                vscode.postMessage({ 
+                    type: 'deliveredSynonyms',
+                    synonyms: synonyms
+                });
             });
         }
         addContent = _addContent;

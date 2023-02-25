@@ -109,10 +109,13 @@ async function initializeChapters (
     await fs.promises.writeFile(dotConfigFullPath, dotConfigJSON);
 }
 
-async function initializeContextItems (packageableItems: { [index: string]: any }) {
+async function initializeContextItems (context: vscode.ExtensionContext, packageableItems: { [index: string]: any }) {
     await Promise.all(Object.entries(packageableItems).map(([contextKey, contextItem]) => {
-        return vscode.commands.executeCommand ('setContext', contextKey, contextItem);
-    }));
+        return [
+            context.workspaceState.update(contextKey, contextItem),
+            vscode.commands.executeCommand ('setContext', contextKey, contextItem),
+        ]
+    }).flat());
 }
 
 
@@ -157,11 +160,11 @@ export async function importWorkspace (context: vscode.ExtensionContext): Promis
     await initializeSnips(iweRecord.snips, workSnipsContainer);
 
     // Insert packageable workspace items into the current workspace context
-    await initializeContextItems(iweRecord.packageableItems);
+    await initializeContextItems(context, iweRecord.packageableItems);
 
-    workspace.todosEnabled = iweRecord.packageableItems['wt.todo.enabled'];
-    workspace.proximityEnabled = iweRecord.packageableItems['wt.proximity.enabled'];
-    workspace.wordWatcherEnabled = iweRecord.packageableItems['wt.wordWatcher.enabled'];
+    context.workspaceState.update('wt.todo.enabled', iweRecord.packageableItems['wt.todo.enabled']);
+    context.workspaceState.update('wt.wordWatcher.enabled', iweRecord.packageableItems['wt.wordWatcher.enabled']);
+    context.workspaceState.update('wt.proximity.enabled', iweRecord.packageableItems['wt.proximity.enabled']);
 
     return workspace;
 }
