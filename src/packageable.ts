@@ -1,7 +1,7 @@
 import { ImportFileSystemView } from "./panels/treeViews/import/importFileSystemView";
 import { OutlineView } from "./panels/treeViews/outline/outlineView";
-import { TODOsView } from "./panels/treeViews/TODO/TODOsView";
-import { WordWatcher } from "./panels/treeViews/wordWatcher/wordWatcher";
+import { TODOsView } from "./panels/treeViews/timedViews/TODO/TODOsView";
+import { WordWatcher } from "./panels/treeViews/timedViews/wordWatcher/wordWatcher";
 import { SynonymViewProvider } from "./panels/webviews/synonymsView";
 
 export interface Packageable {
@@ -9,20 +9,14 @@ export interface Packageable {
 }
 
 export async function packageForExport (
-    outline: OutlineView,
-    todo: TODOsView,
-    importFS: ImportFileSystemView,
-    synonyms: SynonymViewProvider,
-    wordWatcher: WordWatcher,
+    packageables: Packageable[]
 ): Promise<{ [index: string]: any }> {
-    const outlinePackageable = outline.getPackageItems();
-    const todoPackageable = todo.getPackageItems();
-    const synonymsPackageable = synonyms.getPackageItems();
-    const wordWatcherPackageable = wordWatcher.getPackageItems();
-    return {
-        ...outlinePackageable,
-        ...todoPackageable,
-        ...synonymsPackageable,
-        ...wordWatcherPackageable
-    };
+    const allPackagedItems: { [index: string]: any } = {};
+    packageables.forEach(packageable => {
+        const items = packageable.getPackageItems();
+        Object.entries(items).forEach(([ contextKey, contextValue ]) => {
+            allPackagedItems[contextKey] = contextValue;
+        });
+    });
+    return allPackagedItems
 }

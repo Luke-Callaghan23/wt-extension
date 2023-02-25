@@ -4,8 +4,8 @@ import * as vscode from 'vscode';
 import * as console from './vsconsole';
 import { ImportFileSystemView } from './panels/treeViews/import/importFileSystemView';
 import { OutlineView } from './panels/treeViews/outline/outlineView';
-import { TODOsView } from './panels/treeViews/TODO/TODOsView';
-import { WordWatcher } from './panels/treeViews/wordWatcher/wordWatcher';
+import { TODOsView } from './panels/treeViews/timedViews/TODO/TODOsView';
+import { WordWatcher } from './panels/treeViews/timedViews/wordWatcher/wordWatcher';
 import { ExportForm } from './panels/webviews/export/exportFormView';
 import { SynonymViewProvider } from './panels/webviews/synonymsView';
 import { Toolbar } from './toolbar';
@@ -14,6 +14,7 @@ import { importWorkspace } from './workspace/importExport/importWorkspace';
 import { loadWorkspace, createWorkspace, Workspace } from './workspace/workspace';
 import { FileAccessManager } from './fileAccesses';
 import { packageForExport } from './packageable';
+import { TimedView } from './panels/treeViews/timedViews/timedView';
 
 export let rootPath: string;
 
@@ -21,12 +22,17 @@ export let rootPath: string;
 // Loads all the content for all the views for the wt extension
 function loadExtensionWorkspace (context: vscode.ExtensionContext, workspace: Workspace) {
 	try {
-		const outline = new OutlineView(context, workspace);											// wt.outline
-		const todo = new TODOsView(context, workspace);																// wt.todo
-		const importFS = new ImportFileSystemView(context, workspace);													// wt.import.fileSystem
-		const synonyms = new SynonymViewProvider(context, workspace);											// wt.synonyms
-		const wordWatcher = new WordWatcher(context, workspace);															// wt.wordWatcher
+		const outline = new OutlineView(context, workspace);				// wt.outline
+		const importFS = new ImportFileSystemView(context, workspace);		// wt.import.fileSystem
+		const synonyms = new SynonymViewProvider(context, workspace);		// wt.synonyms
+		const todo = new TODOsView(context, workspace);						// wt.todo
+		const wordWatcher = new WordWatcher(context, workspace);			// wt.wordWatcher
 	
+		const timedViews = new TimedView(context, [
+			['wt.todo', todo],
+			['wt.wordWatcher', wordWatcher]
+		]);
+
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
 	
@@ -38,7 +44,9 @@ function loadExtensionWorkspace (context: vscode.ExtensionContext, workspace: Wo
 		//		fragment/snips/chapters in the outline view
 		FileAccessManager.initialize();
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
-		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport(outline, todo, importFS, synonyms, wordWatcher));
+		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
+			outline, synonyms, timedViews
+		]));
 	}
 	catch (e) {
 		handleLoadFailure(e);
@@ -65,7 +73,6 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
 		? vscode.workspace.workspaceFolders[0].uri.fsPath : '.';
 
-	// TOTEST: does this make it work for windows?
 	rootPath = rootPath.replaceAll('\\', '/');
 	rootPath = rootPath.replaceAll('c:/', 'C:\\');
 

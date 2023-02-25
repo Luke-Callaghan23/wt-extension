@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as console from './../../../vsconsole';
-import { Ids } from '../fsNodes';
+import * as console from '../../../../vsconsole';
+import { Ids } from '../../fsNodes';
 import { TODOData, TODONode } from './TODONode';
 import { isInvalidated, todo, todoNodes } from './TODOsView';
 import { v4 as uuidv4 } from 'uuid';

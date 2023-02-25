@@ -1,33 +1,16 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { Workspace } from './../../../workspace/workspace';
-import * as console from './../../../vsconsole';
-import { Packageable } from '../../../packageable';
+import { Workspace } from './../../../../workspace/workspace';
+import * as console from './../../../../vsconsole';
+import { Packageable } from '../../../../packageable';
+import { Timed } from '../timedView';
 
 export interface WordEnrty {
 	uri: string;
 	type: 'wordSearch' | 'wordContainer' | 'unwatchedWordContainer' | 'watchedWord' | 'unwatchedWord';
 }
 
-
-// TOTEST
-// TOTEST
-// TOTEST
-// TOTEST
-// TOTEST
-// TOTEST
-// TOTEST
-// TOTEST
-// TOTEST
-// TOTEST
-// TOTEST
-// TOTEST
-
-export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packageable {
-
-    // Static variable that indicates whether decorations are currently being drawn
-    private static decorationsEnabled: boolean = true;
-
+export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packageable, Timed {
     private static wordSeparator = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
     
     // Words or word patterns that the user wants to watch out for -- will
@@ -42,10 +25,8 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
     // Words that we *don't* want to watch out for, but may be caught by a 
     //      pattern in watchedWords
     private unwatchedWords: string[];
-
-
+    
     private wasUpdated: boolean = true;
-
     private lastCalculatedRegeces: {
         watchedAndEnabled: string[],
         regexString: string,
@@ -53,6 +34,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         unwatchedRegeces: RegExp[],
     } | undefined;
 
+
+    // Tree items
+    //#region tree provider
     async getChildren (element?: WordEnrty): Promise<WordEnrty[]> {
 		if (!element) {
             // If there is no element, assume that vscode is requesting the root element
@@ -167,8 +151,61 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         }
         throw new Error('Not possible');
 	}
+    
+    // Refresh the word tree
+    private _onDidChangeTreeData: vscode.EventEmitter<WordEnrty | undefined> = new vscode.EventEmitter<WordEnrty | undefined>();
+	readonly onDidChangeTreeData: vscode.Event<WordEnrty | undefined> = this._onDidChangeTreeData.event;
+    refresh(): void {
+        this._onDidChangeTreeData.fire(undefined);
+	}
+    //#endregion tree provider
 
-    private async newWatchedWord (watchedWord: boolean = true) {
+    private updateWords (
+        operation: 'add' | 'delete',
+        target: string,
+        contextItem: 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.disabledWatchedWords'
+    ) {
+        // Get the targeted array, depending on the context that this updateWords function call was made in
+        let targetArray: string[];
+        if (contextItem === 'wt.wordWatcher.watchedWords') {
+            targetArray = this.watchedWords;
+        }
+        else if (contextItem === 'wt.wordWatcher.unwatchedWords') {
+            targetArray = this.unwatchedWords;
+        }
+        else if (contextItem === 'wt.wordWatcher.disabledWatchedWords') {
+            targetArray = this.disabledWatchedWords;
+        }
+        else {
+            throw new Error(`Not possible -- context item '${contextItem}' is invalid`);
+        }
+
+        // Either add or remove the target word from the target array, depending on the opration
+        if (operation === 'add') {
+            targetArray.push(target);
+        }
+        else if (operation === 'delete') {
+            const targetIndex = targetArray.findIndex(item => item === target);
+            if (targetIndex === -1) {
+                vscode.window.showErrorMessage(`Error could not find '${target}' in '${contextItem}'`);
+                return;
+            }
+            targetArray.splice(targetIndex, 1);
+        }
+        else {
+            throw new Error(`Not possible -- operation '${operation}' is invalid`);
+        }
+        
+        // Do updates 
+        this.wasUpdated = true;
+        this.context.workspaceState.update(contextItem, targetArray);
+        if (vscode.window.activeTextEditor) {
+            this.update(vscode.window.activeTextEditor);
+        }
+        this.refresh();
+    }
+    
+    private async addWord (watchedWord: boolean = true) {
         const not = !watchedWord ? 'not' : '';
         const un = !watchedWord ? 'un-' : '';
         while (true) {
@@ -232,7 +269,8 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
     private lastJumpWord: string | undefined;
     private lastJumpInstance: number;
     private async jumpNextInstanceOf (word: string) {
-        if (!this.activeEditor) return;
+        if (!vscode.window.activeTextEditor) return;
+        const activeEditor: vscode.TextEditor = vscode.window.activeTextEditor
 
         // If the word is disabled, then leave
         if (this.disabledWatchedWords.find(disabled => disabled === word)) return;
@@ -248,21 +286,21 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             this.lastJumpWord = word;
         }
 
-
         // Create a single regex for all words in this.words
 		const regEx = new RegExp(`${WordWatcher.wordSeparator}${word}${WordWatcher.wordSeparator}`, 'g');
 
-
+        // If there were no updates to any of the watched/uwatched words since the last time
+        //      they were calculated, then use the unwatchedRegeces RegExp array from there
         let unwatchedRegeces: RegExp[];
-        if (this.wasUpdated || !this.lastCalculatedRegeces) {
-            unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${WordWatcher.wordSeparator}${unwatched}${WordWatcher.wordSeparator}`));
-        }
-        else {
+        if (!(this.wasUpdated || !this.lastCalculatedRegeces)) {
             unwatchedRegeces = this.lastCalculatedRegeces.unwatchedRegeces;
         }
+        else {
+            // Otherwise, calculate the array of unwatched regeces
+            unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${WordWatcher.wordSeparator}${unwatched}${WordWatcher.wordSeparator}`));
+        }
         
-		const text = this.activeEditor.document.getText();
-		
+		const text = activeEditor.document.getText();
         let startPos, endPos;
         let matchIndex = 0;
         while (true) {
@@ -287,8 +325,8 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
                     end -= 1;
                 }
 
-                startPos = this.activeEditor.document.positionAt(start);
-                endPos = this.activeEditor.document.positionAt(end);
+                startPos = activeEditor.document.positionAt(start);
+                endPos = activeEditor.document.positionAt(end);
                 matchIndex++;
             }
 
@@ -311,12 +349,35 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
 
         if (startPos && endPos) {
             // Set the selection to the start/end position found above
-            this.activeEditor.selection = new vscode.Selection(startPos, endPos);
-            this.activeEditor.revealRange(new vscode.Range(startPos, endPos));
-            vscode.window.showTextDocument(this.activeEditor.document);
+            activeEditor.selection = new vscode.Selection(startPos, endPos);
+            activeEditor.revealRange(new vscode.Range(startPos, endPos));
+            vscode.window.showTextDocument(activeEditor.document);
         }
-
     }
+
+	constructor(
+        private context: vscode.ExtensionContext,
+        private workspace: Workspace,
+    ) {
+        this.lastJumpWord = undefined;
+        this.lastJumpInstance = 0;
+
+        // Read all the words arrays
+        const words: string[] | undefined = context.workspaceState.get('wt.wordWatcher.watchedWords');
+        const disabledWords: string[] | undefined = context.workspaceState.get('wt.wordWatcher.disabledWatchedWords');
+        const unwatched: string[] | undefined = context.workspaceState.get('wt.wordWatcher.unwatchedWords');
+
+        // Initial words are 'very' and 'any
+        this.watchedWords = words ?? [ 'very', '[a-zA-Z]+ly' ];
+        this.disabledWatchedWords = disabledWords ?? [];
+        this.unwatchedWords = unwatched ?? [];
+
+        // Will later be modified by TimedView
+        this.enabled = true;
+
+		context.subscriptions.push(vscode.window.createTreeView('wt.wordWatcher', { treeDataProvider: this }));
+        this.registerCommands();
+	}
 
     // Decoration for watched words
     private static watchedWordDecoration = vscode.window.createTextEditorDecorationType({
@@ -336,18 +397,14 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
 		}
 	});
 
-    // Updates the decorations for watched words -- colors them in a little red box
-    private activeEditor: vscode.TextEditor | undefined;
-    private updateDecorations () {
-		if (!vscode.window.activeTextEditor) {
-			return;
-		}
-
+    enabled: boolean;
+    async update(editor: vscode.TextEditor): Promise<void> {
+    
         const activeEditor = vscode.window.activeTextEditor;
         
         // Create a single regex for all words in this.words
         // TOTEST: does this prevent substring matching?
-
+    
         let watchedAndEnabled: string[];
         let regexString: string;
         let regex: RegExp;
@@ -360,7 +417,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             regexString = WordWatcher.wordSeparator + watchedAndEnabled.join(`${WordWatcher.wordSeparator}|${WordWatcher.wordSeparator}`) + WordWatcher.wordSeparator;
             regex = new RegExp(regexString, 'g');
             unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${WordWatcher.wordSeparator}${unwatched}${WordWatcher.wordSeparator}`));
-
+    
             this.lastCalculatedRegeces = {
                 watchedAndEnabled,
                 regexString,
@@ -375,20 +432,20 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             unwatchedRegeces = this.lastCalculatedRegeces.unwatchedRegeces;
         }
         this.wasUpdated = false;
-
-		const text = activeEditor.document.getText();
-		
+    
+        const text = editor.document.getText();
+        
         // While there are more matches within the text of the document, collect the match selection
         const matched: vscode.DecorationOptions[] = [];
         let match: RegExpExecArray | null;
-		while ((match = regex.exec(text))) {
+        while ((match = regex.exec(text))) {
             const matchReal: RegExpExecArray = match;
-
+    
             // Skip if the match also matches an unwatched word
             if (unwatchedRegeces.find(re => re.test(matchReal[0]))) {
                 continue;
             }
-
+    
             let start: number = match.index;
             if (match.index !== 0) {
                 start += 1;
@@ -397,35 +454,24 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             if (match.index + match[0].length !== text.length) {
                 end -= 1;
             }
-			const startPos = activeEditor.document.positionAt(start);
-			const endPos = activeEditor.document.positionAt(end);
-			const decoration = { 
+            const startPos = editor.document.positionAt(start);
+            const endPos = editor.document.positionAt(end);
+            const decoration = { 
                 range: new vscode.Range(startPos, endPos), 
                 hoverMessage: '**' + match[0] + '**' 
             };
             matched.push(decoration);
-		}
-		activeEditor.setDecorations(WordWatcher.watchedWordDecoration, matched);
-	}
+        }
+        editor.setDecorations(WordWatcher.watchedWordDecoration, matched);
+    }
 
-    private timeout: NodeJS.Timer | undefined = undefined;
-	private triggerUpdateDecorations(throttle = false) {
-        if (!WordWatcher.decorationsEnabled) return;
+    async disable?(): Promise<void> {
+        vscode.window.activeTextEditor?.setDecorations(WordWatcher.watchedWordDecoration, []);
+    }
 
-		if (this.timeout) {
-			clearTimeout(this.timeout);
-			this.timeout = undefined;
-		}
-		if (throttle) {
-			this.timeout = setTimeout(() => this.updateDecorations(), 500);
-		} else {
-			this.updateDecorations();
-		}
-	}
-    
     registerCommands () {
-        vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.newWatchedWord(true));
-        vscode.commands.registerCommand('wt.wordWatcher.newUnwatchedWord', () => this.newWatchedWord(false));
+        vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.addWord(true));
+        vscode.commands.registerCommand('wt.wordWatcher.newUnwatchedWord', () => this.addWord(false));
         
         vscode.commands.registerCommand('wt.wordWatcher.jumpNextInstanceOf', (word: string) => {
             this.jumpNextInstanceOf(word);
@@ -449,127 +495,10 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         vscode.commands.registerCommand('wt.wordWatcher.enableWatchedWord', (resource: WordEnrty) => {
             this.updateWords('delete', resource.uri, 'wt.wordWatcher.disabledWatchedWords')
         });
-
-        vscode.commands.registerCommand('wt.wordWatcher.enable', () => {
-            vscode.commands.executeCommand('setContext', 'wt.wordWatcher.enabled', true);
-            this.context.workspaceState.update('wt.wordWatcher.enabled', true);
-            WordWatcher.decorationsEnabled = true;
-            // Draw decorations
-            this.triggerUpdateDecorations(true);
-        });
-
-        vscode.commands.registerCommand('wt.wordWatcher.disable', () => {
-            vscode.commands.executeCommand('setContext', 'wt.wordWatcher.enabled', false);
-            this.context.workspaceState.update('wt.wordWatcher.enabled', false);
-            WordWatcher.decorationsEnabled = false;
-            // Clear decorations
-            vscode.window.activeTextEditor?.setDecorations(WordWatcher.watchedWordDecoration, []);
-        });
-	}
-
-    // Refresh the word tree
-    private _onDidChangeTreeData: vscode.EventEmitter<WordEnrty | undefined> = new vscode.EventEmitter<WordEnrty | undefined>();
-	readonly onDidChangeTreeData: vscode.Event<WordEnrty | undefined> = this._onDidChangeTreeData.event;
-    refresh(): void {
-		this._onDidChangeTreeData.fire(undefined);
-	}
-
-    private updateWords (
-        operation: 'add' | 'delete',
-        target: string,
-        contextItem: 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.disabledWatchedWords'
-    ) {
-        // Get the targeted array, depending on the context that this updateWords function call was made in
-        let targetArray: string[];
-        if (contextItem === 'wt.wordWatcher.watchedWords') {
-            targetArray = this.watchedWords;
-        }
-        else if (contextItem === 'wt.wordWatcher.unwatchedWords') {
-            targetArray = this.unwatchedWords;
-        }
-        else if (contextItem === 'wt.wordWatcher.disabledWatchedWords') {
-            targetArray = this.disabledWatchedWords;
-        }
-        else {
-            throw new Error(`Not possible -- context item '${contextItem}' is invalid`);
-        }
-
-        // Either add or remove the target word from the target array, depending on the opration
-        if (operation === 'add') {
-            targetArray.push(target);
-        }
-        else if (operation === 'delete') {
-            const targetIndex = targetArray.findIndex(item => item === target);
-            if (targetIndex === -1) {
-                vscode.window.showErrorMessage(`Error could not find '${target}' in '${contextItem}'`);
-                return;
-            }
-            targetArray.splice(targetIndex, 1);
-        }
-        else {
-            throw new Error(`Not possible -- operation '${operation}' is invalid`);
-        }
-        
-        // Do updates 
-        this.wasUpdated = true;
-        this.context.workspaceState.update(contextItem, targetArray);
-        this.triggerUpdateDecorations(true);
-        this.refresh();
-    }
-
-	constructor(
-        private context: vscode.ExtensionContext,
-        private workspace: Workspace,
-    ) {
-        this.lastJumpWord = undefined;
-        this.lastJumpInstance = 0;
-
-        // Read all the words arrays
-        const words: string[] | undefined = context.workspaceState.get('wt.wordWatcher.watchedWords');
-        const disabledWords: string[] | undefined = context.workspaceState.get('wt.wordWatcher.disabledWatchedWords');
-        const unwatched: string[] | undefined = context.workspaceState.get('wt.wordWatcher.unwatchedWords');
-
-        // Initial words are 'very' and 'any
-        this.watchedWords = words ?? [ 'very', '[a-zA-Z]+ly' ];
-        this.disabledWatchedWords = disabledWords ?? [];
-        this.unwatchedWords = unwatched ?? [];
-
-        
-        // TOTEST
-        // Enable word watcher decorations
-        const wwEnabled: boolean | undefined = context.workspaceState.get('wt.wordWatcher.enabled');
-		const enabled = wwEnabled === undefined ? true : wwEnabled;
-		vscode.commands.executeCommand('setContext', 'wt.wordWatcher.enabled', enabled);
-        WordWatcher.decorationsEnabled = enabled;
-
-		context.subscriptions.push(vscode.window.createTreeView('wt.wordWatcher', { treeDataProvider: this }));
-        this.registerCommands();
-		
-        // If there is an active editor, then trigger decarator updates off the bat
-        this.activeEditor = vscode.window.activeTextEditor;
-        if (this.activeEditor) {
-            this.triggerUpdateDecorations();
-        }
-    
-        // If the active editor changed, then change the internal activeEditor value and trigger decarator updates
-        vscode.window.onDidChangeActiveTextEditor(editor => {
-            this.activeEditor = editor;
-            if (editor) {
-                this.triggerUpdateDecorations();
-            }
-        }, null, context.subscriptions);
-    
-        // On text document change within the editor, update decorations with throttle
-        vscode.workspace.onDidChangeTextDocument(event => {
-            if (this.activeEditor && event.document === this.activeEditor.document) {
-                this.triggerUpdateDecorations(true);
-            }
-        }, null, context.subscriptions);
 	}
 
     getPackageItems(): { [index: string]: any; } {
         return {
-            'wt.wordWatcher.enabled': WordWatcher.decorationsEnabled,
             'wt.wordWatcher.watchedWords': this.watchedWords,
             'wt.wordWatcher.disabledWatchedWords': this.disabledWatchedWords,
             'wt.wordWatcher.unwatchedWords': this.unwatchedWords,

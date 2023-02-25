@@ -22,7 +22,6 @@ function surroundSelectionWith (surround: string) {
     let beforeSelection: vscode.Selection | undefined = undefined;
     {
         if (selected.startsWith(surround)) {
-            
             const newEnd = new vscode.Position(selection.start.line, selection.start.character + surround.length);
             beforeSelection = new vscode.Selection(selection.start, newEnd);
         }
@@ -72,7 +71,6 @@ function surroundSelectionWith (surround: string) {
             editBuilder.replace(selection, surrounded);
         }).then(() => {
             if (!selection.isEmpty) return;
-            // TOTEST
             // If the selection is empty, then move the cursor into the middle of the surround strings
             //      that were added
             // After the edits, the current position of the cursor is at the end of the surround string
@@ -88,11 +86,8 @@ function surroundSelectionWith (surround: string) {
             // New selection is the desired position of the cursor (provided to the constructor twice, to
             //      get an empty selection)
             curEditor.selection = new vscode.Selection(newPosition, newPosition);
-        })
-
+        });
     }
-
-
 }
 
 export function italisize () {

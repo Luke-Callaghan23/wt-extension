@@ -1,11 +1,11 @@
 /* eslint-disable curly */
 
 import * as vscode from 'vscode';
-import * as console from './../../../vsconsole';
-import { OutlineTreeProvider, TreeNode } from '../outlineTreeProvider';
-import * as fsNodes from '../fsNodes';
+import * as console from '../../../../vsconsole';
+import { OutlineTreeProvider, TreeNode } from '../../outlineTreeProvider';
+import * as fsNodes from '../../fsNodes';
 import { todo, isInvalidated, getTODO, Validated, TODO } from './TODOsView';
-import * as extension from '../../../extension';
+import * as extension from '../../../../extension';
 import { scanFragment } from './scanFragment';
 import { convertToTODOData } from './convertFragmentNode';
 
