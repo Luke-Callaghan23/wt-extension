@@ -1,12 +1,14 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fsExtra from 'fs-extra';
 import { Workspace } from '../../../workspace/workspace';
 import { FileSystem } from '../fileSystem/fileSystem';
 import * as fsFunctions from '../fileSystem/fileSystemProviderFunctions';
 import * as console from './../../../vsconsole';
 import { _ } from '../fileSystem/fileSystemDefault';
 import { ImportForm } from '../../webviews/import/importFormView';
+import { ImportDocumentProvider } from './importDropProvider';
 
 
 export interface Entry {
@@ -80,7 +82,6 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
 		// Add a highlight to the label of the node, if it is excluded
 		let excluded = false;
 		if (isRootFolder) {
-			console.log('hello')
 			treeItem.contextValue = 'import-root';
 		}
 		else if (this.excludedFiles.find(ef => element.uri.fsPath.includes(ef))) {
@@ -134,9 +135,6 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
 	}
 	//#endregion
 
-	async handleImportUri (uri: vscode.Uri) {
-		// TODO wait for microsoft to implement file dropping
-	}
 
 	async handleImportDialog () {
 		const uris = await vscode.window.showOpenDialog({ 
@@ -166,7 +164,13 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
 
 		// Import each uri
 		// Don't need to await them, as none of the imports (should) rely on each other
-		uris.forEach(uri => this.handleImportUri(uri));
+		await Promise.all(uris.map(uri => {
+			const uriPath = uri.fsPath;
+			const uriName = path.basename(uriPath);
+			const dest = `${this.importFolder.fsPath}/${uriName}`
+			return fsExtra.copy(uriPath, dest);
+		}));
+		this.refresh();
 	}
 
 	private filterResource (resource: Entry) {
@@ -228,15 +232,11 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
         this.importFolder = vscode.Uri.parse(this.workspace.importFolder);
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
         
-		context.subscriptions.push(vscode.window.createTreeView('wt.import.fileExplorer', { treeDataProvider: this }));
+		const documentDropProvider = new ImportDocumentProvider(this.importFolder, this.workspace, this);
+		context.subscriptions.push(vscode.window.createTreeView('wt.import.fileExplorer', { 
+			treeDataProvider: this,
+			dragAndDropController: documentDropProvider
+		}));
         this.registerCommands();
-		
-		// TODO wait for microsoft to implement file dropping
-		// const selector: vscode.DocumentSelector = { 
-		// 	pattern: "**/*",
-		// 	scheme: 'file',
-		// };
-		// const documentDropProvider = new ImportDocumentProvider(this.workspaceFolder, this.workspace);
-		// vscode.languages.registerDocumentDropEditProvider(selector, documentDropProvider);
 	}
 }

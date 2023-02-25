@@ -305,7 +305,6 @@ export class OutlineNode extends TreeNode {
             const parentContainerId = this.data.ids.parentInternalId;
             const parentContainerNode: OutlineNode | null = outlineView._getTreeElement(parentContainerId);
             if (!parentContainerNode) {
-                console.log('please please please not here');
                 return null;
             }
 

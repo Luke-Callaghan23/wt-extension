@@ -238,6 +238,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		}
     }
     public async handleDrag(source: T[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
+		console.log(source);
 		treeDataTransfer.set('application/vnd.code.tree.outline', new vscode.DataTransferItem(source));
 	}
 
