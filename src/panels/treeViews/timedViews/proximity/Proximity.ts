@@ -152,7 +152,19 @@ class Word {
         this.range = range;
     }
 
-    private static filtered: RegExp[] = [ /a/, /the/, /of/, /i/, /\s+/, /^$/ ];
+    private static filtered: RegExp[] = [ 
+        // Common words
+        /a/, /the/, /of/, /i/, 
+
+        // Whitespace
+        /\s+/, 
+
+        // Empty string
+        /^$/, 
+
+        // Any single character non-alphanumberic character
+        /[^a-zA-Z0-9]/ 
+    ];
     static shouldFilterWord ({ text }: Word): boolean {
         return Word.filtered.find(filt => filt.test(text)) !== undefined;
     }

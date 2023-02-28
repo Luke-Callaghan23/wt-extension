@@ -98,13 +98,33 @@ function splitMd (content: string, split: SplitInfo): DocSplit | undefined {
     }
 }
 
+
+const replace = {
+    '”': '"',
+    '“': '"',
+    '‘': "'",
+    '’': "'",
+    '‛': "'",
+    '‟': '"',
+    '…': '...'
+}
+// Replace common unicode characters in writing with more usable versions
+function replaceCommonUnicode (content: string): string {
+    return Object.entries(replace).reduce((acc, [ from, to ]) => {
+        return acc.replaceAll(from , to);
+    }, content)
+}
+
 async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
     // Get the full file path and read the content of that file
     const fileFullPath = `${extension.rootPath}/${fileRelativePath}`;
     const fileContent = (await fs.promises.readFile(fileFullPath)).toString();
 
+    // Replace some common unicode elements in the file with more friendly stuff
+    const filteredContent = replaceCommonUnicode(fileContent);
+
     // Split the content with the split rules provided in `split`
-    const splits = splitMd(fileContent, split);
+    const splits = splitMd(filteredContent, split);
     if (!splits) {
         vscode.window.showErrorMessage(`Error ocurred when splitting markdown document`);
         throw new Error(`Error ocurred when splitting markdown document`);
@@ -136,8 +156,11 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
     // Showdown escapes all tildes ... we don't like that so, we take out all the escape characters
     const withoutEscapedTildes = convertedMd.replaceAll('\\~', '~');
 
+    // Replace some common unicode elements in the file with more friendly stuff
+    const filteredContent = replaceCommonUnicode(withoutEscapedTildes);
+
     // Split the content with the split rules provided in `split`
-    const splits = splitMd(withoutEscapedTildes, split);
+    const splits = splitMd(filteredContent, split);
     if (!splits) {
         vscode.window.showErrorMessage(`Error ocurred when splitting markdown document`);
         throw new Error(`Error ocurred when splitting markdown document`);
