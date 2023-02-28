@@ -399,18 +399,18 @@ export class Proximity implements Timed {
     });
     private static secondary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
-        borderColor: 'hsla(218, 42%, 55%, 1)',
-		overviewRulerColor: 'hsla(218, 42%, 55%, 1)',
+        borderColor: 'hsla(218, 42%, 55%, 0.60)',
+		overviewRulerColor: 'hsla(218, 42%, 55%, 0.60)',
     });
     private static tertiary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
-        borderColor: 'hsla(161, 82%, 27%, 1)',
-		overviewRulerColor: 'hsla(161, 82%, 27%, 1)',
+        borderColor: 'hsla(161, 82%, 27%, 0.30)',
+		overviewRulerColor: 'hsla(161, 82%, 27%, 0.30)',
     });
     private static fourth: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
-        borderColor: 'hsla(51, 82%, 60%, 1)',
-		overviewRulerColor: 'hsla(51, 82%, 60%, 1)',
+        borderColor: 'hsla(51, 82%, 60%, 0.25)',
+		overviewRulerColor: 'hsla(51, 82%, 60%, 0.25)',
     });
 
     private static decorators: vscode.TextEditorDecorationType[] = [
