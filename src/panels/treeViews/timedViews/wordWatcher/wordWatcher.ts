@@ -453,6 +453,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
                 hoverMessage: '**' + match[0] + '**' 
             };
             matched.push(decoration);
+            regex.lastIndex -= 1;
         }
         editor.setDecorations(WordWatcher.watchedWordDecoration, matched);
     }

@@ -1,3 +1,4 @@
+import { clear } from 'console';
 import * as vscode from 'vscode';
 import * as console from '../../../../vsconsole';
 import { Workspace } from '../../../../workspace/workspace';
@@ -65,17 +66,18 @@ class Ranks {
         //      egregious than 5 times in the same paragraph, etc.
         const rated: ([ number, Word[] ] | null)[] = fullView.uniqueWords.map(target => {
             // Assign paragraph ratings for this word
-            const para: number = paragraphs.reduce((acc, paragraph) => {
+            const paraRaw: number = paragraphs.reduce((acc, paragraph) => {
                 const wordInstances: Word[] | undefined = paragraph.ranks.rankedWords[target];
                 if (wordInstances === undefined) return acc;
-                return acc + (wordInstances.length - 1) * this.paragraphModifier;
+                return acc + wordInstances.length;
             }, 0);
+            const para = paraRaw * this.paragraphModifier;
 
             // Assign sentence ratings for this word
             const sent: number = sentences.reduce((acc, sentence) => {
                 const wordInstances: Word[] | undefined = sentence.ranks.rankedWords[target];
                 if (wordInstances === undefined) return acc;
-                return acc + (wordInstances.length - 1) * this.sentenceModifier;
+                return (acc + wordInstances.length - 1) * this.sentenceModifier;
             }, 0);
 
             // Assign 'view' ratings for this word
@@ -107,6 +109,7 @@ class Ranks {
         const second: [ number, Word[] ] | undefined = finalRatings[1];
         const third: [ number, Word[] ] | undefined = finalRatings[2];
         const fourth: [ number, Word[] ] | undefined = finalRatings[3];
+
         return [
             first[1],
             second?.[1],
@@ -149,9 +152,9 @@ class Word {
         this.range = range;
     }
 
-    private static filtered: string[] = [ 'a', 'the', 'of', 'i' ];
+    private static filtered: RegExp[] = [ /a/, /the/, /of/, /i/, /\s+/, /^$/ ];
     static shouldFilterWord ({ text }: Word): boolean {
-        return Word.filtered.find(filt => filt === text) !== undefined;
+        return Word.filtered.find(filt => filt.test(text)) !== undefined;
     }
 }
 
@@ -368,7 +371,14 @@ export class Proximity implements Timed {
     }
 
     async update (editor: vscode.TextEditor): Promise<void> {
+
+        // Index used to indicate the place in Proximity.decorators to start clearing decorations
+        // In the case where `x` decorators were used in the last update but `x - n` decorators need
+        //      to be used during this update then we need to clear the last `n` decorators in this
+        //      update
+        let clearIndex = -1;
         for (const visible of editor.visibleRanges) {
+            // Get ratings ffor all words in the current visible range
             const visibleData = new VisibleData(editor, visible);
             const rated = Ranks.assignRatings(
                 visibleData,                                            // full view
@@ -376,19 +386,35 @@ export class Proximity implements Timed {
                 visibleData.paragraphs.map(p => p.sentences).flat()     // all sentences
             );
 
-            if (!rated) continue;
+            // If there are no available ratings, indicate that all decorators need to be cleared, and continue
+            if (!rated) {
+                clearIndex = 0;
+                continue;
+            }
             
             rated.forEach((r, index) => {
-                if (!r) return;
+                // If we found an undefined rating, then clear all decorators after it
+                if (!r) {
+                    if (clearIndex === -1) clearIndex = index;
+                    return;
+                }
                 const decorator = Proximity.decorators[index];
                 this.updateDecorationsForWord(editor, r, decorator);
             });
         }
+
+        // Clear unused decorators
+        if (clearIndex !== -1) {
+            Proximity.decorators.slice(clearIndex).forEach(dec => {
+                editor.setDecorations(dec, []);
+            });
+        }
+
     }
 
     private static commonDecorations = {
+        borderStyle: 'none none dotted none',
 		borderWidth: '3px',
-        borderStyle: 'dotted',
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
 	};
 
