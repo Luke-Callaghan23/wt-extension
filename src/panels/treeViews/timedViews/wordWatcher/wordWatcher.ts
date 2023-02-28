@@ -4,6 +4,7 @@ import { Workspace } from './../../../../workspace/workspace';
 import * as console from './../../../../vsconsole';
 import { Packageable } from '../../../../packageable';
 import { Timed } from '../timedView';
+import * as extension from './../../../../extension';
 
 export interface WordEnrty {
 	uri: string;
@@ -11,8 +12,6 @@ export interface WordEnrty {
 }
 
 export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packageable, Timed {
-    private static wordSeparator = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
-    
     // Words or word patterns that the user wants to watch out for -- will
     //      be highlighted in the editor
     private watchedWords: string[];
@@ -287,7 +286,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         }
 
         // Create a single regex for all words in this.words
-		const regEx = new RegExp(`${WordWatcher.wordSeparator}${word}${WordWatcher.wordSeparator}`, 'g');
+		const regEx = new RegExp(`${extension.wordSeparator}${word}${extension.wordSeparator}`, 'g');
 
         // If there were no updates to any of the watched/uwatched words since the last time
         //      they were calculated, then use the unwatchedRegeces RegExp array from there
@@ -297,7 +296,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         }
         else {
             // Otherwise, calculate the array of unwatched regeces
-            unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${WordWatcher.wordSeparator}${unwatched}${WordWatcher.wordSeparator}`));
+            unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${extension.wordSeparator}${unwatched}${extension.wordSeparator}`));
         }
         
 		const text = activeEditor.document.getText();
@@ -385,16 +384,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         borderRadius: '3px',
 		borderStyle: 'solid',
 		overviewRulerColor: 'blue',
-        backgroundColor: '#a10808',
+        backgroundColor: 'rgb(161, 8, 8, 0.3)',
+        borderColor: 'rgb(161, 8, 8, 0.3)',
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
-		light: {
-			// this color will be used in light color themes
-			borderColor: 'darkblue'
-		},
-		dark: {
-			// this color will be used in dark color themes
-			borderColor: '#a10808'
-		}
 	});
 
     enabled: boolean;
@@ -414,9 +406,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             watchedAndEnabled = this.watchedWords.filter(watched => !this.disabledWatchedWords.find(disabled => watched === disabled));
     
             // Create the regex string from the still-enabled watched words
-            regexString = WordWatcher.wordSeparator + watchedAndEnabled.join(`${WordWatcher.wordSeparator}|${WordWatcher.wordSeparator}`) + WordWatcher.wordSeparator;
+            regexString = extension.wordSeparator + watchedAndEnabled.join(`${extension.wordSeparator}|${extension.wordSeparator}`) + extension.wordSeparator;
             regex = new RegExp(regexString, 'g');
-            unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${WordWatcher.wordSeparator}${unwatched}${WordWatcher.wordSeparator}`));
+            unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${extension.wordSeparator}${unwatched}${extension.wordSeparator}`));
     
             this.lastCalculatedRegeces = {
                 watchedAndEnabled,

@@ -206,7 +206,6 @@
 				"title": "Writing Tool: Disable Automatic TODO Querying (hit the refresh button to query TODOs manually)",
 				"enablement": "wt.todo.enabled"
 			},
-
 			{
 				"command": "wt.wordWatcher.enable",
 				"title": "Writing Tool: Enable Word Watching",
@@ -217,7 +216,6 @@
 				"title": "Writing Tool: Disable Word Watching (highlights for watched words will not appear)",
 				"enablement": "wt.wordWatcher.enabled"
 			},
-
 			{
 				"command": "wt.proximity.enable",
 				"title": "Writing Tool: Enable Word Proximity Checks",

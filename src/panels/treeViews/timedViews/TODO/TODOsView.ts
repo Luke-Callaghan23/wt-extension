@@ -1,5 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
+import * as console from '../../../../vsconsole';
 import * as fsFunctions from '../../fileSystem/fileSystemProviderFunctions';
 import { Workspace } from '../../../../workspace/workspace';
 import { TODOData, TODONode } from './TODONode';
@@ -8,7 +9,6 @@ import { InitializeNode, initializeOutline } from '../../initialize';
 import { NodeTypes } from '../../fsNodes';
 import { FileSystem } from '../../fileSystem/fileSystem';
 import { _ } from '../../fileSystem/fileSystemDefault';
-import * as console from '../../../../vsconsole';
 import { Timed } from '../timedView';
 
 export type TODO = {

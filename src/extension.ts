@@ -17,6 +17,10 @@ import { packageForExport } from './packageable';
 import { TimedView } from './panels/treeViews/timedViews/timedView';
 
 export let rootPath: string;
+export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
+export const wordSeparatorRegex = new RegExp(wordSeparator);
+export const sentenceSeparator: RegExp = /[.?!]/
+export const paragraphSeparator: RegExp = /\n\n/;
 
 // To be called whenever a workspace is successfully loaded
 // Loads all the content for all the views for the wt extension
