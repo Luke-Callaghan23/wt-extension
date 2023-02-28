@@ -117,7 +117,7 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 					vscode.window.showErrorMessage(`Error: The dictionary api did not recognize search term '${failedWord}'. Did you mean to type one of these: '${suggestedString}'?`);
 					break;
 				case 'requestDictionaryApiKey': 
-					const dictionaryApi = process.env.DICTIONARY_API;
+					const dictionaryApi = "29029b50-e0f1-4be6-ac00-77ab8233e66b";
 					if (!dictionaryApi) {
 						vscode.window.showWarningMessage(`WARN: The synonyms view uses a dictionary API to function.  If you forked this code from github, you need to get your own API key from 'https://dictionaryapi.dev/'`);
 						return;
