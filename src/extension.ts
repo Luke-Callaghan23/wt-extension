@@ -15,12 +15,13 @@ import { loadWorkspace, createWorkspace, Workspace } from './workspace/workspace
 import { FileAccessManager } from './fileAccesses';
 import { packageForExport } from './packageable';
 import { TimedView } from './panels/treeViews/timedViews/timedView';
+import { Proximity } from './panels/treeViews/timedViews/proximity/Proximity';
 
 export let rootPath: string;
 export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
-export const wordSeparatorRegex = new RegExp(wordSeparator);
-export const sentenceSeparator: RegExp = /[.?!]/
-export const paragraphSeparator: RegExp = /\n\n/;
+export const wordSeparatorRegex = new RegExp(wordSeparator.split('|')[1], 'g');
+export const sentenceSeparator: RegExp = /[.?!]/g;
+export const paragraphSeparator: RegExp = /\n\n/g;
 
 // To be called whenever a workspace is successfully loaded
 // Loads all the content for all the views for the wt extension
@@ -31,10 +32,12 @@ function loadExtensionWorkspace (context: vscode.ExtensionContext, workspace: Wo
 		const synonyms = new SynonymViewProvider(context, workspace);		// wt.synonyms
 		const todo = new TODOsView(context, workspace);						// wt.todo
 		const wordWatcher = new WordWatcher(context, workspace);			// wt.wordWatcher
+		const proximity = new Proximity(context, workspace);
 	
 		const timedViews = new TimedView(context, [
 			['wt.todo', todo],
-			['wt.wordWatcher', wordWatcher]
+			['wt.wordWatcher', wordWatcher],
+			['wt.proximity', proximity]
 		]);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)

@@ -33,7 +33,7 @@ class Ranks {
     }
 
     // Modifiers to give higher precedence to 'closer' words
-    static readonly sentenceModifier = 2.0;
+    static readonly sentenceModifier = 1000.0;
     static readonly paragraphModifier = 1.5;
     static readonly fullViewModifier = 0.75;
 
@@ -68,14 +68,14 @@ class Ranks {
             const para: number = paragraphs.reduce((acc, paragraph) => {
                 const wordInstances: Word[] | undefined = paragraph.ranks.rankedWords[target];
                 if (wordInstances === undefined) return acc;
-                return acc + wordInstances.length * this.paragraphModifier;
+                return acc + (wordInstances.length - 1) * this.paragraphModifier;
             }, 0);
 
-            // Assign number ratings for this word
+            // Assign sentence ratings for this word
             const sent: number = sentences.reduce((acc, sentence) => {
                 const wordInstances: Word[] | undefined = sentence.ranks.rankedWords[target];
                 if (wordInstances === undefined) return acc;
-                return acc + wordInstances.length * this.sentenceModifier;
+                return acc + (wordInstances.length - 1) * this.sentenceModifier;
             }, 0);
 
             // Assign 'view' ratings for this word
@@ -128,11 +128,25 @@ class Word {
         start: number,
         end: number,
     ) {
-        const startPosition = editor.document.positionAt(start);
-        const endPosition = editor.document.positionAt(end);
+        let scratchPad = wordText.toLocaleLowerCase();
+        let scratchPadLength = scratchPad.length;
+        
+        // Get length of whitespace in start
+        scratchPad = scratchPad.trimStart();
+        let startWhitespace = scratchPadLength - scratchPad.length;
+        scratchPadLength = scratchPad.length;
+
+        // Get length of whitespace in end
+        scratchPad = scratchPad.trimEnd();
+        let endWhitespace = scratchPadLength - scratchPad.length;
+
+        this.text = scratchPad;
+
+        // Create range with start and end whitespace markers in mind
+        const startPosition = editor.document.positionAt(start + startWhitespace);
+        const endPosition = editor.document.positionAt(end - endWhitespace);
         const range = new vscode.Range(startPosition, endPosition);
         this.range = range;
-        this.text = wordText.toLocaleLowerCase();
     }
 
     private static filtered: string[] = [ 'a', 'the', 'of', 'i' ];
@@ -161,6 +175,11 @@ class Sentence {
         
         let lastEnd = 0;
         let match: RegExpExecArray | null;
+
+        // Add extra word separator to the sentence text in order to force an extra match for the last word
+        // (Adding '$' to the word separator regex to match the end of the string breaks everything, so as a 
+        //      workaround the extra separator is added)
+        sentenceText += ' ';
         while ((match = extension.wordSeparatorRegex.exec(sentenceText))) {
             const matched: RegExpExecArray = match;
 
@@ -192,8 +211,9 @@ class Sentence {
             }
 
             // Move the last end index forward to the end of the sentence separator
-            lastEnd = matched.index + matched[0].length + 1;
+            lastEnd = matched.index + matched[0].length;
         }
+
         this.ranks = new Ranks(this.allWords);
     }
 }
@@ -221,6 +241,11 @@ class Paragraph {
         
         let lastEnd = 0;
         let match: RegExpExecArray | null;
+        
+        // Add extra sentence separator to the sentence text in order to force an extra match for the last paragraph
+        // (Adding '$' to the sentence separator regex to match the end of the string breaks everything, so as a 
+        //      workaround the extra separator is added)
+        paragraphText += '!';
         while ((match = extension.sentenceSeparator.exec(paragraphText))) {
             const matched: RegExpExecArray = match;
 
@@ -250,7 +275,7 @@ class Paragraph {
             this.allWords.push(...sentence.allWords);
 
             // Move the last end index forward to the end of the sentence separator
-            lastEnd = matched.index + matched[0].length + 1;
+            lastEnd = matched.index + matched[0].length;
         }
         this.ranks = new Ranks(this.allWords);
     }
@@ -272,11 +297,16 @@ class VisibleData {
         const text = editor.document.getText();
         const visibleStart: number = editor.document.offsetAt(visible.start);
         const visibleEnd: number = editor.document.offsetAt(visible.end);
-        const visibleText = text.substring(visibleStart, visibleEnd);
+        let visibleText = text.substring(visibleStart, visibleEnd);
         
         // Iterate over every match of the 
         let lastEnd = 0;
         let match: RegExpExecArray | null;
+
+        // Add extra paragraph separator to the para text in order to force an extra match for the last paragraph
+        // (Adding '$' to the para separator regex to match the end of the string breaks everything, so as a 
+        //      workaround the extra separator is added)
+        visibleText += '\n\n';
         while ((match = extension.paragraphSeparator.exec(visibleText))) {
             const matched: RegExpExecArray = match;
 
@@ -306,7 +336,7 @@ class VisibleData {
             this.allWords.push(...paragraph.allWords);
 
             // Move the last end index forward to the end of the paragraph separator
-            lastEnd = matched.index + matched[0].length + 1;
+            lastEnd = matched.index + matched[0].length;
         }
         this.ranks = new Ranks(this.allWords);
 
@@ -338,8 +368,6 @@ export class Proximity implements Timed {
     }
 
     async update (editor: vscode.TextEditor): Promise<void> {
-
-        const fullText = editor.document.getText();
         for (const visible of editor.visibleRanges) {
             const visibleData = new VisibleData(editor, visible);
             const rated = Ranks.assignRatings(
@@ -348,42 +376,41 @@ export class Proximity implements Timed {
                 visibleData.paragraphs.map(p => p.sentences).flat()     // all sentences
             );
 
-            // if (!rated) 
+            if (!rated) continue;
             
-            
-
-
-
-
+            rated.forEach((r, index) => {
+                if (!r) return;
+                const decorator = Proximity.decorators[index];
+                this.updateDecorationsForWord(editor, r, decorator);
+            });
         }
-
-
-        throw new Error('Method not implemented.');
     }
 
     private static commonDecorations = {
-		borderBottomWidth: '3px',
-        borderBottomStyle: 'dotted',
-		borderStyle: 'solid',
-		overviewRulerColor: 'blue',
+		borderWidth: '3px',
+        borderStyle: 'dotted',
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
 	};
-    
+
     private static primary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
-        borderColor: 'rgb(161, 8, 8, 0.3)',
+        borderColor: 'hsla(279, 60%, 36%, 1)',
+		overviewRulerColor: 'hsla(279, 60%, 36%, 1)',
     });
     private static secondary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
-        borderColor: 'rgb(161, 8, 8, 0.3)',
+        borderColor: 'hsla(218, 42%, 55%, 1)',
+		overviewRulerColor: 'hsla(218, 42%, 55%, 1)',
     });
     private static tertiary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
-        borderColor: 'rgb(161, 8, 8, 0.3)',
+        borderColor: 'hsla(161, 82%, 27%, 1)',
+		overviewRulerColor: 'hsla(161, 82%, 27%, 1)',
     });
     private static fourth: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
-        borderColor: 'rgb(161, 8, 8, 0.3)',
+        borderColor: 'hsla(51, 82%, 60%, 1)',
+		overviewRulerColor: 'hsla(51, 82%, 60%, 1)',
     });
 
     private static decorators: vscode.TextEditorDecorationType[] = [
