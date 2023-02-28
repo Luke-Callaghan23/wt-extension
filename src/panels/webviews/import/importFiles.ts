@@ -477,7 +477,8 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
 
     // Assign modified dates to each of the doc names provided by called
     for (const docName of docNames) {
-        const stat = await fs.promises.stat(`${extension.rootPath}/${docName}`);
+        const doc = vscode.Uri.file(`${extension.rootPath}/${docName}`);
+        const stat = await fs.promises.stat(doc.fsPath);
         docLastModified.push({
             name: docName,
             lastModified: stat.mtime.valueOf()

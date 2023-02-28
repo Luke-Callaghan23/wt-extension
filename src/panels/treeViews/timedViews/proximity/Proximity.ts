@@ -327,6 +327,16 @@ export class Proximity implements Timed {
         this.enabled = true;
     }
 
+
+    async updateDecorationsForWord (
+        editor: vscode.TextEditor, 
+        word: Word[],
+        decorations: vscode.TextEditorDecorationType
+    ) {
+        const wordRanges: vscode.Range[] = word.map(({ range }) => range)
+        editor.setDecorations(decorations, wordRanges);
+    }
+
     async update (editor: vscode.TextEditor): Promise<void> {
 
         const fullText = editor.document.getText();
@@ -338,7 +348,10 @@ export class Proximity implements Timed {
                 visibleData.paragraphs.map(p => p.sentences).flat()     // all sentences
             );
 
-            if (!rated) 
+            // if (!rated) 
+            
+            
+
 
 
 
@@ -356,19 +369,19 @@ export class Proximity implements Timed {
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
 	};
     
-    private static primary = vscode.window.createTextEditorDecorationType({
+    private static primary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
         borderColor: 'rgb(161, 8, 8, 0.3)',
     });
-    private static secondary = vscode.window.createTextEditorDecorationType({
+    private static secondary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
         borderColor: 'rgb(161, 8, 8, 0.3)',
     });
-    private static tertiary = vscode.window.createTextEditorDecorationType({
+    private static tertiary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
         borderColor: 'rgb(161, 8, 8, 0.3)',
     });
-    private static fourth = vscode.window.createTextEditorDecorationType({
+    private static fourth: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
         borderColor: 'rgb(161, 8, 8, 0.3)',
     });
