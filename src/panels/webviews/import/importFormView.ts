@@ -111,9 +111,8 @@ export class ImportForm {
 		const fileUri = (fp: string) => {
 			const fragments = fp.split('/');
 	
-			return vscode.Uri.file(
-				path.join(_extensionUri, ...fragments)
-			);
+			const uri = vscode.Uri.file(_extensionUri)
+			return vscode.Uri.joinPath(uri, ...fragments);
 		};
 
 		const assetUri = (fp: string) => {

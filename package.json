@@ -102,14 +102,12 @@
 			{
 				"command": "wt.outline.moveDown",
 				"title": "Writing Tool: Move Resource Down",
-				"icon": "$(diff-editor-next-change)",
-				"enablement": "false"
+				"icon": "$(diff-editor-next-change)"
 			},
 			{
 				"command": "wt.outline.moveUp",
 				"title": "Writing Tool: Move Resource Up",
-				"icon": "$(diff-editor-previous-change)",
-				"enablement": "false"
+				"icon": "$(diff-editor-previous-change)"
 			},
 			{
 				"command": "wt.outline.help",
@@ -118,13 +116,11 @@
 			},
 			{
 				"command": "wt.outline.openFile",
-				"title": "Writing Tool: Open Fragment From Outline",
-				"enablement": "false"
+				"title": "Writing Tool: Open Fragment From Outline"
 			},
 			{
 				"command": "wt.outline.renameFile",
-				"title": "Writing Tool: Rename Resource",
-				"enablement": "false"
+				"title": "Writing Tool: Rename Resource"
 			},
 			{
 				"command": "wt.outline.newSnip",
@@ -143,8 +139,7 @@
 			},
 			{
 				"command": "wt.outline.removeResource",
-				"title": "Writing Tool: Delete Resource in Outline",
-				"enablement": "false"
+				"title": "Writing Tool: Delete Resource in Outline"
 			},
 			{
 				"command": "wt.import.fileExplorer.refresh",
@@ -158,13 +153,11 @@
 			},
 			{
 				"command": "wt.import.fileExplorer.importFile",
-				"title": "Writing Tool: Import Selected File",
-				"enablement": "false"
+				"title": "Writing Tool: Import Selected File"
 			},
 			{
 				"command": "wt.import.fileExplorer.removeResource",
-				"title": "Writing Tool: Remove File from Imports",
-				"enablement": "false"
+				"title": "Writing Tool: Remove File from Imports"
 			},
 			{
 				"command": "wt.import.fileExplorer.help",
@@ -179,14 +172,12 @@
 			{
 				"command": "wt.import.fileExplorer.filter",
 				"title": "Writing Tool: Filter Selected Resource from Imports Folder",
-				"icon": "$(close)",
-				"enablement": "false"
+				"icon": "$(close)"
 			},
 			{
 				"command": "wt.import.fileExplorer.defilter",
 				"title": "Writing Tool: Un-Filter Selected Resource from Imports Folder",
-				"icon": "$(check)",
-				"enablement": "false"
+				"icon": "$(check)"
 			},
 			{
 				"command": "wt.import.fileExplorer.openFileExplorer",
@@ -247,13 +238,11 @@
 			},
 			{
 				"command": "wt.wordWatcher.disableWatchedWord",
-				"title": "Writing Tool: Disable Watched Word",
-				"enablement": "false"
+				"title": "Writing Tool: Disable Watched Word"
 			},
 			{
 				"command": "wt.wordWatcher.enableWatchedWord",
-				"title": "Writing Tool: Enable Watched Word",
-				"enablement": "false"
+				"title": "Writing Tool: Enable Watched Word"
 			},
 			{
 				"command": "wt.wordWatcher.newWatchedWord",
@@ -267,18 +256,15 @@
 			},
 			{
 				"command": "wt.wordWatcher.deleteWord",
-				"title": "Writing Tool: Delete Watched Word",
-				"enablement": "false"
+				"title": "Writing Tool: Delete Watched Word"
 			},
 			{
 				"command": "wt.wordWatcher.deleteUnwatchedWord",
-				"title": "Writing Tool: Delete Unwatched Word",
-				"enablement": "false"
+				"title": "Writing Tool: Delete Unwatched Word"
 			},
 			{
 				"command": "wt.wordWatcher.jumpNextInstanceOf",
-				"title": "Writing Tool: Jump to Next Instance of Watched Word",
-				"enablement": "false"
+				"title": "Writing Tool: Jump to Next Instance of Watched Word"
 			},
 
 

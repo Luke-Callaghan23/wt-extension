@@ -74,7 +74,7 @@ async function initializeSnips (
 
 async function initializeChapters (
     chapters: ChaptersRecord,
-    parentUri: vscode,
+    parentUri: vscode.Uri,
 ) {
     const configMap: { [ index: string ]: ConfigFileInfo } = {};
     let ordering: number = 0;
@@ -85,7 +85,7 @@ async function initializeChapters (
         // Create the folder for the chapter
         const chapterFileName = getUsableFileName('chapter');
         const chapterFolderUri = vscode.Uri.joinPath(parentUri, chapterFileName);
-        await vscode.worskpace.fs.createDirectory(chapterFolderUri);
+        await vscode.workspace.fs.createDirectory(chapterFolderUri);
 
         // Insert config info for this chapter
         const chapterConfig = {
@@ -139,8 +139,8 @@ export async function importWorkspace (context: vscode.ExtensionContext): Promis
 
     // Read the .iwe file form the disk
     const uri = uris[0];
-    const iweRecordBuffer: Buffer = await vscode.workspace.fs.readFile(uri);
-    const iweRecord: WorkspaceExport = JSON.parse(iweRecordBuffer.toString());
+    const iweRecordBuffer: Uint8Array = await vscode.workspace.fs.readFile(uri);
+    const iweRecord: WorkspaceExport = JSON.parse(extension.decoder.decode(iweRecordBuffer));
 
     // Create the workspace
     const workspace = await createWorkspace(context, iweRecord.config);

@@ -28,46 +28,47 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	constructor (
 		protected context: vscode.ExtensionContext, 
-		private viewName: string
+		private viewName: string,
 	) {
+		this.view = {} as vscode.TreeView<T>;
 		this.tree = {} as T;
 		this.uriToVisibility = {};
-		this.initializeTree().then((tree) => {
-			this.tree = tree;
+	}
 
-			const uriMap: { [index: string]: boolean } | undefined = context.workspaceState.get(`${this.viewName}.collapseState`);
-			if (uriMap) {
-				this.uriToVisibility = uriMap;
-			}
-			else { 
-				this.uriToVisibility = {};
-			}
-	
-			const view = vscode.window.createTreeView(viewName, { 
-				treeDataProvider: this, 
-				showCollapseAll: true, 
-				canSelectMany: true, 
-				dragAndDropController: this
-			});
-			this.view = view;
-			context.subscriptions.push(view);
-	
-			// Functions for storing the state of a uri's collapse/expands whenever a tree is closed 
-			//		or opened
-			view.onDidExpandElement((event: vscode.TreeViewExpansionEvent<T>) => {
-				const expandedElementUri = event.element.getUri();
-				this.uriToVisibility[expandedElementUri.fsPath] = true;
-				// Also save the state of all collapse and expands to workspace context state
-				context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
-			});
-	
-			view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
-				const collapsedElementUri = event.element.getUri();
-				this.uriToVisibility[collapsedElementUri.fsPath] = false;			
-				context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
-			});	
+	abstract init(): Promise<void>;
+	async _init (): Promise<void> {
+		this.tree = await this.initializeTree();
+		const uriMap: { [index: string]: boolean } | undefined = this.context.workspaceState.get(`${this.viewName}.collapseState`);
+		if (uriMap) {
+			this.uriToVisibility = uriMap;
+		}
+		else { 
+			this.uriToVisibility = {};
+		}
+
+		const view = vscode.window.createTreeView(this.viewName, { 
+			treeDataProvider: this, 
+			showCollapseAll: true, 
+			canSelectMany: true, 
+			dragAndDropController: this
+		});
+		this.view = view;
+		this.context.subscriptions.push(view);
+
+		// Functions for storing the state of a uri's collapse/expands whenever a tree is closed 
+		//		or opened
+		view.onDidExpandElement((event: vscode.TreeViewExpansionEvent<T>) => {
+			const expandedElementUri = event.element.getUri();
+			this.uriToVisibility[expandedElementUri.fsPath] = true;
+			// Also save the state of all collapse and expands to workspace context state
+			this.context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
 		});
 
+		view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
+			const collapsedElementUri = event.element.getUri();
+			this.uriToVisibility[collapsedElementUri.fsPath] = false;			
+			this.context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
+		});
 	}
 
 	getPackageItems(): { [index: string]: any } {

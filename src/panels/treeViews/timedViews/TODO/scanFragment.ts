@@ -1,4 +1,5 @@
 /* eslint-disable curly */
+import * as extension from './../../../../extension';
 import * as vscode from 'vscode';
 import { FragmentData } from './TODONode';
 import { Validated, TODO, todo } from './TODOsView';
@@ -14,7 +15,9 @@ export async function scanFragment(uri: vscode.Uri, fragmentNode: FragmentData):
     const unfinishedTodoStack: IncompleteTODO[] = [];
     
     // Read the fragment file and split on newlines
-    const fragmentStream = vscode.workspace.fs.readFile(uri).split(/\r?\n/);
+    const fragmentBuffer = await vscode.workspace.fs.readFile(uri);
+    const fragmentDecoded = extension.decoder.decode(fragmentBuffer);
+    const fragmentStream = fragmentDecoded.split(/\r?\n/);
 
     // Scan over every row and column of the file
     for (let row = 0; row < fragmentStream.length; row++) {

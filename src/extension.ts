@@ -17,6 +17,8 @@ import { packageForExport } from './packageable';
 import { TimedView } from './panels/treeViews/timedViews/timedView';
 import { Proximity } from './panels/treeViews/timedViews/proximity/Proximity';
 
+export const decoder = new TextDecoder();
+export const encoder = new TextEncoder();
 export let rootPath: vscode.Uri;
 export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
 export const wordSeparatorRegex = new RegExp(wordSeparator.split('|')[1], 'g');
@@ -25,12 +27,14 @@ export const paragraphSeparator: RegExp = /\n\n/g;
 
 // To be called whenever a workspace is successfully loaded
 // Loads all the content for all the views for the wt extension
-function loadExtensionWorkspace (context: vscode.ExtensionContext, workspace: Workspace) {
+async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspace: Workspace): Promise<void> {
 	try {
 		const outline = new OutlineView(context, workspace);				// wt.outline
+		await outline.init();
 		const importFS = new ImportFileSystemView(context, workspace);		// wt.import.fileSystem
 		const synonyms = new SynonymViewProvider(context, workspace);		// wt.synonyms
 		const todo = new TODOsView(context, workspace);						// wt.todo
+		await todo.init();
 		const wordWatcher = new WordWatcher(context, workspace);			// wt.wordWatcher
 		const proximity = new Proximity(context, workspace);
 	

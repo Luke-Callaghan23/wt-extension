@@ -1,13 +1,11 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as console from '../../../../vsconsole';
-import * as fsFunctions from '../../fileSystem/fileSystemProviderFunctions';
 import { Workspace } from '../../../../workspace/workspace';
 import { TODOData, TODONode } from './TODONode';
 import { OutlineTreeProvider } from '../../outlineTreeProvider';
 import { InitializeNode, initializeOutline } from '../../initialize';
 import { NodeTypes } from '../../fsNodes';
-import { FileSystem } from '../../fileSystem/fileSystem';
 import { Timed } from '../timedView';
 
 export type TODO = {
@@ -48,8 +46,7 @@ export function getTODONodes (fragmentUri: string): TODONode[] {
 	return todoNodes[fragmentUri];
 }
 
-export class TODOsView extends OutlineTreeProvider<TODONode> 
-	implements vscode.FileSystemProvider, FileSystem, Timed {
+export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 
 	//#region outline tree provider
 	disposables: vscode.Disposable[] = [];
@@ -58,19 +55,9 @@ export class TODOsView extends OutlineTreeProvider<TODONode>
         return initializeOutline<TODONode>(init);
     }
 
-    // File system functions
-	watch = fsFunctions.watch;
-	stat = fsFunctions.stat;
-	readDirectory = fsFunctions.readDirectory;
-	createDirectory = fsFunctions.createDirectory;
-	readFile = fsFunctions.readFile;
-	writeFile = fsFunctions.writeFile;
-	delete = fsFunctions.deleteFile;
-	rename = fsFunctions.renameFile;
-
     // Overriding the parent getTreeItem method to add FS API to it
-	getTreeItem(element: TODONode): vscode.TreeItem {
-		const treeItem = super.getTreeItem(element);
+	async getTreeItem(element: TODONode): Promise<vscode.TreeItem> {
+		const treeItem = await super.getTreeItem(element);
 		if (element.data.ids.type === 'fragment') {
 			if (element.data.ids.internal.startsWith('dummy')) {
 				// Fragments with an internal id of 'dummy' are TODO nodes
@@ -126,16 +113,17 @@ export class TODOsView extends OutlineTreeProvider<TODONode>
 		protected workspace: Workspace
     ) {
         super(context, 'wt.todo');
-        this.registerCommands();
-
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
-		
-		// Will be handled by TimedView -- set to true to shut the compiler up
+	}
+
+	async init (): Promise<void> {
+		await this._init();
+		this.registerCommands();
 		this.enabled = true;
 	}
 
 	//#region Timed methods
-	enabled: boolean;
+	enabled: boolean = false;
 	async update (editor: vscode.TextEditor): Promise<void> {
 		const document = editor.document;
 		

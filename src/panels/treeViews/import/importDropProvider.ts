@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Utils } from 'vscode-uri';
+import * as vscodeUris from 'vscode-uri';
 import { rootPath } from '../../../extension';
 import { Workspace } from '../../../workspace/workspace';
 import * as console from './../../../vsconsole';
@@ -37,7 +37,7 @@ export class ImportDocumentProvider implements vscode.DocumentDropEditProvider, 
         }
         else if (targ.type === vscode.FileType.File) {
             // If the drop point was a file, get the path of the directory that file lives in
-            dest = vscode.Uri.parse(Utils.dirname(targ.uri));
+            dest = <vscode.Uri>vscodeUris.Utils.dirname(<vscodeUris.URI>targ.uri);
         }
         else {
             throw new Error("not implemented");

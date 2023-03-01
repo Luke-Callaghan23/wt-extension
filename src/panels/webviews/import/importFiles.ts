@@ -205,7 +205,7 @@ async function readAndSplitDocx (split: SplitInfo, fileRelativePath: string): Pr
         // Use mammoth to convert the docx to html
         const fullFilePath = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
         const result = await mammoth.convertToHtml({
-            path: fullFilePath
+            path: fullFilePath.fsPath
         }, {
             ignoreEmptyParagraphs: false,
             includeDefaultStyleMap: true

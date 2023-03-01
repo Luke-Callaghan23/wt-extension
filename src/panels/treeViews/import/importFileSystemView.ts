@@ -2,8 +2,6 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri'
 import { Workspace } from '../../../workspace/workspace';
-import { FileSystem } from '../fileSystem/fileSystem';
-import * as fsFunctions from '../fileSystem/fileSystemProviderFunctions';
 import * as console from './../../../vsconsole';
 import { ImportForm } from '../../webviews/import/importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
@@ -14,19 +12,7 @@ export interface Entry {
 	type: vscode.FileType;
 }
 
-export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, FileSystem {
-    
-	// File system functions
-    watch = fsFunctions.watch;
-	stat = fsFunctions.stat;
-	readDirectory = fsFunctions.readDirectory;
-	createDirectory = fsFunctions.createDirectory;
-	readFile = fsFunctions.readFile;
-	writeFile = fsFunctions.writeFile;
-	delete = fsFunctions.deleteFile;
-	rename = fsFunctions.renameFile;
-    
-
+export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 	excludedFiles: string[];
 
 	// tree data provider
@@ -34,7 +20,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
 
 	async getChildren (element?: Entry): Promise<Entry[]> {
 		if (element) {
-			const children = await this.readDirectory(element.uri);
+			const children = await vscode.workspace.fs.readDirectory(element.uri);
 			const fsChildren: {
 				uri: vscode.Uri;
 				type: vscode.FileType;
@@ -71,7 +57,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
 				? vscode.TreeItemCollapsibleState.Expanded 
 				: vscode.TreeItemCollapsibleState.None
 		);
-		treeItem.label = vscodeUris.Utils.basename(treeItem.resourceUri);
+		treeItem.label = vscodeUris.Utils.basename(<vscodeUris.URI>treeItem.resourceUri);
 
 		const isRootFolder: boolean = treeItem.resourceUri?.fsPath === this.importFolder.fsPath;
 
@@ -161,10 +147,9 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
 		// Import each uri
 		// Don't need to await them, as none of the imports (should) rely on each other
 		await Promise.all(uris.map(uri => {
-			const uriPath = uri.fsPath;
 			const uriName = vscodeUris.Utils.basename(uri);
 			const dest = vscode.Uri.joinPath(this.importFolder, uriName);
-			return vscode.workspace.fs.copy(uriPath, dest);
+			return vscode.workspace.fs.copy(uri, dest);
 		}));
 		this.refresh();
 	}

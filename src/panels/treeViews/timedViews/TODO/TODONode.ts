@@ -136,7 +136,7 @@ export class TODONode extends TreeNode {
                 const fragmentNode: FragmentData = this.data as FragmentData;
 
                 // Scan the text of the fragment for all TODOs
-                const [ fragmentTODOs, count ]: [ Validated, number ] = await scanFragment(uri.fsPath, fragmentNode);
+                const [ fragmentTODOs, count ]: [ Validated, number ] = await scanFragment(uri, fragmentNode);
 
                 // Insert the new fragment TODOs into todo object
                 todo[uri.fsPath] = fragmentTODOs;

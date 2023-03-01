@@ -1,5 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
+import * as extension from './../../../extension';
 import * as console from '../../../vsconsole';
 import { ExportForm } from './exportFormView';
 
@@ -433,7 +434,7 @@ async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | Proc
         // Write the single file to the export folder
         const destinationFolderUri = fullyProcessed.exportUri;
         const destinationUri = vscode.Uri.joinPath(destinationFolderUri, `${fullyProcessed.fileName}.${ext}`);
-        await vscode.workspace.fs.writeFile(destinationUri, Buffer.from(fullyProcessed.fullData, 'utf-8'));
+        await vscode.workspace.fs.writeFile(destinationUri, extension.encoder.encode(fullyProcessed.fullData.toString()));
     }
     else {
         const destinationFolderUri = fullyProcessed.exportUri;
@@ -442,7 +443,7 @@ async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | Proc
             const chapterFileName = chapter.cleanedTitle;
             const chapterData = chapter.data;
             const fullChapterUri = vscode.Uri.joinPath(destinationFolderUri, `${chapterFileName}.${ext}`);
-            return vscode.workspace.fs.writeFile(fullChapterUri, Buffer.from(chapterData, 'utf-8'));
+            return vscode.workspace.fs.writeFile(fullChapterUri, extension.encoder.encode(chapterData.toString()));
         }));
     }
 }

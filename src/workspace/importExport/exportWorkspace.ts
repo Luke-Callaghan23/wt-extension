@@ -1,5 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
+import * as extension from './../../extension';
 import * as console from '../../vsconsole';
 import { Config, Workspace } from '../workspace';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../panels/treeViews/outline/outlineNodes';
@@ -13,7 +14,7 @@ async function recordFragmentContainer (node: (ChapterNode | SnipNode)): Promise
     fragments.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
 
     // Read all the fragments from dist
-    const fragmentBuffers: Buffer[] = await Promise.all(fragments.map(fragment => {
+    const fragmentBuffers: Uint8Array[] = await Promise.all(fragments.map(fragment => {
         return vscode.workspace.fs.readFile(fragment.getUri());
     }));
 
@@ -24,7 +25,7 @@ async function recordFragmentContainer (node: (ChapterNode | SnipNode)): Promise
         const markdown = fragmentBuffers[i];
         record.push({
             title: fragment.data.ids.display,
-            markdown: markdown.toString()
+            markdown: extension.decoder.decode(markdown)
         });
     }
 

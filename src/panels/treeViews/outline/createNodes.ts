@@ -200,7 +200,7 @@ export async function newSnip (
     // Create the snip container
     const snipUri = vscode.Uri.joinPath(parentDirUri, snipContainerFileName);
     try {
-        await vscode.worspace.fs.createDirectory(snipUri);
+        await vscode.workspace.fs.createDirectory(snipUri);
     }
     catch (e) {
         vscode.window.showErrorMessage(`Error creating snip file: could not create snip container.  Error: ${e}.`);

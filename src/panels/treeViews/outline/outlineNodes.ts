@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import * as console from '../../../vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../outlineTreeProvider';
-import { ConfigFileInfo, folderMove, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help';
+import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help';
 import { OutlineView } from './outlineView';
 import * as fsNodes from '../fsNodes';
 import * as extension from '../../../extension';

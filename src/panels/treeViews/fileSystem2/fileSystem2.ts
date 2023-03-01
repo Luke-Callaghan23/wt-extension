@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as fsFunctions from './fileSystemProviderFunctions';
 
 export abstract class FileSystem implements vscode.FileSystemProvider {
     

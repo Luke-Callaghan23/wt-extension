@@ -6,32 +6,20 @@ import * as vscode from 'vscode';
 import { InitializeNode, initializeOutline } from "../initialize";
 import { OutlineNode, ContainerNode, RootNode } from "./outlineNodes";
 import { OutlineTreeProvider } from "../outlineTreeProvider";
-import * as fsFunctions from '../fileSystem/fileSystemProviderFunctions';
 import * as reorderFunctions from './reorderNodes';
 import * as removeFunctions from './removeNodes';
 import * as createFunctions from './createNodes';
 import * as renameFunctions from './renameNodes';
 import { Workspace } from '../../../workspace/workspace';
 import { NodeTypes } from '../fsNodes';
-import { FileSystem } from '../fileSystem/fileSystem';
 import * as console from './../../../vsconsole';
 
-export class OutlineView extends OutlineTreeProvider<OutlineNode> implements vscode.FileSystemProvider, FileSystem {
+export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 
     async initializeTree(): Promise<OutlineNode> {
 		const init: InitializeNode<OutlineNode> = (data: NodeTypes<OutlineNode>) => new OutlineNode(data);
         return initializeOutline(init);
     }
-
-    // File system functions
-    watch = fsFunctions.watch;
-	stat = fsFunctions.stat;
-	readDirectory = fsFunctions.readDirectory;
-	createDirectory = fsFunctions.createDirectory;
-	readFile = fsFunctions.readFile;
-	writeFile = fsFunctions.writeFile;
-	delete = fsFunctions.deleteFile;
-	rename = fsFunctions.renameFile;
 
     // Re ordering nodes in the tree
 	moveUp = reorderFunctions.moveUp;
@@ -75,7 +63,6 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements vsc
 		
 		vscode.commands.registerCommand("wt.outline.removeResource", (resource) => this.removeResource(resource));
 
-
 		vscode.commands.registerCommand("wt.outline.collectChapterUris", () => {
 			const root: RootNode = this.tree.data as RootNode;
 			const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
@@ -97,8 +84,8 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements vsc
     }
 
     // Overriding the parent getTreeItem method to add FS API to it
-	getTreeItem (element: OutlineNode): vscode.TreeItem {
-		const treeItem = super.getTreeItem(element);
+	async getTreeItem (element: OutlineNode): Promise<vscode.TreeItem> {
+		const treeItem = await super.getTreeItem(element);
 		if (element.data.ids.type === 'fragment') {
 			treeItem.command = { 
 				command: 'wt.outline.openFile', 
@@ -119,7 +106,6 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements vsc
 			? 'edit'
 			: 'symbol-folder';
 
-			
 		treeItem.iconPath = new vscode.ThemeIcon(icon);
 		return treeItem;
 	}
@@ -135,7 +121,12 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements vsc
 		protected workspace: Workspace
     ) {
         super(context, 'wt.outline');
-        this.registerCommands();
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+	}
+
+
+	async init (): Promise<void> {
+		await this._init();
+		this.registerCommands();
 	}
 }

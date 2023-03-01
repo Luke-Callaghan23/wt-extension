@@ -133,7 +133,7 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
                 }
 
                 const logItem = {
-                    oldUri: removedNodeUri,
+                    oldUri: removedNodeUri.fsPath,
                     deleteTimestamp: timestamp,
                     resourceType: target.data.ids.type,
                     recycleBinName: recycleBinName
