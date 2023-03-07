@@ -91,106 +91,116 @@
 		"commands": [
 			{
 				"command": "wt.createWorkspace",
-				"title": "Create"
+				"title": "Create",
+				"enablement": "!wt.valid"
 			},
 			{
 				"command": "wt.outline.refresh",
-				"title": "Refresh",
+				"title": "Writing Tool: Refresh Outline View",
 				"icon": "$(refresh)"
 			},
 			{
 				"command": "wt.outline.moveDown",
-				"title": "Move Down",
-				"icon": "$(diff-editor-next-change)"
+				"title": "Writing Tool: Move Resource Down",
+				"icon": "$(diff-editor-next-change)",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.outline.moveUp",
-				"title": "Move Up",
-				"icon": "$(diff-editor-previous-change)"
+				"title": "Writing Tool: Move Resource Up",
+				"icon": "$(diff-editor-previous-change)",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.outline.help",
-				"title": "Outline Help",
+				"title": "Writing Tool: Outline View Help",
 				"icon": "$(question)"
 			},
 			{
 				"command": "wt.outline.openFile",
-				"title": "Open File"
+				"title": "Writing Tool: Open Fragment From Outline",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.outline.renameFile",
-				"title": "Rename File"
+				"title": "Writing Tool: Rename Resource",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.outline.newSnip",
-				"title": "New Snip",
+				"title": "Writing Tool: Create New Snip",
 				"icon": "$(output-view-icon)"
 			},
 			{
 				"command": "wt.outline.newChapter",
-				"title": "New Chapter",
+				"title": "Writing Tool: Create New Chapter",
 				"icon": "$(open-editors-view-icon)"
 			},
 			{
 				"command": "wt.outline.newFragment",
-				"title": "New Fragment",
+				"title": "Writing Tool: Create New Fragment",
 				"icon": "$(search-new-editor)"
 			},
 			{
 				"command": "wt.outline.removeResource",
-				"title": "Delete"
+				"title": "Writing Tool: Delete Resource in Outline",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.import.fileExplorer.refresh",
-				"title": "Refresh",
+				"title": "Writing Tool: Refresh Import File Explorer",
 				"icon": "$(refresh)"
 			},
 			{
 				"command": "wt.import.fileExplorer.importFiles",
-				"title": "Import All Files",
+				"title": "Writing Tool: Import All Files",
 				"icon": "$(ports-forward-icon)"
 			},
 			{
 				"command": "wt.import.fileExplorer.importFile",
-				"title": "Import File"
+				"title": "Writing Tool: Import Selected File",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.import.fileExplorer.removeResource",
-				"title": "Delete"
+				"title": "Writing Tool: Remove File from Imports",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.import.fileExplorer.help",
-				"title": "Help",
+				"title": "Writing Tool: Import File Explorer Help",
 				"icon": "$(question)"
 			},
 			{
 				"command": "wt.import.fileExplorer.openImportWindow",
-				"title": "Writing Tool: Import Files",
+				"title": "Writing Tool: Open Import Folder",
 				"icon": "$(folder-active)"
 			},
 			{
 				"command": "wt.import.fileExplorer.filter",
-				"title": "Filter",
-				"icon": "$(close)"
+				"title": "Writing Tool: Filter Selected Resource from Imports Folder",
+				"icon": "$(close)",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.import.fileExplorer.defilter",
-				"title": "Add",
-				"icon": "$(check)"
+				"title": "Writing Tool: Un-Filter Selected Resource from Imports Folder",
+				"icon": "$(check)",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.import.fileExplorer.openFileExplorer",
-				"title": "Open File Explorer",
+				"title": "Writing Tool: Open File Explorer",
 				"icon": "$(file-directory)"
 			},
 			{
 				"command": "wt.todo.refresh",
-				"title": "Refresh",
+				"title": "Writing Tool: Refresh TODOs View",
 				"icon": "$(refresh)"
 			},
 			{
 				"command": "wt.todo.help",
-				"title": "Help",
+				"title": "Writing Tool: TODOs View Help",
 				"icon": "$(question)"
 			},
 
@@ -232,88 +242,91 @@
 
 			{
 				"command": "wt.wordWatcher.help",
-				"title": "Help",
+				"title": "Writing Tool: Word Watcher View Help",
 				"icon": "$(question)"
 			},
 			{
 				"command": "wt.wordWatcher.disableWatchedWord",
-				"title": "Disable"
+				"title": "Writing Tool: Disable Watched Word",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.wordWatcher.enableWatchedWord",
-				"title": "Enable"
+				"title": "Writing Tool: Enable Watched Word",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.wordWatcher.newWatchedWord",
-				"title": "Watch out for a new Word",
+				"title": "Writing Tool: Watch New Word",
 				"icon": "$(plus)"
 			},
 			{
 				"command": "wt.wordWatcher.newUnwatchedWord",
-				"title": "Stop watching a word",
+				"title": "Writing Tool: Prevent Watching Word",
 				"icon": "$(dash)"
 			},
 			{
 				"command": "wt.wordWatcher.deleteWord",
-				"title": "Delete Word"
+				"title": "Writing Tool: Delete Watched Word",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.wordWatcher.deleteUnwatchedWord",
-				"title": "Delete Unwatched Word"
+				"title": "Writing Tool: Delete Unwatched Word",
+				"enablement": "false"
 			},
 			{
 				"command": "wt.wordWatcher.jumpNextInstanceOf",
-				"title": "Jump to Next Instance of Word"
+				"title": "Writing Tool: Jump to Next Instance of Watched Word",
+				"enablement": "false"
 			},
-
-
-
-
 
 
 
 			{
 				"command": "wt.synonyms.help",
-				"title": "Synonyms Help",
+				"title": "Writing Tool: Synonyms View Help",
 				"icon": "$(question)"
 			},
 			{
 				"command": "wt.synonyms.searchWord",
-				"title": "Synonyms Search"
+				"title": "Writing Tool: Search Synonym"
 			},
+
+
 			{
 				"command": "wt.editor.remove",
-				"title": "Clear Selection",
+				"title": "Writing Tool: Clear Selection",
 				"icon": "$(trash)"
 			},
 			{
 				"command": "wt.editor.save",
-				"title": "Commit File (to local git)",
+				"title": "Writing Tool: Commit File (to local git)",
 				"icon": "$(save)"
 			},
 			{
 				"command": "wt.editor.saveAll",
-				"title": "Commit All Files (to local git)",
+				"title": "Writing Tool: Commit All Files (to local git)",
 				"icon": "$(save-all)"
 			},
 			{
 				"command": "wt.editor.italisize",
-				"title": "Italisize",
+				"title": "Writing Tool: Italisize Selection",
 				"icon": "$(italic)"
 			},
 			{
 				"command": "wt.editor.bold",
-				"title": "Bold",
+				"title": "Writing Tool: Bold Selection",
 				"icon": "$(bold)"
 			},
 			{
 				"command": "wt.editor.strikethrough",
-				"title": "Strikethrough",
+				"title": "Writing Tool: Strike Selection",
 				"icon": "$(zap)"
 			},
 			{
 				"command": "wt.editor.header",
-				"title": "Header",
+				"title": "Writing Tool: Header",
 				"icon": "$(text-size)"
 			}
 		],
