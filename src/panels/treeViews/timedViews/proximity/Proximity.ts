@@ -34,7 +34,7 @@ class Ranks {
     }
 
     // Modifiers to give higher precedence to 'closer' words
-    static readonly sentenceModifier = 1000.0;
+    static readonly sentenceModifier = 10.0;
     static readonly paragraphModifier = 1.5;
     static readonly fullViewModifier = 0.75;
 
@@ -66,12 +66,11 @@ class Ranks {
         //      egregious than 5 times in the same paragraph, etc.
         const rated: ([ number, Word[] ] | null)[] = fullView.uniqueWords.map(target => {
             // Assign paragraph ratings for this word
-            const paraRaw: number = paragraphs.reduce((acc, paragraph) => {
+            const para: number = paragraphs.reduce((acc, paragraph) => {
                 const wordInstances: Word[] | undefined = paragraph.ranks.rankedWords[target];
                 if (wordInstances === undefined) return acc;
-                return acc + wordInstances.length;
+                return (acc + wordInstances.length - 1) * this.paragraphModifier;
             }, 0);
-            const para = paraRaw * this.paragraphModifier;
 
             // Assign sentence ratings for this word
             const sent: number = sentences.reduce((acc, sentence) => {

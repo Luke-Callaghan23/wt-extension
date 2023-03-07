@@ -37,9 +37,9 @@
                 
                 outputIntoChapter: false,
                 outputSnipPath: '/data/snips/',
-                outputSnipName: 'Imported Snip',
+                outputSnipName: `${name} (Imported)`,
 
-                outputChapterName: 'Imported chapter',
+                outputChapterName: `${name} (Imported)`,
                 
                 shouldSplitFragments: false,
                 outerSplitRegex: '\\[{3,}\\]{3,}',
@@ -47,7 +47,7 @@
                 fragmentSplitRegex: '~{3,}',
             };
             if (chapterUris.length !== 0) {
-                allDocInfo[fullPath].outputChapterNamw = 'Imported chapter';
+                allDocInfo[fullPath].outputChapterName = `${name} (Imported)`;
                 allDocInfo[fullPath].outputChapter = chapterUris[0][0];
             }
             docs.push(`<vscode-option value="${fullPath}">${name} (${fullPath})</vscode-option>`);

@@ -575,7 +575,9 @@
 				],
 				"aliases": [
 					"writingTool",
-					"fragment"
+					"fragment",
+					"markdown",
+					"Markdown"
 				],
 				"configuration": "./language-configuration.json"
 			}
