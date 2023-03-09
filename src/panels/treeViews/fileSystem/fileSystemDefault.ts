@@ -1,9 +1,6 @@
 /* eslint-disable curly */
 
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as mkdirp from 'mkdirp';
-import * as rimraf from 'rimraf';
 
 export namespace _ {
 
@@ -49,6 +46,7 @@ export namespace _ {
 	export function normalizeNFC(items: string): string;
 	export function normalizeNFC(items: string[]): string[];
 	export function normalizeNFC(items: string | string[]): string | string[] {
+		throw new Error('Not implemented');
 		if (process.platform !== 'darwin') {
 			return items;
 		}
@@ -61,54 +59,59 @@ export namespace _ {
 	}
 
 	export function readdir(path: string): Promise<string[]> {
+		throw new Error('Not implemented');
 		return new Promise<string[]>((resolve, reject) => {
 			fs.readdir(path, (error, children) => handleResult(resolve, reject, error, normalizeNFC(children)));
 		});
 	}
 
 	export function stat(path: string): Promise<fs.Stats> {
+		throw new Error('Not implemented');
 		return new Promise<fs.Stats>((resolve, reject) => {
 			fs.stat(path, (error, stat) => handleResult(resolve, reject, error, stat));
 		});
 	}
 
 	export function readfile(path: string): Promise<Buffer> {
+		throw new Error('Not implemented');
 		return new Promise<Buffer>((resolve, reject) => {
 			fs.readFile(path, (error, buffer) => handleResult(resolve, reject, error, buffer));
 		});
 	}
 
 	export function writefile(path: string, content: Buffer): Promise<void> {
+		throw new Error('Not implemented');
 		return new Promise<void>((resolve, reject) => {
 			fs.writeFile(path, content, error => handleResult(resolve, reject, error, void 0));
 		});
 	}
 
 	export function exists(path: string): Promise<boolean> {
+		throw new Error('Not implemented');
 		return new Promise<boolean>((resolve, reject) => {
 			fs.exists(path, exists => handleResult(resolve, reject, null, exists));
 		});
 	}
 
 	export function rmrf(path: string): Promise<void> {
-		return new Promise<void>((resolve, reject) => {
-			rimraf(path, error => handleResult(resolve, reject, error, void 0));
-		});
+		throw new Error('Not implemented');
+		throw new Error('Not implemented')
 	}
 
 	export function mkdir(path: string): Promise<void> {
-		return new Promise<void>((resolve, reject) => {
-			mkdirp(path, error => handleResult(resolve, reject, error, void 0));
-		});
+		throw new Error('Not implemented');
+		throw new Error('Not implemented');
 	}
 
 	export function rename(oldPath: string, newPath: string): Promise<void> {
+		throw new Error('Not implemented');
 		return new Promise<void>((resolve, reject) => {
 			fs.rename(oldPath, newPath, error => handleResult(resolve, reject, error, void 0));
 		});
 	}
 
 	export function unlink(path: string): Promise<void> {
+		throw new Error('Not implemented');
 		return new Promise<void>((resolve, reject) => {
 			fs.unlink(path, error => handleResult(resolve, reject, error, void 0));
 		});

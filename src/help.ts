@@ -59,10 +59,9 @@ export function getLatestOrdering (configData: { [index: string]: ConfigFileInfo
     return max;
 }
 
-import * as fs from 'fs';
-export function readDotConfig (path: string): { [index: string]: ConfigFileInfo } | null {
+export async function readDotConfig (path: vscode.Uri): Promise<{ [index: string]: ConfigFileInfo } | null> {
     try {
-        const dotConfigJSON = fs.readFileSync(path).toString();
+        const dotConfigJSON = (await vscode.workspace.fs.readFile(path)).toString();
         const dotConfig: { [index: string]: ConfigFileInfo } = JSON.parse(dotConfigJSON);
         return dotConfig;
     }
@@ -72,10 +71,10 @@ export function readDotConfig (path: string): { [index: string]: ConfigFileInfo 
     }
 }
 
-export function writeDotConfig (path: string, dotConfig: { [index: string]: ConfigFileInfo }) {
+export async function writeDotConfig (path: vscode.Uri, dotConfig: { [index: string]: ConfigFileInfo }) {
     try {
         const dotConfigJSON = JSON.stringify(dotConfig);
-        fs.writeFileSync(path, dotConfigJSON);
+        await vscode.workspace.fs.writeFile(path, Buffer.from(dotConfigJSON, 'utf-8'));
     }
     catch (e) {
         vscode.window.showErrorMessage(`Error writing .config file '${path}': ${e}`);

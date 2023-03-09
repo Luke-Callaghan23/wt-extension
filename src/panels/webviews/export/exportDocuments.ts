@@ -2,7 +2,6 @@
 import * as vscode from 'vscode';
 import * as console from '../../../vsconsole';
 import { ExportForm } from './exportFormView';
-import * as fs from 'fs';
 
 // Converts md to html
 import * as showdown from 'showdown';
@@ -15,7 +14,6 @@ const HTMLToDOCX = require('html-to-docx');
 import { Workspace } from '../../../workspace/workspace';
 import { OutlineView } from '../../treeViews/outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../../treeViews/outline/outlineNodes';
-import { _ } from '../../treeViews/fileSystem/fileSystemDefault';
 import * as pdf from 'html-pdf';
 
 // Data provided by the export form webview
@@ -49,7 +47,7 @@ async function stitchFragments (node: ChapterNode, combineString: string | null)
         const fragmentUri = fragment.getUri();
         try {
             // Read the fragment markdown string
-            const fragmentBuffer = await fs.promises.readFile(fragmentUri.fsPath);
+            const fragmentBuffer = await vscode.workspace.fs.readFile(fragmentUri);
             fragmentsData.push(fragmentBuffer.toString());
         }
         catch (e) {
@@ -85,7 +83,7 @@ async function stitchFragments (node: ChapterNode, combineString: string | null)
 
 type SingleFile = {
     type: 'single',
-    exportFolder: string,
+    exportUri: vscode.Uri,
     fileName: string,
     fullData: string | Buffer
 };
@@ -97,7 +95,7 @@ type CleanedChapterInfo = {
 
 type MultipleFiles = {
     type: 'multiple',
-    outputFolderFullPath: string,
+    exportUri: vscode.Uri,
     cleanedChapterInfo: CleanedChapterInfo[]
 };
 
@@ -112,7 +110,7 @@ type ProcessedDocx = SingleFile | MultipleFiles;
 async function doProcessMd (
     workspace: Workspace,
     ex: ExportDocumentInfo, 
-    exportFolder: string,
+    exportUri: vscode.Uri,
     outline: OutlineView
 ): Promise<Processed> {
     // Since the export md is also used for exporting txt, the actual ext type of the output file is 
@@ -142,9 +140,9 @@ async function doProcessMd (
     if (ex.separateChapters) {
         // CASE: exports the markdown chapters into separate files
         // Use the specified file name from the export form to create a folder that will contain all exported chapters
-        const exportContainerPath = `${exportFolder}/${ex.fileName}`;
+        const exportContainerUri = vscode.Uri.joinPath(exportUri, ex.fileName);
         try {
-            await fs.promises.mkdir(exportContainerPath);
+            await vscode.workspace.fs.createDirectory(exportContainerUri);
         }
         catch (e) {
             vscode.window.showErrorMessage(`ERROR: an error ocurred when creating a container for exported chapters: ${e}`);
@@ -171,11 +169,11 @@ async function doProcessMd (
         });
 
         // Return the multiple files
-        return {
+        return <MultipleFiles>{
             type: 'multiple',
-            outputFolderFullPath: exportContainerPath,
+            exportUri: exportContainerUri,
             cleanedChapterInfo: cleanedChapters,
-        } as MultipleFiles;
+        };
     }
     else {
         // CASE: exports everything into a single file
@@ -187,9 +185,9 @@ async function doProcessMd (
             return `${acc}#${chapterInfo.title}\n\n~~\n\n${chapterInfo.markdown}\n\n\n\n\n\n\n\n`;
         }, '');
 
-        return {
+        return <SingleFile>{
             type: 'single',
-            exportFolder: exportFolder,
+            exportUri: exportUri,
             fileName: ex.fileName,
             fullData: fullFileMarkdown,
         } as SingleFile;
@@ -239,11 +237,11 @@ async function doProcessHtml (processedMd: ProcessedMd): Promise<ProcessedHtml> 
         </style>
         `);
 
-        return {
+        return <SingleFile>{
             type: 'single',
             fileName: singleMd.fileName,
             fullData: withFontSize,
-            exportFolder: singleMd.exportFolder
+            exportUri: singleMd.exportUri
         } as SingleFile;
     }
     else {
@@ -275,10 +273,10 @@ async function doProcessHtml (processedMd: ProcessedMd): Promise<ProcessedHtml> 
         });
 
         // Return new MultipleFiles with the converted html
-        return {
+        return <MultipleFiles>{
             type: "multiple",
             cleanedChapterInfo: convertedChapters,
-            outputFolderFullPath: multipleMd.outputFolderFullPath
+            exportUri: multipleMd.exportUri
         } as MultipleFiles;
     }
 }
@@ -309,12 +307,12 @@ async function doProcessPdf (processedHtml: ProcessedHtml): Promise<ProcessedPdf
         });
 
         // Return the single converted pdf
-        return {
+        return <SingleFile>{
             type: 'single',
-            exportFolder: processedHtml.exportFolder,
+            exportUri: processedHtml.exportUri,
             fileName: processedHtml.fileName,
             fullData: buffer
-        } as SingleFile;
+        };
     }
     else {
         const multipleHtml = processedHtml.cleanedChapterInfo;
@@ -355,10 +353,10 @@ async function doProcessPdf (processedHtml: ProcessedHtml): Promise<ProcessedPdf
         });
 
         // Return all converted pdfs and the output folder path
-        return {
+        return <MultipleFiles>{
             type: 'multiple',
             cleanedChapterInfo: convertedChapters,
-            outputFolderFullPath: processedHtml.outputFolderFullPath,
+            exportUri: processedHtml.exportUri,
         } as MultipleFiles;
     }
 }
@@ -382,12 +380,12 @@ async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDo
             fontSize: 22,
             orientation: 'portrait'
         });
-        return {
+        return <SingleFile>{
             type: 'single',
-            exportFolder: processedHtml.exportFolder,
+            exportUri: processedHtml.exportUri,
             fileName: processedHtml.fileName,
             fullData: docx
-        } as SingleFile;
+        };
     }
     else {
         const multipleHtml = processedHtml.cleanedChapterInfo;
@@ -421,11 +419,11 @@ async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDo
             });
         }
 
-        return {
+        return <MultipleFiles>{
             type: 'multiple',
-            outputFolderFullPath: processedHtml.outputFolderFullPath,
+            exportUri: processedHtml.exportUri,
             cleanedChapterInfo: convertedDocx
-        } as MultipleFiles;
+        };
     }
 }
 
@@ -433,18 +431,18 @@ async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDo
 async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | ProcessedDocx | ProcessedPdf, ext: string) {
     if (fullyProcessed.type === 'single') {
         // Write the single file to the export folder
-        const destinationFolder = fullyProcessed.exportFolder;
-        const destinationFile = `${destinationFolder}/${fullyProcessed.fileName}.${ext}`;
-        await fs.promises.writeFile(destinationFile, fullyProcessed.fullData);
+        const destinationFolderUri = fullyProcessed.exportUri;
+        const destinationUri = vscode.Uri.joinPath(destinationFolderUri, `${fullyProcessed.fileName}.${ext}`);
+        await vscode.workspace.fs.writeFile(destinationUri, Buffer.from(fullyProcessed.fullData, 'utf-8'));
     }
     else {
-        const destinationFolder = fullyProcessed.outputFolderFullPath;
+        const destinationFolderUri = fullyProcessed.exportUri;
         await Promise.all(fullyProcessed.cleanedChapterInfo.map(chapter => {
             // Write the chapter to the disk
             const chapterFileName = chapter.cleanedTitle;
             const chapterData = chapter.data;
-            const fullChapterPath = `${destinationFolder}/${chapterFileName}.${ext}`;
-            return fs.promises.writeFile(fullChapterPath, chapterData);
+            const fullChapterUri = vscode.Uri.joinPath(destinationFolderUri, `${chapterFileName}.${ext}`);
+            return vscode.workspace.fs.writeFile(fullChapterUri, Buffer.from(chapterData, 'utf-8'));
         }));
     }
 }
@@ -500,9 +498,9 @@ export async function handleDocumentExport (
 
     // Create the export folder
     const filename = `export (${dateString})`;
-    const filepath = `${workspace.exportFolder}/${filename}`;
+    const fileUri = vscode.Uri.joinPath(workspace.exportFolder, filename);
     try {
-        await fs.promises.mkdir(filepath);
+        await vscode.workspace.fs.createDirectory(fileUri);
     }
     catch (e) {
         vscode.window.showErrorMessage(`ERROR an error occurred while creating the export directory: ${e}`);
@@ -510,7 +508,7 @@ export async function handleDocumentExport (
     }
 
     // Process all the markdown in this work
-    const processed: Processed = await doProcessMd(workspace, exportInfo, filepath, outline);
+    const processed: Processed = await doProcessMd(workspace, exportInfo, fileUri, outline);
     if (!processed) {
         return;
     }
@@ -526,5 +524,5 @@ export async function handleDocumentExport (
         case 'pdf': exportFunction = exportPdf; break;
     }
     await exportFunction(success);
-    vscode.window.showInformationMessage(`Successfully exported files into '${filepath}'`);
+    vscode.window.showInformationMessage(`Successfully exported files into '${fileUri.fsPath}'`);
 }

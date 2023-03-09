@@ -1,6 +1,5 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as console from './../../vsconsole';
 import { createWorkspace, Workspace } from './../workspace';
 import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport } from './types';
@@ -10,7 +9,7 @@ import * as extension from './../../extension';
 
 async function initializeFragments (
     fragments: FragmentRecord, 
-    parentFullPath: string,         // assumes the caller has created this directory already
+    parentUri: vscode.Uri,         // assumes the caller has created this directory already
 ): Promise<void> {
     
     const configMap: { [ index: string ]: ConfigFileInfo } = {};
@@ -28,33 +27,33 @@ async function initializeFragments (
         configMap[fragmentFilename] = fileConfig;
 
         // Create the fragment file
-        const fragmentFullPath = `${parentFullPath}/${fragmentFilename}`;
+        const fragmentUri = vscode.Uri.joinPath(parentUri, fragmentFilename);
         const fragmentMarkdown = fragmentRecord.markdown;
         ordering++;
-        return fs.promises.writeFile(fragmentFullPath, fragmentMarkdown);
+        return vscode.workspace.fs.writeFile(fragmentUri, Buffer.from(fragmentMarkdown, 'utf-8'));
     }));
 
     // Save the config file in the same location as the fragments
-    const dotConfigFullPath = `${parentFullPath}/.config`;
+    const dotConfigUri = vscode.Uri.joinPath(parentUri, `.config`);
     const dotConfigJSON = JSON.stringify(configMap);
-    await fs.promises.writeFile(dotConfigFullPath, dotConfigJSON);
+    await vscode.workspace.fs.writeFile(dotConfigUri, Buffer.from(dotConfigJSON, 'utf-8'));
 }
 
 async function initializeSnips (
     snips: SnipsRecord,
-    parentFullPath: string,
+    parentUri: vscode.Uri,
 ): Promise<void> {
     
     const configMap: { [ index: string ]: ConfigFileInfo } = {};
     let ordering: number = 0;
 
     // Iterate over snip records
-    await Promise.all(snips.map(snipRecord => {
+    for (const snipRecord of snips) {
 
         // Create the folder for the snip
         const snipFileName = getUsableFileName('snip');
-        const snipFolderFullPath = `${parentFullPath}/${snipFileName}`;
-        fs.mkdirSync(snipFolderFullPath);
+        const snipFolderUri = vscode.Uri.joinPath(parentUri, snipFileName);
+        await vscode.workspace.fs.createDirectory(snipFolderUri);
 
         // Insert config info for this snip
         const snipConfig = {
@@ -64,18 +63,18 @@ async function initializeSnips (
         configMap[snipFileName] = snipConfig;
 
         // Create the fragments
-        return initializeFragments(snipRecord.fragments, snipFolderFullPath);
-    }));
+        return initializeFragments(snipRecord.fragments, snipFolderUri);
+    }
 
     // Save the config file in the same location as the snip folders
-    const dotConfigFullPath = `${parentFullPath}/.config`;
+    const dotConfigUri = vscode.Uri.joinPath(parentUri, `.config`);
     const dotConfigJSON = JSON.stringify(configMap);
-    await fs.promises.writeFile(dotConfigFullPath, dotConfigJSON);
+    await vscode.workspace.fs.writeFile(dotConfigUri, Buffer.from(dotConfigJSON, 'utf-8'));
 }
 
 async function initializeChapters (
     chapters: ChaptersRecord,
-    parentFullPath: string,
+    parentUri: vscode,
 ) {
     const configMap: { [ index: string ]: ConfigFileInfo } = {};
     let ordering: number = 0;
@@ -85,8 +84,8 @@ async function initializeChapters (
 
         // Create the folder for the chapter
         const chapterFileName = getUsableFileName('chapter');
-        const chapterFolderFullPath = `${parentFullPath}/${chapterFileName}`;
-        await fs.promises.mkdir(chapterFolderFullPath);
+        const chapterFolderUri = vscode.Uri.joinPath(parentUri, chapterFileName);
+        await vscode.worskpace.fs.createDirectory(chapterFolderUri);
 
         // Insert config info for this chapter
         const chapterConfig = {
@@ -96,17 +95,17 @@ async function initializeChapters (
         configMap[chapterFileName] = chapterConfig;
 
         // Create the snips
-        await initializeSnips(chapterRecord.snips, chapterFolderFullPath);
+        await initializeSnips(chapterRecord.snips, chapterFolderUri);
 
         // Create the fragments
-        await initializeFragments(chapterRecord.fragments, chapterFolderFullPath);
+        await initializeFragments(chapterRecord.fragments, chapterFolderUri);
     };
 
     
     // Save the config file in the same location as the chapters folder
-    const dotConfigFullPath = `${parentFullPath}/.config`;
+    const dotConfigUri = vscode.Uri.joinPath(parentUri, `.config`);
     const dotConfigJSON = JSON.stringify(configMap);
-    await fs.promises.writeFile(dotConfigFullPath, dotConfigJSON);
+    await vscode.workspace.fs.writeFile(dotConfigUri, Buffer.from(dotConfigJSON, 'utf-8'));
 }
 
 async function initializeContextItems (context: vscode.ExtensionContext, packageableItems: { [index: string]: any }) {
@@ -140,7 +139,7 @@ export async function importWorkspace (context: vscode.ExtensionContext): Promis
 
     // Read the .iwe file form the disk
     const uri = uris[0];
-    const iweRecordBuffer: Buffer = await fs.promises.readFile(uri.fsPath);
+    const iweRecordBuffer: Buffer = await vscode.workspace.fs.readFile(uri);
     const iweRecord: WorkspaceExport = JSON.parse(iweRecordBuffer.toString());
 
     // Create the workspace
@@ -149,7 +148,8 @@ export async function importWorkspace (context: vscode.ExtensionContext): Promis
 
     // Save the .wtconfig of the workspace
     const dotWtconfigJSON = JSON.stringify(iweRecord.config);
-    await fs.promises.writeFile(workspace.dotWtconfigPath, dotWtconfigJSON);
+    const dotConfigUri = workspace.dotWtconfigPath;
+    await vscode.workspace.fs.writeFile(dotConfigUri, Buffer.from(dotWtconfigJSON, 'utf-8'));
 
     // Create all chapters
     const chapterContainer = workspace.chaptersFolder;

@@ -1,6 +1,5 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig } from '../../../help';
 import { ChapterNode, OutlineNode, RootNode } from './outlineNodes';
 import { OutlineView } from './outlineView';
@@ -24,7 +23,7 @@ export async function newChapter (
     this: OutlineView, 
     _resource: OutlineNode | undefined, 
     options?: CreateOptions
-): Promise<string | null> {
+): Promise<vscode.Uri | null> {
     // Creating a new chapter is simple as new chapters are the "highest" level in the node structure
     // No need to look at parent ids or anything
     // Just create a new chapter folder with a new text fragment and an empty snips folder and we're all done
@@ -36,8 +35,8 @@ export async function newChapter (
     const chapterDataRelativePath = `${chapterDataContainerRelativePath}/${fileName}`;
 
     // Read the .config file for all chapters
-    const chapterDotConfigAbsPath = `${extension.rootPath}/${chapterDataContainerRelativePath}/.config`;
-    const chapterDotConfig = readDotConfig(chapterDotConfigAbsPath);
+    const chapterDotConfigUri = vscode.Uri.joinPath(extension.rootPath, chapterDataContainerRelativePath, `.config`);
+    const chapterDotConfig = await readDotConfig(chapterDotConfigUri);
     if (!chapterDotConfig) return null;
 
     // Create a generic chapter name for the new file
@@ -50,8 +49,7 @@ export async function newChapter (
         title: newChapterName,
         ordering: newChapterNumber
     };
-    writeDotConfig(chapterDotConfigAbsPath, chapterDotConfig);
-
+    await writeDotConfig(chapterDotConfigUri, chapterDotConfig);
 
     // New fragment's file name and path
     const fragmentFileName = getUsableFileName(`fragment`, true);
@@ -63,25 +61,26 @@ export async function newChapter (
     const snipsDotConfigRelativePath = `${snipsContainerRelativePath}/.config`;
     
     // Now, create all the files
-    const chapterContainerAbsPath = `${extension.rootPath}/${chapterDataRelativePath}`;
+    const chapterContainerUri = vscode.Uri.joinPath(extension.rootPath, chapterDataRelativePath);
     try {
         // Chapter container
-        await fs.promises.mkdir(chapterContainerAbsPath);
+        await vscode.workspace.fs.createDirectory(chapterContainerUri);
 
         // Snip container
-        const snipsContainerAbsPath = `${extension.rootPath}/${snipsContainerRelativePath}`;
-        await fs.promises.mkdir(snipsContainerAbsPath);
-
+        const snipsContainerUri = vscode.Uri.joinPath(extension.rootPath, snipsContainerRelativePath);
+        await vscode.workspace.fs.createDirectory(snipsContainerUri);
         
         // Write an empty .config object for this chapter's snips container
-        writeDotConfig(`${extension.rootPath}/${snipsDotConfigRelativePath}`, {});
+        const snipsUri = vscode.Uri.joinPath(extension.rootPath, snipsDotConfigRelativePath);
+        await writeDotConfig(snipsUri, {});
         
         const fragmentDotConfigRelativePath = `${chapterDataRelativePath}/.config`;
         let fragmentsDotConfig: { [index: string]: ConfigFileInfo } = {};
         // Create the fragment, as long as it is not being skipped
         if (!options?.skipFragment) {
             // Chapter fragment
-            await fs.promises.writeFile(`${extension.rootPath}/${fragmentRelativePath}`, "");
+            const chapterFragmentUri = vscode.Uri.joinPath(extension.rootPath, fragmentRelativePath);
+            await vscode.workspace.fs.writeFile(chapterFragmentUri, new Uint8Array());
     
             // Data for the .config file to store fragment names
             fragmentsDotConfig = {
@@ -91,10 +90,10 @@ export async function newChapter (
                 }
             };
         }
-
         
         // Write the .config for this chapter's fragments
-        writeDotConfig(`${extension.rootPath}/${fragmentDotConfigRelativePath}`, fragmentsDotConfig);
+        const chapterFragmentsDotConfigUri = vscode.Uri.joinPath(extension.rootPath, fragmentDotConfigRelativePath);
+        await writeDotConfig(chapterFragmentsDotConfigUri, fragmentsDotConfig);
     }
     catch (e) {
         vscode.window.showErrorMessage(`And error occurred while creating a new chapter: ${e}`);
@@ -105,21 +104,19 @@ export async function newChapter (
         vscode.window.showInformationMessage(`Successfully created new chapter with name 'New Chapter' (file name: ${fileName})`);
         this.refresh();
     }
-    return chapterContainerAbsPath;
+    return chapterContainerUri;
 }
 
 export async function newSnip (
     this: OutlineView, 
     resource: OutlineNode | undefined, 
     options?: CreateOptions
-): Promise<string | null> {
+): Promise<vscode.Uri | null> {
     
     // Need to determine where the snip is going to go
     // If the current resource is a snip or a fragment, insert the snip in the nearest chapter/root that parents that fragment
     // If the current resource is a chapter, insert the snip in that chapter
     // If the current resource is unavailable, insert the snip in the work snips folder
-
-    console.log(resource)
 
     let parentNode: OutlineNode;
     if (!resource) {
@@ -130,7 +127,7 @@ export async function newSnip (
             case 'snip':
             case 'fragment':
                 {
-                    const chapterOrRoot = resource.getContainerParent(this).data as ChapterNode | RootNode;
+                    const chapterOrRoot = (await resource.getContainerParent(this)).data as ChapterNode | RootNode;
                     parentNode = chapterOrRoot.snips as OutlineNode;
                     break;
                 }
@@ -142,7 +139,7 @@ export async function newSnip (
                         // If the parent type is root, we still don't know if the selected item is a chapter container
                         //		or the work snips
                         // Need to check the ids of each of these containers against the id of the resource
-                        const rootNode: OutlineNode = this._getTreeElement(resource.data.ids.parentInternalId);
+                        const rootNode: OutlineNode = await this._getTreeElement(resource.data.ids.parentInternalId);
                         const root: RootNode = rootNode.data as RootNode;
 
                         // Check the id of the chapters container and the work snips container of the root node against
@@ -181,13 +178,13 @@ export async function newSnip (
         }
     }
     
-    const parentDirAbsPath = `${extension.rootPath}/${parentNode.data.ids.relativePath}/${parentNode.data.ids.fileName}`;
+    const parentDirUri = vscode.Uri.joinPath(extension.rootPath, parentNode.data.ids.relativePath, parentNode.data.ids.fileName);
     
     // Add the new snip to the parent container's .config file
 
     // Read .config
-    const snipsDotConfigAbsPath = `${parentDirAbsPath}/.config`;
-    const snipsDotConfig = readDotConfig(snipsDotConfigAbsPath);
+    const snipsDotConfigUri = vscode.Uri.joinPath(parentDirUri, `.config`);
+    const snipsDotConfig = await readDotConfig(snipsDotConfigUri);
     if (!snipsDotConfig) return null;
 
     // Update .config with the new snip, and write it back to disk
@@ -198,19 +195,19 @@ export async function newSnip (
         title: options?.defaultName ?? `New Snip (${newSnipNumber})`,
         ordering: newSnipNumber
     };
-    writeDotConfig(snipsDotConfigAbsPath, snipsDotConfig);
+    await writeDotConfig(snipsDotConfigUri, snipsDotConfig);
     
     // Create the snip container
-    const snipAbsPath = `${parentDirAbsPath}/${snipContainerFileName}`;
+    const snipUri = vscode.Uri.joinPath(parentDirUri, snipContainerFileName);
     try {
-        await fs.promises.mkdir(snipAbsPath);
+        await vscode.worspace.fs.createDirectory(snipUri);
     }
     catch (e) {
         vscode.window.showErrorMessage(`Error creating snip file: could not create snip container.  Error: ${e}.`);
         return null;
     }
     
-    const fragmentsDotConfigAbsPath = `${snipAbsPath}/.config`;
+    const fragmentsDotConfigUri = vscode.Uri.joinPath(snipUri, `.config`);
     let fragmentsDotConfig: { [index: string]: ConfigFileInfo } = {};
 
     // If not skipping the creation of the fragment, then create a blank fragment inside of the 
@@ -218,11 +215,11 @@ export async function newSnip (
     if (!options?.skipFragment) {
         // Create a new fragment file for this snip
         const snipFragmentFileName = getUsableFileName(`fragment`, true);
-        const fragmentFileAbsPath = `${snipAbsPath}/${snipFragmentFileName}`;
+        const fragmentFileUri = vscode.Uri.joinPath(snipUri, snipFragmentFileName);
     
         // Create the fragment file 
         try {
-            await fs.promises.writeFile(fragmentFileAbsPath, '');
+            await vscode.workspace.fs.writeFile(fragmentFileUri, new Uint8Array());
         }
         catch (e) {
             vscode.window.showErrorMessage(`Error writing new fragment file for snip.  Error: ${e}.`);
@@ -239,20 +236,20 @@ export async function newSnip (
     }
 
     // Write the .config file for fragments of this snip
-    writeDotConfig(fragmentsDotConfigAbsPath, fragmentsDotConfig);
+    await writeDotConfig(fragmentsDotConfigUri, fragmentsDotConfig);
 
     if (!options?.preventRefresh) {
         this.refresh();
         vscode.window.showInformationMessage('Successfully created new snip');
     }
-    return snipAbsPath;
+    return snipUri;
 }
 
 export async function newFragment (
     this: OutlineView, 
     resource: OutlineNode | undefined, 
     options?: CreateOptions
-): Promise<string | null> {
+): Promise<vscode.Uri | null> {
     if (!resource) {
         console.log("1");
         // If there is no selected resource, get the last opened file access from the FileAccessManager
@@ -264,7 +261,7 @@ export async function newFragment (
         }
         
         // If there is a last accessed fragment, use that
-        resource = this._getTreeElementByUri(lastAccessedFragmentUri);
+        resource = await this._getTreeElementByUri(lastAccessedFragmentUri);
         if (!resource) {
             console.log("  1.2");
             vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
@@ -278,13 +275,13 @@ export async function newFragment (
     if (resource.data.ids.type === 'fragment') {
         // If the selected resource is a fragment itself, then look at the parent node of that fragment
         parentId = resource.data.ids.parentInternalId;
-        parentNode = this._getTreeElement(parentId);
+        parentNode = await this._getTreeElement(parentId);
     }
     else if (resource.data.ids.type === 'container') {
         console.log("2");
         // Get the last fragment of the selected container that was accessed
         const lastAccessedFragmentInContainerUri = FileAccessManager.containerLastAccessedDocument(resource);
-        resource = this._getTreeElementByUri(lastAccessedFragmentInContainerUri);
+        resource = await this._getTreeElementByUri(lastAccessedFragmentInContainerUri);
         if (!resource) {
             console.log("  2.1");
             // Since a container is a something that holds other folder nodes, you cannot add a fragment direcly to a container
@@ -294,7 +291,7 @@ export async function newFragment (
 
         // Get the parent of that last accessed fragment to use as the house of the new fragment
         parentId = resource.data.ids.parentInternalId;
-        parentNode = this._getTreeElement(parentId);
+        parentNode = await this._getTreeElement(parentId);
 
     }
     else {
@@ -309,8 +306,8 @@ export async function newFragment (
     const fragmentRelativePath = `${fragmentContainerRelativePath}/${fragmentFileName}`;
 
     // Read the .config object for this fragment container
-    const fragmentDotConfigAbsPath = `${extension.rootPath}/${fragmentContainerRelativePath}/.config`;
-    const fragmentDotConfig = readDotConfig(fragmentDotConfigAbsPath);
+    const fragmentDotConfigUri = vscode.Uri.joinPath(extension.rootPath, fragmentContainerRelativePath, `.config`);
+    const fragmentDotConfig = await readDotConfig(fragmentDotConfigUri);
     if (!fragmentDotConfig) return null;
 
     // Get the fragment number for this fragment
@@ -322,12 +319,12 @@ export async function newFragment (
         title: options?.defaultName ?? `New Fragment (${newFragmentNumber})`,
         ordering: newFragmentNumber
     };
-    writeDotConfig(fragmentDotConfigAbsPath, fragmentDotConfig);
+    await writeDotConfig(fragmentDotConfigUri, fragmentDotConfig);
 
     // Write the fragment file
-    const fragmentFullPath = `${extension.rootPath}/${fragmentRelativePath}`;
+    const fragmentUri = vscode.Uri.joinPath(extension.rootPath, fragmentRelativePath);
     try {
-        await fs.promises.writeFile(fragmentFullPath, '');
+        await vscode.workspace.fs.writeFile(fragmentUri, new Uint8Array());
     }
     catch (e) {
         vscode.window.showErrorMessage(`Error creating new fragment file: ${e}.`);
@@ -335,9 +332,9 @@ export async function newFragment (
 
     if (!options?.preventRefresh) {
         this.refresh();
-        console.log(fragmentFullPath);
-        vscode.window.showTextDocument(vscode.Uri.file(fragmentFullPath));
+        console.log(fragmentUri);
+        vscode.window.showTextDocument(fragmentUri);
         vscode.window.showInformationMessage('Successfully created new fragment');
     }
-    return fragmentFullPath;
+    return fragmentUri;
 }

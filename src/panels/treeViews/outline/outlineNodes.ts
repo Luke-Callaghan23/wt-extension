@@ -1,10 +1,8 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as fsExtra from 'fs-extra';
 import * as console from '../../../vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../outlineTreeProvider';
-import { getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help';
+import { folderMove, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help';
 import { OutlineView } from './outlineView';
 import * as fsNodes from '../fsNodes';
 import * as extension from '../../../extension';
@@ -49,13 +47,13 @@ export class OutlineNode extends TreeNode {
 
     // Assumes this is a 'snip' or a 'fragment'
     // Traverses up the parent tree until a 'chapter' or 'root' element is found
-	getContainerParent (provider: OutlineTreeProvider<TreeNode>, secondary: string = 'root'): OutlineNode {
+	async getContainerParent (provider: OutlineTreeProvider<TreeNode>, secondary: string = 'root'): Promise<OutlineNode> {
 		// Traverse upwards until we find a 'chapter' or 'root' node
         // Both of these node types have a snips container within them that we can then use to store the new node
         let foundParent: OutlineNode;
         let parentId = this.data.ids.internal;
         while (true) {
-            foundParent = provider._getTreeElement(parentId);
+            foundParent = await provider._getTreeElement(parentId);
             if (foundParent.data.ids.type === secondary || foundParent.data.ids.type === 'chapter') {
                 break;
             }
@@ -67,17 +65,17 @@ export class OutlineNode extends TreeNode {
 	}
 
     // Shifts all the nodes that 
-    shiftTrailingNodesDown (view: OutlineTreeProvider<OutlineNode>): string {
+    async shiftTrailingNodesDown (view: OutlineTreeProvider<OutlineNode>): Promise<string> {
         // Edit the old .config to remove the moved record
-        const oldDotConfigRelativePath = this.getDotConfigPath(view as OutlineView);
-        const oldDotConfigPath = `${extension.rootPath}/${oldDotConfigRelativePath}`;
+        const oldDotConfigRelativePath = await this.getDotConfigPath(view as OutlineView);
         if (!oldDotConfigRelativePath) {
             vscode.window.showErrorMessage(`Error: could not find .config file at expected path '${oldDotConfigRelativePath}'.  Please do not mess with the file system of a IWE environment!`);
             throw new Error('Unable to retrieve .config path');
         }
+        const oldDotConfigUri = vscode.Uri.joinPath(extension.rootPath, oldDotConfigRelativePath);
 
         // Readh the .config
-        const oldDotConfig = readDotConfig(oldDotConfigPath);
+        const oldDotConfig = await readDotConfig(oldDotConfigUri);
         if (!oldDotConfig) {
             vscode.window.showErrorMessage(`Error: could not read .config file at path '${oldDotConfigRelativePath}'.  Please do not mess with the file system of a IWE environment!`);
             throw new Error('Unable to retrieve .config data');
@@ -97,11 +95,11 @@ export class OutlineNode extends TreeNode {
         delete oldDotConfig[this.data.ids.fileName];
         
         // Rewrite the .config file to the disk
-        writeDotConfig(oldDotConfigPath, oldDotConfig);
+        await writeDotConfig(oldDotConfigUri, oldDotConfig);
         return movedTitle;
     }
 
-    moveNode (newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): boolean {
+    async moveNode (newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): Promise<boolean> {
         const newParentNode = newParent as OutlineNode;
         const newParentType = newParentNode.data.ids.type;
         const newParentId = newParentNode.data.ids.internal;
@@ -134,7 +132,6 @@ export class OutlineNode extends TreeNode {
         // If the mover is not a container, then we're only moving a single item:
 
         let destinationContainer: NodeTypes;
-        let moveFunc;
         if (moverType === 'snip') {
             // Use the root's .snips container
             if (newParentType === 'root') {
@@ -144,32 +141,30 @@ export class OutlineNode extends TreeNode {
             }
             // Use the chapter's .snips container
             else if (newParentType === 'chapter') {
-                const chapterNode: ChapterNode = provider._getTreeElement(newParentId).data;
+                const chapterNode: ChapterNode = (await provider._getTreeElement(newParentId)).data;
                 const chapterSnipsContainer: ContainerNode = chapterNode.snips.data as ContainerNode;
                 destinationContainer = chapterSnipsContainer;
             }
             // Traverse upwards until we find the nearest 'root' or 'chapter' node that we can move the snip into
             else if (newParentType === 'snip' || newParentType === 'container' || newParentType === 'fragment') {
-                const parentContainerNode = newParentNode.getContainerParent(provider).data as ChapterNode | RootNode;
+                const parentContainerNode = (await newParentNode.getContainerParent(provider)).data as ChapterNode | RootNode;
                 const parentSnipsContainer: ContainerNode = parentContainerNode.snips.data as ContainerNode;
                 destinationContainer = parentSnipsContainer;
             }
             else {
                 throw new Error('Not possible');
             }
-            moveFunc = fs.renameSync;
         }
         else if (moverType === 'fragment') {
             if (newParentType === 'chapter' || newParentType === 'snip') {
-                destinationContainer = provider._getTreeElement(newParentId).data;
+                destinationContainer = (await provider._getTreeElement(newParentId)).data;
             }
             else if (newParentType === 'fragment') {
-                destinationContainer = newParentNode.getContainerParent(provider, 'snip').data;;
+                destinationContainer = (await newParentNode.getContainerParent(provider, 'snip')).data;
             }
             else {
                 throw new Error('Not possible.');
             }
-            moveFunc = fsExtra.moveSync;
         }  
         else {
             vscode.window.showErrorMessage('Not implemented');
@@ -183,24 +178,24 @@ export class OutlineNode extends TreeNode {
         }
         
         // Path for the old config file and old file
-        const moverAbsPath = `${extension.rootPath}/${this.data.ids.relativePath}/${this.data.ids.fileName}`;
+        const moverUri = vscode.Uri.joinPath(extension.rootPath, this.data.ids.relativePath, this.data.ids.fileName);
 
         // Path for the new fragment, and its new .config file
-        const destinationRelativePath = `${extension.rootPath}/${destinationContainer.ids.relativePath}/${destinationContainer.ids.fileName}`;
-        const destinationDotConfigPath = `${destinationRelativePath}/.config`;
-        const destinationAbsPath = `${destinationRelativePath}/${this.data.ids.fileName}`;
+        const destinationFolderUri = vscode.Uri.joinPath(extension.rootPath, destinationContainer.ids.relativePath, destinationContainer.ids.fileName);
+        const destinationDotConfigUri = vscode.Uri.joinPath(destinationFolderUri, `.config`);
+        const destinationUri = vscode.Uri.joinPath(destinationFolderUri, this.data.ids.fileName);
 
         try {
 
             // Edit the new .config to add the moved record
-            const destinationDotConfig = readDotConfig(destinationDotConfigPath);
+            const destinationDotConfig = await readDotConfig(destinationDotConfigUri);
             if (!destinationDotConfig) return false;
 
             // Find the record in the new .config file with the highest ordering
             const latestFragmentNumber = getLatestOrdering(destinationDotConfig);
             const movedFragmentNumber = latestFragmentNumber + 1;
 
-            const movedRecordTitle = this.shiftTrailingNodesDown(provider as OutlineTreeProvider<OutlineNode>);
+            const movedRecordTitle = await this.shiftTrailingNodesDown(provider as OutlineTreeProvider<OutlineNode>);
             if (movedRecordTitle === '') {
                 return false;
             }
@@ -210,10 +205,10 @@ export class OutlineNode extends TreeNode {
                 title: movedRecordTitle,
                 ordering: movedFragmentNumber
             };
-            writeDotConfig(destinationDotConfigPath, destinationDotConfig);
+            await writeDotConfig(destinationDotConfigUri, destinationDotConfig);
 
             // Finally move data with the move function specified above
-            moveFunc(moverAbsPath, destinationAbsPath);
+            await vscode.workspace.fs.rename(moverUri, destinationUri);
 
             return true;
         }
@@ -235,13 +230,13 @@ export class OutlineNode extends TreeNode {
     }
 
     getUri(): vscode.Uri {
-        return vscode.Uri.file(`${extension.rootPath}/${this.data.ids.relativePath}/${this.data.ids.fileName}`);
+        return vscode.Uri.joinPath(extension.rootPath, this.data.ids.relativePath, this.data.ids.fileName);
     }
     getDisplayString (): string {
         return this.data.ids.display;
     }
 
-    getChildren (): OutlineNode[] {
+    async getChildren (): Promise<OutlineNode[]> {
         const data = this.data;
         if (data.ids.type === 'chapter') {
             // Collect all text fragments of the chapter node as well as all snips
@@ -291,7 +286,7 @@ export class OutlineNode extends TreeNode {
         return this.data.ids.internal;
     }
 
-    getDotConfigPath (outlineView: OutlineView): string | null {
+    async getDotConfigPath (outlineView: OutlineView): Promise<string | null> {
         if (this.data.ids.type === 'root') {
             return null;
         }
@@ -303,7 +298,7 @@ export class OutlineNode extends TreeNode {
         else if (this.data.ids.type === 'chapter' || this.data.ids.type === 'snip' || this.data.ids.type === 'fragment') {
             // Get the parent 'container' of this node
             const parentContainerId = this.data.ids.parentInternalId;
-            const parentContainerNode: OutlineNode | null = outlineView._getTreeElement(parentContainerId);
+            const parentContainerNode: OutlineNode | null = await outlineView._getTreeElement(parentContainerId);
             if (!parentContainerNode) {
                 return null;
             }

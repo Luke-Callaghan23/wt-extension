@@ -1,6 +1,5 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help';
 import * as console from '../../../vsconsole';
 import { OutlineView } from './outlineView';
@@ -15,7 +14,7 @@ export async function renameResource (this: OutlineView) {
     const displayName = resource.data.ids.display;
     const type = resource.data.ids.type;
 
-    const fullPath = `${extension.rootPath}/${relativePath}/${fileName}`;
+    const fullPath = vscode.Uri.joinPath(extension.rootPath, relativePath, fileName);
     const originalName = displayName;
 
     const newName = await vscode.window.showInputBox({
@@ -30,14 +29,14 @@ export async function renameResource (this: OutlineView) {
         return;
     }
 
-    const dotConfigRelativePath = resource.getDotConfigPath(this);
-    const dotConfigPath = `${extension.rootPath}/${dotConfigRelativePath}`;
+    const dotConfigRelativePath = await resource.getDotConfigPath(this);
     if (!dotConfigRelativePath) {
         vscode.window.showErrorMessage(`Unable to find configuration file for resource: '${fullPath}'`);
         return;
     }
+    const dotConfigUri = vscode.Uri.joinPath(extension.rootPath, dotConfigRelativePath);
 
-    const dotConfig = readDotConfig(dotConfigPath);
+    const dotConfig = await readDotConfig(dotConfigUri);
     if (!dotConfig) return;
 
     // Make updates to the .config file
@@ -60,7 +59,7 @@ export async function renameResource (this: OutlineView) {
     }
 
     // Re-write the config object to the file system
-    writeDotConfig(dotConfigPath, dotConfig);
+    await writeDotConfig(dotConfigUri, dotConfig);
 
     vscode.window.showInformationMessage(`Successfully renamed '${oldName}' to '${newName}'`);
     this.refresh();

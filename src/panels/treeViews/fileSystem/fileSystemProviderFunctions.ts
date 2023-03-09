@@ -1,23 +1,12 @@
 
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
+import * as vscodeUri from 'vscode-uri'
 import * as console from './../../../vsconsole';
 import { FileStat, _ } from './fileSystemDefault';
 import { FileSystem } from './fileSystem';
 
 export function watch<T extends FileSystem>(this: T, uri: vscode.Uri, options: { recursive: boolean; excludes: string[]; }): vscode.Disposable {
-	const watcher = fs.watch(uri.fsPath, { recursive: options.recursive }, 
-		async (event: string, filename: string | Buffer) => {
-			const filepath = path.join(uri.fsPath, _.normalizeNFC(filename.toString()));
-			this._onDidChangeFile.fire([{
-				type: event === 'change' ? vscode.FileChangeType.Changed : await _.exists(filepath) ? vscode.FileChangeType.Created : vscode.FileChangeType.Deleted,
-				uri: uri.with({ path: filepath })
-			} as vscode.FileChangeEvent]);
-		}
-	);
-
-	return { dispose: () => watcher.close() };
+	throw new Error('Not implemented');
 }
 
 export function stat<T extends FileSystem>(this: T, uri: vscode.Uri): vscode.FileStat | Thenable<vscode.FileStat> {
@@ -38,7 +27,7 @@ async function _readDirectory<T extends FileSystem>(_this: T, uri: vscode.Uri): 
 	const result: [string, vscode.FileType][] = [];
 	for (let i = 0; i < children.length; i++) {
 		const child = children[i];
-		const stat = await _stat(_this, path.join(uri.fsPath, child));
+		const stat = await _stat(_this, vscode.Uri.joinPath(uri, child));
 		result.push([child, stat.type]);
 	}
 
@@ -64,7 +53,7 @@ async function _writeFile<T extends FileSystem>(_this: T, uri: vscode.Uri, conte
 			throw vscode.FileSystemError.FileNotFound();
 		}
 
-		await _.mkdir(path.dirname(uri.fsPath));
+		await _.mkdir(vscodeUri.Urils.dirname(uri));
 	} else {
 		if (!options.overwrite) {
 			throw vscode.FileSystemError.FileExists();
@@ -96,9 +85,9 @@ async function _rename<T extends FileSystem>(_this: T, oldUri: vscode.Uri, newUr
 		}
 	}
 
-	const parentExists = await _.exists(path.dirname(newUri.fsPath));
+	const parentExists = await _.exists(vscodeUri.Utils.dirname(newUri));
 	if (!parentExists) {
-		await _.mkdir(path.dirname(newUri.fsPath));
+		await _.mkdir(vscodeUri.Utils.dirname(newUri));
 	}
 
 	return _.rename(oldUri.fsPath, newUri.fsPath);

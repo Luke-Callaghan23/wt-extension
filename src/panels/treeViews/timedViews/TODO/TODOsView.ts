@@ -8,7 +8,6 @@ import { OutlineTreeProvider } from '../../outlineTreeProvider';
 import { InitializeNode, initializeOutline } from '../../initialize';
 import { NodeTypes } from '../../fsNodes';
 import { FileSystem } from '../../fileSystem/fileSystem';
-import { _ } from '../../fileSystem/fileSystemDefault';
 import { Timed } from '../timedView';
 
 export type TODO = {
@@ -54,7 +53,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode>
 
 	//#region outline tree provider
 	disposables: vscode.Disposable[] = [];
-    initializeTree(): TODONode {
+    async initializeTree(): Promise<TODONode> {
 		const init: InitializeNode<TODONode> = (data: NodeTypes<TODONode>) => new TODONode(data);
         return initializeOutline<TODONode>(init);
     }
@@ -141,7 +140,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode>
 		const document = editor.document;
 		
 		let uri: vscode.Uri | undefined = document.uri;
-		let editedNode: TODONode | undefined | null = this._getTreeElementByUri(uri);
+		let editedNode: TODONode | undefined | null = await this._getTreeElementByUri(uri);
 		
 		if (!editedNode) {
 			await vscode.commands.executeCommand('wt.todo.refresh');
@@ -161,7 +160,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode>
 
 			// Traverse upwards
 			const parentId = editedNode.data.ids.parentInternalId;
-			editedNode = this._getTreeElement(parentId);
+			editedNode = await this._getTreeElement(parentId);
 			uri = editedNode?.getUri();
 		}
 

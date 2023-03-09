@@ -1,7 +1,5 @@
 import { OutlineNode, ResourceType } from "./outlineNodes";
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as fsExtra from 'fs-extra';
 import { OutlineView } from "./outlineView";
 import * as extension from '../../../extension';
 import * as console from '../../../vsconsole';
@@ -24,7 +22,7 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
     }
 
     // Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
-    const uniqueRoots = this._getLocalRoots(targets);
+    const uniqueRoots = await this._getLocalRoots(targets);
     const s = uniqueRoots.length > 1 ? 's' : '';
 
     const result = await vscode.window.showInformationMessage(`Are you sure you want to delete ${uniqueRoots.length} resource${s}?`, { modal: true }, "Yes", "No");
@@ -48,20 +46,21 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
         if (target.data.ids.type === 'fragment') {
 
             // Simply shift all the fragment that come after this one downwards
-            const title = target.shiftTrailingNodesDown(this);
+            const title = await target.shiftTrailingNodesDown(this);
 
             // And delete the fragment from the file system
-            const removedFragmentAbsPath = target.getUri();
+            const removedFragmentUri = target.getUri();
             const recycleBinName = `deleted-${target.data.ids.type}-${timestamp}-${Math.random()}`;
             try {
-                await fs.promises.rename(removedFragmentAbsPath.fsPath, `${extension.rootPath}/data/recycling/${recycleBinName}`);
+                const newLocationUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
+                await vscode.workspace.fs.rename(removedFragmentUri, newLocationUri);
             }
             catch (e) {
                 vscode.window.showErrorMessage(`Error deleting fragment: ${e}`);
             }
 
             const logItem = {
-                oldUri: removedFragmentAbsPath.fsPath,
+                oldUri: removedFragmentUri.fsPath,
                 deleteTimestamp: timestamp,
                 title: title,
                 resourceType: target.data.ids.type,
@@ -78,7 +77,8 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             const removedNodeAbsPath = target.getUri();
             const recycleBinName = `deleted-${target.data.ids.type}-${timestamp}-${Math.random()}`;
             try {
-                fsExtra.moveSync(removedNodeAbsPath.fsPath, `${extension.rootPath}/data/recycling/${recycleBinName}`);
+                const moveToPath = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
+                await vscode.workspace.fs.rename(removedNodeAbsPath, moveToPath);
             }
             catch (e) {
                 vscode.window.showErrorMessage(`Error deleting ${target.data.ids.type}: ${e}`);
@@ -99,40 +99,41 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             // No need to shift items
 
             // Get the abs path of the container
-            const clearedContainerAbsPath = target.getUri();
-            const allEntries = await fs.promises.readdir(clearedContainerAbsPath.fsPath, { withFileTypes: true });
+            const clearedContainerUri = target.getUri();
+            const allEntries: [ string, vscode.FileType ][] = await vscode.workspace.fs.readDirectory(clearedContainerUri);
 
             // Find the entries to clear and the .config file
-            const clearedEntries: fs.Dirent[] = [];
-            let dotConfig: fs.Dirent;
-            for (const entry of allEntries) {
-                if (entry.isDirectory()) {
+            const clearedEntries: string[] = [];
+            let dotConfig: string;
+            for (const [ name, fileType ] of allEntries) {
+                if (fileType === vscode.FileType.Directory) {
                     // If the entry is a folder, then it is a candidate to clear
-                    clearedEntries.push(entry);
+                    clearedEntries.push(name);
                 }
-                else if (entry.isFile() && entry.name === '.config') {
-                    dotConfig = entry;
+                else if (fileType === vscode.FileType.File && name === '.config') {
+                    dotConfig = name;
                 }
             }
 
             // Remove the .config file
-            fs.rmSync(`${clearedContainerAbsPath}/.config`);
+            const deletedUri = vscode.Uri.joinPath(clearedContainerUri, `.config`);
+            await vscode.workspace.fs.delete(deletedUri);
 
-            for (const entry of clearedEntries) {
+            for (const name of clearedEntries) {
                 const recycleBinName = `deleted-${target.data.ids.type}-${timestamp}-${Math.random()}`;
-                const recyclingFullPath = `${extension.rootPath}/data/recycling/${recycleBinName}`;
-                const removedNodeAbsPath = `${clearedContainerAbsPath}/${entry.name}`;
+                const recyclingUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
+                const removedNodeUri = vscode.Uri.joinPath(clearedContainerUri, name);
 
                 // All entries in a container are folders, so remove them as dirs
                 try {
-                    fsExtra.moveSync(removedNodeAbsPath, recyclingFullPath);
+                    await vscode.workspace.fs.rename(removedNodeUri, recyclingUri);
                 }
                 catch (e) {
                     vscode.window.showErrorMessage(`Error deleting container: ${e}`);
                 }
 
                 const logItem = {
-                    oldUri: removedNodeAbsPath,
+                    oldUri: removedNodeUri,
                     deleteTimestamp: timestamp,
                     resourceType: target.data.ids.type,
                     recycleBinName: recycleBinName
@@ -145,11 +146,11 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
         }
 
         // Read the current recycling log
-        const recyclingLogAbsPath = `${extension.rootPath}/data/recycling/.log`;
+        const recyclingLogUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/.log`);
 
         let recyclingLog: RecycleLog[];
         try {
-            const recyclingLogJSON = (await fs.promises.readFile(recyclingLogAbsPath)).toString();
+            const recyclingLogJSON = (await vscode.workspace.fs.readFile(recyclingLogUri)).toString();
             if (recyclingLogJSON === '') {
                 recyclingLog = [];
             }
@@ -165,7 +166,7 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
         const updatedLogJSON = JSON.stringify(updatedLog);
 
         try {
-            await fs.promises.writeFile(recyclingLogAbsPath, updatedLogJSON);
+            await vscode.workspace.fs.writeFile(recyclingLogUri, Buffer.from(updatedLogJSON, 'utf-8'));
         }
         catch (e) {
             vscode.window.showErrorMessage(`Error editing recycling bin log: ${e}`);

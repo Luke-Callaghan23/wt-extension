@@ -1,11 +1,10 @@
 /* eslint-disable curly */
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
-import { ConfigFileInfo, readDotConfig } from '../../../help';
+import { ConfigFileInfo } from '../../../help';
 import { getUsableFileName } from '../../treeViews/outline/createNodes';
 import { OutlineView } from '../../treeViews/outline/outlineView';
 import * as extension from './../../../extension';
-import * as fs from 'fs';
 import * as console from './../../../vsconsole';
 import { ImportForm } from './importFormView';
 import { OutlineNode } from '../../treeViews/outline/outlineNodes';
@@ -13,7 +12,6 @@ import * as showdown from 'showdown';
 import * as mammoth from 'mammoth';
 const pdf2html = require('pdf2html');
 import { JSDOM } from 'jsdom';
-import * as jsdom from 'jsdom';
 
 export type DocInfo = {
     skip: boolean,
@@ -119,8 +117,8 @@ function replaceCommonUnicode (content: string): string {
 
 async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
     // Get the full file path and read the content of that file
-    const fileFullPath = `${extension.rootPath}/${fileRelativePath}`;
-    const fileContent = (await fs.promises.readFile(fileFullPath)).toString();
+    const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+    const fileContent = (await vscode.workspace.fs.readFile(fileUri)).toString();
 
     // Replace some common unicode elements in the file with more friendly stuff
     const filteredContent = replaceCommonUnicode(fileContent);
@@ -171,15 +169,15 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
 }
 
 async function readAndSplitHtml (split: SplitInfo, fileRelativePath: string): Promise<DocSplit | null> {
-    const fileFullPath = `${extension.rootPath}/${fileRelativePath}`;
-    const fileContent: string = (await fs.promises.readFile(fileFullPath)).toString();
+    const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+    const fileContent: string = (await vscode.workspace.fs.readFile(fileUri)).toString();
     return doHtmlSplits(split, fileContent);
 }
 
 async function readAndSplitPdf (split: SplitInfo, fileRelativePath: string): Promise<DocSplit | null> {
     let html: string;
     try {
-        const fullFilePath = `${extension.rootPath}/${fileRelativePath}`;
+        const fullFilePath = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
         html = await pdf2html.html(fullFilePath);
     }
     catch (e) {
@@ -205,7 +203,7 @@ async function readAndSplitDocx (split: SplitInfo, fileRelativePath: string): Pr
     let html: string;
     try {
         // Use mammoth to convert the docx to html
-        const fullFilePath = `${extension.rootPath}/${fileRelativePath}`;
+        const fullFilePath = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
         const result = await mammoth.convertToHtml({
             path: fullFilePath
         }, {
@@ -308,15 +306,15 @@ function getWriteInfo (docInfo: DocInfo): WriteInfo {
 }
 
 async function createFragmentFromSource (
-    fullRelativePath: string, 
+    containerUri: vscode.Uri, 
     content: string,
     config: { [index: string]: ConfigFileInfo },
     ordering: number,
 ): Promise<string> {
     // Create the fragment file
     const fragmentFileName = getUsableFileName('fragment', true);
-    const fragmentFullPath = `${fullRelativePath}/${fragmentFileName}`;
-    await fs.promises.writeFile(fragmentFullPath, content);
+    const fragmentUri = vscode.Uri.joinPath(containerUri, fragmentFileName);
+    await vscode.workspace.fs.writeFile(fragmentUri, Buffer.from(content, 'utf-8'));
 
     // Add the record for this fragment to the config map
     config[fragmentFileName] = {
@@ -348,24 +346,24 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
     }
 
     const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
-    const chapterPath = await outlineView.newChapter(undefined, {
+    const chapterUri: vscode.Uri | null = await outlineView.newChapter(undefined, {
         preventRefresh: false, 
         defaultName: chapterInfo.outputChapterName,
         skipFragment: true
     });
-    if (!chapterPath) return;
+    if (!chapterUri) return;
 
     const dotConfig: { [index: string]: ConfigFileInfo } = {};
 
     if (docSplits.type === 'none') {
         // Create the single snip and store their config data inside of the dotConfig created above
-        await createFragmentFromSource(chapterPath, docSplits.data, dotConfig, 0);
+        await createFragmentFromSource(chapterUri, docSplits.data, dotConfig, 0);
     }
     else if (docSplits.type === 'single') {
         // Create all snips and store their config data inside of the dotConfig created above
         let ordering = 0;
         await Promise.all(docSplits.data.map(content => {
-            const promise = createFragmentFromSource(chapterPath, content, dotConfig, ordering);
+            const promise = createFragmentFromSource(chapterUri, content, dotConfig, ordering);
             ordering++;
             return promise;
         }));
@@ -373,8 +371,8 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
 
     // Write the .config file to the location of the chapter folder
     const dotConfigJSON = JSON.stringify(dotConfig);
-    const dotConfigPath = `${chapterPath}/.config`;
-    await fs.promises.writeFile(dotConfigPath, dotConfigJSON);
+    const dotConfigUri = vscode.Uri.joinPath(chapterUri, `.config`);
+    await vscode.workspace.fs.writeFile(dotConfigUri, Buffer.from(dotConfigJSON, 'utf-8'));
 }
 
 async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
@@ -390,27 +388,26 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
     else if (output.dest === 'chapter') {
         // dest = 'chapter' -> inserted snips are inserted into the specified chapter
         // Find the chapter by its uri and use that as the parent node
-        const chapterFullPath = `${extension.rootPath}${output.outputChapter}`;
-        const cleanedChapterPath = chapterFullPath.replaceAll('//', '/');
-        const chapterNode: OutlineNode = outlineView._getTreeElementByUri(vscode.Uri.file(cleanedChapterPath));
+        const chapterUri = vscode.Uri.joinPath(extension.rootPath, output.outputChapter);
+        const chapterNode: OutlineNode = await outlineView._getTreeElementByUri(chapterUri);
         parentNode = chapterNode;
     }
 
     // Uploads fragments in a content array into specified path
-    const fragmentUpload = async (contents: string[], snipPath: string) => {
+    const fragmentUpload = async (contents: string[], snipUri: vscode.Uri) => {
         const dotConfig: { [index: string]: ConfigFileInfo } = {};
 
         let ordering = 0;
         await Promise.all(contents.map(content => {
-            const promise = createFragmentFromSource(snipPath, content, dotConfig, ordering);
+            const promise = createFragmentFromSource(snipUri, content, dotConfig, ordering);
             ordering++;
             return promise;
         }));
 
         // Write the .config file to the location of the snip folder
         const dotConfigJSON = JSON.stringify(dotConfig);
-        const dotConfigPath = `${snipPath}/.config`;
-        await fs.promises.writeFile(dotConfigPath, dotConfigJSON);
+        const dotConfigUri = vscode.Uri.joinPath(snipUri, `.config`);
+        await vscode.workspace.fs.writeFile(dotConfigUri, Buffer.from(dotConfigJSON, 'utf-8'));
     };
     
     if (docSplits.type === 'multi') {
@@ -420,25 +417,25 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
 
             // Create current snip
             const snipName = `${snipInfo.outputSnipName} (${snipOrdering})`;
-            const snipPath = await outlineView.newSnip(parentNode, {
+            const snipUri: vscode.Uri | null = await outlineView.newSnip(parentNode, {
                 preventRefresh: true, 
                 defaultName: snipName,
                 skipFragment: true
             });
-            if (!snipPath) return;
+            if (!snipUri) return;
             
             // Upload this snip's fragments
-            await fragmentUpload(snipContent, snipPath);
+            await fragmentUpload(snipContent, snipUri);
         }
     }
     else {
         // Create one snip, and load the document data into one fragment inside of it
-        const snipPath = await outlineView.newSnip(parentNode, {
+        const snipUri: vscode.Uri | null = await outlineView.newSnip(parentNode, {
             preventRefresh: true, 
             defaultName: snipInfo.outputSnipName,
             skipFragment: true
         });
-        if (!snipPath) return;
+        if (!snipUri) return;
 
         const contents = docSplits.type === 'none'
             // If there are no splits, put the single content item in an array
@@ -446,7 +443,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
             // Otherwise, use the data array from single split
             : docSplits.data;
 
-        await fragmentUpload(contents, snipPath);
+        await fragmentUpload(contents, snipUri);
     }
 }
 
@@ -502,8 +499,8 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
 
     // Assign modified dates to each of the doc names provided by called
     for (const docName of docNames) {
-        const doc = vscode.Uri.file(`${extension.rootPath}/${docName}`);
-        const stat = await fs.promises.stat(doc.fsPath);
+        const doc = vscode.Uri.joinPath(extension.rootPath, docName);
+        const stat = await vscode.workspace.fs.stat(doc);
         docLastModified.push({
             name: docName,
             lastModified: stat.mtime.valueOf()

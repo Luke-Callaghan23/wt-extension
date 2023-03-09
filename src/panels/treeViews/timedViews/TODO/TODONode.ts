@@ -25,7 +25,7 @@ export class TODONode extends TreeNode {
 
     convertToTODOData = convertToTODOData;
     
-    getTODOCounts (): number {
+    async getTODOCounts (): Promise<number> {
 
         if (this.data.ids.internal.startsWith('dummy')) {
             return 1;
@@ -56,8 +56,8 @@ export class TODONode extends TreeNode {
 
                 // Get or re-calculate the TODO counts for both the chapters container and the 
                 //      work snips container
-                const chaptersTODOs = chaptersContainer.getTODOCounts();
-                const snipsTODOs = snipsContainer.getTODOCounts();
+                const chaptersTODOs = await chaptersContainer.getTODOCounts();
+                const snipsTODOs = await snipsContainer.getTODOCounts();
 
                 // Add the counts for each to get the new count of TODOs for the root
                 const rootTODOs = chaptersTODOs + snipsTODOs;
@@ -75,9 +75,10 @@ export class TODONode extends TreeNode {
 
                 // Get or re-calculate TODO counts for each of the items in this container's
                 //      contents array, and sum them up
-                const containerTODOs = contents.reduce((accumulatedTODOs, currentNode) => {
-                    return accumulatedTODOs + currentNode.getTODOCounts();
-                }, 0);
+                let containerTODOs = 0;
+                for (const currentNode of contents) {
+                    containerTODOs + await currentNode.getTODOCounts();
+                }
 
                 // Set the count of TODOs for this container to the sum of the TODOs for all of
                 //      its contents and return the new count
@@ -95,13 +96,14 @@ export class TODONode extends TreeNode {
                 // Calculate snip todos recursively 
                 // Remember, .snips is a container node, so this function will handle
                 //      processing of all snips using the 'container' case 
-                const snipsTODOs = snips.getTODOCounts();
+                const snipsTODOs = await snips.getTODOCounts();
 
                 // Get or re-calculate the TODO counts for each of the text fragments of
                 //      this chapter, and sum them up
-                const fragementsTODOs = fragements.reduce((accumulatedFragmentTODOs, currentFragment) => {
-                    return accumulatedFragmentTODOs + currentFragment.getTODOCounts();
-                }, 0);
+                let fragementsTODOs = 0;
+                for (const currentFragment of fragements) {
+                    fragementsTODOs + await currentFragment.getTODOCounts();
+                }
 
                 // Total TODO count for the chapter is the sum of all the TODOs in this chapter's text
                 //      fragments as well as the TODOs for the chapter snips
@@ -119,9 +121,10 @@ export class TODONode extends TreeNode {
                 const fragments: TODONode[] = snip.textData;
 
                 // (see 'chapter', 'container' cases above)
-                const fragmentsTODOs = fragments.reduce((accumulatedFragmentTODOs, currentFragment) => {
-                    return accumulatedFragmentTODOs + currentFragment.getTODOCounts();
-                }, 0);
+                let fragmentsTODOs = 0;
+                for (const currentFragment of fragments) {
+                    fragmentsTODOs + await currentFragment.getTODOCounts();
+                }
 
                 todo[uri.fsPath] = {
                     type: 'count',
@@ -133,7 +136,7 @@ export class TODONode extends TreeNode {
                 const fragmentNode: FragmentData = this.data as FragmentData;
 
                 // Scan the text of the fragment for all TODOs
-                const [ fragmentTODOs, count ]: [ Validated, number ] = scanFragment(uri.fsPath, fragmentNode);
+                const [ fragmentTODOs, count ]: [ Validated, number ] = await scanFragment(uri.fsPath, fragmentNode);
 
                 // Insert the new fragment TODOs into todo object
                 todo[uri.fsPath] = fragmentTODOs;
@@ -143,20 +146,26 @@ export class TODONode extends TreeNode {
         }
     }
 
-    getChildren(): TreeNode[] {
+    async getChildren(): Promise<TreeNode[]> {
         const data = this.data;
         if (data.ids.type === 'chapter') {
             // Collect all text fragments of the chapter node as well as all snips
             const chapter = data as ChapterNode;
 
             // Filter out any fragments with no TODOs in them
-            const fragments = chapter.textData.filter((textNode) => textNode.getTODOCounts() > 0);
+            const fragments = [];
+            for (const textNode of chapter.textData) {
+                const todos = await textNode.getTODOCounts();
+                if (todos > 0) {
+                    fragments.push(textNode);
+                }
+            }
             fragments.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
 
             // Add this chapter's snips container to the children array as well as long as the TODO
             //      count of the snips is non-zero
             const children: TreeNode[] = [ ...fragments ];
-            if (chapter.snips.getTODOCounts() > 0) {
+            if (await chapter.snips.getTODOCounts() > 0) {
                 children.push(chapter.snips);
             }
 
@@ -167,7 +176,13 @@ export class TODONode extends TreeNode {
             const snip = data as SnipNode;
 
             // Filter out any fragments without any TODOs and sort them
-            const fragments = snip.textData.filter((textNode) => textNode.getTODOCounts() > 0);
+            const fragments = []
+            for (const textNode of snip.textData) {
+                const todos = await textNode.getTODOCounts();
+                if (todos > 0) {
+                    fragments.push(textNode);
+                }
+            }
             fragments.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
             return fragments;
         }
@@ -176,8 +191,8 @@ export class TODONode extends TreeNode {
             const root = data as RootNode;
 
             // Get the TODO counts in the chapters container and in the snips container
-            const chapterCounts = root.chapters.getTODOCounts();
-            const snipCounts = root.snips.getTODOCounts();
+            const chapterCounts = await root.chapters.getTODOCounts();
+            const snipCounts = await root.snips.getTODOCounts();
 
             // Return the chapter and root containers, as long as they have at least one
             //      marked TODO 
@@ -192,7 +207,13 @@ export class TODONode extends TreeNode {
             
             // Filter out any of the content items that do not have any TODO items inside of them,
             //      and sort all TODOs
-            const contents = container.contents.filter(content => content.getTODOCounts() > 0);
+            const contents = [];
+            for (const content of container.contents){
+                const todos = await content.getTODOCounts();
+                if (todos > 0) {
+                    contents.push(content);
+                }
+            } 
             contents.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
 
             // Return ordered contents
@@ -227,13 +248,13 @@ export class TODONode extends TreeNode {
         return `${this.data.ids.type} | TODOs: ${this.getTODOCounts()}`;
     }
     
-    moveNode (newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): boolean {
+    async moveNode (newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): Promise<boolean> {
         vscode.window.showErrorMessage('Error: cannot move files within the TODO tree, please try again in the outline tree');
         return false;
     }
 
     getUri (): vscode.Uri {
-        return vscode.Uri.file(`${extension.rootPath}/${this.data.ids.relativePath}/${this.data.ids.fileName}`);
+        return vscode.Uri.joinPath(extension.rootPath, this.data.ids.relativePath, this.data.ids.fileName);
     }
     getDisplayString (): string {
         return this.data.ids.display;

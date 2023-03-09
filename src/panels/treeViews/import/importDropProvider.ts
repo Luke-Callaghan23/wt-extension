@@ -1,7 +1,5 @@
-import * as fs from 'fs';
-import * as fsExtra from 'fs-extra';
-import path = require('path');
 import * as vscode from 'vscode';
+import { Utils } from 'vscode-uri';
 import { rootPath } from '../../../extension';
 import { Workspace } from '../../../workspace/workspace';
 import * as console from './../../../vsconsole';
@@ -28,18 +26,18 @@ export class ImportDocumentProvider implements vscode.DocumentDropEditProvider, 
 		}
 
         // Get the destination of the copy, depending on where the drop occurred
-        let dest: string;
+        let dest: vscode.Uri;
         if (!targ) {
             // If there was no specific drop location, use the root import folder
             dest = this.workspace.importFolder;
         }
         else if (targ.type === vscode.FileType.Directory) {
             // If the drop point was a directory, use that directory path
-            dest = targ.uri.fsPath;
+            dest = targ.uri;
         }
         else if (targ.type === vscode.FileType.File) {
             // If the drop point was a file, get the path of the directory that file lives in
-            dest = path.dirname(targ.uri.fsPath);
+            dest = vscode.Uri.parse(Utils.dirname(targ.uri));
         }
         else {
             throw new Error("not implemented");
@@ -78,16 +76,16 @@ export class ImportDocumentProvider implements vscode.DocumentDropEditProvider, 
 
             
             try {
-                const ext = path.extname(uri).replaceAll('.', '');
-                const uriName = path.basename(uri);
+                const ext = uri.slice(uri.lastIndexOf('.') + 1)[1];
+                const uriName = uri.slice(uri.lastIndexOf('/'))[1];
                 if (!this.workspace.importFileTypes.find(allowed => allowed === ext)) {
                     vscode.window.showWarningMessage(`Warning: Skipping '${uriName}' because its ext type '${ext}' is not valid for importing!`);
                     continue;
                 }
 
 
-                const finalDest = `${dest}/${uriName}`;
-                await fsExtra.copy(uri, finalDest);
+                const finalDest = vscode.Uri.joinPath(dest, uriName);
+                await vscode.workspace.fs.copy(uri, finalDest);
                 this.fsView.refresh();
             }
             catch (e) {

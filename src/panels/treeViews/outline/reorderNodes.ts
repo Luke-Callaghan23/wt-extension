@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import { ConfigFileInfo, ConfigFileInfoExpanded, readDotConfig, writeDotConfig } from "../../../help";
 import { OutlineNode } from "./outlineNodes";
 import { OutlineView } from "./outlineView";
-import * as fs from 'fs';
 import * as extension from '../../../extension';
 
 
@@ -192,12 +191,12 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
     }
     
     // Get the path of the .config file for the moving nodes
-    const dotConfigRelativePath = resource.getDotConfigPath(this);
-    const dotConfigPath = `${extension.rootPath}/${dotConfigRelativePath}`;
-    if (!dotConfigPath) return;
+    const dotConfigRelativePath = await resource.getDotConfigPath(this);
+    if (!dotConfigRelativePath) return;
+    const dotConfigUri = vscode.Uri.joinPath(extension.rootPath, dotConfigRelativePath);
 
     // Read .config from disk
-    const dotConfig = readDotConfig(dotConfigPath);
+    const dotConfig = await readDotConfig(dotConfigUri);
     if (!dotConfig) return;
     
     // Re order the nodes
@@ -210,7 +209,7 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
     });
 
     // Write the re formated .config file
-    writeDotConfig(dotConfigPath, reFormated);
+    await writeDotConfig(dotConfigUri, reFormated);
     this.refresh();
 }
 
@@ -235,12 +234,12 @@ export async function moveDown (this: OutlineView, resource: any) {
     });
 
     // Get the path of the .config file for the moving nodes
-    const dotConfigRelativePath = resource.getDotConfigPath(this);
-    const dotConfigPath = `${extension.rootPath}/${dotConfigRelativePath}`;
-    if (!dotConfigPath) return;
+    const dotConfigRelativePath = await resource.getDotConfigPath(this);
+    if (!dotConfigRelativePath) return;
+    const dotConfigUri = vscode.Uri.joinPath(extension.rootPath, dotConfigRelativePath);
 
     // Read .config from disk
-    const dotConfig = readDotConfig(dotConfigPath);
+    const dotConfig = await readDotConfig(dotConfigUri);
     if (!dotConfig) return;
     
     // Re order the nodes
@@ -253,6 +252,6 @@ export async function moveDown (this: OutlineView, resource: any) {
     });
 
     // Write the re formated .config file
-    writeDotConfig(dotConfigPath, reFormated);
+    await writeDotConfig(dotConfigUri, reFormated);
     this.refresh();
 }

@@ -1,11 +1,9 @@
 import * as vscode from 'vscode';
 import * as console from '../vsconsole';
-import * as fs from 'fs';
 import { prompt } from '../help';
 import * as vsconsole from '../vsconsole';
 import * as extension from '../extension';
 import { gitiniter } from '../gitTransactions';
-import { OutlineView } from '../panels/treeViews/outline/outlineView';
 
 
 export type Config = {
@@ -23,15 +21,15 @@ export class Workspace {
     };
 
     // Path to the .wtconfig file that supplies the above `Config` information for the workspace
-    public dotWtconfigPath: string;
+    public dotWtconfigPath: vscode.Uri;
 
     // Path to all the necessary folders for a workspace to function
-    public chaptersFolder: string;
-    public workSnipsFolder: string;
-    public importFolder: string;
-    public exportFolder: string;
-    public recyclingBin: string;
-    public contextValuesFilePath: string;
+    public chaptersFolder: vscode.Uri;
+    public workSnipsFolder: vscode.Uri;
+    public importFolder: vscode.Uri;
+    public exportFolder: vscode.Uri;
+    public recyclingBin: vscode.Uri;
+    public contextValuesFilePath: vscode.Uri;
 
     // Returns a list of all 
     getFolders() {
@@ -91,13 +89,13 @@ export class Workspace {
 
     // Simply initializes all the paths of necessary 
     constructor() {
-        this.dotWtconfigPath = `${extension.rootPath}/.wtconfig`;
-        this.chaptersFolder = `${extension.rootPath}/data/chapters`;
-        this.workSnipsFolder = `${extension.rootPath}/data/snips`;
-        this.importFolder = `${extension.rootPath}/data/import`;
-        this.exportFolder = `${extension.rootPath}/data/export`;
-        this.recyclingBin = `${extension.rootPath}/data/recycling`;
-        this.contextValuesFilePath = `${extension.rootPath}/data/contextValues.json`
+        this.dotWtconfigPath = vscode.Uri.joinPath(extension.rootPath, `.wtconfig`);
+        this.chaptersFolder = vscode.Uri.joinPath(extension.rootPath, `data/chapters`);
+        this.workSnipsFolder = vscode.Uri.joinPath(extension.rootPath, `data/snips`);
+        this.importFolder = vscode.Uri.joinPath(extension.rootPath, `data/import`);
+        this.exportFolder = vscode.Uri.joinPath(extension.rootPath, `data/export`);
+        this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
+        this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
     }
 }
 
@@ -141,25 +139,28 @@ export async function createWorkspace (
     try {
         // Create /.wtconfig
         const configJSON = JSON.stringify(workspace.config);
-        await fs.promises.writeFile(workspace.dotWtconfigPath, configJSON);
+
+        const wtConfigUri = workspace.dotWtconfigPath;
+        await vscode.workspace.fs.writeFile(wtConfigUri, Buffer.from(configJSON, 'utf-8'));
 
         // Create the data container
-        await fs.promises.mkdir(`${extension.rootPath}/data`);
+        const dataUri = vscode.Uri.joinPath(extension.rootPath, `data`);
+        await vscode.workspace.fs.createDirectory(dataUri);
 
         // Create necessary folders
         for (const folder of workspace.getFolders()) {
-            await fs.promises.mkdir(folder);
+            await vscode.workspace.fs.createDirectory(folder);
         }
 
         // Create the .config files for chapters and snips
-        const chaptersDotConfig = `${workspace.chaptersFolder}/.config`;
-        const snipsDotConfig = `${workspace.workSnipsFolder}/.config`;
-        await fs.promises.writeFile(chaptersDotConfig, '{}');
-        await fs.promises.writeFile(snipsDotConfig, '{}');
+        const chaptersDotConfig = vscode.Uri.joinPath(workspace.chaptersFolder, `.config`);
+        const snipsDotConfig = vscode.Uri.joinPath(workspace.workSnipsFolder, `.config`);
+        await vscode.workspace.fs.writeFile(chaptersDotConfig, Buffer.from('{}', 'utf-8'));
+        await vscode.workspace.fs.writeFile(snipsDotConfig, Buffer.from('{}', 'utf-8'));
         
         // Creating the log of the recyclng bin
-        const recycleBinLog = `${workspace.recyclingBin}/.log`;
-        await fs.promises.writeFile(recycleBinLog, '[]');
+        const recycleBinLog = vscode.Uri.joinPath(workspace.recyclingBin, `.log`);
+        await vscode.workspace.fs.writeFile(recycleBinLog, Buffer.from('[]', 'utf-8'));
 
         // Create .vscode folder and the settings.json to specify word wrap being on
         const settings = {
@@ -167,8 +168,12 @@ export async function createWorkspace (
             "editor.wordWrap": "on"
         };
         const settingsJSON = JSON.stringify(settings);
-        await fs.promises.mkdir(`${extension.rootPath}/.vscode`);
-        await fs.promises.writeFile(`${extension.rootPath}/.vscode/settings.json`, settingsJSON);
+
+
+        const dotVscodeUri = vscode.Uri.joinPath(extension.rootPath, `.vscode`);
+        await vscode.workspace.fs.createDirectory(dotVscodeUri);
+        const settingsUri = vscode.Uri.joinPath(extension.rootPath, `.vscode/settings.json`);
+        await vscode.workspace.fs.writeFile(settingsUri, Buffer.from(settingsJSON, 'utf-8'));
     }
     catch (e) {
         vscode.window.showErrorMessage(`Error creating directory: ${e}`);
@@ -200,7 +205,8 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
     // If anything in the try block, then valid will remain false
     try {
         // Try to read the /.wtconfig file
-        const wtconfigJSON = await fs.promises.readFile(workspace.dotWtconfigPath);
+        const wtConfigUri = workspace.dotWtconfigPath;
+        const wtconfigJSON = await vscode.workspace.fs.readFile(wtConfigUri);
         const wtconfig = JSON.parse(wtconfigJSON.toString());
 
         // Read config info
@@ -212,17 +218,16 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
         workspace.config = config;
 
         // Check for the existence of all the necessary folders
-        const anyFoldersInvalid = workspace.getFolders().map((folder) => {
-            const folderStat = fs.statSync(folder);
-            return folderStat.isDirectory();
-        })
-        .find(isDir => !isDir);
-        valid = !anyFoldersInvalid;
+        const folderStats: vscode.FileStat[] = await Promise.all(workspace.getFolders().map((folder) => {
+            return vscode.workspace.fs.stat(folder);
+        }));
+        valid = folderStats.every(({ type }) => type === vscode.FileType.Directory);
 
         try {
             // Attempt to read context values from the context values file on disk
             // Context values file may not exist, so allow a crash to happen
-            const contextValuesBuffer: Buffer = await fs.promises.readFile(workspace.contextValuesFilePath);
+            const contextValuesUri = workspace.contextValuesFilePath;
+            const contextValuesBuffer = await vscode.workspace.fs.readFile(contextValuesUri);
             const contextValuesJSON = contextValuesBuffer.toString();
             const contextValues: { [index: string]: any } = JSON.parse(contextValuesJSON);
             await Promise.all(Object.entries(contextValues).map(([ contextKey, contextValue ]) => {
@@ -237,7 +242,7 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
             context.workspaceState.update('wt.proximity.enabled', contextValues['wt.proximity.enabled']);
 
             // Then make sure to delete the workspace file when finished
-            fs.promises.rm(workspace.contextValuesFilePath);
+            vscode.workspace.fs.delete(contextValuesUri);
         }
         catch (e) {}
     }

@@ -17,7 +17,7 @@ import { packageForExport } from './packageable';
 import { TimedView } from './panels/treeViews/timedViews/timedView';
 import { Proximity } from './panels/treeViews/timedViews/proximity/Proximity';
 
-export let rootPath: string;
+export let rootPath: vscode.Uri;
 export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
 export const wordSeparatorRegex = new RegExp(wordSeparator.split('|')[1], 'g');
 export const sentenceSeparator: RegExp = /[.?!]/g;
@@ -78,10 +78,12 @@ async function activateImpl (context: vscode.ExtensionContext) {
 
 	// Load the root path of file system where the extension was loaded
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
-		? vscode.workspace.workspaceFolders[0].uri.fsPath : '.';
+		? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
-	rootPath = rootPath.replaceAll('\\', '/');
-	rootPath = rootPath.replaceAll('c:/', 'C:\\');
+	
+	// rootPath = rootPath.replaceAll('\\', '/');
+	// rootPath = rootPath.replaceAll('c:/', 'C:\\');
+
 
 	vscode.commands.registerCommand('wt.reload', async () => {
 		const workspace = await loadWorkspace(context);

@@ -14,12 +14,11 @@ import * as renameFunctions from './renameNodes';
 import { Workspace } from '../../../workspace/workspace';
 import { NodeTypes } from '../fsNodes';
 import { FileSystem } from '../fileSystem/fileSystem';
-import { _ } from '../fileSystem/fileSystemDefault';
 import * as console from './../../../vsconsole';
 
 export class OutlineView extends OutlineTreeProvider<OutlineNode> implements vscode.FileSystemProvider, FileSystem {
 
-    initializeTree(): OutlineNode {
+    async initializeTree(): Promise<OutlineNode> {
 		const init: InitializeNode<OutlineNode> = (data: NodeTypes<OutlineNode>) => new OutlineNode(data);
         return initializeOutline(init);
     }
@@ -82,7 +81,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements vsc
 			const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
 			return chaptersContainer.contents.map(c => {
 				const title = c.data.ids.display;
-				const uri = c.getUri().fsPath.split(extension.rootPath)[1];
+				const uri = c.getUri().fsPath.split(extension.rootPath.fsPath)[1];
 				return [uri, title];
 			});
 		});

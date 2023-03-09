@@ -1,6 +1,5 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as console from '../../vsconsole';
 import { Config, Workspace } from '../workspace';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../panels/treeViews/outline/outlineNodes';
@@ -15,7 +14,7 @@ async function recordFragmentContainer (node: (ChapterNode | SnipNode)): Promise
 
     // Read all the fragments from dist
     const fragmentBuffers: Buffer[] = await Promise.all(fragments.map(fragment => {
-        return fs.promises.readFile(fragment.getUri().fsPath);
+        return vscode.workspace.fs.readFile(fragment.getUri());
     }));
 
     // Pair sorted fragments with their data buffers
@@ -67,24 +66,24 @@ async function getIweFileName (
     workspace: Workspace
 ): Promise<string> {
     // Read the entries of the export folder
-    const exportFolder = workspace.exportFolder;
-    const entries = await fs.promises.readdir(exportFolder, { withFileTypes: true });
+    const exportUri = workspace.exportFolder;
+    const entries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(exportUri);
 
     // Keep only those entries with names that match the export file pattern:
     //      wt( \(\d+\))?.iwe
     // Pattern explanation: accepts names like: 'wt.iwe', or 'wt (#).iwe', where # is a positive whole number
-    const iweEntries = entries.filter(entry => {
-        if (entry.isDirectory()) return false;
-        return /wt( \(\d+\))?.iwe/.test(entry.name);
+    const iweEntries = entries.filter(([ name, fileType ]) => {
+        if (fileType === vscode.FileType.Directory) return false;
+        return /wt( \(\d+\))?.iwe/.test(name);
     });
 
     // If no other iwe entries, then file name is wt.iwe
     if (iweEntries.length === 0) return 'wt.iwe';
     // If there is only one entry and that entry is wt.iwe, then the next one is wt (1).iwe
-    if (iweEntries.length === 1 && iweEntries[0].name === 'wt.iwe') return 'wt (1).iwe';
+    if (iweEntries.length === 1 && iweEntries[0][0] === 'wt.iwe') return 'wt (1).iwe';
 
-    const inParens: (string | undefined)[] = iweEntries.map(entry => {
-        return /wt( \((?<duplicate>\d+)\))?.iwe/.exec(entry.name)?.groups?.duplicate;
+    const inParens: (string | undefined)[] = iweEntries.map(([ name, _ ]) => {
+        return /wt( \((?<duplicate>\d+)\))?.iwe/.exec(name)?.groups?.duplicate;
     });
 
     // Remove 'wt.iwe' (wt.iwe is undefined in the inParens array, because the group (?<duplicate>\d+) was never matched)
@@ -133,7 +132,7 @@ export async function handleWorkspaceExport (
     // Write the workspace to disk
     const iweJSON = JSON.stringify(iwe, null, 2);
     const iweFilename = await getIweFileName(workspace);
-    const iweFullpath = `${workspace.exportFolder}/${iweFilename}`;
-    await fs.promises.writeFile(iweFullpath, iweJSON);
-    vscode.window.showInformationMessage(`Successfully created file '${iweFilename}' in '${workspace.exportFolder}'`);
+    const iweUri = vscode.Uri.joinPath(workspace.exportFolder, iweFilename);
+    await vscode.workspace.fs.writeFile(iweUri, Buffer.from(iweJSON, 'utf-8'));
+    vscode.window.showInformationMessage(`Successfully created file '${iweFilename}' in '${workspace.exportFolder.fsPath}'`);
 }

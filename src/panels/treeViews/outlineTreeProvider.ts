@@ -9,9 +9,9 @@ export abstract class TreeNode {
 	abstract getUri(): vscode.Uri;
 	abstract getDisplayString(): string;
 	abstract getId(): string;
-	abstract getChildren(): TreeNode[];
+	abstract getChildren(): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
-	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): boolean;
+	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): Promise<boolean>;
 }
 
 
@@ -24,45 +24,50 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	// To be implemented by concrete type
 	// Builds the initial tree
-	abstract initializeTree (): T;
+	abstract initializeTree (): Promise<T>;
 
 	constructor (
 		protected context: vscode.ExtensionContext, 
 		private viewName: string
 	) {
-		this.tree = this.initializeTree();
+		this.tree = {} as T;
+		this.uriToVisibility = {};
+		this.initializeTree().then((tree) => {
+			this.tree = tree;
 
-		const uriMap: { [index: string]: boolean } | undefined = context.workspaceState.get(`${this.viewName}.collapseState`);
-		if (uriMap) {
-			this.uriToVisibility = uriMap;
-		}
-		else { 
-			this.uriToVisibility = {};
-		}
-
-		const view = vscode.window.createTreeView(viewName, { 
-            treeDataProvider: this, 
-            showCollapseAll: true, 
-            canSelectMany: true, 
-			dragAndDropController: this
+			const uriMap: { [index: string]: boolean } | undefined = context.workspaceState.get(`${this.viewName}.collapseState`);
+			if (uriMap) {
+				this.uriToVisibility = uriMap;
+			}
+			else { 
+				this.uriToVisibility = {};
+			}
+	
+			const view = vscode.window.createTreeView(viewName, { 
+				treeDataProvider: this, 
+				showCollapseAll: true, 
+				canSelectMany: true, 
+				dragAndDropController: this
+			});
+			this.view = view;
+			context.subscriptions.push(view);
+	
+			// Functions for storing the state of a uri's collapse/expands whenever a tree is closed 
+			//		or opened
+			view.onDidExpandElement((event: vscode.TreeViewExpansionEvent<T>) => {
+				const expandedElementUri = event.element.getUri();
+				this.uriToVisibility[expandedElementUri.fsPath] = true;
+				// Also save the state of all collapse and expands to workspace context state
+				context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
+			});
+	
+			view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
+				const collapsedElementUri = event.element.getUri();
+				this.uriToVisibility[collapsedElementUri.fsPath] = false;			
+				context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
+			});	
 		});
-		this.view = view;
-		context.subscriptions.push(view);
 
-		// Functions for storing the state of a uri's collapse/expands whenever a tree is closed 
-		//		or opened
-		view.onDidExpandElement((event: vscode.TreeViewExpansionEvent<T>) => {
-			const expandedElementUri = event.element.getUri();
-			this.uriToVisibility[expandedElementUri.fsPath] = true;
-			// Also save the state of all collapse and expands to workspace context state
-			context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
-		});
-
-		view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
-			const collapsedElementUri = event.element.getUri();
-			this.uriToVisibility[collapsedElementUri.fsPath] = false;			
-			context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
-		});	
 	}
 
 	getPackageItems(): { [index: string]: any } {
@@ -75,9 +80,9 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
 	
-	refresh(): void {
+	async refresh(): Promise<void> {
 		try {
-			this.tree = this.initializeTree();
+			this.tree = await this.initializeTree();
 		}
 		catch (e) {
 			// If error occurs in initializing the tree, then dispose of this view
@@ -90,14 +95,14 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	// Tree data provider 
 
-	public getChildren (element: T): T[] {
+	public async getChildren (element: T): Promise<T[]> {
 		if (!element) {
-			return this.tree.getChildren().map(on => on as T);
+			return (await this.tree.getChildren()).map(on => on as T);
 		}
-		return element.getChildren().map(on => on as T);
+		return (await element.getChildren()).map(on => on as T);
 	}
 
-	public getTreeItem (element: T): vscode.TreeItem {
+	public async getTreeItem (element: T): Promise<vscode.TreeItem> {
 		return this._getTreeItem(element.getId());
 	}
 
@@ -107,8 +112,8 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	// Helper methods
 	
-	_getTreeItem (key: string): vscode.TreeItem {
-		const treeElement = this._getTreeElement(key) as T;
+	async _getTreeItem (key: string): Promise<vscode.TreeItem> {
+		const treeElement = (await this._getTreeElement(key)) as T;
 		const label = treeElement.getDisplayString();
 
 		let collapseState: vscode.TreeItemCollapsibleState;
@@ -141,7 +146,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	}
 
 	// Searches provided tree for the object whose key matches the targeted key
-	_getTreeElement (targetkey: string | undefined, tree?: TreeNode): any {
+	async _getTreeElement (targetkey: string | undefined, tree?: TreeNode): Promise<any> {
 		// If there is not targeted key, then assume that the caller is targeting
 		//		the entire tree
 		if (!targetkey) {
@@ -150,7 +155,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 		// If there is no provided tree, use the whole tree as the search space
 		const currentNode = tree ?? this.tree;
-		const currentChildren = currentNode.getChildren();
+		const currentChildren = await currentNode.getChildren();
 
 		if (currentNode.getId() === targetkey) {
 			return currentNode;
@@ -167,7 +172,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			// Otherwise, recurse into this function again, using the current
 			//		subtree as the search space
 			else {
-				const treeElement = this._getTreeElement(targetkey, subtree);
+				const treeElement = await this._getTreeElement(targetkey, subtree);
 				
 				// If the tree was found, return it
 				if (treeElement) {
@@ -177,7 +182,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		}
 	}
 
-	_getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: TreeNode): any {
+	async _getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: TreeNode): Promise<any> {
 		// If there is not targeted key, then assume that the caller is targeting
 		//		the entire tree
 		if (!targetUri) {
@@ -186,7 +191,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		
 		// If there is no provided tree, use the whole tree as the search space
 		const currentNode = tree ?? this.tree;
-		const currentChildren = currentNode.getChildren();
+		const currentChildren = await currentNode.getChildren();
 
 		if (currentNode.getUri().fsPath === targetUri.fsPath) {
 			return currentNode;
@@ -203,7 +208,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			// Otherwise, recurse into this function again, using the current
 			//		subtree as the search space
 			else {
-				const treeElement = this._getTreeElementByUri(targetUri, subtree);
+				const treeElement = await this._getTreeElementByUri(targetUri, subtree);
 				
 				// If the tree was found, return it
 				if (treeElement) {
@@ -226,14 +231,14 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		const movedItems: T[] = transferItem.value;
 
 		// Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
-        const uniqueRoots = this._getLocalRoots(movedItems);
+        const uniqueRoots = await this._getLocalRoots(movedItems);
 		const filteredParents = uniqueRoots.filter(root => root.getParentId() !== targ.getId());
 
 		// Move all the valid nodes into the target
 		if (filteredParents.length > 0) {
-			filteredParents.forEach(mover => {
-				mover.moveNode(targ, this);
-			});
+			for (const mover of filteredParents) {
+				await mover.moveNode(targ, this);
+			}
 			this.refresh();
 		}
     }
@@ -244,11 +249,11 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 
 	// From the given nodes, filter out all nodes who's parent is already in the the array of Nodes.
-	_getLocalRoots (nodes: T[]): T[] {
+	async _getLocalRoots (nodes: T[]): Promise<T[]> {
 		const localRoots = [];
 		for (let i = 0; i < nodes.length; i++) {
 			const parentId = nodes[i].getParentId();
-			const parent = this._getTreeElement(parentId);
+			const parent = await this._getTreeElement(parentId);
 			if (parent) {
 				const isInList = nodes.find(n => n.getId() === parent.getId());
 				if (isInList === undefined) {

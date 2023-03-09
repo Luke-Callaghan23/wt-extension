@@ -2,7 +2,6 @@
 import * as vscode from 'vscode';
 import { FragmentData } from './TODONode';
 import { Validated, TODO, todo } from './TODOsView';
-import * as fs from 'fs';
 
 type IncompleteTODO = {
     rowStart: number,
@@ -10,12 +9,12 @@ type IncompleteTODO = {
     content: string,
 };
 
-export function scanFragment(uri: string, fragmentNode: FragmentData): [ Validated, number ] {
+export async function scanFragment(uri: vscode.Uri, fragmentNode: FragmentData): Promise<[ Validated, number ]> {
     const finishedTODOs: TODO[] = [];
     const unfinishedTodoStack: IncompleteTODO[] = [];
     
     // Read the fragment file and split on newlines
-    const fragmentStream = fs.readFileSync(uri, 'utf-8').split(/\r?\n/);
+    const fragmentStream = vscode.workspace.fs.readFile(uri).split(/\r?\n/);
 
     // Scan over every row and column of the file
     for (let row = 0; row < fragmentStream.length; row++) {

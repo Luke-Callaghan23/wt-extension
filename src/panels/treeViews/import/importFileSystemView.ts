@@ -1,12 +1,10 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fsExtra from 'fs-extra';
+import * as vscodeUris from 'vscode-uri'
 import { Workspace } from '../../../workspace/workspace';
 import { FileSystem } from '../fileSystem/fileSystem';
 import * as fsFunctions from '../fileSystem/fileSystemProviderFunctions';
 import * as console from './../../../vsconsole';
-import { _ } from '../fileSystem/fileSystemDefault';
 import { ImportForm } from '../../webviews/import/importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
 
@@ -42,11 +40,9 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
 				type: vscode.FileType;
 			}[] = [];
 			children.forEach(([ name, type ]) => {
-				const uri = vscode.Uri.file(
-					type === vscode.FileType.Directory
-						? path.join(element.uri.fsPath, name) + '/'
-						: path.join(element.uri.fsPath, name)
-				);
+				const uri = type === vscode.FileType.Directory
+					? vscode.Uri.joinPath(element.uri, name)
+					: vscode.Uri.joinPath(element.uri, name);
 					
 				const ret = { uri, type };
 				if (type === vscode.FileType.Directory) {
@@ -75,7 +71,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
 				? vscode.TreeItemCollapsibleState.Expanded 
 				: vscode.TreeItemCollapsibleState.None
 		);
-		treeItem.label = path.basename((treeItem.resourceUri as vscode.Uri).fsPath);
+		treeItem.label = vscodeUris.Utils.basename(treeItem.resourceUri);
 
 		const isRootFolder: boolean = treeItem.resourceUri?.fsPath === this.importFolder.fsPath;
 
@@ -166,9 +162,9 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
 		// Don't need to await them, as none of the imports (should) rely on each other
 		await Promise.all(uris.map(uri => {
 			const uriPath = uri.fsPath;
-			const uriName = path.basename(uriPath);
-			const dest = `${this.importFolder.fsPath}/${uriName}`
-			return fsExtra.copy(uriPath, dest);
+			const uriName = vscodeUris.Utils.basename(uri);
+			const dest = vscode.Uri.joinPath(this.importFolder, uriName);
+			return vscode.workspace.fs.copy(uriPath, dest);
 		}));
 		this.refresh();
 	}
@@ -229,7 +225,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, Fil
         private workspace: Workspace,
     ) {
 		this.excludedFiles = [];
-        this.importFolder = vscode.Uri.parse(this.workspace.importFolder);
+        this.importFolder = this.workspace.importFolder;
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
         
 		const documentDropProvider = new ImportDocumentProvider(this.importFolder, this.workspace, this);

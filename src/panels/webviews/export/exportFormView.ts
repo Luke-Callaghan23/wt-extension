@@ -1,5 +1,4 @@
 /* eslint-disable curly */
-import path = require('path');
 import * as vscode from 'vscode';
 import * as console from '../../../vsconsole';
 import  * as extension from '../../../extension';

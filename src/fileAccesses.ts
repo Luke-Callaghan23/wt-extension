@@ -27,7 +27,7 @@ export class FileAccessManager {
         // Traverse upwards from the opened fragment until we find a node whose type is container
         const openedUri = document.uri;
         let uri: vscode.Uri | undefined = document.uri;
-		let node: OutlineNode | undefined | null = outlineView._getTreeElementByUri(document.uri);
+		let node: OutlineNode | undefined | null = await outlineView._getTreeElementByUri(document.uri);
 		while (node && uri) {
 			// Break once the current node is a container
 			if (node.data.ids.type === 'container') {
@@ -36,7 +36,7 @@ export class FileAccessManager {
 
 			// Otherwise, traverse upwards
 			const parentId = node.data.ids.parentInternalId;
-			node = outlineView._getTreeElement(parentId);
+			node = await outlineView._getTreeElement(parentId);
 			uri = node?.getUri();
 		}
         if (node?.data.ids.type !== 'container') return;
