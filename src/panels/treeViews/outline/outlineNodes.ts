@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import * as console from '../../../vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../outlineTreeProvider';
-import { folderMove, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help';
+import { ConfigFileInfo, folderMove, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help';
 import { OutlineView } from './outlineView';
 import * as fsNodes from '../fsNodes';
 import * as extension from '../../../extension';
@@ -171,10 +171,90 @@ export class OutlineNode extends TreeNode {
             return false;
         }
 
-        // Check to make sure that this snip is not already placed in this chapter
+        // If the container of the destination is the same as the container of the mover
+        // Then we're not actually moving the node anywhere, we are just changing the internal ordering
         if (destinationContainer.ids.internal === moverParentId) {
-            vscode.window.showWarningMessage('WARN: did not move snip as it was already in the correct location');
-            return false;
+
+
+            // Get the .config for the container -- this contains the ordering values for both the mover
+            //      and the destination item
+            // (Destination item is just the item that the mover was dropped onto -- not actually destination,
+            //      as there is no moving actually occurring)
+            const containerConfigUri = vscode.Uri.joinPath(extension.rootPath, destinationContainer.ids.relativePath, '.config');
+            const containerConfig = await readDotConfig(containerConfigUri);
+            if (!containerConfig) return false;
+
+            type FileInfo = {
+                filename: string,
+                config: ConfigFileInfo
+            };
+
+            // Buckets for items pre-reorder
+            const before: FileInfo[] = [];          // items that come before either the mover or the destination
+            const between: FileInfo[] = [];         // items that come between the mover and the detination
+            const after: FileInfo[] = [];           // items that come after the mover and the destination
+
+            // Minimum and maximum are just aliases for the mover and the destination where "min" is the 
+            //      items that has a lower ordering and "max" is the item that has higher ordering
+            const [ min, max ] = this.data.ids.ordering < newParentNode.data.ids.ordering 
+                ? [ this.data.ids.ordering, newParentNode.data.ids.ordering ]
+                : [ newParentNode.data.ids.ordering, this.data.ids.ordering ];
+
+            let minEntry: FileInfo | null = null;
+            let maxEntry: FileInfo | null = null;
+
+            // Place all items in the .config into their respective buckets
+            Object.entries(containerConfig).forEach(([ filename, info ]) => {
+                if (info.ordering < min) before.push({ filename, config: info });           // ordering before min -> before 
+                else if (info.ordering === min) minEntry = { filename, config: info };      // ordering is min -> min
+                else if (info.ordering > max) after.push({ filename, config: info });       // ordering after max -> after
+                else if (info.ordering === max) maxEntry = { filename, config: info };      // ordering is max -> max
+                else between.push({ filename, config: info });                              // none of the above -> between
+            });
+            if (!minEntry || !maxEntry) {
+                throw new Error ('Not possible');
+            }
+            
+            if (this.data.ids.ordering < newParentNode.data.ids.ordering) {
+                // If the mover comes before the destination, then move it after
+                const mover = minEntry as FileInfo;
+                const dest = maxEntry as FileInfo;
+
+                // All items in between get shifted down
+                between.forEach(({ filename }) => {
+                    containerConfig[filename].ordering -= 1;
+                });
+
+                // Destination gets shifted down
+                const oldDestOrdering = containerConfig[dest.filename].ordering;
+                containerConfig[dest.filename].ordering = oldDestOrdering - 1;
+
+                // Mover gets old destination's ordering
+                containerConfig[mover.filename].ordering = oldDestOrdering;
+            }
+            else {
+                // If the mover comes after the destination, then move it before
+                const mover = maxEntry as FileInfo;
+                const dest = minEntry as FileInfo;
+
+                // All items after mover get shifted down
+                after.forEach(({ filename }) => {
+                    containerConfig[filename].ordering -= 1;
+                });
+
+                // All items in between get shifted up
+                between.forEach(({ filename }) => {
+                    containerConfig[filename].ordering += 1;
+                });
+
+                // Destination gets shifted up
+                const oldDestOrdering = containerConfig[dest.filename].ordering;
+                containerConfig[dest.filename].ordering = oldDestOrdering + 1;
+
+                // Mover gets old destination's ordering
+                containerConfig[mover.filename].ordering = oldDestOrdering;
+            }
+            return true;
         }
         
         // Path for the old config file and old file
