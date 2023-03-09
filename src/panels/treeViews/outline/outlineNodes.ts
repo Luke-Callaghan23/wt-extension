@@ -190,9 +190,8 @@ export class OutlineNode extends TreeNode {
             };
 
             // Buckets for items pre-reorder
-            const before: FileInfo[] = [];          // items that come before either the mover or the destination
-            const between: FileInfo[] = [];         // items that come between the mover and the detination
-            const after: FileInfo[] = [];           // items that come after the mover and the destination
+            // Container for items that come between the mover and the detination
+            const between: FileInfo[] = [];         
 
             // Minimum and maximum are just aliases for the mover and the destination where "min" is the 
             //      items that has a lower ordering and "max" is the item that has higher ordering
@@ -205,11 +204,11 @@ export class OutlineNode extends TreeNode {
 
             // Place all items in the .config into their respective buckets
             Object.entries(containerConfig).forEach(([ filename, info ]) => {
-                if (info.ordering < min) before.push({ filename, config: info });           // ordering before min -> before 
-                else if (info.ordering === min) minEntry = { filename, config: info };      // ordering is min -> min
-                else if (info.ordering > max) after.push({ filename, config: info });       // ordering after max -> after
-                else if (info.ordering === max) maxEntry = { filename, config: info };      // ordering is max -> max
-                else between.push({ filename, config: info });                              // none of the above -> between
+                if (info.ordering === min) minEntry = { filename, config: info };      // ordering is min -> min
+                if (info.ordering === max) maxEntry = { filename, config: info };      // ordering is max -> max
+                else if (info.ordering > min && info.ordering < max) {
+                    between.push({ filename, config: info });
+                }
             });
             if (!minEntry || !maxEntry) {
                 throw new Error ('Not possible');
@@ -236,11 +235,6 @@ export class OutlineNode extends TreeNode {
                 // If the mover comes after the destination, then move it before
                 const mover = maxEntry as FileInfo;
                 const dest = minEntry as FileInfo;
-
-                // All items after mover get shifted down
-                after.forEach(({ filename }) => {
-                    containerConfig[filename].ordering -= 1;
-                });
 
                 // All items in between get shifted up
                 between.forEach(({ filename }) => {
