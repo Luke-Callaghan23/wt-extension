@@ -192,16 +192,13 @@ export class TODONode extends TreeNode {
 
             // Get the TODO counts in the chapters container and in the snips container
             const chapterCounts = await root.chapters.getTODOCounts();
-            console.log(`chapter: ${chapterCounts}`);
             const snipCounts = await root.snips.getTODOCounts();
-            console.log(`snip: ${snipCounts}`);
 
             // Return the chapter and root containers, as long as they have at least one
             //      marked TODO 
             const children: TreeNode[] = [];
             if (chapterCounts > 0) children.push(root.chapters);
             if (snipCounts > 0) children.push(root.snips);
-            console.log(children)
             return children;
         }
         else if (data.ids.type === 'container') {
