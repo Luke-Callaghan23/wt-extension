@@ -2,20 +2,20 @@
 
 import * as vscode from 'vscode';
 import * as console from './vsconsole';
-import { ImportFileSystemView } from './panels/treeViews/import/importFileSystemView';
-import { OutlineView } from './panels/treeViews/outline/outlineView';
-import { TODOsView } from './panels/treeViews/timedViews/TODO/TODOsView';
-import { WordWatcher } from './panels/treeViews/timedViews/wordWatcher/wordWatcher';
-import { ExportForm } from './panels/webviews/export/exportFormView';
-import { SynonymViewProvider } from './panels/webviews/synonymsView';
+import { ImportFileSystemView } from './import/importFileSystemView';
+import { OutlineView } from './outline/outlineView';
+import { TODOsView } from './TODO/TODOsView';
+import { WordWatcher } from './wordWatcher/wordWatcher';
+import { ExportForm } from './export/exportFormView';
+import { SynonymViewProvider } from './synonyms/synonymsView';
 import { Toolbar } from './toolbar';
 import { importWorkspace } from './workspace/importExport/importWorkspace';
 
 import { loadWorkspace, createWorkspace, Workspace } from './workspace/workspace';
 import { FileAccessManager } from './fileAccesses';
 import { packageForExport } from './packageable';
-import { TimedView } from './panels/treeViews/timedViews/timedView';
-import { Proximity } from './panels/treeViews/timedViews/proximity/Proximity';
+import { TimedView } from './timedView';
+import { Proximity } from './proximity/Proximity';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();

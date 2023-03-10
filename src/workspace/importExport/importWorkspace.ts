@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as console from './../../vsconsole';
 import { createWorkspace, Workspace } from './../workspace';
 import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport } from './types';
-import { getUsableFileName } from '../../panels/treeViews/outline/createNodes';
+import { getUsableFileName } from '../../outline/createNodes';
 import { ConfigFileInfo } from '../../help';
 import * as extension from './../../extension';
 

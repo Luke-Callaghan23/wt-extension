@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 import * as extension from './../../extension';
 import * as console from '../../vsconsole';
 import { Config, Workspace } from '../workspace';
-import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../panels/treeViews/outline/outlineNodes';
-import { OutlineView } from '../../panels/treeViews/outline/outlineView';
+import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../outline/outlineNodes';
+import { OutlineView } from '../../outline/outlineView';
 import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport as WorkspaceRecord } from './types';
 
 
