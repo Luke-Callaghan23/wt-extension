@@ -194,9 +194,6 @@
 				"title": "Writing Tool: TODOs View Help",
 				"icon": "$(question)"
 			},
-
-			
-
 			{
 				"command": "wt.todo.enable",
 				"title": "Writing Tool: Enable Automatic TODO Querying",
@@ -227,10 +224,6 @@
 				"title": "Writing Tool: Disable Word Proximity Checks (removes highlights on duplicate words in close proximity)",
 				"enablement": "wt.proximity.enabled"
 			},
-
-
-
-
 			{
 				"command": "wt.wordWatcher.help",
 				"title": "Writing Tool: Word Watcher View Help",
@@ -266,9 +259,6 @@
 				"command": "wt.wordWatcher.jumpNextInstanceOf",
 				"title": "Writing Tool: Jump to Next Instance of Watched Word"
 			},
-
-
-
 			{
 				"command": "wt.synonyms.help",
 				"title": "Writing Tool: Synonyms View Help",
@@ -278,8 +268,6 @@
 				"command": "wt.synonyms.searchWord",
 				"title": "Writing Tool: Search Synonym"
 			},
-
-
 			{
 				"command": "wt.editor.remove",
 				"title": "Writing Tool: Clear Selection",
@@ -423,8 +411,6 @@
 					"command": "wt.outline.removeResource",
 					"when": "view == wt.outline"
 				},
-
-
 				{
 					"command": "wt.wordWatcher.deleteWord",
 					"when": "view == wt.wordWatcher && (viewItem == watchedWord_disabled || viewItem == watchedWord_enabled)"
@@ -441,8 +427,6 @@
 					"command": "wt.wordWatcher.deleteUnwatchedWord",
 					"when": "view == wt.wordWatcher && viewItem == unwatchedWord"
 				},
-
-
 				{
 					"command": "wt.import.fileExplorer.removeResource",
 					"when": "view == wt.import.fileExplorer"
@@ -612,6 +596,7 @@
 		"pdf2html": "^3.1.0",
 		"rimraf": "^2.6.2",
 		"showdown": "^2.1.0",
-		"uuid": "^9.0.0"
+		"uuid": "^9.0.0",
+		"vscode-uri": "^3.0.7"
 	}
 }

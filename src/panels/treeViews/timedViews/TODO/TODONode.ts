@@ -248,9 +248,9 @@ export class TODONode extends TreeNode {
         return `${this.data.ids.type} | TODOs: ${this.getTODOCounts()}`;
     }
     
-    async moveNode (newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): Promise<boolean> {
+    async moveNode (newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): Promise<number> {
         vscode.window.showErrorMessage('Error: cannot move files within the TODO tree, please try again in the outline tree');
-        return false;
+        return -1;
     }
 
     getUri (): vscode.Uri {

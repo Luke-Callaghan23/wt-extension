@@ -6,7 +6,6 @@ import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from
 import { OutlineView } from './outlineView';
 import * as fsNodes from '../fsNodes';
 import * as extension from '../../../extension';
-import { FileAccessManager } from '../../../fileAccesses';
 
 export const usedIds: { [index: string]: boolean } = {};
 
@@ -19,7 +18,9 @@ const allowedMoves: { [index: string]: ResourceType[] } = {
         'container',
         'snip'
     ],
-    'chapter': [],
+    'chapter': [
+        'chapter'
+    ],
     'root': [],
     'container': [
         'chapter',
@@ -99,7 +100,11 @@ export class OutlineNode extends TreeNode {
         return movedTitle;
     }
 
-    async moveNode (newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): Promise<boolean> {
+    async moveNode (
+        newParent: TreeNode, 
+        provider: OutlineTreeProvider<TreeNode>,
+        moveOffset: number = 0
+    ): Promise<number> {
         const newParentNode = newParent as OutlineNode;
         const newParentType = newParentNode.data.ids.type;
         const newParentId = newParentNode.data.ids.internal;
@@ -109,7 +114,7 @@ export class OutlineNode extends TreeNode {
         
         const thisAllowedMoves = allowedMoves[moverType];
         if (!thisAllowedMoves.find(allowed => allowed === newParentType)) {
-            return false;
+            return -1;
         }
 
         if (moverType === 'container') {
@@ -126,7 +131,16 @@ export class OutlineNode extends TreeNode {
             containerTarget = newParent;
 
             // Move each snip in the mover's content into the target container found above by recusing into this function again
-            return moverContent.every(snip => snip.moveNode(containerTarget, provider));
+            return (await Promise.all(
+                moverContent.map(
+                    snip => snip.moveNode(containerTarget, provider)
+                )
+            )).reduce((acc, n) => {
+                if (acc === -1 || n == -1) {
+                    return -1;
+                }
+                return acc + n;
+            }, 0);
         }
 
         // If the mover is not a container, then we're only moving a single item:
@@ -166,23 +180,30 @@ export class OutlineNode extends TreeNode {
                 throw new Error('Not possible.');
             }
         }  
+        else if (moverType === 'chapter') {
+            destinationContainer = ((provider.tree as OutlineNode).data as RootNode).chapters.data;
+        }
         else {
-            vscode.window.showErrorMessage('Not implemented');
-            return false;
+            return -1;
         }
 
         // If the container of the destination is the same as the container of the mover
         // Then we're not actually moving the node anywhere, we are just changing the internal ordering
         if (destinationContainer.ids.internal === moverParentId) {
 
-
+            console.log(`mover: ${this.data.ids.display}`)
+            console.log(`dest: ${(newParent as OutlineNode).data.ids.display}`)
+            
+            
             // Get the .config for the container -- this contains the ordering values for both the mover
             //      and the destination item
             // (Destination item is just the item that the mover was dropped onto -- not actually destination,
             //      as there is no moving actually occurring)
-            const containerConfigUri = vscode.Uri.joinPath(extension.rootPath, destinationContainer.ids.relativePath, '.config');
+            const containerConfigUri = vscode.Uri.joinPath(extension.rootPath, destinationContainer.ids.relativePath, destinationContainer.ids.fileName, '.config');
             const containerConfig = await readDotConfig(containerConfigUri);
-            if (!containerConfig) return false;
+            console.log(containerConfig)
+            console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+            if (!containerConfig) return -1;
 
             type FileInfo = {
                 filename: string,
@@ -195,26 +216,29 @@ export class OutlineNode extends TreeNode {
 
             // Minimum and maximum are just aliases for the mover and the destination where "min" is the 
             //      items that has a lower ordering and "max" is the item that has higher ordering
-            const [ min, max ] = this.data.ids.ordering < newParentNode.data.ids.ordering 
-                ? [ this.data.ids.ordering, newParentNode.data.ids.ordering ]
-                : [ newParentNode.data.ids.ordering, this.data.ids.ordering ];
+            const moverOrdering = containerConfig[this.data.ids.fileName].ordering;
+            const destOrdering = containerConfig[newParentNode.data.ids.fileName].ordering;
+            const [ min, max ] = moverOrdering < destOrdering
+                ? [ moverOrdering, destOrdering ]
+                : [ destOrdering, moverOrdering ];
 
             let minEntry: FileInfo | null = null;
             let maxEntry: FileInfo | null = null;
 
             // Place all items in the .config into their respective buckets
             Object.entries(containerConfig).forEach(([ filename, info ]) => {
-                if (info.ordering === min) minEntry = { filename, config: info };      // ordering is min -> min
-                if (info.ordering === max) maxEntry = { filename, config: info };      // ordering is max -> max
-                else if (info.ordering > min && info.ordering < max) {
+                if (info.ordering === min) minEntry = { filename, config: info };                   // ordering is min -> min
+                if (info.ordering === max + moveOffset) maxEntry = { filename, config: info };      // ordering is max -> max
+                else if (info.ordering > min && info.ordering < max + moveOffset) {
                     between.push({ filename, config: info });
                 }
             });
             if (!minEntry || !maxEntry) {
                 throw new Error ('Not possible');
             }
-            
-            if (this.data.ids.ordering < newParentNode.data.ids.ordering) {
+
+            let off = 0;
+            if (moverOrdering < destOrdering) {
                 // If the mover comes before the destination, then move it after
                 const mover = minEntry as FileInfo;
                 const dest = maxEntry as FileInfo;
@@ -230,6 +254,11 @@ export class OutlineNode extends TreeNode {
 
                 // Mover gets old destination's ordering
                 containerConfig[mover.filename].ordering = oldDestOrdering;
+
+                // Tell the caller that a node has moved downwards
+                // So that if there are multiple nodes moving downwards in the same container,
+                //      the next time moveNode is called we know
+                off = 1;
             }
             else {
                 // If the mover comes after the destination, then move it before
@@ -248,7 +277,11 @@ export class OutlineNode extends TreeNode {
                 // Mover gets old destination's ordering
                 containerConfig[mover.filename].ordering = oldDestOrdering;
             }
-            return true;
+
+            // Write the edited config back to the disk
+            await writeDotConfig(containerConfigUri, containerConfig);
+
+            return off;
         }
         
         // Path for the old config file and old file
@@ -263,7 +296,7 @@ export class OutlineNode extends TreeNode {
 
             // Edit the new .config to add the moved record
             const destinationDotConfig = await readDotConfig(destinationDotConfigUri);
-            if (!destinationDotConfig) return false;
+            if (!destinationDotConfig) return 0;
 
             // Find the record in the new .config file with the highest ordering
             const latestFragmentNumber = getLatestOrdering(destinationDotConfig);
@@ -271,7 +304,7 @@ export class OutlineNode extends TreeNode {
 
             const movedRecordTitle = await this.shiftTrailingNodesDown(provider as OutlineTreeProvider<OutlineNode>);
             if (movedRecordTitle === '') {
-                return false;
+                return 0;
             }
 
             // Add the record for the moved fragment to the new .config file and write to disk
@@ -284,11 +317,11 @@ export class OutlineNode extends TreeNode {
             // Finally move data with the move function specified above
             await vscode.workspace.fs.rename(moverUri, destinationUri);
 
-            return true;
+            return 0;
         }
         catch (e) {
             vscode.window.showErrorMessage(`Error: unable to move fragment file: ${e}`);
-            return false;
+            return 0;
         }
     }
 

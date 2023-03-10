@@ -11,7 +11,7 @@ export abstract class TreeNode {
 	abstract getId(): string;
 	abstract getChildren(): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
-	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): Promise<boolean>;
+	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>, moveOffset: number): Promise<number>;
 }
 
 
@@ -237,14 +237,18 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 		// Move all the valid nodes into the target
 		if (filteredParents.length > 0) {
+			// Offset tells how many nodes have moved downwards in the same container so far
+			// In the case where multiple nodes are moving downwards at once, it lets
+			//		.moveNode know how many nodes have already moved down, and 
+			//		lets it adapt to those changes
+			let offset = 0;
 			for (const mover of filteredParents) {
-				await mover.moveNode(targ, this);
+				offset += await mover.moveNode(targ, this, offset);
 			}
 			this.refresh();
 		}
     }
     public async handleDrag(source: T[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-		console.log(source);
 		treeDataTransfer.set('application/vnd.code.tree.outline', new vscode.DataTransferItem(source));
 	}
 
