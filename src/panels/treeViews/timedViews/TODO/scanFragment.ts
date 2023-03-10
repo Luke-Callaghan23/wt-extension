@@ -1,4 +1,5 @@
 /* eslint-disable curly */
+import * as console from './../../../../vsconsole';
 import * as extension from './../../../../extension';
 import * as vscode from 'vscode';
 import { FragmentData } from './TODONode';

@@ -77,7 +77,7 @@ export class TODONode extends TreeNode {
                 //      contents array, and sum them up
                 let containerTODOs = 0;
                 for (const currentNode of contents) {
-                    containerTODOs + await currentNode.getTODOCounts();
+                    containerTODOs += await currentNode.getTODOCounts();
                 }
 
                 // Set the count of TODOs for this container to the sum of the TODOs for all of
@@ -102,7 +102,7 @@ export class TODONode extends TreeNode {
                 //      this chapter, and sum them up
                 let fragementsTODOs = 0;
                 for (const currentFragment of fragements) {
-                    fragementsTODOs + await currentFragment.getTODOCounts();
+                    fragementsTODOs += await currentFragment.getTODOCounts();
                 }
 
                 // Total TODO count for the chapter is the sum of all the TODOs in this chapter's text
@@ -123,7 +123,7 @@ export class TODONode extends TreeNode {
                 // (see 'chapter', 'container' cases above)
                 let fragmentsTODOs = 0;
                 for (const currentFragment of fragments) {
-                    fragmentsTODOs + await currentFragment.getTODOCounts();
+                    fragmentsTODOs += await currentFragment.getTODOCounts();
                 }
 
                 todo[uri.fsPath] = {
@@ -192,13 +192,16 @@ export class TODONode extends TreeNode {
 
             // Get the TODO counts in the chapters container and in the snips container
             const chapterCounts = await root.chapters.getTODOCounts();
+            console.log(`chapter: ${chapterCounts}`);
             const snipCounts = await root.snips.getTODOCounts();
+            console.log(`snip: ${snipCounts}`);
 
             // Return the chapter and root containers, as long as they have at least one
             //      marked TODO 
             const children: TreeNode[] = [];
             if (chapterCounts > 0) children.push(root.chapters);
             if (snipCounts > 0) children.push(root.snips);
+            console.log(children)
             return children;
         }
         else if (data.ids.type === 'container') {
