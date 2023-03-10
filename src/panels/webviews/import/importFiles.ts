@@ -106,8 +106,9 @@ const replace = {
     '‟': '"',
     '…': '...',
     '—': ' -- ',
-    '–': ' -- '
-}
+    '–': ' -- ',
+    '­': '',
+};
 // Replace common unicode characters in writing with more usable versions
 function replaceCommonUnicode (content: string): string {
     return Object.entries(replace).reduce((acc, [ from, to ]) => {

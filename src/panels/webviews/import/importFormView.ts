@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as vscodeUris from 'vscode-uri';
 import * as console from '../../../vsconsole';
 import  * as extension from '../../../extension';
 import { getNonce } from '../../../help';
@@ -50,11 +51,12 @@ export class ImportForm {
 
 		// Retrieve chapter uris and names from the outline view
 		const chapterUris: [string, string][] = await vscode.commands.executeCommand('wt.outline.collectChapterUris');
-		const extensionRootFs = extension.rootPath.fsPath.replace(/.*:/, '');
+		// const extensionRootFs = extension.rootPath.fsPath.replace(/.*:/, '');
 		const sentDocs = this.documents.map(documentUri => {
-			const fullPath = documentUri.fsPath.replace(extensionRootFs, '.');
-			const ext = fullPath.slice(fullPath.lastIndexOf('.') + 1)[1];
-			const name = fullPath.slice(fullPath.lastIndexOf('/'))[1];
+
+			const name = vscodeUris.Utils.basename(documentUri);
+			const ext = vscodeUris.Utils.extname(documentUri);
+			const fullPath = documentUri.fsPath.replace(extension.rootPath.fsPath, '');
 			return {
 				fullPath, name, ext
 			};
