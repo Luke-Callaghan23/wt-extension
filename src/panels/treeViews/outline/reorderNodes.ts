@@ -4,6 +4,8 @@ import { ConfigFileInfo, ConfigFileInfoExpanded, readDotConfig, writeDotConfig }
 import { OutlineNode } from "./outlineNodes";
 import { OutlineView } from "./outlineView";
 import * as extension from '../../../extension';
+import { RootNode } from './outlineNodes';
+import * as console from './../../../vsconsole';
 
 
 enum ReorderDirection {
@@ -185,6 +187,7 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
     const targets = prelimTargets.filter(target => {
         return target.data.ids.parentInternalId === resource.data.ids.parentInternalId;
     });
+    
 
     if (!targets.find(target => target.data.ids.internal === resource.data.ids.internal)) {
         targets.push(resource);
@@ -210,7 +213,8 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
 
     // Write the re formated .config file
     await writeDotConfig(dotConfigUri, reFormated);
-    this.refresh();
+    await this.refresh();
+    this.view.reveal((this.tree.data as RootNode).chapters, { focus: false, select: true });
 }
 
 export async function moveDown (this: OutlineView, resource: any) {
@@ -233,6 +237,13 @@ export async function moveDown (this: OutlineView, resource: any) {
         return target.data.ids.parentInternalId === resource.data.ids.parentInternalId;
     });
 
+    
+
+    if (!targets.find(target => target.data.ids.internal === resource.data.ids.internal)) {
+        targets.push(resource);
+    }
+    
+
     // Get the path of the .config file for the moving nodes
     const dotConfigRelativePath = await resource.getDotConfigPath(this);
     if (!dotConfigRelativePath) return;
@@ -253,5 +264,6 @@ export async function moveDown (this: OutlineView, resource: any) {
 
     // Write the re formated .config file
     await writeDotConfig(dotConfigUri, reFormated);
-    this.refresh();
+    await this.refresh();
+    this.view.reveal((this.tree.data as RootNode).chapters, { focus: true, select: true });
 }

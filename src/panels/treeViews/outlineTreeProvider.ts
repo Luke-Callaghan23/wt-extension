@@ -103,6 +103,10 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		return (await element.getChildren()).map(on => on as T);
 	}
 
+	public async getParent?(element: T): Promise<T> {
+		return this.tree;
+	}
+
 	public async getTreeItem (element: T): Promise<vscode.TreeItem> {
 		return this._getTreeItem(element.getId());
 	}
