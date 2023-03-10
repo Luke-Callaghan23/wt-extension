@@ -55,6 +55,8 @@ export class TimedView implements Packageable {
     }
 
     private doUpdates (editor: vscode.TextEditor) {
+        // Only do updates on .wt files
+        if (!editor.document.fileName.endsWith('.wt')) return;
         // Iterate over all timed views and call their update functions if they're enabled
         this.timedViews.forEach(([ _, timed ]) => {
             // If the view's timer function is not enabled, then skip
