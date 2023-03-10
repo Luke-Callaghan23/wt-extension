@@ -190,10 +190,6 @@ export class OutlineNode extends TreeNode {
         // If the container of the destination is the same as the container of the mover
         // Then we're not actually moving the node anywhere, we are just changing the internal ordering
         if (destinationContainer.ids.internal === moverParentId) {
-
-            console.log(`mover: ${this.data.ids.display}`)
-            console.log(`dest: ${(newParent as OutlineNode).data.ids.display}`)
-            
             
             // Get the .config for the container -- this contains the ordering values for both the mover
             //      and the destination item
@@ -201,8 +197,6 @@ export class OutlineNode extends TreeNode {
             //      as there is no moving actually occurring)
             const containerConfigUri = vscode.Uri.joinPath(extension.rootPath, destinationContainer.ids.relativePath, destinationContainer.ids.fileName, '.config');
             const containerConfig = await readDotConfig(containerConfigUri);
-            console.log(containerConfig)
-            console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
             if (!containerConfig) return -1;
 
             type FileInfo = {
