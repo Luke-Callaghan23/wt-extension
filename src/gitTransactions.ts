@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
 import * as console from './vsconsole';
-import * as childProcess from 'child_process';
-import * as extension from './extension';
 
 
 export async function gitiniter () {
