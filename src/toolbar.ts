@@ -49,7 +49,16 @@ function surroundSelectionWith (surround: string) {
         }
     }
 
-    if (beforeSelection && afterSelection) {
+    if (afterSelection && !beforeSelection && selection.isEmpty) {
+        // If only the substring after the selection is the surround string, then we're going to want
+        //      to move the cursor outside of the the surround string
+        // Simply shift the current editor's selection
+        const currentOffset = editor.document.offsetAt(selection.end);
+        const afterSurroundString = currentOffset + surround.length;
+        const afterSurroundPosition = editor.document.positionAt(afterSurroundString);
+        editor.selection = new vscode.Selection(afterSurroundPosition, afterSurroundPosition);
+    }
+    else if (beforeSelection && afterSelection) {
         const before = beforeSelection as vscode.Selection;
         const after = afterSelection as vscode.Selection;
         // If both the before and after the selection are already equal to the surround string, then
@@ -181,7 +190,7 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean) {
         columnPosition--;
     }
     if (oneMore) {
-        columnPosition --;
+        columnPosition--;
     }
 
     
