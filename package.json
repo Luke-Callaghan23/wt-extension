@@ -303,6 +303,40 @@
 				"command": "wt.editor.header",
 				"title": "Writing Tool: Header",
 				"icon": "$(text-size)"
+			},
+
+
+			{
+				"command": "wt.editor.jump.sentence.forward",
+				"title": "Writing Tool: Jump to Sentence (forward)."
+			},
+			{
+				"command": "wt.editor.jump.sentence.backward",
+				"title": "Writing Tool: Jump to Sentence (backward)."
+			},
+			{
+				"command": "wt.editor.jump.paragraph.forward",
+				"title": "Writing Tool: Jump to paragraph (forward)."
+			},
+			{
+				"command": "wt.editor.jump.paragraph.backward",
+				"title": "Writing Tool: Jump to paragraph (backward)."
+			},
+			{
+				"command": "wt.editor.jump.sentence.forward.shift",
+				"title": "Writing Tool: Jump to Sentence (forward)."
+			},
+			{
+				"command": "wt.editor.jump.sentence.backward.shift",
+				"title": "Writing Tool: Jump to Sentence (backward)."
+			},
+			{
+				"command": "wt.editor.jump.paragraph.forward.shift",
+				"title": "Writing Tool: Jump to paragraph (forward)."
+			},
+			{
+				"command": "wt.editor.jump.paragraph.backward.shift",
+				"title": "Writing Tool: Jump to paragraph (backward)."
 			}
 		],
 		"menus": {
@@ -540,6 +574,50 @@
 			{
 				"command": "wt.editor.header",
 				"key": "ctrl+alt+h",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+
+			
+			{
+				"command": "wt.editor.jump.sentence.forward",
+				"key": "ctrl+[",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.sentence.backward",
+				"key": "ctrl+]",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.paragraph.forward",
+				"key": "ctrl+alt+[",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.paragraph.backward",
+				"key": "ctrl+alt+]",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+
+
+			{
+				"command": "wt.editor.jump.sentence.forward.shift",
+				"key": "ctrl+shift+[",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.sentence.backward.shift",
+				"key": "ctrl+shift+]",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.paragraph.forward.shift",
+				"key": "ctrl+alt+shift+[",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.paragraph.backward.shift",
+				"key": "ctrl+alt+shift+]",
 				"when": "editorAreaVisible && editorLangId == wt"
 			}
 		],
