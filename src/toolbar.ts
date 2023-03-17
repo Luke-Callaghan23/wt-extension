@@ -192,7 +192,6 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean) {
     if (oneMore) {
         columnPosition--;
     }
-
     
     while (true) {
 
@@ -228,7 +227,6 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean) {
         else {
             lastWhitespace = false;
         }
-
 
         // Condition for when there is no sentence markers until be beginning or end of paragraph
         if (jt === 'forward') {
@@ -267,22 +265,16 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean) {
         //      `Target sentence...|  Sentence after target sentence.`
 
     }
-
-    
-    // If there was no paragraph end found, then bounce to the beginning/end of 
-    //      the document (depending on the pass type)
-    let jumpPosition: vscode.Position;
     if (found === -1) return;
-
-    // 
-
-
-    jumpPosition = document.positionAt(found);
     
-    // Do the jump
-    editor.selection = new vscode.Selection(jumpPosition, jumpPosition);
-
-
+    // Set the new selection of the editor
+    const position: vscode.Position = document.positionAt(found);
+    editor.selection = new vscode.Selection (
+        position, 
+        // If shift is held, use the start position of the previous selection as the active point
+        //      of the new selection
+        shiftHeld ? start : position
+    );
 }
 
 async function jumpParagraph (jt: JumpType, shiftHeld?: boolean) {
