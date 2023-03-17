@@ -560,14 +560,10 @@
 		"lint": "eslint \"src/**/*.ts\""
 	},
 	"devDependencies": {
-		"@types/fs-extra": "^11.0.1",
-		"@types/ftp": "^0.3.33",
 		"@types/html-pdf": "^3.0.0",
 		"@types/html-pdf-node": "^1.0.0",
 		"@types/jsdom": "^21.1.0",
-		"@types/mkdirp": "^0.5.2",
 		"@types/node": "^16.11.7",
-		"@types/rimraf": "^2.0.2",
 		"@types/showdown": "^2.0.0",
 		"@types/uuid": "^9.0.0",
 		"@types/vscode": "^1.73.0",
