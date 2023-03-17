@@ -92,9 +92,15 @@ body {
 }
 
 .synonym-container {
-	color: #007acc;
 	font-size: 13px;
-	
+}
+
+.selected {
+	color: #C58AEB;
+}
+
+.selected:hover {
+	color: rgb(197, 138, 235, 0.75);
 }
 
 .synonym {

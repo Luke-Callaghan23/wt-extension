@@ -5,6 +5,7 @@
     const vscode = acquireVsCodeApi();
 
     let synonyms = [];
+    const synonymElements = [];
 
     let dicationatyApi;
 
@@ -93,6 +94,7 @@
         
         showStartupMessage();
         synonyms = [];
+        synonymElements = [];
         vscode.setState({ synonyms: synonyms });
         vscode.postMessage({ 
             type: 'deliveredSynonyms',
@@ -211,10 +213,33 @@
                 // Get the header elements for this definition
                 const [ definitionHeader, removeDefinition, definitionContent ] = getContentHeader(`${term.word}-${i}`, defString);
     
-                const syns = def.synonyms.map(syn => {
-                    return `<a class="synonym">${syn}</a>`;
-                }).join(', ');
-                definitionContent.innerHTML = `<p class="synonym-container">${syns}</p>`;
+                // Add all synonyms elements to the content container
+                const synonymContainer = document.createElement('p');
+                synonymContainer.className = "synonym-container";
+                def.synonyms.forEach(syn => {
+                    // Synonym element
+                    const a = document.createElement('a');
+                    a.className = "synonym";
+                    a.innerText = syn;
+                    
+                    // If the current item is already a synonym that has been searched before,
+                    //      then aff the selected class to the `a` element
+                    console.log(syn)
+                    console.log(synonyms)
+                    if (synonyms.find(s => s === syn)) {
+                        a.classList.add('selected');
+                    }
+
+                    synonymElements.push(a);
+                    synonymContainer.appendChild(a);
+
+                    // Separator
+                    const span = document.createElement('span');
+                    span.innerText = ', '
+                    synonymContainer.appendChild(span)
+                });
+                definitionContent.appendChild(synonymContainer);
+                // definitionContent.innerHTML = `<p class="synonym-container">${syns}</p>`;
 
                 // Add the elements to the content box
                 synonymContent.appendChild(definitionHeader);
@@ -226,6 +251,7 @@
 
                 synonymContent.querySelectorAll('.synonym').forEach(syn => {
                     syn.addEventListener('click', (event) => {
+                        event.preventDefault();
                         const search = event.target.innerText;
                         addSynonym(search);
                     });
@@ -288,12 +314,28 @@
                 // @ts-ignore
                 removeContent(synonymHeader, synonymContent, { emptyHandler: showStartupMessage });
 
-                synonyms = synonyms.filter(syn => syn !== term.word);
+                // Remove the first instance of the removed word from the synonyms container
+                const firstIndex = synonyms.findIndex(syn => syn === term.word);
+                if (firstIndex !== -1) {
+                    synonyms.splice(firstIndex, 1);
+                }
+
+                // Set the new state of the synonyms array
                 vscode.setState({ synonyms: synonyms });
                 vscode.postMessage({ 
                     type: 'deliveredSynonyms',
                     synonyms: synonyms
                 });
+
+                console.log(synonyms)
+
+                // If removed synonym is the last instance of that synonym, then remove
+                //      the 'selected' class from all instances of that word in synonymElements
+                const stillInList = synonyms.find(syn => syn === term.word);
+                if (stillInList) return;
+                synonymElements
+                    .filter(elt => elt.innerText === term.word)
+                    .forEach(elt => elt.classList.remove('selected'));
             });
 
             if (!starting) {
@@ -302,6 +344,11 @@
                 firstDefintionHeader?.click();
                 firstDefintionHeader?.scrollIntoView();
             }
+
+            synonymElements.forEach(elt => {
+                if (elt.innerText !== term.word) return;
+                elt.classList.add("selected");
+            });
 
         }
 
