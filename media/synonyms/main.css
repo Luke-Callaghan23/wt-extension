@@ -1,5 +1,5 @@
 body {
-	background-color: transparent;
+	background-color: inherit;
 }
 
 .color-list {
@@ -12,6 +12,7 @@ body {
 	display: flex;
 	margin-bottom: 0.4em;
 	border: 1px solid var(--vscode-input-border);
+	padding-top: 5px;
 }
 
 .color-preview {
@@ -30,8 +31,9 @@ body {
 	color: var(--vscode-input-foreground);
 	background-color: var(--vscode-input-background);
 	border: none;
-	padding: 0 0.6em;
+	/* padding: 0 0.6em; */
 	border-radius: 20px;
+	max-height: 25px;
 }
 
 .add-color-button {
@@ -118,4 +120,19 @@ body {
 
 .remove:hover {
 	-webkit-filter: brightness(60%)
+}
+
+
+
+.float {
+	background-color: var(--vscode-sideBar-background);
+	width: 80vw;
+}
+
+
+
+.sticky {
+	position: fixed;
+	top: 0;
+	z-index: 1000000000;
 }

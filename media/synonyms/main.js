@@ -33,13 +33,16 @@
     }
 
     // Startup
+    let starting = null;
     const startupMessage = document.getElementById("startup-message");
     async function startup () {
         const syns = [...synonyms];
         synonyms = [];
+        starting = true;
         for (const syn of syns) {
             await addSynonym(syn);
         }
+        starting = false;
         vscode.postMessage({ 
             type: 'deliveredSynonyms',
             synonyms: synonyms
@@ -60,7 +63,6 @@
                     break;
                 case 'startupDelivery':
                     synonyms = message.synonyms;
-                    console.log(synonyms);
                     dicationatyApi = message.dicationatyApi;
                     startup();
                     break;
@@ -68,18 +70,16 @@
         });
     }
     
-    function addSynonym (term) {
+    async function addSynonym (term) {
         startupMessage.style.display = 'none';
         clearButton.disabled = false;
-        query(term).then(term => {
-            addContent(term).then(() => {
-                synonyms.push(term.word);
-                vscode.setState({ synonyms: synonyms });
-                vscode.postMessage({ 
-                    type: 'deliveredSynonyms',
-                    synonyms: synonyms
-                });
-            });
+        const result = await query(term);
+        await addContent(result);
+        synonyms.push(result.word);
+        vscode.setState({ synonyms: synonyms });
+        vscode.postMessage({ 
+            type: 'deliveredSynonyms',
+            synonyms: synonyms
         });
     }
 
@@ -203,6 +203,7 @@
         async function _addContent (term) {
             const [ synonymHeader, removeSynonym, synonymContent ] = getContentHeader(term.word, term.word);
                 
+            let firstDefintionHeader = null;
             for (let i = 0; i < term.definitions.length; i++) {
                 const def = term.definitions[i];
                 const defString = capitalize(def.definitions[0]);
@@ -218,6 +219,10 @@
                 // Add the elements to the content box
                 synonymContent.appendChild(definitionHeader);
                 synonymContent.appendChild(definitionContent);
+
+                if (i === 0) {
+                    firstDefintionHeader = definitionHeader;
+                }
 
                 synonymContent.querySelectorAll('.synonym').forEach(syn => {
                     syn.addEventListener('click', (event) => {
@@ -290,7 +295,17 @@
                     synonyms: synonyms
                 });
             });
+
+            if (!starting) {
+                // Scroll to the new synonym
+                synonymHeader.click();
+                firstDefintionHeader?.click();
+                firstDefintionHeader?.scrollIntoView();
+            }
+
         }
+
+
         addContent = _addContent;
     }
 
@@ -311,6 +326,23 @@
         if (parent?.children.length === 0) {
             emptyHandler?.();
         }
+    }
+
+    // Sticky the header
+    {
+        
+        const header = document.getElementById('scroll-header');
+        const sticky = header.offsetTop;
+        window.onscroll = () => {
+            if (window.pageYOffset > sticky) {
+                header.classList.add("sticky");
+            } 
+            else {
+                header.classList.remove("sticky");
+            }
+        }
+        
+
     }
 
     // Once the page is loaded, request the api key from the main environment

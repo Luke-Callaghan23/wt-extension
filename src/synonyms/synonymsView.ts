@@ -188,11 +188,13 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 					<script src="${elementsUri}" nonce="${nonce}" type="module"></script>
 					<div class="input-icon">
 						<div class="color-list">
-							<div class="color-entry">
-								<div class="icon" id="search-icon"><i class="codicon codicon-search"></i></div>
-								<input class="color-input" type="text" placeholder="Search . . ." id="search-bar">
+							<div class="float" id="scroll-header">
+								<div class="color-entry">
+									<div class="icon" id="search-icon"><i class="codicon codicon-search"></i></div>
+									<input class="color-input" type="text" placeholder="Search . . ." id="search-bar">
+								</div>
+								<div class="bar"></div>
 							</div>
-							<div class="bar"></div>
 							<h1 id="startup-message">Type in the search bar to find some synonyms!</h1>
 							<div class="collapsible-container" id="synonym-box"></div>
 						</div>
