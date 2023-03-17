@@ -266,7 +266,8 @@
 			},
 			{
 				"command": "wt.synonyms.searchWord",
-				"title": "Writing Tool: Search Synonym"
+				"title": "Writing Tool: Search Synonym",
+				"icon": "$(search)"
 			},
 			{
 				"command": "wt.editor.remove",
@@ -477,6 +478,11 @@
 					"command": "wt.editor.saveAll",
 					"when": "editorLangId == wt",
 					"group": "navigation@7"
+				},
+				{
+					"command": "wt.synonyms.searchWord",
+					"when": "editorLangId == wt",
+					"group": "navigation@0"
 				}
 			]
 		},
