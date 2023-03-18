@@ -147,7 +147,6 @@ export async function saveAll () {
 type JumpType = 'forward' | 'backward'
 
 
-extension.paragraphSeparator
 
 async function jumpSentence (jt: JumpType, shiftHeld?: boolean) {
     const direction = jt === 'forward' ? -1 : 1;

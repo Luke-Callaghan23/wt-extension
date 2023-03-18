@@ -579,6 +579,16 @@
 
 			
 			{
+				"command": "cursorWordEndLeft",
+				"key": "ctrl+left",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "cursorWordEndRight",
+				"key": "ctrl+right",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
 				"command": "wt.editor.jump.sentence.forward",
 				"key": "ctrl+[",
 				"when": "editorAreaVisible && editorLangId == wt"
@@ -600,6 +610,16 @@
 			},
 
 
+			{
+				"command": "cursorWordEndLeftSelect",
+				"key": "ctrl+shift+left",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "cursorWordEndRightSelect",
+				"key": "ctrl+shift+right",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
 			{
 				"command": "wt.editor.jump.sentence.forward.shift",
 				"key": "ctrl+shift+[",
