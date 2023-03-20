@@ -11,7 +11,8 @@ import { SynonymViewProvider } from './synonyms/synonymsView';
 import { Toolbar } from './toolbar';
 import { importWorkspace } from './workspace/importExport/importWorkspace';
 
-import { loadWorkspace, createWorkspace, Workspace } from './workspace/workspace';
+import { loadWorkspace, createWorkspace } from './workspace/workspace';
+import { Workspace } from './workspace/workspaceClass';
 import { FileAccessManager } from './fileAccesses';
 import { packageForExport } from './packageable';
 import { TimedView } from './timedView';

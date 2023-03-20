@@ -1,9 +1,3 @@
-import { ImportFileSystemView } from "./import/importFileSystemView";
-import { OutlineView } from "./outline/outlineView";
-import { TODOsView } from "./TODO/TODOsView";
-import { WordWatcher } from "./wordWatcher/wordWatcher";
-import { SynonymViewProvider } from "./synonyms/synonymsView";
-
 export interface Packageable {
     getPackageItems (): { [index: string]: any };
 }

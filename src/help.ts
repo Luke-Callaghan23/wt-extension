@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { Buffer } from './Buffer/bufferSource';
+import * as extension from './extension';
+import { Buff } from './Buffer/bufferSource';
 
 export type PromptOptions = {
     placeholder: string,
@@ -62,7 +63,7 @@ export function getLatestOrdering (configData: { [index: string]: ConfigFileInfo
 
 export async function readDotConfig (path: vscode.Uri): Promise<{ [index: string]: ConfigFileInfo } | null> {
     try {
-        const dotConfigJSON = (await vscode.workspace.fs.readFile(path)).toString();
+        const dotConfigJSON = extension.decoder.decode(await vscode.workspace.fs.readFile(path));
         const dotConfig: { [index: string]: ConfigFileInfo } = JSON.parse(dotConfigJSON);
         return dotConfig;
     }
@@ -75,7 +76,7 @@ export async function readDotConfig (path: vscode.Uri): Promise<{ [index: string
 export async function writeDotConfig (path: vscode.Uri, dotConfig: { [index: string]: ConfigFileInfo }) {
     try {
         const dotConfigJSON = JSON.stringify(dotConfig);
-        await vscode.workspace.fs.writeFile(path, Buffer.from(dotConfigJSON, 'utf-8'));
+        await vscode.workspace.fs.writeFile(path, Buff.from(dotConfigJSON, 'utf-8'));
     }
     catch (e) {
         vscode.window.showErrorMessage(`Error writing .config file '${path}': ${e}`);

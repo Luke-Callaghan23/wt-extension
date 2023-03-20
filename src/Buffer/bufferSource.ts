@@ -1,1 +1,1 @@
-export { Buffer }
+export const Buff = Buffer

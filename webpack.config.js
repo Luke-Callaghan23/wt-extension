@@ -39,9 +39,16 @@ const webExtensionConfig = {
 		}
 	},
 	module: {
+		noParse: [
+			path.resolve(__dirname, 'src', 'import'),
+			path.resolve(__dirname, 'src', 'export'),
+			path.resolve(__dirname, 'src', 'workspace', 'importExport'),
+		],
 		rules: [{
 			test: /\.ts$/,
-			exclude: /node_modules/,
+			exclude: [
+				/node_modules/,
+			],
 			use: [{
 				loader: 'ts-loader'
 			}]

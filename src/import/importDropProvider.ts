@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { rootPath } from '../extension';
-import { Workspace } from '../workspace/workspace';
+import { Workspace } from '../workspace/workspaceClass';
 import * as console from '../vsconsole';
 import { Entry, ImportFileSystemView } from './importFileSystemView';
 

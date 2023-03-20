@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as extension from '../extension';
 import * as console from '../vsconsole';
 import { ExportForm } from './exportFormView';
-import { Buffer } from '../Buffer/bufferSource';
+import { Buff } from '../Buffer/bufferSource';
 
 // Converts md to html
 import * as showdown from 'showdown';
@@ -13,7 +13,7 @@ import * as showdown from 'showdown';
 const HTMLToDOCX = require('html-to-docx');
 
 // Converts html to pdf
-import { Workspace } from '../workspace/workspace';
+import { Workspace } from '../workspace/workspaceClass';
 import { OutlineView } from '../outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../outline/outlineNodes';
 import * as pdf from 'html-pdf';
@@ -50,7 +50,7 @@ async function stitchFragments (node: ChapterNode, combineString: string | null)
         try {
             // Read the fragment markdown string
             const fragmentBuffer = await vscode.workspace.fs.readFile(fragmentUri);
-            fragmentsData.push(fragmentBuffer.toString());
+            fragmentsData.push(extension.decoder.decode(fragmentBuffer));
         }
         catch (e) {
             vscode.window.showErrorMessage(`ERROR: an error occurred while reading the contents of fragment '${fragment.data.ids.display}' with path '${fragmentUri}': ${e}`);

@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as console from '../vsconsole';
-import { Workspace } from '../workspace/workspace';
+import { Workspace } from '../workspace/workspaceClass';
 import { TODOData, TODONode } from './TODONode';
 import { OutlineTreeProvider } from '../outlineProvider/outlineTreeProvider';
 import { InitializeNode, initializeOutline } from '../outlineProvider/initialize';

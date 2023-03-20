@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri'
-import { Workspace } from '../workspace/workspace';
+import { Workspace } from '../workspace/workspaceClass';
 import * as console from '../vsconsole';
 import { ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';

@@ -2,11 +2,11 @@
 import * as vscode from 'vscode';
 import * as extension from './../../extension';
 import * as console from '../../vsconsole';
-import { Config, Workspace } from '../workspace';
+import { Workspace } from '../workspaceClass';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../outline/outlineNodes';
 import { OutlineView } from '../../outline/outlineView';
 import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport as WorkspaceRecord } from './types';
-import { Buffer } from '../../Buffer/bufferSource';
+import { Buff } from '../../Buffer/bufferSource';
 
 
 async function recordFragmentContainer (node: (ChapterNode | SnipNode)): Promise<FragmentRecord> {
@@ -135,6 +135,6 @@ export async function handleWorkspaceExport (
     const iweJSON = JSON.stringify(iwe, null, 2);
     const iweFilename = await getIweFileName(workspace);
     const iweUri = vscode.Uri.joinPath(workspace.exportFolder, iweFilename);
-    await vscode.workspace.fs.writeFile(iweUri, Buffer.from(iweJSON, 'utf-8'));
+    await vscode.workspace.fs.writeFile(iweUri, Buff.from(iweJSON, 'utf-8'));
     vscode.window.showInformationMessage(`Successfully created file '${iweFilename}' in '${workspace.exportFolder.fsPath}'`);
 }

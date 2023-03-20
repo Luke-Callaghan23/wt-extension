@@ -8,7 +8,8 @@ import { WordWatcher } from './wordWatcher/wordWatcher';
 import { SynonymViewProvider } from './synonyms/synonymsView';
 import { Toolbar } from './toolbar';
 
-import { loadWorkspace, createWorkspace, Workspace } from './workspace/workspace';
+import { Workspace } from './workspace/workspaceClass';
+import { loadWorkspace, createWorkspace } from './workspace/workspace';
 import { FileAccessManager } from './fileAccesses';
 import { packageForExport } from './packageable';
 import { TimedView } from './timedView';
@@ -77,8 +78,6 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
 		? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
-		console.log
-
 	
 	// rootPath = rootPath.replaceAll('\\', '/');
 	// rootPath = rootPath.replaceAll('c:/', 'C:\\');
@@ -95,19 +94,5 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	const workspace = await loadWorkspace(context);
 	if (workspace !== null) {
 		loadExtensionWorkspace(context, workspace);
-	}
-	else {
-		// If the attempt to load the workspace failed, then register commands both for loading 
-		//		a workspace from a .iwe environment file or for creating a new iwe environment
-		//		at the current location
-		vscode.commands.registerCommand('wt.createWorkspace', () => {
-			createWorkspace(context).then((ws) => {
-				loadExtensionWorkspace(context, ws);
-			})
-			.catch(err => {
-				handleLoadFailure(err);
-				throw err;
-			});
-		});
 	}
 }

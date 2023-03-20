@@ -12,7 +12,7 @@ export async function gitiniter () {
     }
 }
 
-export async function gitCommitAll () {
+export async function gitCommit () {
     try {
         await vscode.commands.executeCommand('git.commitAll');
     }

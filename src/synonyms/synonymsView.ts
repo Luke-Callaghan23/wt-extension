@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as console from '../vsconsole';
 import { getNonce } from '../help';
 import { Packageable } from '../packageable';
-import { Workspace } from '../workspace/workspace';
+import { Workspace } from '../workspace/workspaceClass';
 
 export class SynonymViewProvider implements vscode.WebviewViewProvider, Packageable {
 

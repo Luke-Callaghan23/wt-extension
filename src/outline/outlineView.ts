@@ -10,7 +10,7 @@ import * as reorderFunctions from './reorderNodes';
 import * as removeFunctions from './removeNodes';
 import * as createFunctions from './createNodes';
 import * as renameFunctions from './renameNodes';
-import { Workspace } from '../workspace/workspace';
+import { Workspace } from '../workspace/workspaceClass';
 import { NodeTypes } from '../outlineProvider/fsNodes';
 import * as console from '../vsconsole';
 

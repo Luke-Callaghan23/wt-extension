@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { OutlineView } from "./outlineView";
 import * as extension from '../extension';
 import * as console from '../vsconsole';
-import { Buffer } from "../Buffer/bufferSource";
+import { Buff } from "../Buffer/bufferSource";
 
 
 
@@ -151,12 +151,12 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
 
         let recyclingLog: RecycleLog[];
         try {
-            const recyclingLogJSON = (await vscode.workspace.fs.readFile(recyclingLogUri)).toString();
+            const recyclingLogJSON = extension.decoder.decode(await vscode.workspace.fs.readFile(recyclingLogUri));
             if (recyclingLogJSON === '') {
                 recyclingLog = [];
             }
             else {
-                recyclingLog = JSON.parse(recyclingLogJSON.toString());
+                recyclingLog = JSON.parse(recyclingLogJSON);
             }
         }
         catch(e) {
@@ -167,7 +167,7 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
         const updatedLogJSON = JSON.stringify(updatedLog);
 
         try {
-            await vscode.workspace.fs.writeFile(recyclingLogUri, Buffer.from(updatedLogJSON, 'utf-8'));
+            await vscode.workspace.fs.writeFile(recyclingLogUri, Buff.from(updatedLogJSON, 'utf-8'));
         }
         catch (e) {
             vscode.window.showErrorMessage(`Error editing recycling bin log: ${e}`);

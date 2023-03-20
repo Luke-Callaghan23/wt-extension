@@ -1,3 +1,3 @@
 import { Buffer } from 'buffer'
 
-export { Buffer };
+export const Buff = Buffer;

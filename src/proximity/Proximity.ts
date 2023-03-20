@@ -1,7 +1,7 @@
 import { clear } from 'console';
 import * as vscode from 'vscode';
 import * as console from '../vsconsole';
-import { Workspace } from '../workspace/workspace';
+import { Workspace } from '../workspace/workspaceClass';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
 

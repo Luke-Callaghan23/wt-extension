@@ -1,10 +1,10 @@
 {
 	"compilerOptions": {
 		"module": "commonjs",
-		"target": "ES2021",
+		"target": "ES2020",
 		"outDir": "out",
 		"lib": [
-			"ES2021",
+			"ES2020",
 			"DOM",
 			"ES2021.String"
 		],
@@ -15,5 +15,10 @@
 		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
 		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
 		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
-	}
+	},
+	"exclude": [
+		"src/import/*",
+		"src/export/*",
+		"src/workspace/importExport/*"
+	]
 }

@@ -5,7 +5,7 @@ import  * as extension from '../extension';
 import { getNonce } from '../help';
 import { handleDocumentExport, ExportDocumentInfo } from './exportDocuments';
 import { handleWorkspaceExport } from '../workspace/importExport/exportWorkspace';
-import { Workspace } from '../workspace/workspace';
+import { Workspace } from '../workspace/workspaceClass';
 import { OutlineView } from '../outline/outlineView';
 
 type Submit = {

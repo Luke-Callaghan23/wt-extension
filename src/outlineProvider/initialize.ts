@@ -65,7 +65,7 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
 
     // Parse all chapters
 
-    const chapterNodes = []
+    const chapterNodes: T[] = []
     for (const [ name, _ ] of chapters) {
         chapterNodes.push(init(await initializeChapter({
             dotConfig: dotConfigChapters,
@@ -99,7 +99,7 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
     const snipsContainerId = uuidv4();
 
     // Parse all work snips
-    const snipNodes = [];
+    const snipNodes: T[] = [];
     for (const [ name,  _ ] of snips) {
         snipNodes.push(
             init(await initializeSnip({

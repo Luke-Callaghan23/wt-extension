@@ -12,7 +12,7 @@ import * as showdown from 'showdown';
 import * as mammoth from 'mammoth';
 const pdf2html = require('pdf2html');
 import { JSDOM } from 'jsdom';
-import { Buffer } from '../Buffer/bufferSource';
+import { Buff } from '../Buffer/bufferSource';
 
 export type DocInfo = {
     skip: boolean,
@@ -316,7 +316,7 @@ async function createFragmentFromSource (
     // Create the fragment file
     const fragmentFileName = getUsableFileName('fragment', true);
     const fragmentUri = vscode.Uri.joinPath(containerUri, fragmentFileName);
-    await vscode.workspace.fs.writeFile(fragmentUri, Buffer.from(content, 'utf-8'));
+    await vscode.workspace.fs.writeFile(fragmentUri, Buff.from(content, 'utf-8'));
 
     // Add the record for this fragment to the config map
     config[fragmentFileName] = {
@@ -374,7 +374,7 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
     // Write the .config file to the location of the chapter folder
     const dotConfigJSON = JSON.stringify(dotConfig);
     const dotConfigUri = vscode.Uri.joinPath(chapterUri, `.config`);
-    await vscode.workspace.fs.writeFile(dotConfigUri, Buffer.from(dotConfigJSON, 'utf-8'));
+    await vscode.workspace.fs.writeFile(dotConfigUri, Buff.from(dotConfigJSON, 'utf-8'));
 }
 
 async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
@@ -409,7 +409,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
         // Write the .config file to the location of the snip folder
         const dotConfigJSON = JSON.stringify(dotConfig);
         const dotConfigUri = vscode.Uri.joinPath(snipUri, `.config`);
-        await vscode.workspace.fs.writeFile(dotConfigUri, Buffer.from(dotConfigJSON, 'utf-8'));
+        await vscode.workspace.fs.writeFile(dotConfigUri, Buff.from(dotConfigJSON, 'utf-8'));
     };
     
     if (docSplits.type === 'multi') {
