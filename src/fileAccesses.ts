@@ -3,14 +3,17 @@ import * as vscode from 'vscode';
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from './outline/outlineNodes';
 import { OutlineView } from './outline/outlineView';
 import * as console from './vsconsole';
+import * as extension from './extension';
+import { Packageable } from './packageable';
 
-
-export class FileAccessManager {
+export class FileAccessManager implements Packageable {
 
     static lastAccess: vscode.Uri | undefined;
 
     // container uri -> uri of last accessed fragment of that container
     private static fileAccesses: { [ index: string ]: vscode.Uri };
+
+    private static positions: { [ index: string ]: vscode.Selection };
 
     static async documentOpened (document: vscode.TextDocument, view?: OutlineView) {
         
@@ -44,9 +47,10 @@ export class FileAccessManager {
         // Get the uri of the container
         const containerNode: OutlineNode = node;
         const containerUri = containerNode.getUri();
+        const containerUsableUri = containerUri.fsPath.replace(extension.rootPath.fsPath, '');
 
         // Set the latest file access for the container of the opened uri to the opened uri
-        FileAccessManager.fileAccesses[containerUri.fsPath] = openedUri;
+        FileAccessManager.fileAccesses[containerUsableUri] = openedUri;
 
         // Also update the latest file access
         FileAccessManager.lastAccess = uri;
@@ -57,9 +61,10 @@ export class FileAccessManager {
     static containerLastAccessedDocument (container: OutlineNode): vscode.Uri {
         
         const containerUri = container.getUri();
-        
+        const containerUsableUri = containerUri.fsPath.replace(extension.rootPath.fsPath, '');
+
         // First, check if there is a log for this container 
-        const lastAccess: vscode.Uri | undefined = FileAccessManager.fileAccesses[containerUri.fsPath];
+        const lastAccess: vscode.Uri | undefined = FileAccessManager.fileAccesses[containerUsableUri];
         if (lastAccess !== undefined) {
             // If there is a logged access for the target container, simply return that access
             return lastAccess;
@@ -81,12 +86,29 @@ export class FileAccessManager {
         const fragmentUri = lastFragment.getUri();
         
         // Add the mapping from container uri to its last (ordered) fragment
-        FileAccessManager.fileAccesses[containerUri.fsPath] = fragmentUri;
+        FileAccessManager.fileAccesses[containerUsableUri] = fragmentUri;
         return fragmentUri;
+    }
+
+    static lastEditor: vscode.TextEditor | undefined = undefined;
+    static savePosition (editor: vscode.TextEditor | undefined) {
+        // For some reason, this gets fired twice, so this safeguard is needed
+            // !lastEditor won't work, need to do it like this
+            // source: trust me bro
+            if (FileAccessManager.lastEditor) {
+                const document = FileAccessManager.lastEditor.document;
+                if (!document) return;
+
+                const lastUri = document.uri;
+                const usableUri = lastUri.fsPath.replace(extension.rootPath.fsPath, '');
+                FileAccessManager.positions[usableUri] = FileAccessManager.lastEditor.selection;
+            }
+            FileAccessManager.lastEditor = editor;
     }
 
     static registerCommands (): void {
         vscode.window.onDidChangeActiveTextEditor(editor => editor && editor.document && FileAccessManager.documentOpened(editor.document));
+        vscode.window.onDidChangeActiveTextEditor(editor => FileAccessManager.savePosition(editor));
     }
 
     static async initialize () {
@@ -103,8 +125,29 @@ export class FileAccessManager {
         }
 
         FileAccessManager.lastAccess = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined;
+        FileAccessManager.lastEditor = vscode.window.activeTextEditor;
 
         // Register the commands associated with the file access manager
         FileAccessManager.registerCommands();
+    }
+
+    
+    getPackageItems(): { [index: string]: any; } {
+        const positionPackage: { [index: string]: any } = {};
+        Object.entries(FileAccessManager.positions).forEach(([ uri, select ]) => {
+            const anchor = select.anchor;
+            const anchorLine = anchor.line;
+            const anchorChar = anchor.character;
+
+            const active = select.active;
+            const activeLine = active.line;
+            const activeChar = active.character;
+
+            positionPackage[uri] = {
+                anchorLine, anchorChar,
+                activeLine, activeChar
+            };
+        });
+        return positionPackage;
     }
 }
