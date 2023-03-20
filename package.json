@@ -639,6 +639,16 @@
 				"command": "wt.editor.jump.paragraph.backward.shift",
 				"key": "ctrl+alt+shift+]",
 				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "deleteWordRight",
+				"key": "ctrl+delete",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "deleteWordLeft",
+				"key": "ctrl+backspace",
+				"when": "editorAreaVisible && editorLangId == wt"
 			}
 		],
 		"languages": [
