@@ -50,7 +50,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		FileAccessManager.initialize();
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
-			outline, synonyms, timedViews
+			outline, synonyms, timedViews, new FileAccessManager()
 		]));
 	}
 	catch (e) {
