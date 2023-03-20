@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { OutlineView } from "./outlineView";
 import * as extension from '../extension';
 import * as console from '../vsconsole';
+import { Buffer } from "../Buffer/bufferSource";
 
 
 

@@ -12,6 +12,7 @@ import * as showdown from 'showdown';
 import * as mammoth from 'mammoth';
 const pdf2html = require('pdf2html');
 import { JSDOM } from 'jsdom';
+import { Buffer } from '../Buffer/bufferSource';
 
 export type DocInfo = {
     skip: boolean,

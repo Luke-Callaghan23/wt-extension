@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import * as extension from '../extension';
 import * as console from '../vsconsole';
 import { ExportForm } from './exportFormView';
+import { Buffer } from '../Buffer/bufferSource';
 
 // Converts md to html
 import * as showdown from 'showdown';

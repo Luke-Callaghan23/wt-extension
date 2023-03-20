@@ -4,6 +4,7 @@ import { prompt } from '../help';
 import * as vsconsole from '../vsconsole';
 import * as extension from '../extension';
 import { gitiniter } from '../gitTransactions';
+import { Buffer } from '../Buffer/bufferSource';
 
 
 export type Config = {

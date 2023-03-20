@@ -6,6 +6,7 @@ import { Config, Workspace } from '../workspace';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../outline/outlineNodes';
 import { OutlineView } from '../../outline/outlineView';
 import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport as WorkspaceRecord } from './types';
+import { Buffer } from '../../Buffer/bufferSource';
 
 
 async function recordFragmentContainer (node: (ChapterNode | SnipNode)): Promise<FragmentRecord> {

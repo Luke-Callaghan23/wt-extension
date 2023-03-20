@@ -6,6 +6,7 @@ import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport } from './
 import { getUsableFileName } from '../../outline/createNodes';
 import { ConfigFileInfo } from '../../help';
 import * as extension from './../../extension';
+import { Buffer } from '../../Buffer/bufferSource'
 
 async function initializeFragments (
     fragments: FragmentRecord, 
