@@ -126,6 +126,7 @@ export class FileAccessManager implements Packageable {
 
         FileAccessManager.lastAccess = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined;
         FileAccessManager.lastEditor = vscode.window.activeTextEditor;
+        FileAccessManager.positions = {};
 
         // Register the commands associated with the file access manager
         FileAccessManager.registerCommands();
@@ -134,20 +135,29 @@ export class FileAccessManager implements Packageable {
     
     getPackageItems(): { [index: string]: any; } {
         const positionPackage: { [index: string]: any } = {};
-        Object.entries(FileAccessManager.positions).forEach(([ uri, select ]) => {
-            const anchor = select.anchor;
-            const anchorLine = anchor.line;
-            const anchorChar = anchor.character;
-
-            const active = select.active;
-            const activeLine = active.line;
-            const activeChar = active.character;
-
-            positionPackage[uri] = {
-                anchorLine, anchorChar,
-                activeLine, activeChar
-            };
-        });
-        return positionPackage;
+        try {
+            Object.entries(FileAccessManager.positions).forEach(([ uri, select ]) => {
+                if (!select) return;
+                if (!uri) return;
+                const anchor = select.anchor;
+                const anchorLine = anchor.line;
+                const anchorChar = anchor.character;
+    
+                const active = select.active;
+                const activeLine = active.line;
+                const activeChar = active.character;
+    
+                positionPackage[uri] = {
+                    anchorLine, anchorChar,
+                    activeLine, activeChar
+                };
+            });
+        }
+        catch (e) {
+            console.log(`${e}`);
+        }
+        return {
+            "wt.fileAccesses.positions": positionPackage
+        };
     }
 }

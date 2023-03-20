@@ -164,6 +164,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 		// If there is no provided tree, use the whole tree as the search space
 		const currentNode = tree ?? this.tree;
+		if (!currentNode.getChildren) return null;
 		const currentChildren = await currentNode.getChildren();
 
 		if (currentNode.getId() === targetkey) {
@@ -200,6 +201,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		
 		// If there is no provided tree, use the whole tree as the search space
 		const currentNode = tree ?? this.tree;
+		if (!currentNode.getChildren) return null;
 		const currentChildren = await currentNode.getChildren();
 
 		if (currentNode.getUri().fsPath === targetUri.fsPath) {
@@ -263,7 +265,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	// From the given nodes, filter out all nodes who's parent is already in the the array of Nodes.
 	async _getLocalRoots (nodes: T[]): Promise<T[]> {
-		const localRoots = [];
+		const localRoots: T[] = [];
 		for (let i = 0; i < nodes.length; i++) {
 			const parentId = nodes[i].getParentId();
 			const parent = await this._getTreeElement(parentId);
