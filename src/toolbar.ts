@@ -160,15 +160,36 @@ async function emDashes () {
     return surroundSelectionWith(' -- ');
 }
 
-async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<void> {
+async function deleteSelection (jt: JumpType): Promise<boolean> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return false;
+
+    // Perform the delete on a specified selection
+    const doDelete = async (selection: vscode.Selection): Promise<boolean> => {
+        return editor.edit(editBuilder => editBuilder.replace(selection, ''));
+    }
+
+    // If selection is not empty, just delete the already selected area 
+    const selection = editor.selection;
+    if (!selection.isEmpty) {
+        return doDelete(selection);
+    }
+
+    // If there is no selection, then use jumpWord to get select the area to delete
+    const deleteSelection: vscode.Selection | null = await jumpWord(jt, true);
+    if (deleteSelection === null) return false;
+    return doDelete(deleteSelection);
+}
+
+async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Selection | null> {
     const direction = jt === 'forward' ? -1 : 1;
 
     const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
+    if (!editor) return null;
     const editorSelection = editor.selection;
 
     const document = editor.document;
-    if (!document) return;
+    if (!document) return null;
 
     const docText = document.getText();
     
@@ -212,20 +233,22 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<void> {
     
     // Set the new selection of the editor
     const position = document.positionAt(offset);
-    editor.selection = new vscode.Selection (
+    const select = new vscode.Selection (
         shiftHeld ? editorSelection.anchor : position, 
         position
     );
+    editor.selection = select;
+    return select;
 }
 
-async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<void> {
+async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Selection | null> {
     const direction = jt === 'forward' ? -1 : 1;
     
     const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
+    if (!editor) return null;
 
     const document = editor.document;
-    if (!document) return;
+    if (!document) return null;
 
     const docText = document.getText();
 
@@ -334,24 +357,26 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<void> {
         //      `Target sentence...|  Sentence after target sentence.`
 
     }
-    if (found === -1) return;
+    if (found === -1) return null;
     
     // Set the new selection of the editor
     const position: vscode.Position = document.positionAt(found);
-    editor.selection = new vscode.Selection (
+    const select = new vscode.Selection (
         position, 
         // If shift is held, use the start position of the previous selection as the active point
         //      of the new selection
         shiftHeld ? start : position
     );
+    editor.selection = select;
+    return select;
 }
 
-async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<void> {
+async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Selection | null> {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
+    if (!editor) return null;
 
     const document = editor.document;
-    if (!document) return;
+    if (!document) return null;
 
     const selection = editor.selection;
     const start = selection.isReversed ? selection.start : selection.end;
@@ -373,12 +398,14 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<void> 
     }
 
     // Set the new selection of the editor
-    editor.selection = new vscode.Selection (
+    const select = new vscode.Selection (
         position, 
         // If shift is held, use the start position of the previous selection as the active point
         //      of the new selection
         shiftHeld ? start : position
     );
+    editor.selection = select;
+    return select;
 }
 
 export class Toolbar {
@@ -392,6 +419,9 @@ export class Toolbar {
         vscode.commands.registerCommand('wt.editor.header', header);
         vscode.commands.registerCommand('wt.editor.emdash', emDash);
         vscode.commands.registerCommand('wt.editor.emdashes', emDashes);
+
+        vscode.commands.registerCommand('wt.editor.delete.forward', () => deleteSelection('forward'));
+        vscode.commands.registerCommand('wt.editor.delete.backward', () => deleteSelection('backward'));
 
         // Jump commands
         vscode.commands.registerCommand('wt.editor.jump.word.forward', () => jumpWord('forward'));

@@ -363,6 +363,16 @@
 			{
 				"command": "wt.editor.jump.paragraph.backward.shift",
 				"title": "Writing Tool: Jump to paragraph (backward) (select)."
+			},
+
+
+			{
+				"command": "wt.editor.delete.forward",
+				"title": "Writing Tool: Delete Word (forward)."
+			},
+			{
+				"command": "wt.editor.delete.backward",
+				"title": "Writing Tool: Delete Word (backward)."
 			}
 		],
 		"menus": {
@@ -682,6 +692,17 @@
 			{
 				"command": "wt.editor.jump.paragraph.backward.shift",
 				"key": "ctrl+alt+shift+]",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+
+			{
+				"command": "wt.editor.delete.forward",
+				"key": "ctrl+backspace",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.delete.backward",
+				"key": "ctrl+delete",
 				"when": "editorAreaVisible && editorLangId == wt"
 			}
 		],
