@@ -101,21 +101,21 @@ function surroundSelectionWith (surround: string) {
 }
 
 export function italisize () {
-    surroundSelectionWith('*');
+    return surroundSelectionWith('*');
 }
 
 export function bold () {
-    surroundSelectionWith('__');
+    return surroundSelectionWith('__');
 }
 
 export function strikethrough () {
-    surroundSelectionWith('~~');
+    return surroundSelectionWith('~~');
 }
 
 export function remove () {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
-    editor.edit(editBuilder => {
+    return editor.edit(editBuilder => {
         editBuilder.replace(editor.selection, '');
     });
 }
@@ -125,7 +125,7 @@ export function header () {
     // Since we defined comments in the the language configuration json
     //      as a hash '#', simply calling the default toggle comment command
     //      from vscode will toggle the heading
-    vscode.commands.executeCommand('editor.action.commentLine');
+    return vscode.commands.executeCommand('editor.action.commentLine');
 }
 
 async function packageContextItems () {
@@ -133,20 +133,32 @@ async function packageContextItems () {
     const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
     const contextJSON = JSON.stringify(contextItems);
     const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-    await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+    return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
 }
 
 export async function save () {
     await packageContextItems();
-    gitCommit();
+    return gitCommit();
 }
 
 export async function saveAll () {
     await packageContextItems();
-    gitCommit();
+    return gitCommit();
 }
 
 type JumpType = 'forward' | 'backward'
+
+async function emDash () {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+    return editor.edit((editBuilder: vscode.TextEditorEdit) => {
+        editBuilder.replace(editor.selection, ' -- ');
+    });
+}
+
+async function emDashes () {
+    return surroundSelectionWith(' -- ');
+}
 
 async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<void> {
     const direction = jt === 'forward' ? -1 : 1;
@@ -378,6 +390,8 @@ export class Toolbar {
         vscode.commands.registerCommand('wt.editor.bold', bold);
         vscode.commands.registerCommand('wt.editor.strikethrough', strikethrough);
         vscode.commands.registerCommand('wt.editor.header', header);
+        vscode.commands.registerCommand('wt.editor.emdash', emDash);
+        vscode.commands.registerCommand('wt.editor.emdashes', emDashes);
 
         // Jump commands
         vscode.commands.registerCommand('wt.editor.jump.word.forward', () => jumpWord('forward'));
