@@ -154,6 +154,9 @@ class Word {
     private static filtered: RegExp[] = [ 
         // Common words
         /a/, /the/, /of/, /i/, 
+        /to/, /you/, /not/, /too/,
+        /her/, /she/, /him/, /he/,
+        /and/,
 
         // Whitespace
         /\s+/, 
@@ -162,7 +165,9 @@ class Word {
         /^$/, 
 
         // Any single character non-alphanumberic character
-        /[^a-zA-Z0-9]/ 
+        /[^a-zA-Z0-9]/,
+        
+
     ];
     static shouldFilterWord ({ text }: Word): boolean {
         return Word.filtered.find(filt => filt.test(text)) !== undefined;
