@@ -291,7 +291,15 @@
 				"icon": "$(text-size)"
 			},
 
-
+			
+			{
+				"command": "wt.editor.word.forward",
+				"title": "Writing Tool: Jump to Word (forward)."
+			},
+			{
+				"command": "wt.editor.word.backward",
+				"title": "Writing Tool: Jump to Word (backward)."
+			},
 			{
 				"command": "wt.editor.jump.sentence.forward",
 				"title": "Writing Tool: Jump to Sentence (forward)."
@@ -309,20 +317,28 @@
 				"title": "Writing Tool: Jump to paragraph (backward)."
 			},
 			{
+				"command": "wt.editor.word.forward.shift",
+				"title": "Writing Tool: Jump to Word (forward) (select)."
+			},
+			{
+				"command": "wt.editor.word.backward.shift",
+				"title": "Writing Tool: Jump to Word (backward) (select)."
+			},
+			{
 				"command": "wt.editor.jump.sentence.forward.shift",
-				"title": "Writing Tool: Jump to Sentence (forward)."
+				"title": "Writing Tool: Jump to Sentence (forward) (select)."
 			},
 			{
 				"command": "wt.editor.jump.sentence.backward.shift",
-				"title": "Writing Tool: Jump to Sentence (backward)."
+				"title": "Writing Tool: Jump to Sentence (backward) (select)."
 			},
 			{
 				"command": "wt.editor.jump.paragraph.forward.shift",
-				"title": "Writing Tool: Jump to paragraph (forward)."
+				"title": "Writing Tool: Jump to paragraph (forward) (select)."
 			},
 			{
 				"command": "wt.editor.jump.paragraph.backward.shift",
-				"title": "Writing Tool: Jump to paragraph (backward)."
+				"title": "Writing Tool: Jump to paragraph (backward) (select)."
 			}
 		],
 		"menus": {
@@ -563,14 +579,13 @@
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 
-			
 			{
-				"command": "cursorWordEndLeft",
+				"command": "wt.editor.jump.word.forward",
 				"key": "ctrl+left",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
-				"command": "cursorWordEndRight",
+				"command": "wt.editor.jump.word.backward",
 				"key": "ctrl+right",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
@@ -595,14 +610,14 @@
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 
-
+			
 			{
-				"command": "cursorWordEndLeftSelect",
+				"command": "wt.editor.jump.word.forward.shift",
 				"key": "ctrl+shift+left",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
-				"command": "cursorWordEndRightSelect",
+				"command": "wt.editor.jump.word.backward.shift",
 				"key": "ctrl+shift+right",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
@@ -624,16 +639,6 @@
 			{
 				"command": "wt.editor.jump.paragraph.backward.shift",
 				"key": "ctrl+alt+shift+]",
-				"when": "editorAreaVisible && editorLangId == wt"
-			},
-			{
-				"command": "deleteWordRight",
-				"key": "ctrl+delete",
-				"when": "editorAreaVisible && editorLangId == wt"
-			},
-			{
-				"command": "deleteWordLeft",
-				"key": "ctrl+backspace",
 				"when": "editorAreaVisible && editorLangId == wt"
 			}
 		],

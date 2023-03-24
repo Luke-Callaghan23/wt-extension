@@ -5,6 +5,7 @@ import * as console from './vsconsole';
 import * as extension from './extension';
 import { Buff } from './Buffer/bufferSource';
 
+
 // Function for surrounding selected text with a specified string
 function surroundSelectionWith (surround: string) {
     // Get the active text editor
@@ -147,9 +148,65 @@ export async function saveAll () {
 
 type JumpType = 'forward' | 'backward'
 
+async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<void> {
+    const direction = jt === 'forward' ? -1 : 1;
 
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+    const editorSelection = editor.selection;
 
-async function jumpSentence (jt: JumpType, shiftHeld?: boolean) {
+    const document = editor.document;
+    if (!document) return;
+
+    const docText = document.getText();
+    
+
+    // Get initial offset of the cursor
+    const start: vscode.Position = editorSelection.active;
+    let offset = document.offsetAt(start);
+    if (jt === 'forward') {
+        // If going forward, the character we're inspecting is actually the one behind the cursor
+        offset -= 1;
+    }
+
+    // Move away from space characters
+    let char = docText[offset];
+    while (char === ' ') {
+        offset += direction;
+        char = docText[offset];
+    }
+
+    // Main movement: 
+    const stopRegex = /[\s\.\?,"'-\(\)\[\]\{\}/\\]/;
+    if (stopRegex.test(char)) {
+        // If the cursor is initially at a stop character, then go until we find a non-stop character
+        while (stopRegex.test(char)) {
+            offset += direction;
+            char = docText[offset];
+        }
+    }
+    else {
+        // If the cursor is at a non-stop character, then go until we find a stop character
+        while (!stopRegex.test(char)) {
+            offset += direction;
+            char = docText[offset];
+        }
+    }
+    
+    if (jt === 'forward') {
+        // Since we reached the stop character, back off one step (if going forward)
+        offset -= direction;
+    }
+    
+    // Set the new selection of the editor
+    const position = document.positionAt(offset);
+    editor.selection = new vscode.Selection (
+        shiftHeld ? editorSelection.anchor : position, 
+        position
+    );
+}
+
+async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<void> {
     const direction = jt === 'forward' ? -1 : 1;
     
     const editor = vscode.window.activeTextEditor;
@@ -277,7 +334,7 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean) {
     );
 }
 
-async function jumpParagraph (jt: JumpType, shiftHeld?: boolean) {
+async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
 
@@ -323,10 +380,14 @@ export class Toolbar {
         vscode.commands.registerCommand('wt.editor.header', header);
 
         // Jump commands
+        vscode.commands.registerCommand('wt.editor.jump.word.forward', () => jumpWord('forward'));
+        vscode.commands.registerCommand('wt.editor.jump.word.backward', () => jumpWord('backward'));
         vscode.commands.registerCommand('wt.editor.jump.sentence.forward', () => jumpSentence('forward'));
         vscode.commands.registerCommand('wt.editor.jump.sentence.backward', () => jumpSentence('backward'));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.forward', () => jumpParagraph('forward'));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.backward', () => jumpParagraph('backward'));
+        vscode.commands.registerCommand('wt.editor.jump.word.forward.shift', () => jumpWord('forward', true));
+        vscode.commands.registerCommand('wt.editor.jump.word.backward.shift', () => jumpWord('backward', true));
         vscode.commands.registerCommand('wt.editor.jump.sentence.forward.shift', () => jumpSentence('forward', true));
         vscode.commands.registerCommand('wt.editor.jump.sentence.backward.shift', () => jumpSentence('backward', true));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.forward.shift', () => jumpParagraph('forward', true));
