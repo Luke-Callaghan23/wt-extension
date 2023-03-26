@@ -16,11 +16,15 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 	) { 
 		this.synonyms = this.context.workspaceState.get('wt.synonyms.synonyms') ?? ['big', 'sad', 'great'];
 
-		
 		this._extensionUri = context.extensionUri;
-        context.subscriptions.push (
-			vscode.window.registerWebviewViewProvider('wt.synonyms', this)
-		);
+		try {
+			context.subscriptions.push (
+				vscode.window.registerWebviewViewProvider('wt.synonyms', this)
+			);
+		}
+		catch (e) {
+			console.log(`${e}`);
+		}
 
 		this.registerCommands();
 	}

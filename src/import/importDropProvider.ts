@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
+import { Utils } from 'vscode-uri';
 import { rootPath } from '../extension';
 import { Workspace } from '../workspace/workspaceClass';
 import * as console from '../vsconsole';
@@ -53,45 +54,61 @@ export class ImportDocumentProvider implements vscode.DocumentDropEditProvider, 
         //          Plus some extra shenanigans
         // Why, microsoft?
         // Why?
-        
+
         // Split the uris on the prefix 'vscode-local:/'
-        const uris = transferItem.value.split('vscode-local:/');
-        for (let uri of uris) {
-            // Uri list will always begin with an empty string (string.split shenanigans)
-            if (uri.length === 0) continue;
-            
-            // Linux subsystems have annoying prefixes -- need to get rid of those
-            if ((uri as string).includes('home/')) {
-                uri = '/home/' + uri.split('home/')[1];
+        const uris: string[] = transferItem.value.split('\n');
+        for (let unparsed of uris) {
+            const uri = vscode.Uri.parse(unparsed.trim());
+            const ext = Utils.extname(uri).replace('.', '');
+            const basename = Utils.basename(uri);
+            if (!this.workspace.importFileTypes.find(allowed => allowed === ext)) {
+                vscode.window.showWarningMessage(`Warning: Skipping '${basename}' because its ext type '${ext}' is not valid for importing!`);
+                continue;
             }
 
-            // Replace the newline stuff (use \s and replace all because windows uses \r\n instead
-            //      of just \n)
-            uri = uri.replaceAll(/\s/g, '');
-
-            // Undecode the uri
-            uri = decodeURI(uri);
-            // Colons are also encoded (decodeUri does not decode colons)
-            uri = uri.replaceAll('%3A', ':');
-
-            
-            try {
-                const ext = uri.slice(uri.lastIndexOf('.') + 1)[1];
-                const uriName = uri.slice(uri.lastIndexOf('/'))[1];
-                if (!this.workspace.importFileTypes.find(allowed => allowed === ext)) {
-                    vscode.window.showWarningMessage(`Warning: Skipping '${uriName}' because its ext type '${ext}' is not valid for importing!`);
-                    continue;
-                }
-
-
-                const finalDest = vscode.Uri.joinPath(dest, uriName);
-                await vscode.workspace.fs.copy(uri, finalDest);
-                this.fsView.refresh();
-            }
-            catch (e) {
-                vscode.window.showErrorMessage(`Error: copying file '${uri}': ${e}`);
-            }
+        
+            const finalDest = vscode.Uri.joinPath(dest, basename);
+            await vscode.workspace.fs.copy(uri, finalDest);
         }
+        this.fsView.refresh();
+
+        // console.log(uris);
+        // for (let uri of uris) {
+        //     // Uri list will always begin with an empty string (string.split shenanigans)
+        //     if (uri.length === 0) continue;
+            
+        //     // Linux subsystems have annoying prefixes -- need to get rid of those
+        //     if ((uri as string).includes('home/')) {
+        //         uri = '/home/' + uri.split('home/')[1];
+        //     }
+
+        //     // Replace the newline stuff (use \s and replace all because windows uses \r\n instead
+        //     //      of just \n)
+        //     uri = uri.replaceAll(/\s/g, '');
+
+        //     // Undecode the uri
+        //     uri = decodeURI(uri);
+        //     // Colons are also encoded (decodeUri does not decode colons)
+        //     uri = uri.replaceAll('%3A', ':');
+
+            
+        //     try {
+        //         const ext = uri.slice(uri.lastIndexOf('.') + 1)[1];
+        //         const uriName = uri.slice(uri.lastIndexOf('/'))[1];
+        //         if (!this.workspace.importFileTypes.find(allowed => allowed === ext)) {
+        //             vscode.window.showWarningMessage(`Warning: Skipping '${uriName}' because its ext type '${ext}' is not valid for importing!`);
+        //             continue;
+        //         }
+
+
+        //         const finalDest = vscode.Uri.joinPath(dest, uriName);
+        //         await vscode.workspace.fs.copy(uri, finalDest);
+        //         this.fsView.refresh();
+        //     }
+        //     catch (e) {
+        //         vscode.window.showErrorMessage(`Error: copying file '${uri}': ${e}`);
+        //     }
+        // }
     }
 
     public async handleDrag (source: Entry[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
