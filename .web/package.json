@@ -539,16 +539,6 @@
 					"command": "wt.synonyms.searchWord",
 					"when": "editorLangId == wt",
 					"group": "navigation@2"
-				},
-				{
-					"command": "wt.editor.emdashes", 
-					"when": "editorLangId == wt",
-					"group": "navigation@1"
-				},
-				{
-					"command": "wt.editor.emdash", 
-					"when": "editorLangId == wt",
-					"group": "navigation@0"
 				}
 			]
 		},

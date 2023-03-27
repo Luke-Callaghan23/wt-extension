@@ -206,6 +206,9 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
     let char = docText[offset];
     while (char && char === ' ') {
         offset += direction;
+        if (offset === -1) {
+            break;
+        }
         char = docText[offset];
     }
 
@@ -215,6 +218,9 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
         // If the cursor is initially at a stop character, then go until we find a non-stop character
         while (char && stopRegex.test(char)) {
             offset += direction;
+            if (offset === -1) {
+                break;
+            }
             char = docText[offset];
         }
     }
@@ -223,6 +229,9 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
         // (Also allow the character apostrophe character to be jumped -- as we don't want to stutter on the word 'don't')
         while (char && (char === "'" || !stopRegex.test(char))) {
             offset += direction;
+            if (offset === -1) {
+                break;
+            }
             char = docText[offset];
         }
     }
