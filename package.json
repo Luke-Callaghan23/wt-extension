@@ -225,6 +225,14 @@
 				"enablement": "wt.proximity.enabled"
 			},
 			{
+				"command": "wt.proximity.addFilteredWord",
+				"title": "Writing Tool: Remove word from proximity checks"
+			},
+			{
+				"command": "wt.proximity.removeFilteredWord",
+				"title": "Writing Tool: Add word back to proximity checks"
+			},
+			{
 				"command": "wt.wordWatcher.help",
 				"title": "Writing Tool: Word Watcher View Help",
 				"icon": "$(question)"
@@ -314,8 +322,6 @@
 				"title": "Writing Tool: Em Dashes",
 				"icon": "$(list-filter)"
 			},
-
-
 			{
 				"command": "wt.editor.word.forward",
 				"title": "Writing Tool: Jump to Word (forward)."
@@ -364,8 +370,6 @@
 				"command": "wt.editor.jump.paragraph.backward.shift",
 				"title": "Writing Tool: Jump to paragraph (backward) (select)."
 			},
-
-
 			{
 				"command": "wt.editor.delete.forward",
 				"title": "Writing Tool: Delete Word (forward)."
@@ -622,8 +626,6 @@
 				"key": "ctrl+alt+shift+-",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
-
-			
 			{
 				"command": "wt.editor.jump.word.forward",
 				"key": "ctrl+left",
@@ -684,7 +686,6 @@
 				"key": "ctrl+alt+shift+]",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
-
 			{
 				"command": "wt.editor.delete.forward",
 				"key": "ctrl+backspace",
@@ -739,6 +740,8 @@
 		"html-to-docx": "^1.6.5",
 		"jsdom": "^21.1.0",
 		"mammoth": "^1.5.1",
+		"node-fetch": "^3.3.1",
+		"node-fetch-commonjs": "^3.2.4",
 		"pdf2html": "^3.1.0",
 		"showdown": "^2.1.0",
 		"uuid": "^9.0.0",

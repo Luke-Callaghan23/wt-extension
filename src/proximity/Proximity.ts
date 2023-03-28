@@ -159,6 +159,7 @@ class Sentence {
     public ranks: Ranks;
 
     constructor (
+        proximity: Proximity,
         editor: vscode.TextEditor,
         fullText: string,
         sentenceText: string,
@@ -203,7 +204,7 @@ class Sentence {
                 start, end
             );
 
-            if (!Word.shouldFilterWord(word)) {
+            if (!proximity.shouldFilterWord(word)) {
                 // Push the sentence, and all its words to this object
                 this.allWords.push(word);
             }
@@ -223,6 +224,7 @@ class Paragraph {
     public ranks: Ranks;
 
     constructor (
+        proximity: Proximity,
         editor: vscode.TextEditor,
         fullText: string,
         paragraphText: string,
@@ -263,6 +265,7 @@ class Paragraph {
 
             // Create sentence and push it to this paragraph's structure
             const sentence = new Sentence(
+                proximity,
                 editor,
                 fullText, sentenceText,
                 start, end
@@ -286,6 +289,7 @@ class VisibleData {
     public uniqueWords: string[];
 
     constructor (
+        proximity: Proximity,
         editor: vscode.TextEditor,
         visible: vscode.Range,
     ) {
@@ -324,6 +328,7 @@ class VisibleData {
 
             // Create a paragraph object
             const paragraph = new Paragraph(
+                proximity,
                 editor, 
                 text, paragraphText,
                 start, end
@@ -357,7 +362,7 @@ export class Proximity implements Timed, Packageable {
         this.enabled = true;
 
         // Read additional excluded words from the workspace state
-        const additional: string[] = context.workspaceState.get('wt.wordWatcher.watchedWords') || [];
+        const additional: string[] = context.workspaceState.get('wt.wordWatcher.additionalPatterns') || [];
         this.additionalPatterns = additional.map(add => {
             try {
                 return new RegExp(add)
@@ -405,9 +410,11 @@ export class Proximity implements Timed, Packageable {
             }
 
             // Attempt to creat a regex from the response, if the creation of a regexp out of the word caused an exception, report that to the user
-            let reg;
+            let reg: RegExp;
             try {
                 reg = new RegExp(response);
+                console.log(response);
+                console.log(`${new RegExp(response)}`);
             }
             catch (e) {
                 const proceed = await vscode.window.showInformationMessage(`An error occurred while creating a Regular Expression from your response!`, {
@@ -420,7 +427,8 @@ export class Proximity implements Timed, Packageable {
 
             // If the word is valid and doesn't already exist in the word list, then continue adding the words
             this.additionalPatterns.push(reg);
-            this.context.workspaceState.update('wt.wordWatcher.watchedWords', this.additionalPatterns.map(pat => pat.source));
+            console.log(this.additionalPatterns);
+            this.context.workspaceState.update('wt.wordWatcher.additionalPatterns', this.additionalPatterns.map(pat => pat.source));
             if (vscode.window.activeTextEditor) {
                 this.update(vscode.window.activeTextEditor);
             }
@@ -432,15 +440,13 @@ export class Proximity implements Timed, Packageable {
         // Show a quick pick menu for all the the existing additional patterns
         const existingPatterns = this.additionalPatterns.map(pat => pat.source);
         if (existingPatterns.length === 0) return;
-        const response: string[] | undefined = await vscode.window.showQuickPick(existingPatterns, {
+        const response: string | undefined = await vscode.window.showQuickPick(existingPatterns, {
             ignoreFocusOut: false,
             title: 'Remove Pattern',
             canPickMany: false
         });
-        if (!response || response.length !== 1) return;
-
-        // Get the only usable response from the user
-        const [ filter ] = response;
+        if (!response) return;
+        const filter = response;
 
         // Filter that word from this.additionalPatterns
         const filterIndex = this.additionalPatterns.findIndex(pat => pat.source === filter);
@@ -451,7 +457,7 @@ export class Proximity implements Timed, Packageable {
         this.additionalPatterns.splice(filterIndex, 1);
 
         // Update state
-        this.context.workspaceState.update('wt.wordWatcher.watchedWords', this.additionalPatterns.map(pat => pat.source));
+        this.context.workspaceState.update('wt.wordWatcher.additionalPatterns', this.additionalPatterns.map(pat => pat.source));
         if (vscode.window.activeTextEditor) {
             this.update(vscode.window.activeTextEditor);
         }
@@ -487,7 +493,7 @@ export class Proximity implements Timed, Packageable {
     shouldFilterWord ({ text }: Word): boolean {
         return (
             this.filtered.find(filt => filt.test(text)) !== undefined
-            && this.additionalPatterns.find(filt => filt.test(text)) !== undefined
+            || this.additionalPatterns.find(filt => filt.test(text)) !== undefined
         );
     }
 
@@ -510,7 +516,7 @@ export class Proximity implements Timed, Packageable {
         let clearIndex = -1;
         for (const visible of editor.visibleRanges) {
             // Get ratings ffor all words in the current visible range
-            const visibleData = new VisibleData(editor, visible);
+            const visibleData = new VisibleData(this, editor, visible);
             const rated = Ranks.assignRatings(
                 visibleData,                                            // full view
                 visibleData.paragraphs,                                 // all paragraphs

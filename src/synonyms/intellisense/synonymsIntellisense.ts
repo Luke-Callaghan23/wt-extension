@@ -10,12 +10,13 @@ export class SynonymsIntellisense {
         private context: vscode.ExtensionContext,
         workspace: Workspace
     ) {
-        const wtSelector: vscode.DocumentFilter = {
+        const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
             language: 'wt',
             scheme: 'file'
         };
-        vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace));
-        vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace));
-        vscode.languages.registerCodeActionsPProvider (wtSelector, new CodeActionProvider(context, workspace));
+        const hover = new HoverProvider(context, workspace);
+        vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace, hover));
+        vscode.languages.registerHoverProvider (wtSelector, hover);
+        vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(context, workspace));
     }
 }

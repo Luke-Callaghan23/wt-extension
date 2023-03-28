@@ -6,7 +6,7 @@ type HoverPosition = {
     text: string;
 };
 
-export function getHoveredWord (document: vscode.Document, position: vscode.Position): HoverPosition | null {
+export function getHoveredWord (document: vscode.TextDocument, position: vscode.Position): HoverPosition | null {
     const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/;
 
     const text = document.getText();
@@ -58,7 +58,7 @@ export function getHoveredWord (document: vscode.Document, position: vscode.Posi
     //      use that as the start of the hover string
     if (goBack) {
         let current = off - 1;
-        while (!stops.test(text[current])) {
+        while (text[current] && !stops.test(text[current])) {
             current -= 1;
         }
         start = current + 1;
@@ -69,7 +69,7 @@ export function getHoveredWord (document: vscode.Document, position: vscode.Posi
     //      use that as the end of the hover string
     if (goForward) {
         let current = off + 1;
-        while (!stops.test(text[current])) {
+        while (text[current] && !stops.test(text[current])) {
             current += 1;
         }
         end = current;
@@ -81,4 +81,10 @@ export function getHoveredWord (document: vscode.Document, position: vscode.Posi
         start, end,
         text: text.substring(start, end)
     };
+}
+
+
+export function capitalize (str: string): string {
+    const end = str.substring(1);
+    return str[0].toLocaleUpperCase() + end;
 }

@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
-import { getHoveredWord } from './common';
+import { capitalize, getHoveredWord } from './common';
+import { query } from './querySynonym';
 
 export class HoverProvider implements vscode.HoverProvider {
     constructor (
@@ -11,34 +12,39 @@ export class HoverProvider implements vscode.HoverProvider {
 
     }
 
-    async provideHover (document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.Hover> {
-        const hoverPosition = getHoveredWord(document, position);
-        if (!hoverPosition) return new vscode.Hover('', new vscode.Selection(0,0,0,0));
+    async getHoverText (text: string): Promise<string> {
 
         // Query the synonym api for the hovered word
-        const response = await query(hoverPosition.text);
-        if (!response) return new vscode.Hover('', new vscode.Selection(0,0,0,0));
+        const response = await query(text);
+        if (response.type === 'error') {
+            return response.message;
+        }
 
         // Construct markdown string from defintitions of hovered word
-        const header: string = `###${response.word}`;
+        const word = capitalize(response.word);
+        const header: string = `### ${word}:`;
         const definitions: string[] = response.definitions.map(({
             part,
             definitions
         }) => {
-            const def = definitions[0];
-            return `(**${part}**) ${def}`
+            const def = capitalize(definitions[0]);
+            return `- (*${part}*) ${def}`
         });
         const defString = definitions.join('\n\n');
+        const fullString = `${header}\n\n\n${defString}`;
+        return fullString;
+    }
 
-        const hoverResult = new vscode.MarkdownString(`${header}
-        
-        
-        ${defString}`);
+    async provideHover (document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.Hover> {
+        const hoverPosition = await getHoveredWord(document, position);
+        if (!hoverPosition) return new vscode.Hover('');
+
+        const hoverText = await this.getHoverText(hoverPosition?.text);
 
         // Create and return the new hover
         const startPosition = document.positionAt(hoverPosition.start);
         const endPosition = document.positionAt(hoverPosition.end);
         const selection = new vscode.Selection(startPosition, endPosition);
-        return new vscode.Hover(hoverResult, selection);
+        return new vscode.Hover(hoverText, selection);
     }
 }
