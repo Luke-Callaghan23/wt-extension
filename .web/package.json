@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.19",
+	"version": "0.0.21",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -209,6 +209,14 @@
 				"command": "wt.proximity.disable",
 				"title": "Writing Tool: Disable Word Proximity Checks (removes highlights on duplicate words in close proximity)",
 				"enablement": "wt.proximity.enabled"
+			},
+			{
+				"command": "wt.proximity.addFilteredWord",
+				"title": "Writing Tool: Remove word from proximity checks"
+			},
+			{
+				"command": "wt.proximity.removeFilteredWord",
+				"title": "Writing Tool: Add word back to proximity checks"
 			},
 			{
 				"command": "wt.wordWatcher.help",
