@@ -80,7 +80,10 @@ export async function createWorkspace (
         // Create .vscode folder and the settings.json to specify word wrap being on
         const settings = {
             // eslint-disable-next-line @typescript-eslint/naming-convention
-            "editor.wordWrap": "on"
+
+            // Turn on word wrap, and remove "'" and "-" from default word separators
+            "editor.wordWrap": "on",
+            "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:\",.<>/?",
         };
         const settingsJSON = JSON.stringify(settings);
 

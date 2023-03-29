@@ -4,6 +4,7 @@ import * as console from '../vsconsole';
 import { Workspace } from '../workspace/workspaceClass';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
+import { Packageable } from '../packageable';
 
 class Ranks {
     public rankedWords: { [index: string]: Word[] };
@@ -149,28 +150,6 @@ class Word {
         const endPosition = editor.document.positionAt(end - endWhitespace);
         const range = new vscode.Range(startPosition, endPosition);
         this.range = range;
-    }
-
-    private static filtered: RegExp[] = [ 
-        // Common words
-        /a/, /the/, /of/, /i/, 
-        /to/, /you/, /not/, /too/,
-        /her/, /she/, /him/, /he/,
-        /and/,
-
-        // Whitespace
-        /\s+/, 
-
-        // Empty string
-        /^$/, 
-
-        // Any single character non-alphanumberic character
-        /[^a-zA-Z0-9]/,
-        
-
-    ];
-    static shouldFilterWord ({ text }: Word): boolean {
-        return Word.filtered.find(filt => filt.test(text)) !== undefined;
     }
 }
 
@@ -367,13 +346,149 @@ class VisibleData {
 }
 
 
-export class Proximity implements Timed {
+export class Proximity implements Timed, Packageable {
     enabled: boolean;
+
+    private additionalPatterns: RegExp[];
     constructor (
-        context: vscode.ExtensionContext,
+        private context: vscode.ExtensionContext,
         workspace: Workspace
     ) {
         this.enabled = true;
+
+        // Read additional excluded words from the workspace state
+        const additional: string[] = context.workspaceState.get('wt.wordWatcher.watchedWords') || [];
+        this.additionalPatterns = additional.map(add => {
+            try {
+                return new RegExp(add)
+            } catch (e) {
+                vscode.window.showWarningMessage(`WARN: Could not process proximity pattern '${add}' from workspace state.`)
+                return [];
+            }
+        }).flat();
+
+        this.registerCommands();
+    }
+
+    getPackageItems(): { [index: string]: any; } {
+        return {
+            'wt.proximity.additionalPatterns': this.additionalPatterns.map(pat => pat.source)
+        }
+    }
+
+
+    async addPattern () {
+        while (true) {
+            const response = await vscode.window.showInputBox({
+                placeHolder: 'supercalifragilisticexpialidocious',
+                ignoreFocusOut: false,
+                prompt: `Enter the word or word pattern that you would like to exclude from proximity checks (note: only alphabetical characters are allowed)`,
+                title: 'Add pattern'
+            });
+            if (!response) return;
+
+            // Regex for filtering out responses that do not follow the regex subset for specifying watched words
+            // Subset onyl includes: groupings '()', sets '[]', one or more '+', zero or more '*', and alphabetical characters
+            const allowCharacters = /^[a-zA-Z\(\)\[\]\*\+\?-]+$/;
+            // Regex for matching any escaped non-alphabetical character
+            const escapedNonAlphabetics = /\\\(|\\\[|\\\]|\\\)|\\\*|\\\+|\\\?|\\\-/;
+
+            // Test to make sure there aren't any invalid characters in the user's response or if there are any escaped characters that
+            //      should not be escaped
+            if (!allowCharacters.test(response) || escapedNonAlphabetics.test(response)) {
+                const proceed = await vscode.window.showInformationMessage(`Could not parse specified word/pattern!`, {
+                    modal: true,
+                    detail: "List of allowed characters in watched word/pattern is: a-z, A-Z, '*', '+', '?', '(', ')', '[', ']', and '-', where all non alphabetic characters must not be escaped."
+                }, 'Okay', 'Cancel');
+                if (proceed === 'Cancel') return;
+                continue;
+            }
+
+            // Attempt to creat a regex from the response, if the creation of a regexp out of the word caused an exception, report that to the user
+            let reg;
+            try {
+                reg = new RegExp(response);
+            }
+            catch (e) {
+                const proceed = await vscode.window.showInformationMessage(`An error occurred while creating a Regular Expression from your response!`, {
+                    modal: true,
+                    detail: `Error: ${e}`
+                }, 'Okay', 'Cancel');
+                if (proceed === 'Cancel') return;
+                continue;
+            }
+
+            // If the word is valid and doesn't already exist in the word list, then continue adding the words
+            this.additionalPatterns.push(reg);
+            this.context.workspaceState.update('wt.wordWatcher.watchedWords', this.additionalPatterns.map(pat => pat.source));
+            if (vscode.window.activeTextEditor) {
+                this.update(vscode.window.activeTextEditor);
+            }
+            return;
+        }
+    }
+
+    async removePattern () {
+        // Show a quick pick menu for all the the existing additional patterns
+        const existingPatterns = this.additionalPatterns.map(pat => pat.source);
+        if (existingPatterns.length === 0) return;
+        const response: string[] | undefined = await vscode.window.showQuickPick(existingPatterns, {
+            ignoreFocusOut: false,
+            title: 'Remove Pattern',
+            canPickMany: false
+        });
+        if (!response || response.length !== 1) return;
+
+        // Get the only usable response from the user
+        const [ filter ] = response;
+
+        // Filter that word from this.additionalPatterns
+        const filterIndex = this.additionalPatterns.findIndex(pat => pat.source === filter);
+        if (filterIndex === -1) {
+            vscode.window.showErrorMessage(`ERROR: Could not find that pattern -- somethign definitely went wrong :(`);
+            return;
+        }
+        this.additionalPatterns.splice(filterIndex, 1);
+
+        // Update state
+        this.context.workspaceState.update('wt.wordWatcher.watchedWords', this.additionalPatterns.map(pat => pat.source));
+        if (vscode.window.activeTextEditor) {
+            this.update(vscode.window.activeTextEditor);
+        }
+    }
+
+
+    registerCommands() {
+        vscode.commands.registerCommand('wt.proximity.addFilteredWord', () => this.addPattern());
+        vscode.commands.registerCommand('wt.proximity.removeFilteredWord', () => this.removePattern())
+    }
+
+    
+
+    private filtered: RegExp[] = [ 
+        // Common words
+        /a/, /the/, /of/, /i/, 
+        /to/, /you/, /not/, /too/,
+        /her/, /she/, /him/, /he/,
+        /and/, /so/, /for/, /my/,
+
+        // Whitespace
+        /\s+/, 
+
+        // Empty string
+        /^$/, 
+
+        // Any single character non-alphanumberic character
+        /[^a-zA-Z0-9]/,
+        
+
+    ];
+
+    shouldFilterWord ({ text }: Word): boolean {
+        return (
+            this.filtered.find(filt => filt.test(text)) !== undefined
+            && this.additionalPatterns.find(filt => filt.test(text)) !== undefined
+        );
     }
 
 
