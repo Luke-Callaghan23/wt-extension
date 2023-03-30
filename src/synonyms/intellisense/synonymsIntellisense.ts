@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
 import { CompletionItemProvider } from './completionItemProvider';
-import { HoverProvider } from './hoverProcider';
+import { HoverProvider } from './hoverProvider';
 import { CodeActionProvider } from './codeActionProvider';
 
 export class SynonymsIntellisense {
@@ -17,7 +17,5 @@ export class SynonymsIntellisense {
         vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace));
         vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace));
         vscode.languages.registerCodeActionsPProvider (wtSelector, new CodeActionProvider(context, workspace));
-
-
     }
 }
