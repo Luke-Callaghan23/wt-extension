@@ -11,8 +11,7 @@ export class SynonymsIntellisense {
         workspace: Workspace
     ) {
         const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
-            language: 'wt',
-            scheme: 'file'
+            language: 'wt'
         };
         vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace));
         vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace));

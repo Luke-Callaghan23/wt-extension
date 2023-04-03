@@ -43,6 +43,7 @@ export async function query (word: string): Promise<Synonyms | SynonymError> {
         // @ts-ignore
         const api = `https://dictionaryapi.com/api/v3/references/thesaurus/json/${word}?key=29029b50-e0f1-4be6-ac00-77ab8233e66b`;
         const resp: Response = await fetch(api);
+        
         if (!resp || resp.status !== 200) return <SynonymError> {
             type: 'error',
             message: "Could not connect to dictionary API.  Please check your internet connection."

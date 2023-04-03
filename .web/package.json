@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.22",
+	"version": "0.0.23",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -308,8 +308,6 @@
 				"title": "Writing Tool: Em Dashes",
 				"icon": "$(list-filter)"
 			},
-
-			
 			{
 				"command": "wt.editor.word.forward",
 				"title": "Writing Tool: Jump to Word (forward)."
@@ -358,8 +356,6 @@
 				"command": "wt.editor.jump.paragraph.backward.shift",
 				"title": "Writing Tool: Jump to paragraph (backward) (select)."
 			},
-
-
 			{
 				"command": "wt.editor.delete.forward",
 				"title": "Writing Tool: Delete Word (forward)."
@@ -616,7 +612,6 @@
 				"key": "ctrl+alt+shift+-",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
-
 			{
 				"command": "wt.editor.jump.word.forward",
 				"key": "ctrl+left",
@@ -647,8 +642,6 @@
 				"key": "ctrl+alt+]",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
-
-			
 			{
 				"command": "wt.editor.jump.word.forward.shift",
 				"key": "ctrl+shift+left",
@@ -679,7 +672,6 @@
 				"key": "ctrl+alt+shift+]",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
-
 			{
 				"command": "wt.editor.delete.forward",
 				"key": "ctrl+backspace",
@@ -749,6 +741,7 @@
 		"@vscode/codicons": "^0.0.32",
 		"buffer": "^6.0.3",
 		"minimist": "^1.2.6",
+		"node-fetch-commonjs": "^3.2.4",
 		"uuid": "^9.0.0",
 		"vscode-uri": "^3.0.7"
 	}
