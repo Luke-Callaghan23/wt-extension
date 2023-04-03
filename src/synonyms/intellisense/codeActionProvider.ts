@@ -29,11 +29,15 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
         const response = await query(hoverPosition.text);
         if (response.type !== 'error') return [];
 
+
+
         return response.suggestions?.map(suggest => {
+            const edit = new vscode.WorkspaceEdit();
+            edit.replace(document.uri, hoverRange, suggest);
             return <vscode.CodeAction> {
                 title: `Replace with: '${capitalize(suggest)}'`,
                 // edit: new vscode.TextEdit(hoverRange, suggest),
-                edit: new vscode.WorkspaceEdit().replace(document.uri, hoverRange, suggest),
+                edit: edit,
                 kind: vscode.CodeActionKind.QuickFix,
             }
         }) || [];

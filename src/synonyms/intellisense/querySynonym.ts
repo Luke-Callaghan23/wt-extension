@@ -1,5 +1,5 @@
 import * as console from './../../vsconsole';
-const fetch = require('node-fetch-commonjs');
+// const fetch = require('node-fetch-commonjs');
 
 type Definition = {
     definitions :  string[],

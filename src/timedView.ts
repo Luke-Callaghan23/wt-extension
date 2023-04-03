@@ -1,4 +1,3 @@
-import { throws } from 'assert';
 import * as vscode from 'vscode';
 import { Packageable } from './packageable';
 
