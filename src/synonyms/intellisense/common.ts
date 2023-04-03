@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { query } from './querySynonym';
 
 type HoverPosition = {
     start: number;
@@ -83,6 +84,41 @@ export function getHoveredWord (document: vscode.TextDocument, position: vscode.
     };
 }
 
+
+const hoverText: { [index: string]: string } = {};
+export async function getHoverText (text: string): Promise<string> {
+
+    // If the hover text for the hovered word has already been calculated and stored in
+    //      the hoverText dictionary, then use that string
+    if (hoverText[text]) {
+        return hoverText[text];
+    }
+
+    // Query the synonym api for the hovered word
+    const response = await query(text);
+    if (response.type === 'error') {
+        return response.message;
+    }
+
+    // Construct markdown string from defintitions of hovered word
+    const word = capitalize(response.word);
+    const header: string = `### ${word}:`;
+    const definitions: string[] = response.definitions.map(({
+        part,
+        definitions
+    }) => {
+        const def = capitalize(definitions[0]);
+        return `- (*${part}*) ${def}`
+    });
+    const defString = definitions.join('\n\n');
+    const fullString = `${header}\n\n\n${defString}`;
+
+    // Store the result string inside of the hover text dictionary so we don't query the same word
+    //      over and over again
+    hoverText[text] = fullString;
+
+    return fullString;
+}
 
 export function capitalize (str: string): string {
     const end = str.substring(1);

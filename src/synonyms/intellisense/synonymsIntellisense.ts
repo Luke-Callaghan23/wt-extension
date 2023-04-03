@@ -14,9 +14,8 @@ export class SynonymsIntellisense {
             language: 'wt',
             scheme: 'file'
         };
-        const hover = new HoverProvider(context, workspace);
-        vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace, hover));
-        vscode.languages.registerHoverProvider (wtSelector, hover);
+        vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace));
+        vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace));
         vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(context, workspace));
     }
 }

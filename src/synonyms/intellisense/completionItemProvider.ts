@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
-import { getHoveredWord } from './common';
+import { getHoverText, getHoveredWord } from './common';
 import { query } from './querySynonym';
 import { HoverProvider } from './hoverProvider';
 
@@ -10,8 +10,7 @@ const NUMBER_COMPLETES = 20;
 export class CompletionItemProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
     constructor (
         private context: vscode.ExtensionContext,
-        private workspace: Workspace,
-        private hoverProvider: HoverProvider
+        private workspace: Workspace
     ) { 
         
     }
@@ -40,7 +39,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         }
 
         // Create completion items for all synonyms of all definitions
-        return response.definitions.map(def => {
+        const allSynonyms = response.definitions.map(def => {
             return def.synonyms.map(syn => {
                 
                 // Clean up the text of the definition for replacing
@@ -59,6 +58,21 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 }
             });
         }).flat();
+
+        // Also create a completion item for the existing text 
+        // This exists so the user can get the defintion of the word they're hovering
+        const hovered = <vscode.CompletionItem> {
+            label: hoverPosition.text,
+            filterText: hoverPosition.text,
+            insertText: hoverPosition.text,
+            range: hoverRange,
+        };
+
+        // Return the hovered item and all its synonyms as a single completion item array
+        return [
+            ...allSynonyms,
+            hovered,
+        ]
     }
 
 
@@ -75,7 +89,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         //      and use that as the doc string for the completion item
         try {
             const syn = item.insertText as string;
-            const documentation = await this.hoverProvider.getHoverText(syn);
+            const documentation = await getHoverText(syn);
             item.documentation = new vscode.MarkdownString(documentation);
             return item;
         }
