@@ -65,7 +65,7 @@ function surroundSelectionWith (surround: string) {
         const after = afterSelection as vscode.Selection;
         // If both the before and after the selection are already equal to the surround string, then
         //      remove those strings
-        editor.edit(editBuilder => {
+        editor.edit((editBuilder: vscode.TextEditorEdit) => {
             editBuilder.delete(before);
             editBuilder.delete(after);
         });
@@ -77,7 +77,7 @@ function surroundSelectionWith (surround: string) {
         const surrounded = `${surround}${selected}${surround}`;
     
         // Replace selected text with the surrounded text
-        editor.edit(editBuilder => {
+        editor.edit((editBuilder: vscode.TextEditorEdit) => {
             editBuilder.replace(selection, surrounded);
         }).then(() => {
             if (!selection.isEmpty) return;
@@ -115,7 +115,7 @@ export function strikethrough () {
 export function remove () {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
-    return editor.edit(editBuilder => {
+    return editor.edit((editBuilder: vscode.TextEditorEdit) => {
         editBuilder.replace(editor.selection, '');
     });
 }
@@ -152,11 +152,34 @@ async function emDash () {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
     return editor.edit((editBuilder: vscode.TextEditorEdit) => {
-        editBuilder.replace(editor.selection, ' -- ');
+        let replace = ' -- ';
+
+        // If the cursor is on a whitespace character, then insert only '-- ' instead of ' -- '
+        if (editor.selection.isEmpty) {
+            const document = editor.document;
+            if (document) {
+                const offset = document.offsetAt(editor.selection.start);
+                if (document.getText[offset - 1] === ' ') {
+                    replace = '-- ';
+                }
+            }
+        }
+        editBuilder.replace(editor.selection, replace);
     });
 }
 
 async function emDashes () {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+    const document = editor.document;
+    if (!document) return;
+
+    // Move the cursor backwards if the cursor is on a whitespace character
+    const offset = document.offsetAt(editor.selection.start);
+    if (editor.selection.isEmpty && document.getText[offset - 1] === ' ') {
+        const prev = document.positionAt(offset - 1);
+        editor.selection = new vscode.Selection(prev, prev);
+    }
     return surroundSelectionWith(' -- ');
 }
 
@@ -166,7 +189,7 @@ async function deleteSelection (jt: JumpType): Promise<boolean> {
 
     // Perform the delete on a specified selection
     const doDelete = async (selection: vscode.Selection): Promise<boolean> => {
-        return editor.edit(editBuilder => editBuilder.replace(selection, ''));
+        return editor.edit((editBuilder: vscode.TextEditorEdit) => editBuilder.replace(selection, ''));
     }
 
     // If selection is not empty, just delete the already selected area 
