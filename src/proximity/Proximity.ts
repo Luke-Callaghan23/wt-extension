@@ -37,16 +37,17 @@ class Ranks {
     // Modifiers to give higher precedence to 'closer' words
     static readonly sentenceModifier = 10.0;
     static readonly paragraphModifier = 1.5;
-    static readonly fullViewModifier = 0.75;
 
     // Lower bound for instance count of each word to assign a rating
     static readonly sentenceLowerBound = 2;
     static readonly paragraphLowerBound = 2;
-    static readonly fullViewLowerBound = 4;
 
-    static assignRatings (fullView: VisibleData, paragraphs: Paragraph[], sentences: Sentence[]): 
+    static assignRatings (uniqueWords: string[], allWords: Word[], paragraphs: Paragraph[], sentences: Sentence[]): 
         [ Word[], Word[] | undefined, Word[] | undefined, Word[] | undefined ] | null 
     {
+
+        const ranks = new Ranks(allWords);
+
         // Combine the ranks for each word in sentences and paragraphs with all the words in the
         //      full view
 
@@ -65,7 +66,7 @@ class Ranks {
         // The idea is that having the same word appear 5 times in a paragraph is more egregious than 
         //      2 times in the same sentence, and the same word appearing in the same 'view' 10 times is more
         //      egregious than 5 times in the same paragraph, etc.
-        const rated: ([ number, Word[] ] | null)[] = fullView.uniqueWords.map(target => {
+        const rated: ([ number, Word[] ] | null)[] = uniqueWords.map(target => {
             // Assign paragraph ratings for this word
             const para: number = paragraphs.reduce((acc, paragraph) => {
                 const wordInstances: Word[] | undefined = paragraph.ranks.rankedWords[target];
@@ -81,19 +82,18 @@ class Ranks {
             }, 0);
 
             // Assign 'view' ratings for this word
-            const allInstances: Word[] = fullView.ranks.rankedWords[target];
-            const full = allInstances.length * this.fullViewModifier;
+            const allInstances: Word[] = ranks.rankedWords[target];
 
             // Final test to make sure that this word should be rated
             // If the instance count of this word does not meet any of the lower bounds, then this word
             //      should not be considered for assigning a rating
-            if (para < Ranks.paragraphLowerBound && sent < Ranks.sentenceLowerBound && full < Ranks.fullViewLowerBound) {
+            if (para < Ranks.paragraphLowerBound && sent < Ranks.sentenceLowerBound) {
                 return null;
             }
             
             // If this word passed all lower bound checks, then return the rating of the word alongside all isntances
             //      of that word
-            const rating = para + sent + full;
+            const rating = para + sent;
             return [ rating, allInstances ];
         });
         
@@ -282,106 +282,36 @@ class Paragraph {
     }
 }
 
-class VisibleData {
-    public paragraphs: Paragraph[];
-    public allWords: Word[];
-    public ranks: Ranks;
-    public uniqueWords: string[];
-
-    constructor (
-        proximity: Proximity,
-        editor: vscode.TextEditor,
-        visible: vscode.Range,
-    ) {
-        this.allWords = [];
-        this.paragraphs = [];
-        
-        const text = editor.document.getText();
-        const visibleStart: number = editor.document.offsetAt(visible.start);
-        const visibleEnd: number = editor.document.offsetAt(visible.end);
-        let visibleText = text.substring(visibleStart, visibleEnd);
-        
-        // Iterate over every match of the 
-        let lastEnd = 0;
-        let match: RegExpExecArray | null;
-
-        // Add extra paragraph separator to the para text in order to force an extra match for the last paragraph
-        // (Adding '$' to the para separator regex to match the end of the string breaks everything, so as a 
-        //      workaround the extra separator is added)
-        visibleText += '\n\n';
-        while ((match = extension.paragraphSeparator.exec(visibleText))) {
-            const matched: RegExpExecArray = match;
-
-            // Get start and end indeces of the paragraph
-            // Where start and end are indexed with visibleStart as 0 
-            const startOff = lastEnd;
-            const endOff = matched.index;
-            const paragraphText = visibleText.substring(startOff, endOff);
-
-            // Get absolute start and end of the paragraph
-            const start = startOff + visibleStart;
-            const end = endOff + visibleStart;
-
-            // Skip the paragraph if it's empty
-            if (startOff === endOff || startOff === endOff + 1) continue;
-            if (/^\s*$/.test(paragraphText)) continue;          // tests if paragraph is only whitespace
-
-            // Create a paragraph object
-            const paragraph = new Paragraph(
-                proximity,
-                editor, 
-                text, paragraphText,
-                start, end
-            );
-
-            // Push the paragraph to this data structure, and concat all its words
-            this.paragraphs.push(paragraph);
-            this.allWords.push(...paragraph.allWords);
-
-            // Move the last end index forward to the end of the paragraph separator
-            lastEnd = matched.index + matched[0].length;
-        }
-        this.ranks = new Ranks(this.allWords);
-
-        // Get all the unique words text
-        const uniqueMap: { [index: string]: boolean } = {};
-        this.allWords.forEach(({ text }) => uniqueMap[text] = true);
-        this.uniqueWords = Object.keys(uniqueMap);
-    }
-}
-
 
 export class Proximity implements Timed, Packageable {
-    enabled: boolean;
 
-    private additionalPatterns: RegExp[];
-    constructor (
-        private context: vscode.ExtensionContext,
-        workspace: Workspace
-    ) {
-        this.enabled = true;
+    
+    private filtered: RegExp[] = [ 
+        // Common words
+        /a/, /the/, /of/, /i/, 
+        /to/, /you/, /not/, /too/,
+        /her/, /she/, /him/, /he/,
+        /and/, /so/, /for/, /my/,
 
-        // Read additional excluded words from the workspace state
-        const additional: string[] = context.workspaceState.get('wt.wordWatcher.additionalPatterns') || [];
-        this.additionalPatterns = additional.map(add => {
-            try {
-                return new RegExp(add)
-            } catch (e) {
-                vscode.window.showWarningMessage(`WARN: Could not process proximity pattern '${add}' from workspace state.`)
-                return [];
-            }
-        }).flat();
+        // Whitespace
+        /\s+/, 
 
-        this.registerCommands();
-    }
+        // Empty string
+        /^$/, 
 
-    getPackageItems(): { [index: string]: any; } {
-        return {
-            'wt.proximity.additionalPatterns': this.additionalPatterns.map(pat => pat.source)
-        }
+        // Any single character non-alphanumberic character
+        /[^a-zA-Z0-9]/,
+    ];
+
+    shouldFilterWord ({ text }: Word): boolean {
+        return (
+            this.filtered.find(filt => filt.test(text)) !== undefined
+            || this.additionalPatterns.find(filt => filt.test(text)) !== undefined
+        );
     }
 
 
+    // Command for adding a new pattern to be filtered from proximity checks
     async addPattern () {
         while (true) {
             const response = await vscode.window.showInputBox({
@@ -436,6 +366,7 @@ export class Proximity implements Timed, Packageable {
         }
     }
 
+    // Command for removing a filtered pattern
     async removePattern () {
         // Show a quick pick menu for all the the existing additional patterns
         const existingPatterns = this.additionalPatterns.map(pat => pat.source);
@@ -463,41 +394,6 @@ export class Proximity implements Timed, Packageable {
         }
     }
 
-
-    registerCommands() {
-        vscode.commands.registerCommand('wt.proximity.addFilteredWord', () => this.addPattern());
-        vscode.commands.registerCommand('wt.proximity.removeFilteredWord', () => this.removePattern())
-    }
-
-    
-
-    private filtered: RegExp[] = [ 
-        // Common words
-        /a/, /the/, /of/, /i/, 
-        /to/, /you/, /not/, /too/,
-        /her/, /she/, /him/, /he/,
-        /and/, /so/, /for/, /my/,
-
-        // Whitespace
-        /\s+/, 
-
-        // Empty string
-        /^$/, 
-
-        // Any single character non-alphanumberic character
-        /[^a-zA-Z0-9]/,
-        
-
-    ];
-
-    shouldFilterWord ({ text }: Word): boolean {
-        return (
-            this.filtered.find(filt => filt.test(text)) !== undefined
-            || this.additionalPatterns.find(filt => filt.test(text)) !== undefined
-        );
-    }
-
-
     async updateDecorationsForWord (
         editor: vscode.TextEditor, 
         word: Word[],
@@ -505,48 +401,6 @@ export class Proximity implements Timed, Packageable {
     ) {
         const wordRanges: vscode.Range[] = word.map(({ range }) => range)
         editor.setDecorations(decorations, wordRanges);
-    }
-
-    async update (editor: vscode.TextEditor): Promise<void> {
-
-        // Index used to indicate the place in Proximity.decorators to start clearing decorations
-        // In the case where `x` decorators were used in the last update but `x - n` decorators need
-        //      to be used during this update then we need to clear the last `n` decorators in this
-        //      update
-        let clearIndex = -1;
-        for (const visible of editor.visibleRanges) {
-            // Get ratings ffor all words in the current visible range
-            const visibleData = new VisibleData(this, editor, visible);
-            const rated = Ranks.assignRatings(
-                visibleData,                                            // full view
-                visibleData.paragraphs,                                 // all paragraphs
-                visibleData.paragraphs.map(p => p.sentences).flat()     // all sentences
-            );
-
-            // If there are no available ratings, indicate that all decorators need to be cleared, and continue
-            if (!rated) {
-                clearIndex = 0;
-                continue;
-            }
-            
-            rated.forEach((r, index) => {
-                // If we found an undefined rating, then clear all decorators after it
-                if (!r) {
-                    if (clearIndex === -1) clearIndex = index;
-                    return;
-                }
-                const decorator = Proximity.decorators[index];
-                this.updateDecorationsForWord(editor, r, decorator);
-            });
-        }
-
-        // Clear unused decorators
-        if (clearIndex !== -1) {
-            Proximity.decorators.slice(clearIndex).forEach(dec => {
-                editor.setDecorations(dec, []);
-            });
-        }
-
     }
 
     private static commonDecorations = {
@@ -580,8 +434,141 @@ export class Proximity implements Timed, Packageable {
         this.primary, this.secondary, this.tertiary, this.fourth
     ];
 
+    async update (editor: vscode.TextEditor): Promise<void> {
 
-    // 
+        // Index used to indicate the place in Proximity.decorators to start clearing decorations
+        // In the case where `x` decorators were used in the last update but `x - n` decorators need
+        //      to be used during this update then we need to clear the last `n` decorators in this
+        //      update
+        let clearIndex = -1;
+            
+        const document = editor.document;
+        if (!document) return;
+
+        const text = document.getText;
+        const cursorLocation = editor.selection;
+        const cursorOffset = document.offsetAt(cursorLocation);
+        let cursorParagraph: number | undefined;
+
+        const paragraph = /\n\n/g;
+        const paragraphSeparators: number[] = [ 0 ];    // initial paragraph separator is the beginning of the document
+        
+        let match: RegExpExecArray | null;
+        while ((match = paragraph.exec(text))) {
+
+            // Check to see if the cursor is in the current paragraph
+            const lastParagraph = paragraphSeparators[paragraphSeparators.length - 1];
+            if (cursorOffset >= lastParagraph) {
+                cursorParagraph = paragraphSeparators.length;
+            }
+
+            // Push the index of the current paragraph separator
+            paragraphSeparators.push(match.index);
+        }
+
+        // Check to see if the cursor is in the current paragraph
+        const lastParagraph = paragraphSeparators[paragraphSeparators.length - 1];
+        if (cursorOffset >= lastParagraph) {
+            cursorParagraph = paragraphSeparators.length;
+        }
+
+        // Final paragraph separator is the end of the document
+        paragraphSeparators.push(text.length);
+
+        if (!cursorParagraph) return;
+
+        const inspect: {
+            paragraph: string,
+            start: number,
+            end: number,
+            range: vscode.Range
+        }[] = [];
+        
+        if (cursorParagraph !== 1) {
+            const prevStart = paragraphSeparators[cursorParagraph - 2];
+            const prevEnd = paragraphSeparators[cursorParagraph - 1];
+            const prevStartPosition = document.positionAt(prevStart);
+            const prevEndPosition = document.positionAt(prevEnd);
+            inspect.push({
+                paragraph: text.substring(prevStart, prevEnd),
+                start: prevStart,
+                end: prevEnd,
+                range: new vscode.Range(prevStartPosition, prevEndPosition)
+            });
+        }
+
+        const start = paragraphSeparators[cursorParagraph - 1];
+        const end = paragraphSeparators[cursorParagraph];
+        const startPosition = document.positionAt(start);
+        const endPosition = document.positionAt(end);
+        inspect.push({
+            paragraph: text.substring(start, end),
+            start: start,
+            end: end,
+            range: new vscode.Range(startPosition, endPosition)
+        });
+
+        if (cursorParagraph !== paragraphSeparators.length - 1) {
+            const nextStart = paragraphSeparators[cursorParagraph];
+            const nextEnd = paragraphSeparators[cursorParagraph + 1];
+            const nextStartPosition = document.positionAt(nextStart);
+            const nextEndPosition = document.positionAt(nextEnd);
+            inspect.push({
+                paragraph: text.substring(nextStart, nextEnd),
+                start: nextStart,
+                end: nextEnd,
+                range: new vscode.Range(nextStartPosition, nextEndPosition)
+            });
+        }
+
+        const paragraphs: Paragraph[] = inspect.map(({
+            paragraph,
+            start,
+            end 
+        }) => {
+            return new Paragraph(this, editor, text, paragraph, start, end)
+        });
+
+        const allWords: Word[] = paragraphs.map(({ allWords }) => allWords).flat();
+        const uniqueWordsMap: { [index: string]: 1 } = {}
+        allWords.forEach(({ text }) => {
+            uniqueWordsMap[text] = 1;
+        });
+        const uniqueWords = Object.keys(uniqueWordsMap);
+
+
+        const rated = Ranks.assignRatings(
+            uniqueWords,
+            allWords,
+            paragraphs,                                 // all paragraphs
+            paragraphs.map(p => p.sentences).flat()     // all sentences
+        );
+
+        // If there are no available ratings, indicate that all decorators need to be cleared, and continue
+        if (!rated) {
+            clearIndex = 0;
+            return;
+        }
+        
+        rated.forEach((r, index) => {
+            // If we found an undefined rating, then clear all decorators after it
+            if (!r) {
+                if (clearIndex === -1) clearIndex = index;
+                return;
+            }
+            const decorator = Proximity.decorators[index];
+            this.updateDecorationsForWord(editor, r, decorator);
+        });
+
+        // Clear unused decorators
+        if (clearIndex !== -1) {
+            Proximity.decorators.slice(clearIndex).forEach(dec => {
+                editor.setDecorations(dec, []);
+            });
+        }
+
+    }
+
     async disable? (): Promise<void> {
         // Simply clear all four of the proximity decorators
         if (!vscode.window.activeTextEditor) return;
@@ -589,5 +576,39 @@ export class Proximity implements Timed, Packageable {
         Proximity.decorators.forEach(decoratorType => {
             editor.setDecorations(decoratorType, []);
         });
+    }
+
+    enabled: boolean;
+
+    private additionalPatterns: RegExp[];
+    constructor (
+        private context: vscode.ExtensionContext,
+        workspace: Workspace
+    ) {
+        this.enabled = true;
+
+        // Read additional excluded words from the workspace state
+        const additional: string[] = context.workspaceState.get('wt.wordWatcher.additionalPatterns') || [];
+        this.additionalPatterns = additional.map(add => {
+            try {
+                return new RegExp(add)
+            } catch (e) {
+                vscode.window.showWarningMessage(`WARN: Could not process proximity pattern '${add}' from workspace state.`)
+                return [];
+            }
+        }).flat();
+
+        this.registerCommands();
+    }
+
+    registerCommands() {
+        vscode.commands.registerCommand('wt.proximity.addFilteredWord', () => this.addPattern());
+        vscode.commands.registerCommand('wt.proximity.removeFilteredWord', () => this.removePattern())
+    }
+
+    getPackageItems(): { [index: string]: any; } {
+        return {
+            'wt.proximity.additionalPatterns': this.additionalPatterns.map(pat => pat.source)
+        }
     }
 }
