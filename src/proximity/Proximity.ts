@@ -3,285 +3,10 @@ import * as vscode from 'vscode';
 import * as console from '../vsconsole';
 import { Workspace } from '../workspace/workspaceClass';
 import { Timed } from '../timedView';
-import * as extension from '../extension';
 import { Packageable } from '../packageable';
-
-class Ranks {
-    public rankedWords: { [index: string]: Word[] };
-    public orderedRanks: [ number, Word[] ][];
-
-    constructor (words: Word[]) {
-        // Iterate words and map each word's text to all occurrences of that word
-        this.rankedWords = {};
-        for (const word of words) {
-            const { text } = word;
-            if (this.rankedWords[text]) {
-                this.rankedWords[text].push(word);
-            }
-            else {
-                this.rankedWords[text] = [ word ];
-            }
-        }
-
-        // Arange each word into `(count, wordText)` tuples, ordered by `count`, descending
-        // First create un ordered ranks by iterating over each each array of occurrences, and creating tuples
-        this.orderedRanks = [];
-        for (const [ _, words ] of Object.entries(this.rankedWords)) {
-            const count = words.length;
-            this.orderedRanks.push([ count, words ]);
-        }
-        // Sort tuples descending
-        this.orderedRanks.sort((a, b) => b[0] - a[0]);
-    }
-
-    // Modifiers to give higher precedence to 'closer' words
-    static readonly sentenceModifier = 10.0;
-    static readonly paragraphModifier = 1.5;
-
-    // Lower bound for instance count of each word to assign a rating
-    static readonly sentenceLowerBound = 2;
-    static readonly paragraphLowerBound = 2;
-
-    static assignRatings (uniqueWords: string[], allWords: Word[], paragraphs: Paragraph[], sentences: Sentence[]): 
-        [ Word[], Word[] | undefined, Word[] | undefined, Word[] | undefined ] | null 
-    {
-
-        const ranks = new Ranks(allWords);
-
-        // Combine the ranks for each word in sentences and paragraphs with all the words in the
-        //      full view
-
-        // Iterate over every unique word in the view of the editor and assign that word a "rating"
-        // Hard to explain, but essentially the rating of every word will increase with every instance
-        //      of that word
-        // The rating will increase more if the words are more densely populated
-        //      As in, two instances of the same word in the same sentence gets a higher rating than
-        //          two instances of another word in the same paragraph
-        //      But, two instances of the same word in the same paragraph still gets a higher rating than 
-        //          two instances of another word in the whole view
-        //      (case in point, see how annoying it is to read the word 'same' over and over again, in the 
-        //      comment above)
-        // Ratings are summed, so if there are enough instances of the same word in the full view, that
-        //      will eventually outweigh 2 or 3 instance of the same word in the same sentence
-        // The idea is that having the same word appear 5 times in a paragraph is more egregious than 
-        //      2 times in the same sentence, and the same word appearing in the same 'view' 10 times is more
-        //      egregious than 5 times in the same paragraph, etc.
-        const rated: ([ number, Word[] ] | null)[] = uniqueWords.map(target => {
-            // Assign paragraph ratings for this word
-            const para: number = paragraphs.reduce((acc, paragraph) => {
-                const wordInstances: Word[] | undefined = paragraph.ranks.rankedWords[target];
-                if (wordInstances === undefined) return acc;
-                return (acc + wordInstances.length - 1) * this.paragraphModifier;
-            }, 0);
-
-            // Assign sentence ratings for this word
-            const sent: number = sentences.reduce((acc, sentence) => {
-                const wordInstances: Word[] | undefined = sentence.ranks.rankedWords[target];
-                if (wordInstances === undefined) return acc;
-                return (acc + wordInstances.length - 1) * this.sentenceModifier;
-            }, 0);
-
-            // Assign 'view' ratings for this word
-            const allInstances: Word[] = ranks.rankedWords[target];
-
-            // Final test to make sure that this word should be rated
-            // If the instance count of this word does not meet any of the lower bounds, then this word
-            //      should not be considered for assigning a rating
-            if (para < Ranks.paragraphLowerBound && sent < Ranks.sentenceLowerBound) {
-                return null;
-            }
-            
-            // If this word passed all lower bound checks, then return the rating of the word alongside all isntances
-            //      of that word
-            const rating = para + sent;
-            return [ rating, allInstances ];
-        });
-        
-        // Filter out nulls
-        const finalRatings: [ number, Word[] ][] = rated.filter(rating => rating) as [number, Word[]][];
-        if (finalRatings.length === 0) return null;
-        
-        // Sort the rated words in descending order
-        finalRatings.sort((a, b) => b[0] - a[0]);
-
-        // Destructure the top four rated word from the ratings and return them
-        const first: [ number, Word[] ] = finalRatings[0];
-        const second: [ number, Word[] ] | undefined = finalRatings[1];
-        const third: [ number, Word[] ] | undefined = finalRatings[2];
-        const fourth: [ number, Word[] ] | undefined = finalRatings[3];
-
-        return [
-            first[1],
-            second?.[1],
-            third?.[1],
-            fourth?.[1]
-        ];
-
-    }
-};
-
-class Word {
-    public text: string;
-    public range: vscode.Range;
-    
-    constructor (
-        editor: vscode.TextEditor,
-        fullText: string,
-        wordText: string,
-        start: number,
-        end: number,
-    ) {
-        let scratchPad = wordText.toLocaleLowerCase();
-        let scratchPadLength = scratchPad.length;
-        
-        // Get length of whitespace in start
-        scratchPad = scratchPad.trimStart();
-        let startWhitespace = scratchPadLength - scratchPad.length;
-        scratchPadLength = scratchPad.length;
-
-        // Get length of whitespace in end
-        scratchPad = scratchPad.trimEnd();
-        let endWhitespace = scratchPadLength - scratchPad.length;
-
-        this.text = scratchPad;
-
-        // Create range with start and end whitespace markers in mind
-        const startPosition = editor.document.positionAt(start + startWhitespace);
-        const endPosition = editor.document.positionAt(end - endWhitespace);
-        const range = new vscode.Range(startPosition, endPosition);
-        this.range = range;
-    }
-}
-
-class Sentence {
-    public allWords: Word[];
-    public range: vscode.Range;
-    public ranks: Ranks;
-
-    constructor (
-        proximity: Proximity,
-        editor: vscode.TextEditor,
-        fullText: string,
-        sentenceText: string,
-        sentenceStart: number,
-        sentenceEnd: number,
-    ) {
-        this.allWords = [];
-        this.range = new vscode.Range(
-            editor.document.positionAt(sentenceStart),
-            editor.document.positionAt(sentenceEnd)
-        );
-        
-        let lastEnd = 0;
-        let match: RegExpExecArray | null;
-
-        // Add extra word separator to the sentence text in order to force an extra match for the last word
-        // (Adding '$' to the word separator regex to match the end of the string breaks everything, so as a 
-        //      workaround the extra separator is added)
-        sentenceText += ' ';
-        while ((match = extension.wordSeparatorRegex.exec(sentenceText))) {
-            const matched: RegExpExecArray = match;
-
-            // Get start and end indeces of the sentence
-            // Where start and end are indexed with paragraph as 0 
-            const startOff = lastEnd;
-            const endOff = matched.index;
-            const wordText = sentenceText.substring(startOff, endOff);
-
-            // Get absolute start and end of the paragraph
-            const start = startOff + sentenceStart;
-            const end = endOff + sentenceStart;
-
-            // Skip the sentence if it's empty
-            if (startOff === endOff || startOff === endOff + 1) continue;
-            if (/^\s*$/.test(sentenceText)) continue;                           // tests if the sentence is only whitespace
-
-            // Create sentence and push it to this paragraph's structure
-            const word = new Word(
-                editor,
-                fullText,
-                wordText,
-                start, end
-            );
-
-            if (!proximity.shouldFilterWord(word)) {
-                // Push the sentence, and all its words to this object
-                this.allWords.push(word);
-            }
-
-            // Move the last end index forward to the end of the sentence separator
-            lastEnd = matched.index + matched[0].length;
-        }
-
-        this.ranks = new Ranks(this.allWords);
-    }
-}
-
-class Paragraph {
-    public range: vscode.Range;
-    public sentences: Sentence[];
-    public allWords: Word[];
-    public ranks: Ranks;
-
-    constructor (
-        proximity: Proximity,
-        editor: vscode.TextEditor,
-        fullText: string,
-        paragraphText: string,
-        paragraphStart: number,
-        paragraphEnd: number,
-    ) {
-        
-        this.allWords = [];
-        this.sentences = [];
-        this.range = new vscode.Range(
-            editor.document.positionAt(paragraphStart),
-            editor.document.positionAt(paragraphEnd)
-        );
-        
-        let lastEnd = 0;
-        let match: RegExpExecArray | null;
-        
-        // Add extra sentence separator to the sentence text in order to force an extra match for the last paragraph
-        // (Adding '$' to the sentence separator regex to match the end of the string breaks everything, so as a 
-        //      workaround the extra separator is added)
-        paragraphText += '!';
-        while ((match = extension.sentenceSeparator.exec(paragraphText))) {
-            const matched: RegExpExecArray = match;
-
-            // Get start and end indeces of the sentence
-            // Where start and end are indexed with paragraph as 0 
-            const startOff = lastEnd;
-            const endOff = matched.index;
-            const sentenceText = paragraphText.substring(startOff, endOff);
-
-            // Get absolute start and end of the paragraph
-            const start = startOff + paragraphStart;
-            const end = endOff + paragraphStart;
-
-            // Skip the sentence if it's empty
-            if (startOff === endOff || startOff === endOff + 1) continue;
-            if (/^\s*$/.test(sentenceText)) continue;                           // tests if the sentence is only whitespace
-
-            // Create sentence and push it to this paragraph's structure
-            const sentence = new Sentence(
-                proximity,
-                editor,
-                fullText, sentenceText,
-                start, end
-            );
-
-            // Push the sentence, and all its words to this object
-            this.sentences.push(sentence);
-            this.allWords.push(...sentence.allWords);
-
-            // Move the last end index forward to the end of the sentence separator
-            lastEnd = matched.index + matched[0].length;
-        }
-        this.ranks = new Ranks(this.allWords);
-    }
-}
-
+import { Paragraph, Word } from './wordStructures';
+import { Ranks } from './ranks';
+import { ProximityCodeActions } from './proximityCodeActionsProvider';
 
 export class Proximity implements Timed, Packageable {
 
@@ -403,6 +128,11 @@ export class Proximity implements Timed, Packageable {
         editor.setDecorations(decorations, wordRanges);
     }
 
+    private allHighlights: vscode.Range[] | undefined;
+    getAllHighlights (): vscode.Range[] {
+        return this.allHighlights || [];
+    }
+
     private static commonDecorations = {
         borderStyle: 'none none dotted none',
 		borderWidth: '3px',
@@ -453,6 +183,7 @@ export class Proximity implements Timed, Packageable {
         const paragraph = /\n\n/g;
         const paragraphSeparators: number[] = [ 0 ];    // initial paragraph separator is the beginning of the document
         
+        // Find all the paragraph separators in the current document
         let match: RegExpExecArray | null;
         while ((match = paragraph.exec(text))) {
 
@@ -484,6 +215,7 @@ export class Proximity implements Timed, Packageable {
             range: vscode.Range
         }[] = [];
         
+        // Isolate the paragraph before the cursor paragrapg
         if (cursorParagraph !== 1) {
             const prevStart = paragraphSeparators[cursorParagraph - 2];
             const prevEnd = paragraphSeparators[cursorParagraph - 1];
@@ -497,6 +229,7 @@ export class Proximity implements Timed, Packageable {
             });
         }
 
+        // Isolate the cursor paragraph
         const start = paragraphSeparators[cursorParagraph - 1];
         const end = paragraphSeparators[cursorParagraph];
         const startPosition = document.positionAt(start);
@@ -508,6 +241,7 @@ export class Proximity implements Timed, Packageable {
             range: new vscode.Range(startPosition, endPosition)
         });
 
+        // Isolate the paragrapg after the cursor paragraph
         if (cursorParagraph !== paragraphSeparators.length - 1) {
             const nextStart = paragraphSeparators[cursorParagraph];
             const nextEnd = paragraphSeparators[cursorParagraph + 1];
@@ -521,6 +255,7 @@ export class Proximity implements Timed, Packageable {
             });
         }
 
+        // Create paragraph objects for all the inspected paragraphs
         const paragraphs: Paragraph[] = inspect.map(({
             paragraph,
             start,
@@ -529,6 +264,7 @@ export class Proximity implements Timed, Packageable {
             return new Paragraph(this, editor, text, paragraph, start, end)
         });
 
+        // Get all words and all unique words in all the inspected paragraphs
         const allWords: Word[] = paragraphs.map(({ allWords }) => allWords).flat();
         const uniqueWordsMap: { [index: string]: 1 } = {}
         allWords.forEach(({ text }) => {
@@ -536,7 +272,7 @@ export class Proximity implements Timed, Packageable {
         });
         const uniqueWords = Object.keys(uniqueWordsMap);
 
-
+        // Get rankings for words in inspected paragraphs
         const rated = Ranks.assignRatings(
             uniqueWords,
             allWords,
@@ -550,7 +286,8 @@ export class Proximity implements Timed, Packageable {
             return;
         }
         
-        rated.forEach((r, index) => {
+        // Create highlights for the ranked words
+        this.allHighlights = rated.map((r, index) => {
             // If we found an undefined rating, then clear all decorators after it
             if (!r) {
                 if (clearIndex === -1) clearIndex = index;
@@ -558,7 +295,8 @@ export class Proximity implements Timed, Packageable {
             }
             const decorator = Proximity.decorators[index];
             this.updateDecorationsForWord(editor, r, decorator);
-        });
+            return r.map(word => word.range);
+        }).flat();
 
         // Clear unused decorators
         if (clearIndex !== -1) {
@@ -597,6 +335,10 @@ export class Proximity implements Timed, Packageable {
                 return [];
             }
         }).flat();
+
+        vscode.languages.registerCodeActionsProvider (<vscode.DocumentFilter>{
+            language: 'wt'
+        }, new ProximityCodeActions(context, workspace, this));
 
         this.registerCommands();
     }

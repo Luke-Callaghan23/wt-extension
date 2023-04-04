@@ -13,7 +13,7 @@ import { loadWorkspace, createWorkspace } from './workspace/workspace';
 import { FileAccessManager } from './fileAccesses';
 import { packageForExport } from './packageable';
 import { TimedView } from './timedView';
-import { Proximity } from './proximity/Proximity';
+import { Proximity } from './proximity/proximity';
 import { SynonymsIntellisense } from './synonyms/intellisense/synonymsIntellisense';
 import { PersonalDictionary } from './spellcheck/personalDictionary';
 import { Spellcheck } from './spellcheck/spellcheck';
