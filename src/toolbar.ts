@@ -155,15 +155,14 @@ async function emDash () {
         let replace = ' -- ';
 
         // If the cursor is on a whitespace character, then insert only '-- ' instead of ' -- '
-        if (editor.selection.isEmpty) {
-            const document = editor.document;
-            if (document) {
-                const offset = document.offsetAt(editor.selection.start);
-                if (document.getText[offset - 1] === ' ') {
-                    replace = '-- ';
-                }
+        const document = editor.document;
+        if (editor.selection.isEmpty && document) {
+            const offset = document.offsetAt(editor.selection.start);
+            if (document.getText[offset - 1] === ' ') {
+                replace = '-- ';
             }
         }
+        
         editBuilder.replace(editor.selection, replace);
     });
 }
