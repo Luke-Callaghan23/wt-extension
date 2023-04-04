@@ -15,6 +15,8 @@ import { packageForExport } from './packageable';
 import { TimedView } from './timedView';
 import { Proximity } from './proximity/Proximity';
 import { SynonymsIntellisense } from './synonyms/intellisense/synonymsIntellisense';
+import { PersonalDictionary } from './spellcheck/personalDictionary';
+import { Spellcheck } from './spellcheck/spellcheck';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -35,12 +37,16 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		await todo.init();
 		const wordWatcher = new WordWatcher(context, workspace);			// wt.wordWatcher
 		const proximity = new Proximity(context, workspace);
-		const synonymsIntellisense = new SynonymsIntellisense(context, workspace);
-	
+
+		const personalDictionary = new PersonalDictionary(context, workspace);
+		const synonymsIntellisense = new SynonymsIntellisense(context, workspace, personalDictionary);
+		const spellcheck = new Spellcheck(context, workspace, personalDictionary);
+
 		const timedViews = new TimedView(context, [
 			['wt.todo', todo],
 			['wt.wordWatcher', wordWatcher],
-			['wt.proximity', proximity]
+			['wt.proximity', proximity],
+			['wt.spellcheck', spellcheck]
 		]);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)

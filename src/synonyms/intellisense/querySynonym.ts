@@ -1,5 +1,7 @@
 import * as console from './../../vsconsole';
 // const fetch = require('node-fetch-commonjs');
+import { Fetch } from '../../Fetch/fetchSource';
+
 
 type Definition = {
     definitions :  string[],
@@ -42,7 +44,7 @@ export async function query (word: string): Promise<Synonyms | SynonymError> {
         word = word.toLowerCase();
         // @ts-ignore
         const api = `https://dictionaryapi.com/api/v3/references/thesaurus/json/${word}?key=29029b50-e0f1-4be6-ac00-77ab8233e66b`;
-        const resp: Response = await fetch(api);
+        const resp: Response = await Fetch(api);
         
         if (!resp || resp.status !== 200) return <SynonymError> {
             type: 'error',

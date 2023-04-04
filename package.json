@@ -225,6 +225,16 @@
 				"enablement": "wt.proximity.enabled"
 			},
 			{
+				"command": "wt.spellcheck.enable",
+				"title": "Writing Tool: Enable Spellcheck",
+				"enablement": "!wt.spellcheck.enabled"
+			},
+			{
+				"command": "wt.spellcheck.disable",
+				"title": "Writing Tool: Disable Spellcheck",
+				"enablement": "wt.spellcheck.enabled"
+			},
+			{
 				"command": "wt.proximity.addFilteredWord",
 				"title": "Writing Tool: Remove word from proximity checks"
 			},
@@ -377,6 +387,14 @@
 			{
 				"command": "wt.editor.delete.backward",
 				"title": "Writing Tool: Delete Word (backward)."
+			},
+			{
+				"command": "wt.personalDictionary.add",
+				"title": "Writing Tool: Add word to personal dictionary"
+			},
+			{
+				"command": "wt.personalDictionary.remove",
+				"title": "Writing Tool: Remove word from personal dictionary"
 			}
 		],
 		"menus": {

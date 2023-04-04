@@ -1,5 +1,6 @@
 if 
     test -f .web/bufferSource.ts && 
+    test -f .web/fetchSource.ts && 
     test -f .web/extension.ts &&
     test -f .web/package-lock.json &&
     test -f .web/package.json &&
@@ -14,6 +15,7 @@ if
     test -f .web/workspaceClass.ts;
 then
     mv src/Buffer/bufferSource.ts .local/bufferSource.ts
+    mv src/Fetch/fetchSource.ts .local/fetchSource.ts
     mv src/extension.ts .local/extension.ts
     mv package-lock.json .local/package-lock.json
     mv package.json .local/package.json
@@ -26,6 +28,7 @@ then
     mv src/workspace/workspaceClass.ts .local/workspaceClass.ts
 
     mv .web/bufferSource.ts src/Buffer/bufferSource.ts
+    mv .web/fetchSource.ts src/Fetch/fetchSource.ts
     mv .web/extension.ts src/extension.ts
     mv .web/package-lock.json package-lock.json
     mv .web/package.json package.json
@@ -38,8 +41,8 @@ then
     npm clean-install
 elif 
     test -f .local/bufferSource.ts && 
+    test -f .local/fetchSource.ts && 
     test -f .local/extension.ts &&
-    test -f .local/bufferSource.ts &&
     test -f .local/package-lock.json &&
     test -f .local/package.json &&
     test -f .local/.vscode/extensions.json &&
@@ -60,6 +63,7 @@ elif
     test -f .local/workspaceClass.ts;
 then
     mv src/Buffer/bufferSource.ts .web/bufferSource.ts
+    mv src/Fetch/fetchSource.ts .web/fetchSource.ts
     mv src/extension.ts .web/extension.ts
     mv package-lock.json .web/package-lock.json
     mv package.json .web/package.json
@@ -70,6 +74,7 @@ then
     mv src/workspace/workspaceClass.ts .web/workspaceClass.ts 
 
     mv .local/bufferSource.ts src/Buffer/bufferSource.ts
+    mv .local/fetchSource.ts src/Fetch/fetchSource.ts
     mv .local/extension.ts src/extension.ts
     mv .local/package-lock.json package-lock.json
     mv .local/package.json package.json

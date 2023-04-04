@@ -3,11 +3,14 @@ import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
 import { capitalize, getHoveredWord } from './common';
 import { query } from './querySynonym';
+import { dictionary } from '../../spellcheck/dictionary';
+import { PersonalDictionary } from '../../spellcheck/personalDictionary';
 
 export class CodeActionProvider implements vscode.CodeActionProvider {
     constructor (
         private context: vscode.ExtensionContext,
-        workspace: Workspace
+        workspace: Workspace,
+        private personalDict: PersonalDictionary
     ) {
 
     }
@@ -25,13 +28,18 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
 
         const hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
         
-        // Query the synonym api for the hovered word
+        // Check to see if the hovered word is in the dictionary
+        const inDict = dictionary[hoverPosition.text] === 1;
+        const inPersonalDict = this.personalDict.search(hoverPosition.text);
+        if (inDict || inPersonalDict) return [];
+
+        // Then check to see if the thesaurus API has it
         const response = await query(hoverPosition.text);
         if (response.type !== 'error') return [];
 
-
-
-        return response.suggestions?.map(suggest => {
+        // If it's not in any of those, then use the suggested words
+        //      from the API response as suggestions for replacements
+        const suggestions = response.suggestions?.map(suggest => {
             const edit = new vscode.WorkspaceEdit();
             edit.replace(document.uri, hoverRange, suggest);
             return <vscode.CodeAction> {
@@ -41,5 +49,20 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
                 kind: vscode.CodeActionKind.QuickFix,
             }
         }) || [];
+
+        const addToDict = <vscode.CodeAction> {
+            title: `Add ${capitalize(hoverPosition.text)} to personal dictionary`,
+            command: <vscode.Command> {
+                command: 'wt.personalDictionary.add',
+                arguments: [ hoverPosition.text ]
+            },
+            isPreferred: true,
+            kind: vscode.CodeActionKind.QuickFix
+        };
+
+        return [
+            addToDict,
+            ...suggestions
+        ];
     }
 }
