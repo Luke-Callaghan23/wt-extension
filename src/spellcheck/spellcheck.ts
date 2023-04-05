@@ -23,60 +23,68 @@ export class Spellcheck implements Timed {
 
     lastUpdate: WordRange[];
     async update (editor: vscode.TextEditor): Promise<void> {
+
         const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/g;
 
         const document = editor.document;
         if (!document) return;
-        
-        const words: WordRange[] = [];
-        const text: string = document.getText();
 
-        // Function to parse a word from the document text and add
-        //      it to the word range array
-        const addWord = (startOff: number, endOff: number) => {
-            const start = document.positionAt(startOff);
-            const end = document.positionAt(endOff);
-            if (Math.abs(startOff - endOff) <= 1) return;
-            
-            const wordRange = new vscode.Range(start, end);
-
-            const word = text.substring(startOff, endOff);
-            words.push({
-                text: word.toLocaleLowerCase(),
-                range: wordRange,
-            });
-        }
-
-        // Iterate over all (but the last) word in the document
-        //      and all those words to the word ranges array
-        let startOff: number = 0;
-        let endOff: number;
-        let match: RegExpExecArray | null;
-        while ((match = stops.exec(text)) !== null) {
-            console.log(stops.lastIndex);
-            console.log(match[0]);
-            const matchReal: RegExpExecArray = match;
-            endOff = matchReal.index;
-            addWord(startOff, endOff);
-            startOff = endOff + 1;
-        }
-
-        // Add the last word
-        endOff = text.length;
-        addWord(startOff, endOff);
-
-        // Create red underline decorations for each word that does not
-        //      exist in the dictionary or personal dictionary
         const decorations: vscode.DecorationOptions[] = [];
-        for (const { text, range } of words) {
-            if (dictionary[text]) continue;
-            if (this.personalDictionary.search(text)) continue;
-            decorations.push({
-                range: range,
-                hoverMessage: `Unrecognized word: ${text}`
-            });
-        }
 
+        const fullText: string = document.getText();
+        const visible: vscode.Rane[] = editor.visibleRanges;
+        for (const { start, end } of visible) {
+            const textStartOff = document.offsetAt(start);
+            const textEndOff = document.offsetAt(end);
+            const text: string = fullText.substring(textStartOff, textEndOff);
+            const words: WordRange[] = [];
+    
+            // Function to parse a word from the document text and add
+            //      it to the word range array
+            const addWord = (startOff: number, endOff: number) => {
+                const start = document.positionAt(startOff);
+                const end = document.positionAt(endOff);
+                if (Math.abs(startOff - endOff) <= 1) return;
+                
+                const wordRange = new vscode.Range(start, end);
+    
+                const word = text.substring(startOff, endOff);
+                words.push({
+                    text: word.toLocaleLowerCase(),
+                    range: wordRange,
+                });
+            }
+    
+            // Iterate over all (but the last) word in the document
+            //      and all those words to the word ranges array
+            let startOff: number = 0;
+            let endOff: number;
+            let match: RegExpExecArray | null;
+            while ((match = stops.exec(text)) !== null) {
+                console.log(stops.lastIndex);
+                console.log(match[0]);
+                const matchReal: RegExpExecArray = match;
+                endOff = matchReal.index;
+                addWord(startOff, endOff);
+                startOff = endOff + 1;
+            }
+    
+            // Add the last word
+            endOff = text.length;
+            addWord(startOff, endOff);
+
+            // Create red underline decorations for each word that does not
+            //      exist in the dictionary or personal dictionary
+            for (const { text, range } of words) {
+                if (dictionary[text]) continue;
+                if (this.personalDictionary.search(text)) continue;
+                decorations.push({
+                    range: range,
+                    hoverMessage: `Unrecognized word: ${text}`
+                });
+            }
+    
+        }
         // Set all red underlines
         editor.setDecorations(Spellcheck.RedUnderline, decorations);
     }

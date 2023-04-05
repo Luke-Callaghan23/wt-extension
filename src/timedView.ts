@@ -12,7 +12,7 @@ export class TimedView implements Packageable {
 
     constructor (
         private context: vscode.ExtensionContext,
-        private timedViews: [string, Timed][]
+        private timedViews: [string, Timed ][]
     ) {
         // If there is an active editor, then trigger decarator updates off the bat
         this.activeEditor = vscode.window.activeTextEditor;
