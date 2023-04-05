@@ -158,7 +158,7 @@ async function emDash () {
         const document = editor.document;
         if (editor.selection.isEmpty && document) {
             const offset = document.offsetAt(editor.selection.start);
-            if (document.getText[offset - 1] === ' ') {
+            if (document.getText()[offset - 1] === ' ') {
                 replace = '-- ';
             }
         }
@@ -175,7 +175,7 @@ async function emDashes () {
 
     // Move the cursor backwards if the cursor is on a whitespace character
     const offset = document.offsetAt(editor.selection.start);
-    if (editor.selection.isEmpty && document.getText[offset - 1] === ' ') {
+    if (editor.selection.isEmpty && document.getText()[offset - 1] === ' ') {
         const prev = document.positionAt(offset - 1);
         editor.selection = new vscode.Selection(prev, prev);
     }

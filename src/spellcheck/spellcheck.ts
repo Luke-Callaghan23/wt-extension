@@ -15,15 +15,15 @@ export class Spellcheck implements Timed {
     
     private static RedUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         borderStyle: 'none none solid none',
-		borderWidth: '5px',
+		borderWidth: '3px',
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
         borderColor: 'red',
-		overviewRulerColor: 'red',
+		overviewRulerColor: 'dark red',
     });
 
     lastUpdate: WordRange[];
     async update (editor: vscode.TextEditor): Promise<void> {
-        const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/;
+        const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/g;
 
         const document = editor.document;
         if (!document) return;
@@ -36,7 +36,7 @@ export class Spellcheck implements Timed {
         const addWord = (startOff: number, endOff: number) => {
             const start = document.positionAt(startOff);
             const end = document.positionAt(endOff);
-            if (Math.abs(start - end) <= 1) return;
+            if (Math.abs(startOff - endOff) <= 1) return;
             
             const wordRange = new vscode.Range(start, end);
 
@@ -52,12 +52,14 @@ export class Spellcheck implements Timed {
         let startOff: number = 0;
         let endOff: number;
         let match: RegExpExecArray | null;
-        while ((match = stops.exec(text))) {
+        while ((match = stops.exec(text)) !== null) {
+            console.log(stops.lastIndex);
+            console.log(match[0]);
             const matchReal: RegExpExecArray = match;
             endOff = matchReal.index;
             addWord(startOff, endOff);
             startOff = endOff + 1;
-        } 
+        }
 
         // Add the last word
         endOff = text.length;
@@ -67,8 +69,8 @@ export class Spellcheck implements Timed {
         //      exist in the dictionary or personal dictionary
         const decorations: vscode.DecorationOptions[] = [];
         for (const { text, range } of words) {
-            if (!dictionary[text]) return;
-            if (!this.personalDictionary.search(text)) return;
+            if (dictionary[text]) continue;
+            if (this.personalDictionary.search(text)) continue;
             decorations.push({
                 range: range,
                 hoverMessage: `Unrecognized word: ${text}`

@@ -175,9 +175,9 @@ export class Proximity implements Timed, Packageable {
         const document = editor.document;
         if (!document) return;
 
-        const text = document.getText;
+        const text = document.getText();
         const cursorLocation = editor.selection;
-        const cursorOffset = document.offsetAt(cursorLocation);
+        const cursorOffset = document.offsetAt(cursorLocation.start);
         let cursorParagraph: number | undefined;
 
         const paragraph = /\n\n/g;
@@ -291,7 +291,7 @@ export class Proximity implements Timed, Packageable {
             // If we found an undefined rating, then clear all decorators after it
             if (!r) {
                 if (clearIndex === -1) clearIndex = index;
-                return;
+                return [];
             }
             const decorator = Proximity.decorators[index];
             this.updateDecorationsForWord(editor, r, decorator);
