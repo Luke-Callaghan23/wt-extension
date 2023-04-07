@@ -68,8 +68,6 @@ export class Proximity implements Timed, Packageable {
             let reg: RegExp;
             try {
                 reg = new RegExp(response);
-                console.log(response);
-                console.log(`${new RegExp(response)}`);
             }
             catch (e) {
                 const proceed = await vscode.window.showInformationMessage(`An error occurred while creating a Regular Expression from your response!`, {
@@ -82,7 +80,6 @@ export class Proximity implements Timed, Packageable {
 
             // If the word is valid and doesn't already exist in the word list, then continue adding the words
             this.additionalPatterns.push(reg);
-            console.log(this.additionalPatterns);
             this.context.workspaceState.update('wt.wordWatcher.additionalPatterns', this.additionalPatterns.map(pat => pat.source));
             if (vscode.window.activeTextEditor) {
                 this.update(vscode.window.activeTextEditor);

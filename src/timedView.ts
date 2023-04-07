@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Packageable } from './packageable';
+import * as console from './vsconsole';
 
 export interface Timed {
     enabled: boolean;
@@ -57,9 +58,10 @@ export class TimedView implements Packageable {
         // Only do updates on .wt files
         if (!editor.document.fileName.endsWith('.wt')) return;
         // Iterate over all timed views and call their update functions if they're enabled
-        this.timedViews.forEach(([ _, timed ]) => {
+        this.timedViews.forEach(([ id, timed ]) => {
             // If the view's timer function is not enabled, then skip
             if (!timed.enabled) return;
+            console.log(`UPDATE: ${id}`);
             timed.update(editor);
         })
     }

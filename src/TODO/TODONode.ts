@@ -231,7 +231,6 @@ export class TODONode extends TreeNode {
             // Collect all the TODO nodes of this fragment
             // Stored as TODONodes in a new array
             const todoNodes = this.convertToTODOData();
-            // console.log(todoNodes);
             return todoNodes;
         }
         else {

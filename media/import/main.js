@@ -19,8 +19,6 @@
     formContainer.innerHTML = `<div class="loader"></div>`;
 
     function loadDocuments (documents, chapterUris) {
-        
-        console.log(documents);
 
         const allDocInfo = {};
         

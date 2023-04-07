@@ -3,6 +3,8 @@ import * as console from './../../vsconsole';
 import { Fetch } from '../../Fetch/fetchSource';
 
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED='0'
+
 type Definition = {
     definitions :  string[],
     part        :  string,
@@ -46,10 +48,12 @@ export async function query (word: string): Promise<Synonyms | SynonymError> {
         const api = `https://dictionaryapi.com/api/v3/references/thesaurus/json/${word}?key=29029b50-e0f1-4be6-ac00-77ab8233e66b`;
         const resp: Response = await Fetch(api);
         
-        if (!resp || resp.status !== 200) return <SynonymError> {
-            type: 'error',
-            message: "Could not connect to dictionary API.  Please check your internet connection."
-        };
+        if (!resp || resp.status !== 200) {
+            return <SynonymError> {
+                type: 'error',
+                message: "Could not connect to dictionary API.  Please check your internet connection."
+            };
+        }
         const json = await resp.json();
     
         if (typeof json[0] === 'string' || json.length === 0) {

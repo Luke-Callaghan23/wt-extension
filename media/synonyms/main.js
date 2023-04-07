@@ -224,8 +224,6 @@
                     
                     // If the current item is already a synonym that has been searched before,
                     //      then aff the selected class to the `a` element
-                    console.log(syn)
-                    console.log(synonyms)
                     if (synonyms.find(s => s === syn)) {
                         a.classList.add('selected');
                     }
@@ -326,8 +324,6 @@
                     type: 'deliveredSynonyms',
                     synonyms: synonyms
                 });
-
-                console.log(synonyms)
 
                 // If removed synonym is the last instance of that synonym, then remove
                 //      the 'selected' class from all instances of that word in synonymElements

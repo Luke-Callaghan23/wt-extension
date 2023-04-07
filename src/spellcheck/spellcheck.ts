@@ -4,6 +4,7 @@ import { Timed } from '../timedView';
 import { Workspace } from '../workspace/workspaceClass';
 import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
+import * as console from './../vsconsole';
 
 type WordRange = {
     text: string,
@@ -23,7 +24,6 @@ export class Spellcheck implements Timed {
 
     lastUpdate: WordRange[];
     async update (editor: vscode.TextEditor): Promise<void> {
-
         const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/g;
 
         const document = editor.document;
@@ -32,11 +32,12 @@ export class Spellcheck implements Timed {
         const decorations: vscode.DecorationOptions[] = [];
 
         const fullText: string = document.getText();
-        const visible: vscode.Rane[] = editor.visibleRanges;
-        for (const { start, end } of visible) {
-            const textStartOff = document.offsetAt(start);
-            const textEndOff = document.offsetAt(end);
+        const visible: vscode.Range[] = [ ...editor.visibleRanges ];
+        for (const { start: visibleStart, end: visibleEnd } of visible) {
+            const textStartOff = document.offsetAt(visibleStart);
+            const textEndOff = document.offsetAt(visibleEnd);
             const text: string = fullText.substring(textStartOff, textEndOff);
+            console.log(text);
             const words: WordRange[] = [];
     
             // Function to parse a word from the document text and add
@@ -48,7 +49,7 @@ export class Spellcheck implements Timed {
                 
                 const wordRange = new vscode.Range(start, end);
     
-                const word = text.substring(startOff, endOff);
+                const word = fullText.substring(startOff, endOff);
                 words.push({
                     text: word.toLocaleLowerCase(),
                     range: wordRange,
@@ -57,20 +58,18 @@ export class Spellcheck implements Timed {
     
             // Iterate over all (but the last) word in the document
             //      and all those words to the word ranges array
-            let startOff: number = 0;
+            let startOff: number = textStartOff;
             let endOff: number;
             let match: RegExpExecArray | null;
             while ((match = stops.exec(text)) !== null) {
-                console.log(stops.lastIndex);
-                console.log(match[0]);
                 const matchReal: RegExpExecArray = match;
-                endOff = matchReal.index;
+                endOff = matchReal.index + textStartOff;
                 addWord(startOff, endOff);
                 startOff = endOff + 1;
             }
     
             // Add the last word
-            endOff = text.length;
+            endOff = textEndOff;
             addWord(startOff, endOff);
 
             // Create red underline decorations for each word that does not

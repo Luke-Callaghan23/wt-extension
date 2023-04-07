@@ -332,7 +332,6 @@ export async function newFragment (
 
     if (!options?.preventRefresh) {
         this.refresh();
-        console.log(fragmentUri);
         vscode.window.showTextDocument(fragmentUri);
         vscode.window.showInformationMessage('Successfully created new fragment');
     }
