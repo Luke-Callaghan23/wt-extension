@@ -1,25 +1,20 @@
 import * as vscode from 'vscode';
-import { query } from '../synonyms/intellisense/querySynonym';
-import { Timed } from '../timedView';
-import { Workspace } from '../workspace/workspaceClass';
+import { query } from '../../intellisense/querySynonym';
+import { Timed } from '../../timedView';
+import { Workspace } from '../../workspace/workspaceClass';
 import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
-import * as console from './../vsconsole';
+import * as console from './../../vsconsole';
+import { WordRange } from '../../intellisense/common';
 
-type WordRange = {
-    text: string,
-    range: vscode.Range,
-};
 
 export class Spellcheck implements Timed {
     enabled: boolean;
     
     private static RedUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-        borderStyle: 'none none solid none',
-		borderWidth: '3px',
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
-        borderColor: 'red',
-		overviewRulerColor: 'dark red',
+        color: '#ad0505',
+		overviewRulerColor: '#ad0505',
     });
 
     lastUpdate: WordRange[];
@@ -37,7 +32,6 @@ export class Spellcheck implements Timed {
             const textStartOff = document.offsetAt(visibleStart);
             const textEndOff = document.offsetAt(visibleEnd);
             const text: string = fullText.substring(textStartOff, textEndOff);
-            console.log(text);
             const words: WordRange[] = [];
     
             // Function to parse a word from the document text and add

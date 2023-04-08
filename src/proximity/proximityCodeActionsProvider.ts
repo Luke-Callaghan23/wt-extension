@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as extension from '../extension';
-import { capitalize, getHoveredWord } from '../synonyms/intellisense/common';
-import { query } from '../synonyms/intellisense/querySynonym';
+import { capitalize, getHoveredWord } from '../intellisense/common';
+import { query } from '../intellisense/querySynonym';
 import { Workspace } from '../workspace/workspaceClass';
 import { Proximity } from './proximity';
 

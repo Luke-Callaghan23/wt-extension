@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
-import { getHoverText, getHoveredWord } from './common';
-import { query } from './querySynonym';
+import { getHoverText, getHoveredWord } from '../common';
+import { query } from '../querySynonym';
 import { HoverProvider } from './hoverProvider';
 
 const NUMBER_COMPLETES = 20;

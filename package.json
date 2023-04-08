@@ -2,7 +2,7 @@
 	"name": "wtaniwe",
 	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
 	"description": "Writing Tool, An Integrated Writing Environment",
-	"version": "0.0.32",
+	"version": "0.0.34",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -233,6 +233,26 @@
 				"command": "wt.spellcheck.disable",
 				"title": "Writing Tool: Disable Spellcheck",
 				"enablement": "wt.spellcheck.enabled"
+			},
+			{
+				"command": "wt.very.enable",
+				"title": "Writing Tool: Enable Very Checks",
+				"enablement": "!wt.very.enabled"
+			},
+			{
+				"command": "wt.colors.enable",
+				"title": "Writing Tool: Enable Color Checks",
+				"enablement": "!wt.colors.enabled"
+			},
+			{
+				"command": "wt.colors.enable",
+				"title": "Writing Tool: Enable Color Checks",
+				"enablement": "!wt.colors.enabled"
+			},
+			{
+				"command": "wt.colors.disable",
+				"title": "Writing Tool: Disable Color Checks",
+				"enablement": "wt.colors.enabled"
 			},
 			{
 				"command": "wt.proximity.addFilteredWord",

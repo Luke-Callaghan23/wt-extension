@@ -7,7 +7,7 @@ import { OutlineView } from './outline/outlineView';
 import { TODOsView } from './TODO/TODOsView';
 import { WordWatcher } from './wordWatcher/wordWatcher';
 import { ExportForm } from './export/exportFormView';
-import { SynonymViewProvider } from './synonyms/synonymsView';
+import { SynonymViewProvider } from './synonymsWebview/synonymsView';
 import { Toolbar } from './toolbar';
 import { importWorkspace } from './workspace/importExport/importWorkspace';
 
@@ -17,9 +17,11 @@ import { FileAccessManager } from './fileAccesses';
 import { packageForExport } from './packageable';
 import { TimedView } from './timedView';
 import { Proximity } from './proximity/proximity';
-import { SynonymsIntellisense } from './synonyms/intellisense/synonymsIntellisense';
-import { PersonalDictionary } from './spellcheck/personalDictionary';
-import { Spellcheck } from './spellcheck/spellcheck';
+import { SynonymsIntellisense as Intellisense } from './intellisense/intellisense';
+import { PersonalDictionary } from './intellisense/spellcheck/personalDictionary';
+import { Spellcheck } from './intellisense/spellcheck/spellcheck';
+import { VeryIntellisense } from './intellisense/very/veryIntellisense';
+import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -43,15 +45,18 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const proximity = new Proximity(context, workspace);
 
 		const personalDictionary = new PersonalDictionary(context, workspace);
-		const synonymsIntellisense = new SynonymsIntellisense(context, workspace, personalDictionary);
+		const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary);
 		const spellcheck = new Spellcheck(context, workspace, personalDictionary);
-
+		const veryIntellisense = new VeryIntellisense(context, workspace);
+		const colorIntellisense = new ColorIntellisense(context, workspace);
 
 		const timedViews = new TimedView(context, [
 			['wt.todo', todo],
 			['wt.wordWatcher', wordWatcher],
 			['wt.proximity', proximity],
-			['wt.spellcheck', spellcheck]
+			['wt.spellcheck', spellcheck],
+			['wt.very', veryIntellisense],
+			['wt.colors', colorIntellisense]
 		]);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)

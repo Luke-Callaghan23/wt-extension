@@ -1,6 +1,6 @@
-import * as console from './../../vsconsole';
+import * as console from '../vsconsole';
 // const fetch = require('node-fetch-commonjs');
-import { Fetch } from '../../Fetch/fetchSource';
+import { Fetch } from '../Fetch/fetchSource';
 
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED='0'
