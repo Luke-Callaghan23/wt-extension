@@ -415,6 +415,14 @@
 			{
 				"command": "wt.personalDictionary.remove",
 				"title": "Writing Tool: Remove word from personal dictionary"
+			},
+			{
+				"command": "wt.colors.addColor",
+				"title": "Writing Tool: Add Color to Color Group"
+			},
+			{
+				"command": "wt.colors.removeColor",
+				"title": "Writing Tool: Remove Color from Color Group"
 			}
 		],
 		"menus": {

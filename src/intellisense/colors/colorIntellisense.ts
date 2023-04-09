@@ -99,7 +99,7 @@ export class ColorIntellisense implements Timed {
         workspace: Workspace,
     ) {
         this.enabled = true;
-        this.colorGroups = new ColorGroups();
+        this.colorGroups = new ColorGroups(context);
         const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
             language: 'wt'
         };

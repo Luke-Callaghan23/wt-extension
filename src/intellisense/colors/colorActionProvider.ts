@@ -32,14 +32,14 @@ export class ColorActionProvider implements vscode.CodeActionProvider {
         const intersection = allColors.find(({ range: colorRange }) => colorRange.contains(range));
         if (!intersection) return [];
 
-        // Isolate the word after very in the intersected range
-        const start = document.offsetAt(intersection.range.start);
-        const end = document.offsetAt(intersection.range.end);
-        const veryText = document.getText().substring(start, end);
-        const otherWord = veryText.split(' ')[1];
+        const text = document.getText();
+        const colorStart = document.offsetAt(intersection.range.start);
+        const colorEnd = document.offsetAt(intersection.range.end);
+        const color = text.substring(colorStart, colorEnd).toLocaleLowerCase();
 
         // Create code actions for all the very synonyms
         return intersection.group.map(suggest => {
+            if (suggest === color) return [];
             const edit = new vscode.WorkspaceEdit();
             edit.replace(document.uri, intersection.range, suggest);
             return <vscode.CodeAction> {
@@ -47,7 +47,7 @@ export class ColorActionProvider implements vscode.CodeActionProvider {
                 edit: edit,
                 kind: vscode.CodeActionKind.QuickFix,
             }
-        }) || [];
+        }).flat() || [];
     }
 
 }

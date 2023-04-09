@@ -1,3 +1,7 @@
+import * as vscode from 'vscode';
+import { Packageable } from '../../packageable';
+import * as console from './../../vsconsole';
+import { capitalize } from '../common';
 
 type Colors = { [index: string]: 1 };
 
@@ -399,24 +403,167 @@ const colorGroups: { [index: string]: Colors } = {
         "leather": 1
     }
 };
-colorGroups['gray'] = colorGroups['grey'];
 
-export class ColorGroups {
-    constructor () {
-
-    }
-
+export class ColorGroups implements Packageable {
+    
     getColorGroup (color: string): {
         leader: string,
         group: string[]
     } | null {
-        const foundGroup = Object.entries(colorGroups).find(([ _, group ]) => group[color])
-        if (!foundGroup) return null;
+        
+        const mainGroup = Object.entries(colorGroups).find(([ _, group ]) => group[color]);
+        const extraGroup = Object.entries(this.extraColors).find(([ _, group ]) => group[color]);
+        if (!mainGroup && !extraGroup) return null;
 
-        const [ leader, group ] = foundGroup;
+
+        // Reaturn the group leader (blue, black, brown, etc.) as well as all the synonyms for that color
+        let leader: string = '';
+        const group: string[] = [];
+        if (mainGroup) {
+            const [ groupLeader, groupGroup ] = mainGroup;
+            leader = groupLeader;
+            Object.keys(groupGroup).forEach(color => group.push(color));
+
+            // Also check to see if the group leader of the main group exists in the extra groups as well
+            if (this.extraColors[groupLeader]) {
+                const extras: Colors = this.extraColors[groupLeader];
+                Object.keys(extras).forEach(color => group.push(color));
+            }
+
+        }
+        if (extraGroup) {
+            const [ groupLeader, groupGroup ] = extraGroup;
+            leader = groupLeader;
+            Object.keys(groupGroup).forEach(color => group.push(color));
+
+            // Also check to see if the group leader of the extra group exists in the main groups as well
+            if (colorGroups[groupLeader]) {
+                const extras: Colors = colorGroups[groupLeader];
+                Object.keys(extras).forEach(color => group.push(color));
+            }
+        }
         return {
             leader: leader,
-            group: Object.keys(group)
+            group: group
         };
+    }
+    
+    private extraColors: { [index: string]: Colors };
+    constructor (private context: vscode.ExtensionContext) {
+        this.registerCommands();
+
+        // Get additional colors from the workspace state
+        const extras: { [index: string]: Colors } = context.workspaceState.get('wt.colors.extraColors') || {};
+        this.extraColors = extras;
+    }
+
+    getPackageItems(): { [index: string]: any; } {
+        return {
+            'wt.colors.extraColors': this.extraColors
+        };
+    }
+
+    async addColor (): Promise<void> {
+
+        let selectedText = '';
+
+        // Pull selected string from active document, if possible
+        const editor = vscode.window.activeTextEditor
+        if (editor && !editor.selection.isEmpty && editor.document) {
+            const selection = editor.selection;
+            const document = editor.document;
+            const text = document.getText();
+            const selectStart = document.offsetAt(selection.start);
+            const selectEnd = document.offsetAt(selection.end);
+            selectedText = text.substring(selectStart, selectEnd);
+        }
+
+        // Combine all group names from both the default set and the extra groups
+        const groupNames = Object.keys(colorGroups);
+        const extraGroups = Object.keys(this.extraColors);
+        const allGroupNames = [...new Set([...groupNames, ...extraGroups])];
+
+        // Get the name of the group to add the color to
+        const displayGroups = allGroupNames.map(cg => capitalize(cg));
+        displayGroups.push('Add A New Group');
+        let addedGroup: string | undefined = await vscode.window.showQuickPick(
+            displayGroups, 
+            {
+                ignoreFocusOut: false,
+                title: 'Which group would you like to add the color to?',
+                canPickMany: false
+            }
+        );
+        if (!addedGroup) return;
+        let actualGroup = addedGroup.toLocaleLowerCase();
+
+        if (addedGroup === 'Add A New Group') {
+            // Get the color text
+            const newGroup = await vscode.window.showInputBox({
+                ignoreFocusOut: false,
+                prompt: `Enter the name of the group you'd like to create:`,
+                title: `Enter the name of the group you'd like to create:`,
+                value: ''
+            });
+            if (!newGroup) return;
+            addedGroup = newGroup;
+            actualGroup = newGroup.trim().toLocaleLowerCase();
+        }
+
+        // Get the color text
+        const color = await vscode.window.showInputBox({
+            ignoreFocusOut: false,
+            prompt: `Enter the color you would like to add to '${addedGroup}':`,
+            title: `Enter the color you would like to add to '${addedGroup}':`,
+            value: selectedText,
+            valueSelection: [ 0, selectedText.length ],
+        });
+        if (!color) return;
+        const actual = color.trim().toLocaleLowerCase();
+
+        // Add the color to this.extraColors
+        if (this.extraColors[actualGroup] === undefined) {
+            this.extraColors[actualGroup] = {};
+        }
+        this.extraColors[actualGroup][actual] = 1;
+
+        // As well as the workspace state
+        this.context.workspaceState.update('wt.colors.extraColors', this.extraColors);
+    }
+
+    async removeColor (): Promise<void> {
+        // Invert the color groups so that each color in each color group
+        //      points to the name of the color group
+        const invertedColorGroups: { [index: string]: string } = {};
+        Object.entries(this.extraColors).forEach(([ colorGroup, colors ]) => {
+            Object.keys(colors).forEach(color => {
+                invertedColorGroups[color] = colorGroup;
+            });
+        });
+
+        const allExtras = Object.keys(invertedColorGroups);
+        const removedColor: string | undefined = await vscode.window.showQuickPick(
+            allExtras.map(colors => capitalize(colors)), 
+            {
+                ignoreFocusOut: false,
+                title: 'Which group would you like to add the color to?',
+                canPickMany: false
+            }
+        );
+        if (!removedColor) return;
+        const actualRemoved = removedColor.toLocaleLowerCase();
+
+        // Remove the color from this.extraColors
+        const group = invertedColorGroups[actualRemoved];
+        delete this.extraColors[group][actualRemoved];
+
+        // Remove the color from the workspace state
+        this.context.workspaceState.update('wt.colors.extraColors', this.extraColors);
+    }
+
+
+    registerCommands () {
+        vscode.commands.registerCommand('wt.colors.addColor', () => this.addColor());
+        vscode.commands.registerCommand('wt.colors.removeColor', () => this.removeColor());
     }
 }
