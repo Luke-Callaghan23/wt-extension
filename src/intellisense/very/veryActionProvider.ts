@@ -6,9 +6,19 @@ import { Workspace } from '../../workspace/workspaceClass';
 import { VeryIntellisense } from './veryIntellisense';
 import { queryVery } from './veryQuery';
 
-const alreadyObtained: { [index: string]: string[] | null } = {};
+type QueryResult = {
+    type: 'success',
+    result: string[],
+} | {
+    type: 'failed',
+    action: vscode.CodeAction
+}
+
+const alreadyObtained: { [index: string]: QueryResult } = {};
 
 export class VeryActionProvider implements vscode.CodeActionProvider {
+
+
 
     async provideCodeActions (
         document: vscode.TextDocument, 
@@ -27,27 +37,52 @@ export class VeryActionProvider implements vscode.CodeActionProvider {
         const start = document.offsetAt(intersection.start);
         const end = document.offsetAt(intersection.end);
         const veryText = document.getText().substring(start, end);
-        const otherWord = veryText.split(' ')[1];
+        const [ very, otherWord ] = veryText.split(' ');
 
         // Query losethevery for the selected very word
         const already = alreadyObtained[otherWord];
-        if (already === null) return [];
+        if (already && already.type === 'failed') return [ already.action ];
 
-        const specificSynonyms = already || await queryVery(otherWord);
+        const specificSynonyms = already?.result || await queryVery(otherWord);
         if (!specificSynonyms) {
-            alreadyObtained[otherWord] = null;
-            return [];
+            const action = {
+                title: 'Unable to query very synonyms: Open in a new browser?',
+                isPreferred: true,
+                command: {
+                    command: 'wt.very.openBrowser',
+                    title: 'Open Very Browser',
+                    arguments: [ otherWord ],
+                },
+                kind: vscode.CodeActionKind.QuickFix,
+            }
+            alreadyObtained[otherWord] = {
+                type: 'failed',
+                action: action,
+            };
+            console.log(action)
+            return [ action ];
         }
 
         // Log the other word as already obtained
-        alreadyObtained[otherWord] = specificSynonyms;
+        alreadyObtained[otherWord] = {
+            type: 'success',
+            result: specificSynonyms
+        };
 
         // Create code actions for all the very synonyms
         return specificSynonyms.map(suggest => {
             const edit = new vscode.WorkspaceEdit();
-            edit.replace(document.uri, intersection, suggest);
+
+            // If very is capitalized, also capitalize the replaced word
+            const capitalized = capitalize(suggest);
+            const suggestedWord = very === 'Very'
+                ? capitalized
+                : suggest;
+            edit.replace(document.uri, intersection, suggestedWord);
+
+            
             return <vscode.CodeAction> {
-                title: `Replace with: '${capitalize(suggest)}'`,
+                title: `Replace with: '${capitalized}'`,
                 edit: edit,
                 kind: vscode.CodeActionKind.QuickFix,
             }
@@ -59,7 +94,13 @@ export class VeryActionProvider implements vscode.CodeActionProvider {
         workspace: Workspace,
         private veryIntellisense: VeryIntellisense
     ) {
+        this.registerCommands();
+    }
 
+    registerCommands () {
+        vscode.commands.registerCommand('wt.very.openBrowser', (veryWord: string) => {
+            vscode.env.openExternal(vscode.Uri.parse(`https://www.losethevery.com/another-word/very-${veryWord}`))
+        });
     }
 
 }

@@ -1,6 +1,8 @@
 
+type Colors = { [index: string]: 1 };
+
 // source: 
-const colorGroups: { [index: string]: { [index: string]: 1 } } = {
+const colorGroups: { [index: string]: Colors } = {
     "white": {
         "white": 1,
         "pearl": 1,
@@ -23,28 +25,6 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "parchment": 1,
         "rice": 1
     },
-    "tan": {
-        "tan": 1,
-        "beige": 1,
-        "macaroon": 1,
-        "hazelwood": 1,
-        "granola": 1,
-        "oat": 1,
-        "eggnog": 1,
-        "fawn": 1,
-        "sugar cookie": 1,
-        "sand": 1,
-        "sepia": 1,
-        "ltte": 1,
-        "oyster": 1,
-        "biscotti": 1,
-        "parmesan": 1,
-        "hazelnut": 1,
-        "sandcastle": 1,
-        "buttermilk": 1,
-        "sand dollar": 1,
-        "shortbread": 1
-    },
     "yellow": {
         "yellow": 1,
         "canary": 1,
@@ -65,17 +45,13 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "honey": 1,
         "blonde": 1,
         "pineapple": 1,
-        "tuscan sun": 1
-    },
-    "bright yellow": {
+        "tuscan sun": 1,
         "bright yellow": 1,
         "mellow yellow": 1,
         "cyber yellow": 1,
         "royal yellow": 1,
-        "banana": 1,
         "tuscany yellow": 1,
         "lemon yellow": 1,
-        "bumblebee": 1,
         "cream yellow": 1,
         "peach": 1,
         "laguna yellow": 1,
@@ -109,9 +85,7 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "marmalade": 1,
         "amber": 1,
         "sandstone": 1,
-        "yam": 1
-    },
-    "bright orange": {
+        "yam": 1,
         "bright orange": 1,
         "gold orange": 1,
         "goldenrod orange": 1,
@@ -120,18 +94,9 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "ochre orange": 1,
         "burnt orange": 1,
         "dijon orange": 1,
-        "tangerine": 1,
         "tiger orange": 1,
         "honey orange": 1,
         "carrot orange": 1,
-        "amber": 1,
-        "apricot": 1,
-        "bronze": 1,
-        "cider": 1,
-        "clay": 1,
-        "rust": 1,
-        "amber 2": 1,
-        "spice": 1
     },
     "red": {
         "red": 1,
@@ -153,11 +118,8 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "currant": 1,
         "blush": 1,
         "candy": 1,
-        "lipstick": 1
-    },
-    "salmon red": {
+        "lipstick": 1,
         "salmon red": 1,
-        "scarlet": 1,
         "barn red": 1,
         "imperial red": 1,
         "indian red": 1,
@@ -174,7 +136,6 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "burgundy": 1,
         "crimson red": 1,
         "sangria red": 1,
-        "mahogany": 1
     },
     "pink": {
         "pink": 1,
@@ -196,18 +157,14 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "ballet slipper": 1,
         "crepe": 1,
         "magenta": 1,
-        "hot pink": 1
-    },
-    "bright pink": {
+        "hot pink": 1,
         "bright pink": 1,
         "ruby": 1,
         "ultra pink": 1,
         "thulian pink": 1,
-        "magenta": 1,
         "rose pink": 1,
         "lavender pink": 1,
         "creamy pink": 1,
-        "fuchsia": 1,
         "french rose": 1,
         "cerise": 1,
         "carnation pink": 1,
@@ -215,7 +172,6 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "amaranth": 1,
         "taffy pink": 1,
         "bubble gum pink": 1,
-        "hot pink": 1,
         "punch pink": 1,
         "pink lemonade": 1,
         "flamingo pink": 1
@@ -240,20 +196,14 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "raisin": 1,
         "orchid": 1,
         "mulberry": 1,
-        "wine": 1
-    },
-    "violet": {
-        "violet": 1,
+        "wine": 1,
         "hibiscus": 1,
         "mauve purple": 1,
         "mulberry purple": 1,
-        "lavender": 1,
         "orchid violet": 1,
         "lilac purple": 1,
         "electric violet": 1,
         "african violet": 1,
-        "grape": 1,
-        "amethyst": 1,
         "byzantine purple": 1,
         "fandango purple": 1,
         "helio purple": 1,
@@ -262,7 +212,6 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "royal purple": 1,
         "lollipop purple": 1,
         "plum purple": 1,
-        "eggplant": 1
     },
     "blue": {
         "blue": 1,
@@ -284,9 +233,7 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "denim": 1,
         "admiral": 1,
         "sapphire": 1,
-        "arctic": 1
-    },
-    "bright blue": {
+        "arctic": 1,
         "bright blue": 1,
         "yale blue": 1,
         "pigeon blue": 1,
@@ -301,10 +248,8 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "maya blue": 1,
         "cornflower blue": 1,
         "olympic blue": 1,
-        "sapphire": 1,
         "azure blue": 1,
         "egyptian blue": 1,
-        "denim": 1,
         "prussian blue": 1,
         "space blue": 1
     },
@@ -328,9 +273,7 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "pickle": 1,
         "pistachio": 1,
         "basil": 1,
-        "crocodile": 1
-    },
-    "bright green": {
+        "crocodile": 1,
         "bright green": 1,
         "forest green": 1,
         "sage green": 1,
@@ -372,14 +315,29 @@ const colorGroups: { [index: string]: { [index: string]: 1 } } = {
         "brunette": 1,
         "cinnamon": 1,
         "penny": 1,
-        "cedar": 1
-    },
-    "traditional brown": {
-        "traditional brown": 1,
-        "web safe brown": 1,
-        "mid dark brown": 1,
+        "cedar": 1,
         "espresso": 1,
-        "russet brown": 1
+        "russet brown": 1,
+        "tan": 1,
+        "beige": 1,
+        "macaroon": 1,
+        "hazelwood": 1,
+        "granola": 1,
+        "oat": 1,
+        "eggnog": 1,
+        "fawn": 1,
+        "sugar cookie": 1,
+        "sand": 1,
+        "sepia": 1,
+        "ltte": 1,
+        "oyster": 1,
+        "biscotti": 1,
+        "parmesan": 1,
+        "hazelnut": 1,
+        "sandcastle": 1,
+        "buttermilk": 1,
+        "sand dollar": 1,
+        "shortbread": 1
     },
     "grey": {
         "grey": 1,
@@ -461,6 +419,4 @@ export class ColorGroups {
             group: Object.keys(group)
         };
     }
-
-
 }
