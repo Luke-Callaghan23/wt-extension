@@ -2,13 +2,8 @@ import * as vscode from 'vscode';
 import * as console from '../../vsconsole';
 import * as extension from '../../extension';
 import { WordRange, capitalize, getHoverText, getHoveredWord } from '../common';
-import { query } from '../querySynonym';
 import { Workspace } from '../../workspace/workspaceClass';
-import { PersonalDictionary } from '../spellcheck/personalDictionary';
-import { dictionary } from '../spellcheck/dictionary';
 import { Timed } from '../../timedView';
-import { JSDOM } from 'jsdom';
-import { Fetch } from '../../Fetch/fetchSource';
 import { ColorGroups } from '../colors/colorGroups';
 import { ColorActionProvider } from './colorActionProvider';
 
@@ -24,11 +19,8 @@ export class ColorIntellisense implements Timed {
 
     
     private static ColorMarker: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-        borderStyle: 'none none solid none',
-		borderWidth: '3px',
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
-        borderColor: '#a8325a',
-		overviewRulerColor: '#a8325a',
+        color: '#a8325a'
     });
 
 
@@ -103,7 +95,7 @@ export class ColorIntellisense implements Timed {
         private context: vscode.ExtensionContext,
         workspace: Workspace,
     ) {
-        this.enabled = false;
+        this.enabled = true;
         this.colorGroups = new ColorGroups();
         const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
             language: 'wt'

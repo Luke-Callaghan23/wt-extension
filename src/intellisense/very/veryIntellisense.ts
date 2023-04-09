@@ -106,7 +106,7 @@ export class VeryIntellisense implements Timed {
         private context: vscode.ExtensionContext,
         workspace: Workspace,
     ) {
-        this.enabled = false;
+        this.enabled = true;
         const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
             language: 'wt'
         };

@@ -59,9 +59,9 @@ export class TimedView implements Packageable {
         if (!editor.document.fileName.endsWith('.wt')) return;
         // Iterate over all timed views and call their update functions if they're enabled
         this.timedViews.forEach(([ id, timed ]) => {
+            console.log(`UPDATE: ${id} (${timed.enabled ? 'enabled' : 'disabled'})`);
             // If the view's timer function is not enabled, then skip
             if (!timed.enabled) return;
-            console.log(`UPDATE: ${id}`);
             timed.update(editor);
         })
     }

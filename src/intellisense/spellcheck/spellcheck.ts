@@ -13,7 +13,9 @@ export class Spellcheck implements Timed {
     
     private static RedUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
-        color: '#ad0505',
+        borderColor: '#ad0505',
+        borderWidth: '3px',
+        borderStyle: 'none none solid none',
 		overviewRulerColor: '#ad0505',
     });
 
@@ -96,7 +98,7 @@ export class Spellcheck implements Timed {
         workspace: Workspace,
         private personalDictionary: PersonalDictionary
     ) {
-        this.enabled = false;
+        this.enabled = true;
         this.lastUpdate = [];
     }
 }
