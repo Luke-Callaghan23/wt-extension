@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as console from '../../vsconsole';
-import { JSDOM } from 'jsdom';
 import { Fetch } from '../../Fetch/fetchSource';
 
 export async function queryVery (word: string): Promise<string[] | null> {
     try {
+        const JSDOM = require('jsdom').JSDOM;
         // Fetch losethevery.com to get synonyms for the very word
         const response: Response = await Fetch(`https://www.losethevery.com/another-word/very-${word}`)
         if (!response || !response.body) return null;
