@@ -253,17 +253,13 @@ export class Proximity implements Timed, Packageable {
         }
 
         // Create paragraph objects for all the inspected paragraphs
-        const paragraphs: Paragraph[] = inspect.map(({
-            paragraph,
-            start,
-            end 
-        }) => {
-            return new Paragraph(this, editor, text, paragraph, start, end)
-        });
+        const paragraphs: Paragraph[] = inspect.map(({ paragraph, start, end }) => 
+            new Paragraph(this, editor, text, paragraph, start, end)
+        );
 
         // Get all words and all unique words in all the inspected paragraphs
         const allWords: Word[] = paragraphs.map(({ allWords }) => allWords).flat();
-        const uniqueWordsMap: { [index: string]: 1 } = {}
+        const uniqueWordsMap: { [index: string]: 1 } = {};
         allWords.forEach(({ text }) => {
             uniqueWordsMap[text] = 1;
         });

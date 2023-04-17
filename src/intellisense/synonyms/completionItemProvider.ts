@@ -39,6 +39,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         }
 
         // Create completion items for all synonyms of all definitions
+        const inserts: { [index: string]: 1 } = {};
         const allSynonyms = response.definitions.map(def => {
             return def.synonyms.map(syn => {
                 
@@ -50,13 +51,20 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 //      parenthesis taking the first item from the array
                 const insertText = syn.split('(')[0].trim();
 
+                // For removing duplicates -- check if in the inserts map
+                if (inserts[insertText] === 1) {
+                    return [];
+                }
+                inserts[insertText] = 1;
+
                 return <vscode.CompletionItem> {
                     label: `(${def.part}) ${syn}`,
                     filterText: hoverPosition.text,
                     insertText: insertText,
+                    detail: `[${def.definitions[0]}]`,
                     range: hoverRange,
                 }
-            });
+            }).flat();
         }).flat();
 
         // Also create a completion item for the existing text 

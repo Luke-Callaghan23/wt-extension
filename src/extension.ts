@@ -22,6 +22,7 @@ import { PersonalDictionary } from './intellisense/spellcheck/personalDictionary
 import { Spellcheck } from './intellisense/spellcheck/spellcheck';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
+import { ColorGroups } from './intellisense/colors/colorGroups';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -48,7 +49,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary);
 		const spellcheck = new Spellcheck(context, workspace, personalDictionary);
 		const veryIntellisense = new VeryIntellisense(context, workspace);
-		const colorIntellisense = new ColorIntellisense(context, workspace);
+        const colorGroups = new ColorGroups(context);
+		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 
 		const timedViews = new TimedView(context, [
 			['wt.todo', todo],
@@ -71,7 +73,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		FileAccessManager.initialize();
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
-			outline, synonyms, timedViews, new FileAccessManager()
+			outline, synonyms, timedViews, new FileAccessManager(),
+			personalDictionary, colorGroups
 		]));
 	}
 	catch (e) {

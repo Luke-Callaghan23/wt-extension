@@ -18,5 +18,13 @@ export class SynonymsIntellisense {
         vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace));
         vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace));
         vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(context, workspace, personalDictionary));
+    
+        this.registerCommands();
+    }
+
+    registerCommands() {
+        vscode.commands.registerCommand('wt.synonyms.getSynonyms', () => {
+            console.log('awdawdw');
+        })
     }
 }

@@ -224,19 +224,20 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
         offset -= 1;
     }
 
-    // Move away from space characters
-    let char = docText[offset];
-    while (char && char === ' ') {
-        offset += direction;
-        if (offset === -1) {
-            break;
+    const stopRegex = /[\.\?,"'-\(\)\[\]\{\}/\\]/;
+    
+    let  char = docText[offset];
+    if (char && /\s/.test(char)) {
+        // Move away from space characters
+        while (char && /\s/.test(char)) {
+            offset += direction;
+            if (offset === -1) {
+                break;
+            }
+            char = docText[offset];
         }
-        char = docText[offset];
     }
-
-    // Main movement: 
-    const stopRegex = /[\s\.\?,"'-\(\)\[\]\{\}/\\]/;
-    if (stopRegex.test(char)) {
+    else if (stopRegex.test(char)) {
         // If the cursor is initially at a stop character, then go until we find a non-stop character
         while (char && stopRegex.test(char)) {
             offset += direction;

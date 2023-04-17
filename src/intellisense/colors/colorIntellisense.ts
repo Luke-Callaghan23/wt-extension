@@ -15,7 +15,6 @@ export type ColorInfo = {
 
 export class ColorIntellisense implements Timed {
     enabled: boolean;
-    private colorGroups: ColorGroups;
 
     
     private static ColorMarker: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
@@ -97,9 +96,9 @@ export class ColorIntellisense implements Timed {
     constructor (
         private context: vscode.ExtensionContext,
         workspace: Workspace,
+        private colorGroups: ColorGroups
     ) {
         this.enabled = true;
-        this.colorGroups = new ColorGroups(context);
         const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
             language: 'wt'
         };

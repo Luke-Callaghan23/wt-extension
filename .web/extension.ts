@@ -18,6 +18,7 @@ import { PersonalDictionary } from './intellisense/spellcheck/personalDictionary
 import { SynonymsIntellisense } from './intellisense/intellisense';
 import { Spellcheck } from './intellisense/spellcheck/spellcheck';
 import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
+import { ColorGroups } from './intellisense/colors/colorGroups';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 
 
@@ -45,7 +46,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const synonymsIntellisense = new SynonymsIntellisense(context, workspace, personalDictionary);
 		const spellcheck = new Spellcheck(context, workspace, personalDictionary);
 		const veryIntellisense = new VeryIntellisense(context, workspace);
-		const colorIntellisense = new ColorIntellisense(context, workspace);
+        const colorGroups = new ColorGroups(context);
+		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 
 		const timedViews = new TimedView(context, [
 			['wt.todo', todo],
