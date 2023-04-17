@@ -248,6 +248,7 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
         }
     }
     else {
+        const stopRegex = /[\s\.\?,"'-\(\)\[\]\{\}/\\]/;
         // If the cursor is at a non-stop character, then go until we find a stop character
         // (Also allow the character apostrophe character to be jumped -- as we don't want to stutter on the word 'don't')
         while (char && (char === "'" || !stopRegex.test(char))) {
