@@ -223,12 +223,22 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
         // If going forward, the character we're inspecting is actually the one behind the cursor
         offset -= 1;
     }
-
+    
     const stopRegex = /[\.\?,"'-\(\)\[\]\{\}/\\]/;
     
-    let  char = docText[offset];
+    // Move away from space characters
+    let char = docText[offset];
+    while (char && char === ' ') {
+        offset += direction;
+        if (offset === -1) {
+            break;
+        }
+        char = docText[offset];
+    }
+    
     if (char && /\s/.test(char)) {
-        // Move away from space characters
+        // If the character is at whitespace, after moving away from spaces, then just move over all the whitespace
+        //      as well
         while (char && /\s/.test(char)) {
             offset += direction;
             if (offset === -1) {
