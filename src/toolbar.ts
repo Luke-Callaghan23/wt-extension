@@ -298,6 +298,7 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
 
     const selection = editor.selection;
     const start = selection.isReversed ? selection.start : selection.end;
+    const anchor = selection.anchor;
 
     const punctuation = /[\.\?\!]|[^\s]--\s/
     const whitespace = /\s/;
@@ -406,10 +407,10 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
     // Set the new selection of the editor
     const position: vscode.Position = document.positionAt(found);
     const select = new vscode.Selection (
-        position, 
         // If shift is held, use the start position of the previous selection as the active point
         //      of the new selection
-        shiftHeld ? start : position
+        shiftHeld ? anchor : position,
+        position, 
     );
     editor.selection = select;
     return select;
@@ -425,6 +426,8 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
     const selection = editor.selection;
     const start = selection.isReversed ? selection.start : selection.end;
     const line = start.line;
+
+    const anchor = selection.anchor;
 
     // Find the jump position, depending on whether we're jumping forward or backward
     let position: vscode.Position;
@@ -442,11 +445,11 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
     }
 
     // Set the new selection of the editor
-    const select = new vscode.Selection (
-        position, 
+    const select =  new vscode.Selection (
         // If shift is held, use the start position of the previous selection as the active point
         //      of the new selection
-        shiftHeld ? start : position
+        shiftHeld ? anchor : position,
+        position, 
     );
     editor.selection = select;
     return select;
