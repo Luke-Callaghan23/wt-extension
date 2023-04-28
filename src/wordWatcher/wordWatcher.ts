@@ -5,9 +5,10 @@ import * as console from '../vsconsole';
 import { Packageable } from '../packageable';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
-import { update, disable } from './timer';
+import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, ColorEntry, createDecorationType, convertWordColorsToContextItem } from './timer';
 import { getChildren, getTreeItem } from './tree';
 import { addWord, updateWords, jumpNextInstanceOf } from './engine';
+import { hexToRgb } from '../help';
 
 export interface WordEnrty {
 	uri: string;
@@ -33,13 +34,10 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
     //      pattern in watchedWords
     public unwatchedWords: string[];
 
-    public wordColors: { [index: string]: {
-        color?: string,
-        decoratorsIndex: number
-    }};
+    public wordColors: { [index: string]: ColorEntry };
 
 
-    public allDecorationTypes: vscode.TextEditorDecorationType[] = [];
+    public allDecorationTypes: vscode.TextEditorDecorationType[];
 
     
     // Refresh the word tree
@@ -62,6 +60,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
     
     update = update;
     disable = disable;
+    changeColor = changeColor;
 
     public wasUpdated: boolean = true;
     public lastCalculatedRegeces: {
@@ -69,6 +68,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         regexString: string,
         regex: RegExp,
         unwatchedRegeces: RegExp[],
+        watchedRegeces: { uri: string, reg: RegExp }[]
     } | undefined;
 
 	constructor(
@@ -91,7 +91,28 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         // Will later be modified by TimedView
         this.enabled = true;
 
+        
+        this.allDecorationTypes = [ defaultDecoration ];
         this.wordColors = {};
+
+        // Create decorations for all the unique colors in the workspace state
+        const contextColors: { [index: string]: string } = context.workspaceState.get('wt.wordWatcher.colors') || {};
+        this.watchedWords.forEach(watched => {
+            const color = contextColors[watched];
+            if (!color) return;
+
+            // If the watched word has a color mapping in context, then create a decorator type for that 
+            //      and record the mapping to wordColors and allDecorationTypes
+            const colorRGB = hexToRgb(color);
+            if (!colorRGB) return;
+            const decoratorType = createDecorationType(colorRGB);
+            this.wordColors[watched] = {
+                color: color,
+                decoratorsIndex: this.allDecorationTypes.length
+            };
+
+            this.allDecorationTypes.push(decoratorType);
+        });
 
 		context.subscriptions.push(vscode.window.createTreeView('wt.wordWatcher', { treeDataProvider: this }));
         this.registerCommands();
@@ -123,6 +144,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         vscode.commands.registerCommand('wt.wordWatcher.enableWatchedWord', (resource: WordEnrty) => {
             this.updateWords('delete', resource.uri, 'wt.wordWatcher.disabledWatchedWords')
         });
+        vscode.commands.registerCommand('wt.wordWatcher.changeColor', (resource: WordEnrty) => {
+            this.changeColor(resource);
+        });
 	}
 
     getPackageItems(): { [index: string]: any; } {
@@ -130,6 +154,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             'wt.wordWatcher.watchedWords': this.watchedWords,
             'wt.wordWatcher.disabledWatchedWords': this.disabledWatchedWords,
             'wt.wordWatcher.unwatchedWords': this.unwatchedWords,
+            'wt.wordWatcher.colors': convertWordColorsToContextItem(this.wordColors)
         }
     }
 }

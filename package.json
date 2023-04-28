@@ -298,6 +298,10 @@
 				"title": "Writing Tool: Jump to Next Instance of Watched Word"
 			},
 			{
+				"command": "wt.wordWatcher.changeColor",
+				"title": "Writing Tool: Change watched word color"
+			},
+			{
 				"command": "wt.synonyms.help",
 				"title": "Writing Tool: Synonyms View Help",
 				"icon": "$(question)"
@@ -538,6 +542,10 @@
 				},
 				{
 					"command": "wt.wordWatcher.disableWatchedWord",
+					"when": "view == wt.wordWatcher && viewItem == watchedWord_enabled"
+				},
+				{
+					"command": "wt.wordWatcher.changeColor",
 					"when": "view == wt.wordWatcher && viewItem == watchedWord_enabled"
 				},
 				{

@@ -94,7 +94,7 @@ export function getNonce () {
 	return text;
 }
 
-function hexToRgb (hex: string) {
+export function hexToRgb (hex: string): null | { r: number, g: number, b: number } {
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
         r: parseInt(result[1], 16),
