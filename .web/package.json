@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.43",
+	"version": "0.0.44",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -284,6 +284,10 @@
 				"title": "Writing Tool: Jump to Next Instance of Watched Word"
 			},
 			{
+				"command": "wt.wordWatcher.changeColor",
+				"title": "Writing Tool: Change watched word color"
+			},
+			{
 				"command": "wt.synonyms.help",
 				"title": "Writing Tool: Synonyms View Help",
 				"icon": "$(question)"
@@ -533,6 +537,10 @@
 				{
 					"command": "wt.wordWatcher.deleteUnwatchedWord",
 					"when": "view == wt.wordWatcher && viewItem == unwatchedWord"
+				},
+				{
+					"command": "wt.wordWatcher.changeColor",
+					"when": "view == wt.wordWatcher && viewItem == watchedWord_enabled"
 				},
 				{
 					"command": "wt.import.fileExplorer.removeResource",
