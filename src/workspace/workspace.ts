@@ -20,7 +20,7 @@ export async function createWorkspace (
     defaultConfig?: Config
 ): Promise<Workspace> {
 
-    const workspace = new Workspace();
+    const workspace = new Workspace(context);
 
     if (!defaultConfig) {
         // Prompt the user for their name
@@ -121,7 +121,7 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
 
     
     // If anything in the try block, then valid will remain false
-    const workspace = new Workspace();
+    const workspace = new Workspace(context);
     try {
         // Try to read the /.wtconfig file
         const wtConfigUri = workspace.dotWtconfigPath;
@@ -143,25 +143,7 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
         valid = folderStats.every(({ type }) => type === vscode.FileType.Directory);
 
         try {
-            // Attempt to read context values from the context values file on disk
-            // Context values file may not exist, so allow a crash to happen
-            const contextValuesUri = workspace.contextValuesFilePath;
-            const contextValuesBuffer = await vscode.workspace.fs.readFile(contextValuesUri);
-            const contextValuesJSON = extension.decoder.decode(contextValuesBuffer);
-            const contextValues: { [index: string]: any } = JSON.parse(contextValuesJSON);
-            await Promise.all(Object.entries(contextValues).map(([ contextKey, contextValue ]) => {
-                return [
-                    vscode.commands.executeCommand('setContext', contextKey, contextValue),
-                    context.workspaceState.update(contextKey, contextValue),
-                ];
-            }).flat());
-
-            context.workspaceState.update('wt.todo.enabled', contextValues['wt.todo.enabled']);
-            context.workspaceState.update('wt.wordWatcher.enabled', contextValues['wt.wordWatcher.enabled']);
-            context.workspaceState.update('wt.proximity.enabled', contextValues['wt.proximity.enabled']);
-
-            // Then make sure to delete the workspace file when finished
-            vscode.workspace.fs.delete(contextValuesUri);
+            await loadWorkspaceContext(context, workspace.contextValuesFilePath, true);
         }
         catch (e) {
             console.log(`${e}`);
@@ -179,5 +161,29 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
     }
     else {
         return workspace;
+    }
+}
+
+export async function loadWorkspaceContext (context: vscode.ExtensionContext, contextLocation: vscode.Uri, del: boolean = false) {
+
+    // Attempt to read context values from the context values file on disk
+    // Context values file may not exist, so allow a crash to happen
+    const contextValuesBuffer = await vscode.workspace.fs.readFile(contextLocation);
+    const contextValuesJSON = extension.decoder.decode(contextValuesBuffer);
+    const contextValues: { [index: string]: any } = JSON.parse(contextValuesJSON);
+    await Promise.all(Object.entries(contextValues).map(([ contextKey, contextValue ]) => {
+        return [
+            vscode.commands.executeCommand('setContext', contextKey, contextValue),
+            context.workspaceState.update(contextKey, contextValue),
+        ];
+    }).flat());
+    
+    context.workspaceState.update('wt.todo.enabled', contextValues['wt.todo.enabled']);
+    context.workspaceState.update('wt.wordWatcher.enabled', contextValues['wt.wordWatcher.enabled']);
+    context.workspaceState.update('wt.proximity.enabled', contextValues['wt.proximity.enabled']);
+    
+    if (del) {
+        // Then make sure to delete the workspace file when finished
+        vscode.workspace.fs.delete(contextLocation);
     }
 }

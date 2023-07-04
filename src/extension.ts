@@ -94,6 +94,7 @@ function handleLoadFailure (err: Error | string | unknown) {
 
 export function activate (context: vscode.ExtensionContext) {
 	activateImpl(context);
+	return context;
 }
 
 async function activateImpl (context: vscode.ExtensionContext) {

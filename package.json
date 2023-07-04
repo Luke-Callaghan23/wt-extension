@@ -95,6 +95,14 @@
 				"enablement": "!wt.valid"
 			},
 			{
+				"command": "wt.workspace.loadContextValues",
+				"title": "Writing Tool: Load context values JSON file into this workspace."
+			},
+			{
+				"command": "wt.workspace.generateContextValues",
+				"title": "Writing Tool: Generate context values file for this workspace."
+			},
+			{
 				"command": "wt.outline.refresh",
 				"title": "Writing Tool: Refresh Outline View",
 				"icon": "$(refresh)"

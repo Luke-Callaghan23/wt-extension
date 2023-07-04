@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { gitCommit, gitiniter } from './gitTransactions';
 import * as console from './vsconsole';
 import * as extension from './extension';
-import { Buff } from './Buffer/bufferSource';
+import { Workspace } from './workspace/workspaceClass';
 
 
 // Function for surrounding selected text with a specified string
@@ -128,21 +128,14 @@ export function header () {
     return vscode.commands.executeCommand('editor.action.commentLine');
 }
 
-async function packageContextItems () {
-    // Write context items to the file system before git save
-    const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
-    const contextJSON = JSON.stringify(contextItems);
-    const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-    return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
-}
 
 export async function save () {
-    await packageContextItems();
+    await Workspace.packageContextItems();
     return gitCommit();
 }
 
 export async function saveAll () {
-    await packageContextItems();
+    await Workspace.packageContextItems();
     return gitCommit();
 }
 
