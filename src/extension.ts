@@ -27,7 +27,7 @@ import { ColorGroups } from './intellisense/colors/colorGroups';
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
 export let rootPath: vscode.Uri;
-export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
+export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n"\']|$)';
 export const wordSeparatorRegex = new RegExp(wordSeparator.split('|')[1], 'g');
 export const sentenceSeparator: RegExp = /[.?!]/g;
 export const paragraphSeparator: RegExp = /\n\n/g;

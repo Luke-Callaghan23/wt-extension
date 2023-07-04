@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as extension from './../extension';
 import { WordWatcher } from './wordWatcher';
 
-export function updateWords (
+export function addOrDeleteTargetedWord (
     this: WordWatcher,
     operation: 'add' | 'delete',
     target: string,
@@ -48,7 +48,7 @@ export function updateWords (
     this.refresh();
 }
 
-export async function addWord (this: WordWatcher, watchedWord: boolean = true) {
+export async function addWordToWatchedWords (this: WordWatcher, watchedWord: boolean = true) {
     const not = !watchedWord ? 'not' : '';
     const un = !watchedWord ? 'un-' : '';
     while (true) {
@@ -109,7 +109,7 @@ export async function addWord (this: WordWatcher, watchedWord: boolean = true) {
     }
 }
 
-export async function jumpNextInstanceOf (this: WordWatcher, word: string) {
+export async function jumpNextInstanceOfWord (this: WordWatcher, word: string) {
     if (!vscode.window.activeTextEditor) return;
     const activeEditor: vscode.TextEditor = vscode.window.activeTextEditor
 
@@ -128,7 +128,7 @@ export async function jumpNextInstanceOf (this: WordWatcher, word: string) {
     }
 
     // Create a single regex for all words in this.words
-    const regEx = new RegExp(`${extension.wordSeparator}${word}${extension.wordSeparator}`, 'g');
+    const regEx = new RegExp(`${extension.wordSeparator}${word}${extension.wordSeparator}`, 'gi');
 
     // If there were no updates to any of the watched/uwatched words since the last time
     //      they were calculated, then use the unwatchedRegeces RegExp array from there
@@ -138,7 +138,7 @@ export async function jumpNextInstanceOf (this: WordWatcher, word: string) {
     }
     else {
         // Otherwise, calculate the array of unwatched regeces
-        unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${extension.wordSeparator}${unwatched}${extension.wordSeparator}`));
+        unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${extension.wordSeparator}${unwatched}${extension.wordSeparator}`, 'gi'));
     }
     
     const text = activeEditor.document.getText();

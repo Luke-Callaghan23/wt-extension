@@ -7,7 +7,7 @@ import { Timed } from '../timedView';
 import * as extension from '../extension';
 import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, ColorEntry, createDecorationType, convertWordColorsToContextItem } from './timer';
 import { getChildren, getTreeItem } from './tree';
-import { addWord, updateWords, jumpNextInstanceOf } from './engine';
+import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';
 import { hexToRgb } from '../help';
 
 export interface WordEnrty {
@@ -54,9 +54,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
     public lastJumpWord: string | undefined;
     public lastJumpInstance: number;
 
-    updateWords = updateWords;
-    addWord = addWord;
-    jumpNextInstanceOf = jumpNextInstanceOf;
+    updateWords = addOrDeleteTargetedWord;
+    addWord = addWordToWatchedWords;
+    jumpNextInstanceOf = jumpNextInstanceOfWord;
     
     update = update;
     disable = disable;

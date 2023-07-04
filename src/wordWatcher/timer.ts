@@ -31,14 +31,24 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor): Pro
     let unwatchedRegeces: RegExp[];
     let watchedRegeces: {uri: string, reg: RegExp }[];
     if (this.wasUpdated || !this.lastCalculatedRegeces) {
-        // Filter out the disabled words
-        watchedAndEnabled = this.watchedWords.filter(watched => !this.disabledWatchedWords.find(disabled => watched === disabled));
+        
+        // Filter out the disabled words from the main watched array
+        const watchedAndEnabledTmp = this.watchedWords.filter(watched => !this.disabledWatchedWords.find(disabled => watched === disabled));
+
+        // Add a mapping to the watched words array to add a named group
+        watchedAndEnabled = watchedAndEnabledTmp.map((watchedRegexString, index) => {
+            return `(?<index${index}>${watchedRegexString})`;
+        });
 
         // Create the regex string from the still-enabled watched words
-        regexString = extension.wordSeparator + watchedAndEnabled.join(`${extension.wordSeparator}|${extension.wordSeparator}`) + extension.wordSeparator;
-        regex = new RegExp(regexString, 'g');
-        unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${extension.wordSeparator}${unwatched}${extension.wordSeparator}`));
-        watchedRegeces = this.watchedWords.map(watched => ({ uri: watched, reg: new RegExp(`${extension.wordSeparator}${watched}${extension.wordSeparator}`) }));
+        // Join all the enabled watched words by a string like `wordSeparator` + `|` + `wordSeparator
+        //      to add explicit 'OR' to all of the watched words ('|' semantically means OR)
+        const mainRegex = watchedAndEnabled.join(`${extension.wordSeparator}|${extension.wordSeparator}`);
+        // Bookend the main regex with word separators
+        regexString = extension.wordSeparator + mainRegex + extension.wordSeparator;
+        regex = new RegExp(regexString, 'gi');
+        unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${extension.wordSeparator}${unwatched}${extension.wordSeparator}`, 'i'));
+        watchedRegeces = this.watchedWords.map(watched => ({ uri: watched, reg: new RegExp(`${extension.wordSeparator}${watched}${extension.wordSeparator}`, 'i') }));
 
         this.lastCalculatedRegeces = {
             watchedAndEnabled,
@@ -71,6 +81,23 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor): Pro
     while ((match = regex.exec(text))) {
         const matchReal: RegExpExecArray = match;
 
+        let tag: string = match[0];
+        const groups = matchReal.groups;
+        if (groups) {
+            try {
+                const validGroups = Object.entries(groups).filter(([ key, val ]) => 
+                    val !== undefined
+                ).map(([ key, _ ]) => key);
+                const matchIndexStrs = validGroups.map(group => group.replace('index', ''));
+                const matchIndeces = matchIndexStrs.map(mis => parseInt(mis));
+                const matchRegeces = matchIndeces.map(index => watchedAndEnabled[index]);
+                const matchFmt = matchRegeces.map(match => match.replace('(?', '').replace(')', ''));
+                const matches = matchFmt.join(', ');
+                tag = `Matched by pattern: '**${matches}**'`;
+            }
+            catch (err: any) {}
+        }
+
         // Skip if the match also matches an unwatched word
         if (unwatchedRegeces.find(re => re.test(matchReal[0]))) {
             continue;
@@ -88,7 +115,7 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor): Pro
         const endPos = editor.document.positionAt(end);
         const decorationOptions: vscode.DecorationOptions = { 
             range: new vscode.Range(startPos, endPos), 
-            hoverMessage: '**' + match[0] + '**' 
+            hoverMessage: new vscode.MarkdownString(tag)
         };
         
         const watched = watchedRegeces.find(({ reg }) => reg.test(matchReal[0]));
