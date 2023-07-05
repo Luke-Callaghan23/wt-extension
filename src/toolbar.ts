@@ -408,25 +408,6 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
     if (finalColumn === initialColumn) {
         if (finalColumn === relevantColumnBound) {
 
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-            console.log("relevant");
-
             if (jt === 'forward' && document.offsetAt(new vscode.Position(start.line, finalColumn)) === 0) {
                 // Special case for when the final column is 1 and jump is forward:
                 // Long story short, going through the code below, the result would
