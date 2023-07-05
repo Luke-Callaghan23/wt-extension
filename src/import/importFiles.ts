@@ -523,7 +523,8 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
             vscode.window.showErrorMessage(`Error occurred when importing '${docRelativePath}': ${e}`);
         }
     }
-    // Refresh both the outline view and todo view to reflect changes
+
+    // Do the expensive full refresh
     vscode.commands.executeCommand('wt.outline.refresh');
     vscode.commands.executeCommand('wt.todo.refresh');
 }

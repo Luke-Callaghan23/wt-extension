@@ -1,5 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
+import * as vscodeUris from 'vscode-uri';
 import * as console from '../vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
 import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../help';
@@ -52,13 +53,13 @@ export class OutlineNode extends TreeNode {
 		// Traverse upwards until we find a 'chapter' or 'root' node
         // Both of these node types have a snips container within them that we can then use to store the new node
         let foundParent: OutlineNode;
-        let parentId = this.data.ids.internal;
+        let parentUri = this.data.ids.parentUri;
         while (true) {
-            foundParent = await provider._getTreeElement(parentId);
+            foundParent = await provider._getTreeElementByUri(parentUri);
             if (foundParent.data.ids.type === secondary || foundParent.data.ids.type === 'chapter') {
                 break;
             }
-            parentId = foundParent.data.ids.parentInternalId;
+            parentUri = foundParent.data.ids.parentUri;
         }
 
         // Convert the root or chapter parent to a more declarative type, and return the snips container
@@ -107,10 +108,10 @@ export class OutlineNode extends TreeNode {
     ): Promise<number> {
         const newParentNode = newParent as OutlineNode;
         const newParentType = newParentNode.data.ids.type;
-        const newParentId = newParentNode.data.ids.internal;
+        const newParentUri = newParentNode.data.ids.uri;
         
         const moverType = this.data.ids.type;
-        const moverParentId = this.data.ids.parentInternalId;
+        const moverParentUri = this.data.ids.parentUri;
         
         const thisAllowedMoves = allowedMoves[moverType];
         if (!thisAllowedMoves.find(allowed => allowed === newParentType)) {
@@ -155,7 +156,7 @@ export class OutlineNode extends TreeNode {
             }
             // Use the chapter's .snips container
             else if (newParentType === 'chapter') {
-                const chapterNode: ChapterNode = (await provider._getTreeElement(newParentId)).data;
+                const chapterNode: ChapterNode = (await provider._getTreeElementByUri(newParentUri)).data;
                 const chapterSnipsContainer: ContainerNode = chapterNode.snips.data as ContainerNode;
                 destinationContainer = chapterSnipsContainer;
             }
@@ -171,7 +172,7 @@ export class OutlineNode extends TreeNode {
         }
         else if (moverType === 'fragment') {
             if (newParentType === 'chapter' || newParentType === 'snip') {
-                destinationContainer = (await provider._getTreeElement(newParentId)).data;
+                destinationContainer = (await provider._getTreeElementByUri(newParentUri)).data;
             }
             else if (newParentType === 'fragment') {
                 destinationContainer = (await newParentNode.getContainerParent(provider, 'snip')).data;
@@ -189,7 +190,7 @@ export class OutlineNode extends TreeNode {
 
         // If the container of the destination is the same as the container of the mover
         // Then we're not actually moving the node anywhere, we are just changing the internal ordering
-        if (destinationContainer.ids.internal === moverParentId) {
+        if (destinationContainer.ids.uri.toString() === moverParentUri.toString()) {
             
             // Get the .config for the container -- this contains the ordering values for both the mover
             //      and the destination item
@@ -319,8 +320,8 @@ export class OutlineNode extends TreeNode {
         }
     }
 
-    getParentId(): string {
-        return this.data.ids.parentInternalId;
+    getParentUri(): string {
+        return this.data.ids.parentUri;
     }
     getTooltip (): string | vscode.MarkdownString {
         return `${this.data.ids.type} | actual name: ${this.getUri()}`;
@@ -382,10 +383,6 @@ export class OutlineNode extends TreeNode {
             throw new Error(`Unexpected data type: '${data.ids.type}' in OutlineNode.getChildren`);
         }
     }
-    
-    getId(): string {
-        return this.data.ids.internal;
-    }
 
     async getDotConfigPath (outlineView: OutlineView): Promise<string | null> {
         if (this.data.ids.type === 'root') {
@@ -397,14 +394,9 @@ export class OutlineNode extends TreeNode {
             return `${relative}/.config`;
         }
         else if (this.data.ids.type === 'chapter' || this.data.ids.type === 'snip' || this.data.ids.type === 'fragment') {
-            // Get the parent 'container' of this node
-            const parentContainerId = this.data.ids.parentInternalId;
-            const parentContainerNode: OutlineNode | null = await outlineView._getTreeElement(parentContainerId);
-            if (!parentContainerNode) {
-                return null;
-            }
-
-            return `${parentContainerNode.data.ids.relativePath}/${parentContainerNode.data.ids.fileName}/.config`;
+            const parentContainerUri = this.data.ids.parentUri;
+            const parentConfigUri = vscodeUris.Utils.joinPath(parentContainerUri, '.config');
+            return parentConfigUri.toString();
         }
         else {
             throw new Error('Not possible');

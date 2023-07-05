@@ -44,17 +44,6 @@ export class ImportDocumentProvider implements vscode.DocumentDropEditProvider, 
             throw new Error("not implemented");
         }
 
-        // As far as I can tell, the only way that vscode will give us the uris of dropped items
-        //      is in this psychotic format: { value: uglyString, id: uuid }
-        // uglyString:
-        //      Ugly string is a single string that represents multiple uris
-        //      Uris are joined on a newline (system specific (ofc))
-        //      Uris are also prefixed with 'vscode-local:/'
-        //      Uris are also encoded as they would be after a call to encodeURI 
-        //          Plus some extra shenanigans
-        // Why, microsoft?
-        // Why?
-
         // Split the uris on the prefix 'vscode-local:/'
         const uris: string[] = transferItem.value.split('\n');
         for (let unparsed of uris) {

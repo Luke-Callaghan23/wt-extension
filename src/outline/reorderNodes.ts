@@ -185,11 +185,11 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
 
     // Of all the possible moving nodes, only move those who have the same parent node as the node that was clicked
     const targets = prelimTargets.filter(target => {
-        return target.data.ids.parentInternalId === resource.data.ids.parentInternalId;
+        return target.data.ids.parentUri.toString() === resource.data.ids.parentUri.toString();
     });
     
 
-    if (!targets.find(target => target.data.ids.internal === resource.data.ids.internal)) {
+    if (!targets.find(target => target.data.ids.uri.toString() === resource.data.ids.uri.toString())) {
         targets.push(resource);
     }
     
@@ -234,10 +234,10 @@ export async function moveDown (this: OutlineView, resource: any) {
 
     // Of all the possible moving nodes, only move those who have the same parent node as the node that was clicked
     const targets = prelimTargets.filter(target => {
-        return target.data.ids.parentInternalId === resource.data.ids.parentInternalId;
+        return target.data.ids.parentUri.toString() === resource.data.ids.parentUri.toString();
     });
 
-    if (!targets.find(target => target.data.ids.internal === resource.data.ids.internal)) {
+    if (!targets.find(target => target.data.ids.uri.toString() === resource.data.ids.uri.toString())) {
         targets.push(resource);
     }
 

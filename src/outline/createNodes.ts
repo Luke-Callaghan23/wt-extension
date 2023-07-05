@@ -139,18 +139,18 @@ export async function newSnip (
                         // If the parent type is root, we still don't know if the selected item is a chapter container
                         //		or the work snips
                         // Need to check the ids of each of these containers against the id of the resource
-                        const rootNode: OutlineNode = await this._getTreeElement(resource.data.ids.parentInternalId);
+                        const rootNode: OutlineNode = await this._getTreeElementByUri(resource.data.ids.parentUri);
                         const root: RootNode = rootNode.data as RootNode;
 
                         // Check the id of the chapters container and the work snips container of the root node against
                         //		the id of the selected resource
-                        if (resource.data.ids.internal === (root.chapters as OutlineNode).data.ids.internal) {
+                        if (resource.data.ids.uri.toString() === (root.chapters as OutlineNode).data.ids.uri.toString()) {
                             // If the id matches against the chapters container, then there's nothing we can do
                             // Cannot add snips to the chapters container
                             vscode.window.showErrorMessage('Error: cannot add a new snip directly to the chapters container.  Select a specific chapter to add the new snip to.');
                             return null;
                         }
-                        else if (resource.data.ids.internal === (root.snips as OutlineNode).data.ids.internal) {
+                        else if (resource.data.ids.uri.toString() === (root.snips as OutlineNode).data.ids.uri.toString()) {
                             // If the id matches the work snips container, add the new snip to that container
                             parentNode = root.snips as OutlineNode;
                         }
@@ -270,12 +270,12 @@ export async function newFragment (
     }
 
     // Need to know the uri of the new fragment's parent so that we can insert the new file into it
-    let parentId: string;
+    let parentUri: vscode.Uri;
     let parentNode: OutlineNode;
     if (resource.data.ids.type === 'fragment') {
         // If the selected resource is a fragment itself, then look at the parent node of that fragment
-        parentId = resource.data.ids.parentInternalId;
-        parentNode = await this._getTreeElement(parentId);
+        parentUri = resource.data.ids.parentUri;
+        parentNode = await this._getTreeElementByUri(parentUri);
     }
     else if (resource.data.ids.type === 'container') {
         console.log("2");
@@ -290,13 +290,13 @@ export async function newFragment (
         }
 
         // Get the parent of that last accessed fragment to use as the house of the new fragment
-        parentId = resource.data.ids.parentInternalId;
-        parentNode = await this._getTreeElement(parentId);
+        parentUri = resource.data.ids.parentUri;
+        parentNode = await this._getTreeElementByUri(parentUri);
 
     }
     else {
         // Otherwise, use the resource itself as the parent of the new fragment
-        parentId = resource.data.ids.internal;
+        parentUri = resource.data.ids.uri;
         parentNode = resource;
     }
 

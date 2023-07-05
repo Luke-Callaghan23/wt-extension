@@ -1,14 +1,16 @@
 import * as vscode from 'vscode';
+import * as vscodeUris from 'vscode-uri';
 import * as extension from '../extension';
 import { Packageable } from '../packageable';
 import * as console from '../vsconsole';
 
 export abstract class TreeNode {
-	abstract getParentId(): string;
+	// abstract getParentId(): string;
+	abstract getParentUri(): vscode.Uri;
 	abstract getTooltip(): string | vscode.MarkdownString;
 	abstract getUri(): vscode.Uri;
 	abstract getDisplayString(): string;
-	abstract getId(): string;
+	// abstract getId(): string;
 	abstract getChildren(): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
 	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>, moveOffset: number): Promise<number>;
@@ -84,6 +86,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
 	
 	async refresh(): Promise<void> {
+		// First create a new tree
 		try {
 			this.tree = await this.initializeTree();
 		}
@@ -93,6 +96,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			this.view.dispose();
 			throw e;
 		}
+		// Then update the root node of the outline view
 		this._onDidChangeTreeData.fire(undefined);
 	}
 
@@ -110,7 +114,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	}
 
 	public async getTreeItem (element: T): Promise<vscode.TreeItem> {
-		return this._getTreeItem(element.getId());
+		return this._getTreeItem(element.getUri());
 	}
 
 
@@ -119,8 +123,8 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	// Helper methods
 	
-	async _getTreeItem (key: string): Promise<vscode.TreeItem> {
-		const treeElement = (await this._getTreeElement(key)) as T;
+	async _getTreeItem (uri: vscode.Uri): Promise<vscode.TreeItem> {
+		const treeElement = (await this._getTreeElementByUri(uri)) as T;
 		const label = treeElement.getDisplayString();
 
 		let collapseState: vscode.TreeItemCollapsibleState;
@@ -142,7 +146,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		}
 
 		return {
-			id: key,
+			id: uri.toString(),
 
 			label: /**vscode.TreeItemLabel**/<any>{ 
 				label: label
@@ -150,47 +154,47 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			// An example of how to use codicons in a MarkdownString in a tree item tooltip.
 			tooltip: treeElement.getTooltip(),
 			collapsibleState: collapseState,
-			resourceUri: treeElement.getUri(),
+			resourceUri: uri,
 		};
 	}
 
-	// Searches provided tree for the object whose key matches the targeted key
-	async _getTreeElement (targetkey: string | undefined, tree?: TreeNode): Promise<any> {
-		// If there is not targeted key, then assume that the caller is targeting
-		//		the entire tree
-		if (!targetkey) {
-			return this.tree;
-		}
+	// // Searches provided tree for the object whose key matches the targeted key
+	// async _getTreeElement (targetkey: string | undefined, tree?: TreeNode): Promise<any> {
+	// 	// If there is not targeted key, then assume that the caller is targeting
+	// 	//		the entire tree
+	// 	if (!targetkey) {
+	// 		return this.tree;
+	// 	}
 
-		// If there is no provided tree, use the whole tree as the search space
-		const currentNode = tree ?? this.tree;
-		if (!currentNode.getChildren) return null;
-		const currentChildren = await currentNode.getChildren();
+	// 	// If there is no provided tree, use the whole tree as the search space
+	// 	const currentNode = tree ?? this.tree;
+	// 	if (!currentNode.getChildren) return null;
+	// 	const currentChildren = await currentNode.getChildren();
 
-		if (currentNode.getId() === targetkey) {
-			return currentNode;
-		}
+	// 	if (currentNode.getId() === targetkey) {
+	// 		return currentNode;
+	// 	}
 		
-		// Iterate over all keys-value mappings in the current node
-		for (const subtree of currentChildren) {
-			const subtreeId = subtree.getId();
+	// 	// Iterate over all keys-value mappings in the current node
+	// 	for (const subtree of currentChildren) {
+	// 		const subtreeId = subtree.getId();
 
-			// If the current key matches the targeted key, return the value mapping
-			if (subtreeId === targetkey) {
-				return subtree;
-			} 
-			// Otherwise, recurse into this function again, using the current
-			//		subtree as the search space
-			else {
-				const treeElement = await this._getTreeElement(targetkey, subtree);
+	// 		// If the current key matches the targeted key, return the value mapping
+	// 		if (subtreeId === targetkey) {
+	// 			return subtree;
+	// 		} 
+	// 		// Otherwise, recurse into this function again, using the current
+	// 		//		subtree as the search space
+	// 		else {
+	// 			const treeElement = await this._getTreeElement(targetkey, subtree);
 				
-				// If the tree was found, return it
-				if (treeElement) {
-					return treeElement;
-				}
-			}
-		}
-	}
+	// 			// If the tree was found, return it
+	// 			if (treeElement) {
+	// 				return treeElement;
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	async _getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: TreeNode): Promise<any> {
 		// If there is not targeted key, then assume that the caller is targeting
@@ -243,7 +247,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 		// Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
         const uniqueRoots = await this._getLocalRoots(movedItems);
-		const filteredParents = uniqueRoots.filter(root => root.getParentId() !== targ.getId());
+		const filteredParents = uniqueRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString());
 
 		// Move all the valid nodes into the target
 		if (filteredParents.length > 0) {
@@ -267,10 +271,10 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	async _getLocalRoots (nodes: T[]): Promise<T[]> {
 		const localRoots: T[] = [];
 		for (let i = 0; i < nodes.length; i++) {
-			const parentId = nodes[i].getParentId();
-			const parent = await this._getTreeElement(parentId);
+			const parentId = nodes[i].getParentUri();
+			const parent = await this._getTreeElementByUri(parentId);
 			if (parent) {
-				const isInList = nodes.find(n => n.getId() === parent.getId());
+				const isInList = nodes.find(n => n.getUri().toString() === parent.getUri().toString());
 				if (isInList === undefined) {
 					localRoots.push(nodes[i]);
 				}

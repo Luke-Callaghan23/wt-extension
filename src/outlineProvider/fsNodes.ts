@@ -1,17 +1,18 @@
+import * as vscode from 'vscode';
 import { TreeNode } from "./outlineTreeProvider";
 
 export type ResourceType = 'snip' | 'chapter' | 'root' | 'fragment' | 'container';
 export type NodeTypes<N extends TreeNode> = RootNode<N> | SnipNode<N> | ChapterNode<N> | FragmentData | ContainerNode<N>;
 
 export type Ids = {
-    type: ResourceType,
-    display: string,
-    internal: string,
-    relativePath: string,
-    fileName: string,
-    parentTypeId: ResourceType,
-    parentInternalId: string,
-    ordering: number
+    type: ResourceType;
+    display: string;
+    uri: vscode.Uri;
+    relativePath: string;
+    fileName: string;
+    parentTypeId: ResourceType;
+    parentUri: vscode.Uri;
+    ordering: number;
 };
 
 export type FragmentData = {

@@ -23,15 +23,16 @@ export function convertToTODOData (this: TODONode): TODONode[] {
             // Create TODOData from this TODO
             ids: {
                 display: data.preview,
+                uri: this.getUri(),
                 type: 'fragment',
                 fileName: this.data.ids.fileName,
                 relativePath: this.data.ids.relativePath,
                 ordering: index,
-                internal: `dummy-${uuidv4()}`,      // .TODOData all have them same internal id: 'dummy',
-                                                    //      this is used to differentiate between a
-                                                    //      fragment and that fragments' TODO data
-                parentTypeId: 'fragment',
-                parentInternalId: this.data.ids.internal,
+                parentTypeId: 'fragment',                       // note how the type id of the parent of this TODO Data node 
+                                                                //      is 'fragment' as well as the type of the data node itself
+                                                                //      is also 'fragment' -- this is how TODO Data nodes will be 
+                                                                //      uniquely identified as such
+                parentUri: this.getUri(),
             },
             todo: data,
         } as TODOData;

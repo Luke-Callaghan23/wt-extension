@@ -1,6 +1,7 @@
 /* eslint-disable curly */
 
 import * as vscode from 'vscode';
+import * as vscodeUris from 'vscode-uri';
 import * as console from '../vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
 import * as fsNodes from '../outlineProvider/fsNodes';
@@ -27,7 +28,7 @@ export class TODONode extends TreeNode {
     
     async getTODOCounts (): Promise<number> {
 
-        if (this.data.ids.internal.startsWith('dummy')) {
+        if (this.data.ids.parentTypeId === 'fragment' && this.data.ids.type === 'fragment') {
             return 1;
         }
 
@@ -220,10 +221,10 @@ export class TODONode extends TreeNode {
             return contents;
         }
         else if (data.ids.type === 'fragment') {
-            if (data.ids.internal.startsWith('dummy')) {
-                // If the internal id of the fragment is 'dummy' then it is actually a TODO node
-                //      of a fragment (the specific fragment i is specified in the node's parent
-                //      internal id)
+            if (data.ids.parentTypeId === 'fragment') {
+                // The only situation where a parent type of a fragment node is also a fragment node
+                //      is when the child is a TODO fragment -- as in, a leaf node which describes the 
+                //      location in a fragment of a TODO node
                 // A fragments's TODO nodes does not have any children
                 return [];
             }
@@ -239,8 +240,9 @@ export class TODONode extends TreeNode {
     }
 
     hasChildren (): boolean {
-        // Dummy nodes are the children of fragments, and are the only types of nodes that cannot have children in the TODO tree
-        return !this.data.ids.internal.startsWith('dummy');
+        // A node always has children, unless if it is a leaf TODO node
+        // A leaf TODO node is unique in that its own type is 'fragment' and its parent type is also 'fragment'
+        return this.data.ids.type === 'fragment' && this.data.ids.parentTypeId === 'fragment';
     }
     
     getTooltip (): string | vscode.MarkdownString {
@@ -253,18 +255,14 @@ export class TODONode extends TreeNode {
     }
 
     getUri (): vscode.Uri {
-        return vscode.Uri.joinPath(extension.rootPath, this.data.ids.relativePath, this.data.ids.fileName);
+        return this.data.ids.uri;
     }
     getDisplayString (): string {
         return this.data.ids.display;
     }
-    
-    getId (): string {
-        return this.data.ids.internal;
-    }
 
-    getParentId(): string {
-        return this.data.ids.parentInternalId;
+    getParentUri(): string {
+        return this.data.ids.parentUri;
     }
 
     data: NodeTypes;

@@ -1,5 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
+import * as vscodeUris from 'vscode-uri';
 import * as console from '../vsconsole';
 import { Workspace } from '../workspace/workspaceClass';
 import { TODOData, TODONode } from './TODONode';
@@ -59,7 +60,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 	async getTreeItem(element: TODONode): Promise<vscode.TreeItem> {
 		const treeItem = await super.getTreeItem(element);
 		if (element.data.ids.type === 'fragment') {
-			if (element.data.ids.internal.startsWith('dummy')) {
+			if (element.data.ids.type === 'fragment' && element.data.ids.parentTypeId === 'fragment') {
 				// Fragments with an internal id of 'dummy' are TODO nodes
 				// They store TODO data and when clicked they should open into the tree where
 				//		the TODO string was found
@@ -147,8 +148,8 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 			}
 
 			// Traverse upwards
-			const parentId = editedNode.data.ids.parentInternalId;
-			editedNode = await this._getTreeElement(parentId);
+			const parentUri = editedNode.data.ids.parentUri;
+			editedNode = await this._getTreeElementByUri(parentUri);
 			uri = editedNode?.getUri();
 		}
 
