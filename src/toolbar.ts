@@ -365,7 +365,8 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
     }
 
     let finalColumn: number = -1;
-    while (true) {
+    if (initialColumn === relevantColumnBound) finalColumn = relevantColumnBound;
+    while (initialColumn !== relevantColumnBound) {
         
         // CASE: the relevant column bounding was reached
         const iterationColumn = initialColumn + columnOffset;
@@ -397,15 +398,34 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
         columnOffset += direction;
     }
 
-    if (finalColumn === -1) {
-        console.log("WARN: Final column was -1");
-        return null;
-    } 
+    // if (finalColumn === -1) {
+    //     console.log("WARN: Final column was -1");
+    //     return null;
+    // } 
 
     // Used for chaining multiple sentence jumps in a row
     let position: vscode.Position;
     if (finalColumn === initialColumn) {
         if (finalColumn === relevantColumnBound) {
+
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
+            console.log("relevant");
 
             if (jt === 'forward' && document.offsetAt(new vscode.Position(start.line, finalColumn)) === 0) {
                 // Special case for when the final column is 1 and jump is forward:
