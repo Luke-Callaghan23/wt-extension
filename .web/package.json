@@ -330,6 +330,10 @@
 				"icon": "$(italic)"
 			},
 			{
+				"command": "wt.editor.commasize",
+				"title": "Writing Tool: Commasize Selection"
+			},
+			{
 				"command": "wt.editor.bold",
 				"title": "Writing Tool: Bold Selection",
 				"icon": "$(bold)"
@@ -652,6 +656,10 @@
 				"command": "wt.editor.italisize",
 				"key": "ctrl+alt+i",
 				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.commasize",
+				"title": "Writing Tool: Commasize Selection"
 			},
 			{
 				"command": "wt.editor.bold",

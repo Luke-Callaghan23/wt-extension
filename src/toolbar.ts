@@ -7,7 +7,10 @@ import { Workspace } from './workspace/workspaceClass';
 
 
 // Function for surrounding selected text with a specified string
-function surroundSelectionWith (surround: string) {
+function surroundSelectionWith (start: string, end?: string) {
+
+    end = end || start;
+
     // Get the active text editor
     const editor = vscode.window.activeTextEditor;
 
@@ -22,16 +25,16 @@ function surroundSelectionWith (surround: string) {
     // Check if the string immediately before the selection is the same as the surround string
     let beforeSelection: vscode.Selection | undefined = undefined;
     {
-        if (selected.startsWith(surround)) {
-            const newEnd = new vscode.Position(selection.start.line, selection.start.character + surround.length);
+        if (selected.startsWith(start)) {
+            const newEnd = new vscode.Position(selection.start.line, selection.start.character + start.length);
             beforeSelection = new vscode.Selection(selection.start, newEnd);
         }
         else {
-            if (selection.start.character >= surround.length) {
-                const newStart = new vscode.Position(selection.start.line, selection.start.character - surround.length);
+            if (selection.start.character >= start.length) {
+                const newStart = new vscode.Position(selection.start.line, selection.start.character - start.length);
                 beforeSelection = new vscode.Selection(newStart, selection.start);
                 const beforeText = document.getText(beforeSelection);
-                if (beforeText !== surround) beforeSelection = undefined;
+                if (beforeText !== start) beforeSelection = undefined;
             }
         }
     }
@@ -39,15 +42,15 @@ function surroundSelectionWith (surround: string) {
     // Check if the string immediately after the selection is the same as the surround string
     let afterSelection: vscode.Selection | undefined = undefined;
     {
-        if (selected.endsWith(surround)) {
-            const newStart = new vscode.Position(selection.end.line, selection.end.character - surround.length);
+        if (selected.endsWith(end)) {
+            const newStart = new vscode.Position(selection.end.line, selection.end.character - end.length);
             afterSelection = new vscode.Selection(newStart, selection.end);
         }
         else {
-            const newEnd = new vscode.Position(selection.end.line, selection.end.character + surround.length);
+            const newEnd = new vscode.Position(selection.end.line, selection.end.character + end.length);
             afterSelection = new vscode.Selection(selection.end, newEnd);
             const afterText = document.getText(afterSelection);
-            if (afterText !== surround) afterSelection = undefined;
+            if (afterText !== start) afterSelection = undefined;
         }
     }
 
@@ -56,7 +59,7 @@ function surroundSelectionWith (surround: string) {
         //      to move the cursor outside of the the surround string
         // Simply shift the current editor's selection
         const currentOffset = editor.document.offsetAt(selection.end);
-        const afterSurroundString = currentOffset + surround.length;
+        const afterSurroundString = currentOffset + end.length;
         const afterSurroundPosition = editor.document.positionAt(afterSurroundString);
         editor.selection = new vscode.Selection(afterSurroundPosition, afterSurroundPosition);
     }
@@ -74,7 +77,7 @@ function surroundSelectionWith (surround: string) {
         // If before and after the selection is not already the surround string, add the surround string
     
         // Surround the selected text with the surround string
-        const surrounded = `${surround}${selected}${surround}`;
+        const surrounded = `${start}${selected}${end}`;
     
         // Replace selected text with the surrounded text
         editor.edit((editBuilder: vscode.TextEditorEdit) => {
@@ -87,11 +90,11 @@ function surroundSelectionWith (surround: string) {
             const curEditor = vscode.window.activeTextEditor;
             if (!curEditor) return;
             const end = curEditor.selection.end;
-            const surroundLength = surround.length;
+            const startLength = start.length;
 
             // The new position is the same as the current position, minus the amount of characters in the 
             //      surround string
-            const newPosition = new vscode.Position(end.line, end.character - surroundLength);
+            const newPosition = new vscode.Position(end.line, end.character - startLength);
 
             // New selection is the desired position of the cursor (provided to the constructor twice, to
             //      get an empty selection)
@@ -110,6 +113,34 @@ export function bold () {
 
 export function strikethrough () {
     return surroundSelectionWith('~~');
+}
+
+export function commasize () {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+    const document = editor.document;
+    if (!document) return;
+
+    const text = document.getText();
+
+    let startPos: vscode.Position = editor.selection.start;
+    let startStr = ', ';
+
+    let endPos: vscode.Position = editor.selection.end;
+    let endStr = ', ';
+
+    const startOffset = document.offsetAt(editor.selection.start);
+    if (text[startOffset - 1] === ' ') {
+        const prev = document.positionAt(startOffset - 1);
+        startPos = prev;
+        startStr = ',';
+    }
+    const endOffset = document.offsetAt(editor.selection.end);
+    if (text[endOffset] === ' ') {
+        endStr = ',';
+    }
+    editor.selection = new vscode.Selection(startPos, endPos);
+    return surroundSelectionWith(startStr, endStr);
 }
 
 export function remove () {
@@ -522,6 +553,7 @@ export class Toolbar {
         vscode.commands.registerCommand('wt.editor.italisize', italisize);
         vscode.commands.registerCommand('wt.editor.bold', bold);
         vscode.commands.registerCommand('wt.editor.strikethrough', strikethrough);
+        vscode.commands.registerCommand('wt.editor.commasize', commasize);
         vscode.commands.registerCommand('wt.editor.header', header);
         vscode.commands.registerCommand('wt.editor.emdash', emDash);
         vscode.commands.registerCommand('wt.editor.emdashes', emDashes);
