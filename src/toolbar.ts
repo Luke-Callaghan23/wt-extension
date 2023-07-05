@@ -305,10 +305,6 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
     const backwardColumnBound = 
         document.offsetAt(new vscode.Position(start.line + 1, 0)) - 1
         - document.offsetAt(new vscode.Position(start.line, 0));
-
-    console.log(JSON.stringify({ val: 
-        docText[document.offsetAt(new vscode.Position(start.line, backwardColumnBound))] 
-    }));
     
     // Offset for the beginning of the line is 0
     const forwardColumnBound = 0;
@@ -375,36 +371,56 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
         return null;
     } 
 
-    // Fix over correction forward:
-    // When the jump type is 'forward', the proceedure above will lead to these results:
-    //      Initial: `Hello, this is the first sentence.  Second |sentence.`
-    //          Where '|' is the cursor
-    //      Final: `Hello, this is the first sentence|.  Second sentence.`
-    // As the cursor stops at puncuation.
-    // What we actually want is
-    //      Corrected: `Hello, this is the first sentence.  |Second sentence.`
-    // So, must backtrack
-    if (jt === 'forward') {
-        let backtrackedInitialColumn = finalColumn;
-        let backtrackColumnOffset = 0;
-        let backtrackCharacterOffset = document.offsetAt(new vscode.Position(lineNumber, backtrackedInitialColumn + backtrackColumnOffset));
-        let backtrackCharacter = docText[backtrackCharacterOffset];
-        while (
-            backtrackedInitialColumn + backtrackColumnOffset <= backwardColumnBound &&
-            (backtrackCharacter === '"'
-            || punctuation.test(backtrackCharacter)
-            || whitespace.test(backtrackCharacter))
-        ) {
-            backtrackColumnOffset += 1;
-            backtrackCharacterOffset = document.offsetAt(new vscode.Position(lineNumber, backtrackedInitialColumn + backtrackColumnOffset));
-            backtrackCharacter = docText[backtrackCharacterOffset];
-        }
+    // Used for chaining multiple sentence jumps in a row
+    let position: vscode.Position;
+    if (finalColumn === initialColumn) {
+        if (finalColumn === relevantColumnBound) {
 
-        finalColumn = backtrackedInitialColumn + backtrackColumnOffset;
+            if (jt === 'forward' && document.offsetAt(new vscode.Position(start.line, finalColumn)) === 0) {
+                // Special case for when the final column is 1 and jump is forward:
+                // Long story short, going through the code below, the result would
+                //      move the column forward 1 (the while loop would test docText[-1], fall through
+                //      and increment the offset + 1 for forward jump, leading to position=1)
+                // So, to prepare for this, just set the position to 0, 0
+                position = new vscode.Position(0, 0);
+            }
+            else {
+                
+                // If final is initial and final is also the relevant column bound,
+                //      then skip all whitespace 
+                let currentOffset = document.offsetAt(new vscode.Position(start.line, finalColumn));
+                let currentCharacter = docText[currentOffset + direction];
+                while (whitespace.test(currentCharacter)) {
+    
+                    currentOffset += direction;
+                    currentCharacter = docText[currentOffset];
+    
+                    if (jt === 'forward' && currentOffset === 0) {
+                        // Set to -1 instead of 0, as right after this loop breaks,
+                        //      we add one to the `currentOffset` counter
+                        currentOffset = -1;
+                        break;
+                    }
+                    else if (jt === 'backward' && currentOffset === docText.length) {
+                        currentOffset = docText.length;
+                        break;
+                    }
+                }
+                if (jt === 'forward') {
+                    currentOffset += 1;
+                }
+                position = document.positionAt(currentOffset);
+            }
+        }
+        else {
+            position = new vscode.Position(start.line, finalColumn);
+        }
+    }
+    else {
+        position = new vscode.Position(start.line, finalColumn);
     }
 
     // Set the new selection of the editor
-    const position: vscode.Position = new vscode.Position(start.line, finalColumn);
     const select = new vscode.Selection (
         // If shift is held, use the start position of the previous selection as the active point
         //      of the new selection
@@ -421,26 +437,70 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
 
     const document = editor.document;
     if (!document) return null;
+    
+    const docText = document.getText();
 
     const selection = editor.selection;
     const start = selection.isReversed ? selection.start : selection.end;
     const line = start.line;
-
+    const startOffset = document.offsetAt(start);
+    
     const anchor = selection.anchor;
 
+    // Find the position of the end of the line (paragraph)
+    const nextLine = new vscode.Position(line + 1, 0);
+    const nextLinePosition = document.offsetAt(nextLine);
+    const eolPosition = nextLinePosition - 1;
+
+    
     // Find the jump position, depending on whether we're jumping forward or backward
     let position: vscode.Position;
+
     if (jt === 'forward') {
-        position = new vscode.Position(line, 0);
+        if (start.character === 0) {
+            // If we are already at the start of a line (paragraph) and we're jumping forward
+            //      then jump to the preceeding non-whitespace character
+            // Character before the first character in a line is always a newline
+            const preceedingNewline = startOffset - 1;
+            // Character before newline is the last character in a line
+            let preceedingParagraphOffset = preceedingNewline - 1;
+            let preceedingParagraphCharacter = docText[preceedingParagraphOffset];
+            while (/\s/.test(preceedingParagraphCharacter)) {
+                preceedingParagraphOffset -= 1;
+                preceedingParagraphCharacter = docText[preceedingParagraphOffset];
+                if (preceedingParagraphOffset === 0) {
+                    preceedingParagraphOffset = 0;
+                    break;
+                } 
+            }
+            position = document.positionAt(preceedingParagraphOffset + 1);
+        }
+        else {
+            // If not at the beginning of a line (paragraph), then jump there
+            position = new vscode.Position(line, 0);
+        }
     }
     else {
-
-        // Jumping backwards -> find position for the next line, and subtract one
-        const nextLine = new vscode.Position(line + 1, 0);
-        const nextLinePosition = document.offsetAt(nextLine);
-        const eolPosition = nextLinePosition - 1;
-
-        position = document.positionAt(eolPosition);
+        if (startOffset === eolPosition) {
+            // Ditto for all the comments above, but going backwards
+            const nextNewline = startOffset + 1;
+            // Character before newline is the last character in a line
+            let nextParagraphOffset = nextNewline + 1;
+            let nextParagraphCharacter = docText[nextParagraphOffset];
+            while (/\s/.test(nextParagraphCharacter)) {
+                nextParagraphOffset += 1;
+                nextParagraphCharacter = docText[nextParagraphOffset];
+                if (nextParagraphOffset === docText.length) {
+                    nextParagraphOffset = docText.length - 1;
+                    break;
+                } 
+            }
+            position = document.positionAt(nextParagraphOffset);
+        }
+        else {
+            // If not at the end of a line (paragrapg, then jump there)
+            position = document.positionAt(eolPosition);
+        }
     }
 
     // Set the new selection of the editor
