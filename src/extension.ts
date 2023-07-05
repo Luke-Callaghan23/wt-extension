@@ -23,6 +23,7 @@ import { Spellcheck } from './intellisense/spellcheck/spellcheck';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
 import { ColorGroups } from './intellisense/colors/colorGroups';
+import { WordCount } from './status/wordCount';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -51,6 +52,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+
+		const wordCountStatus = new WordCount();
 
 		const timedViews = new TimedView(context, [
 			['wt.todo', todo],

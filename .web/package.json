@@ -89,6 +89,10 @@
 				"title": "Writing Tool: Generate context values file for this workspace."
 			},
 			{
+				"command": "wt.wordCount.showWordCountRules",
+				"title": "Writing Tool: Show word count information."
+			},
+			{
 				"command": "wt.outline.refresh",
 				"title": "Writing Tool: Refresh Outline View",
 				"icon": "$(refresh)"
