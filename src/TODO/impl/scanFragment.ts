@@ -1,9 +1,9 @@
 /* eslint-disable curly */
-import * as console from '../vsconsole';
-import * as extension from '../extension';
+import * as console from '../../vsconsole';
+import * as extension from '../../extension';
 import * as vscode from 'vscode';
-import { FragmentData } from './TODONode';
-import { Validation, TODO, todo } from './TODOsView';
+import { FragmentData } from '../node';
+import { Validation, TODO, todo } from '../TODOsView';
 
 type IncompleteTODO = {
     rowStart: number,

@@ -2,12 +2,12 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
 import { ConfigFileInfo } from '../help';
-import { getUsableFileName } from '../outline/createNodes';
+import { getUsableFileName } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
 import * as console from '../vsconsole';
 import { ImportForm } from './importFormView';
-import { OutlineNode } from '../outline/outlineNodes';
+import { OutlineNode } from '../outline/node';
 import * as showdown from 'showdown';
 import * as mammoth from 'mammoth';
 const pdf2html = require('pdf2html');

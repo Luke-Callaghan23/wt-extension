@@ -1,17 +1,17 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as console from '../vsconsole';
-import { Ids } from '../outlineProvider/fsNodes';
-import { TODOData, TODONode } from './TODONode';
-import { isInvalidated, todo, todoNodes } from './TODOsView';
+// import * as console from '../../vsconsole';
+import { Ids } from '../../outlineProvider/fsNodes';
+import { TODOData, TODONode } from '../node';
+import { isInvalidated, todo } from '../TODOsView';
 import { v4 as uuidv4 } from 'uuid';
 
 export function convertToTODOData (this: TODONode): TODONode[] {
-    const uri = this.getUri().fsPath;
-    if (!isInvalidated(uri) && todoNodes[uri]) {
-        return todoNodes[uri];
-    }
 
+    console.log('calling convertToTODOData');
+
+    
+    const uri = this.getUri().fsPath;
     const todos = todo[uri];
     if (todos.type !== 'todos') throw new Error('Not possible');
     

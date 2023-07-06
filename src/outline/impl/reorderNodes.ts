@@ -1,11 +1,12 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { ConfigFileInfo, ConfigFileInfoExpanded, readDotConfig, writeDotConfig } from "../help";
-import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "./outlineNodes";
-import { OutlineView } from "./outlineView";
-import * as extension from '../extension';
-import { RootNode } from './outlineNodes';
-import * as console from '../vsconsole';
+import * as vscodeUris from 'vscode-uri';
+import { ConfigFileInfo, ConfigFileInfoExpanded, readDotConfig, writeDotConfig } from "../../help";
+import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "../node";
+import { OutlineView } from "../outlineView";
+import * as extension from '../../extension';
+import { RootNode } from '../node';
+import * as console from '../../vsconsole';
 
 
 // Flow of moving items up is to collect config file from the file system info into a single object, 
@@ -16,7 +17,16 @@ async function reorderUp (
     dotConfig: ConfigFileInfoExpanded[],
     targets:  OutlineNode[]
 ): Promise<ConfigFileInfoExpanded[]> { 
-    const sortedTargetsConfigInfo = dotConfig;
+
+    const targetsConfigInfo: ConfigFileInfoExpanded[] = [];
+    targets.forEach(target => targetsConfigInfo.push({ 
+        fileName: target.data.ids.fileName,
+        node: target,
+        ordering: target.data.ids.ordering,
+        title: target.data.ids.display
+    }));
+
+    const sortedTargetsConfigInfo = targetsConfigInfo;
     sortedTargetsConfigInfo.sort((a, b) => a.ordering - b.ordering);
 
     // Re order the "moving" nodes
@@ -80,7 +90,16 @@ async function reorderDown (
     targets: OutlineNode[]
 ): Promise<ConfigFileInfoExpanded[]> {
 
-    const sortedTargetsConfigInfo = dotConfig;
+    
+    const targetsConfigInfo: ConfigFileInfoExpanded[] = [];
+    targets.forEach(target => targetsConfigInfo.push({ 
+        fileName: target.data.ids.fileName,
+        node: target,
+        ordering: target.data.ids.ordering,
+        title: target.data.ids.display
+    }));
+
+    const sortedTargetsConfigInfo = targetsConfigInfo;
     sortedTargetsConfigInfo.sort((a, b) => a.ordering - b.ordering);
 
     let lastPosition = sortedTargetsConfigInfo[0].ordering + 1;
@@ -160,12 +179,9 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
     if (!targets.find(target => target.data.ids.uri.toString() === resource.data.ids.uri.toString())) {
         targets.push(resource);
     }
-    
-    // Get the path of the .config file for the moving nodes
-    const dotConfigUri = await resource.getDotConfigPath();
-    if (!dotConfigUri) return;
 
     // Read .config from disk
+    const dotConfigUri = vscodeUris.Utils.joinPath(resource.data.ids.parentUri, '.config');
     const dotConfig = await readDotConfig(dotConfigUri);
     if (!dotConfig) return;
 
@@ -220,12 +236,12 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
 
     // Re format the array of ConfigFileInfoExpandeds into a single object { string -> ConfigFileInfo }
     const reformated: { [index: string]: ConfigFileInfo } = {};
-    reorderedNodes.forEach(({ fileName, ordering, title, node }) => {
-        reformated[fileName] = { ordering, title };
+    reorderedNodes.forEach(({ fileName, ordering, title, node }, index) => {
+        reformated[fileName] = { ordering: index, title };
 
         // Set the ordering for the actual internal data node that represents the current file
         //      to reflect its (possibly) updated ordering 
-        node.data.ids.ordering = ordering;
+        node.data.ids.ordering = index;
     });
     
     // If the config entry for the self node (the container) does exits, we need to
@@ -326,12 +342,12 @@ export async function moveDown (this: OutlineView, resource: any) {
 
     // Re format the array of ConfigFileInfoExpandeds into a single object { string -> ConfigFileInfo }
     const reformated: { [index: string]: ConfigFileInfo } = {};
-    reorderedNodes.forEach(({ fileName, ordering, title, node }) => {
-        reformated[fileName] = { ordering, title };
+    reorderedNodes.forEach(({ fileName, ordering, title, node }, index) => {
+        reformated[fileName] = { ordering: index, title };
 
         /// Set the ordering for the actual internal data node that represents the current file
         //      to reflect its (possibly) updated ordering 
-        node.data.ids.ordering = ordering;
+        node.data.ids.ordering = index;
     });
     
     // If the config entry for the self node (the container) does exits, we need to

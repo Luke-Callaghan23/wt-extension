@@ -1,9 +1,10 @@
-import { ChapterNode, ContainerNode, OutlineNode, ResourceType, SnipNode } from "./outlineNodes";
+import { ChapterNode, ContainerNode, OutlineNode, ResourceType, SnipNode } from "../node";
 import * as vscode from 'vscode';
-import { OutlineView } from "./outlineView";
-import * as extension from '../extension';
-import * as console from '../vsconsole';
-import { Buff } from "../Buffer/bufferSource";
+import { OutlineView } from "../outlineView";
+import * as extension from '../../extension';
+import * as console from '../../vsconsole';
+import { Buff } from "../../Buffer/bufferSource";
+import { writeDotConfig } from "../../help";
 
 
 
@@ -69,14 +70,13 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             };
             newLogs.push(logItem);
 
-
             // Finally, remove the fragment from the parent's text node container
             const fragmentParentUri = target.data.ids.parentUri;
-            const fragmentParent = await this._getTreeElementByUri(fragmentParentUri);
+            const fragmentParent: OutlineNode = await this._getTreeElementByUri(fragmentParentUri);
             if (!fragmentParent) continue;
 
             // Find the index of the target fragment
-            const fragmentParentTextNodes = (fragmentParent as ChapterNode | SnipNode).textData;
+            const fragmentParentTextNodes = (fragmentParent.data as ChapterNode | SnipNode).textData;
             const targetFragUriStr = removedFragmentUri.toString();
             const targetFragmentIndex = fragmentParentTextNodes.findIndex(frag => frag.data.ids.uri.toString() === targetFragUriStr);
             if (targetFragmentIndex === -1) continue;
@@ -109,11 +109,11 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
 
             // Finally, remove the chapter or snip from the parent container
             const removedNodeParentUri = target.data.ids.parentUri;
-            const removedNodeParent = await this._getTreeElementByUri(removedNodeParentUri);
+            const removedNodeParent: OutlineNode = await this._getTreeElementByUri(removedNodeParentUri);
             if (!removedNodeParent) continue;
 
             // Find the index of the target fragment
-            const nodeParentContents = (removedNodeParent as ContainerNode).contents;
+            const nodeParentContents = (removedNodeParent.data as ContainerNode).contents;
             const targetNodeUriStr = target.getUri().toString();
             const targetNodeIndex = nodeParentContents.findIndex(node => node.data.ids.uri.toString() === targetNodeUriStr);
             if (targetNodeIndex === -1) continue;
@@ -145,7 +145,7 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
 
             // Remove the .config file
             const deletedUri = vscode.Uri.joinPath(clearedContainerUri, `.config`);
-            await vscode.workspace.fs.delete(deletedUri);
+            writeDotConfig(deletedUri, {});
 
             for (const name of clearedEntries) {
                 const recycleBinName = `deleted-${target.data.ids.type}-${timestamp}-${Math.random()}`;

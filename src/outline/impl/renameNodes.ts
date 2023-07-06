@@ -1,10 +1,11 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../help';
-import * as console from '../vsconsole';
-import { OutlineView } from './outlineView';
-import { OutlineNode } from './outlineNodes';
-import * as extension from '../extension';
+import * as vscodeUris from 'vscode-uri';
+import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../help';
+import * as console from '../../vsconsole';
+import { OutlineView } from '../outlineView';
+import { OutlineNode } from '../node';
+import * as extension from '../../extension';
 
 export async function renameResource (this: OutlineView) {
 
@@ -29,7 +30,7 @@ export async function renameResource (this: OutlineView) {
         return;
     }
 
-    const dotConfigUri = await resource.getDotConfigPath();
+    const dotConfigUri = vscodeUris.Utils.joinPath(resource.data.ids.parentUri, '.config');
     if (!dotConfigUri) {
         vscode.window.showErrorMessage(`Unable to find configuration file for resource: '${fullPath}'`);
         return;
@@ -60,6 +61,9 @@ export async function renameResource (this: OutlineView) {
     // Re-write the config object to the file system
     await writeDotConfig(dotConfigUri, dotConfig);
 
+    // Update internal outline tree structure's name
+    resource.data.ids.display = newName;
+
     vscode.window.showInformationMessage(`Successfully renamed '${oldName}' to '${newName}'`);
-    this.refresh(resource);
+    this.refresh(this.tree);
 }
