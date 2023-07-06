@@ -6,8 +6,9 @@ import { Workspace } from '../workspace/workspaceClass';
 import { TODOData, TODONode } from './TODONode';
 import { OutlineTreeProvider } from '../outlineProvider/outlineTreeProvider';
 import { InitializeNode, initializeOutline } from '../outlineProvider/initialize';
-import { NodeTypes } from '../outlineProvider/fsNodes';
 import { Timed } from '../timedView';
+import { OutlineNode } from '../outline/outlineNodes';
+import { ChapterNode, ContainerNode, FragmentData, NodeTypes, RootNode, SnipNode } from '../outlineProvider/fsNodes';
 
 export type TODO = {
 	rowStart: number,
@@ -16,39 +17,36 @@ export type TODO = {
 	colEnd: number,
 	preview: string
 };
-export type Validated = {
+
+export type Validation = {
 	type: 'todos',
 	data: TODO[] 
 } | {
 	type: 'count',
 	data: number
+} | {
+	type: 'invalid'
 };
-type Invalid = null;
-type TODOInfo = { [index: string]: Validated | Invalid };
 
-type TODONodeMap = { [index: string]: TODONode[] };
-
+type TODOInfo = { [index: string]: Validation };
 export const todo: TODOInfo = {};
-export const todoNodes: TODONodeMap = {};
-export const invalid = null;
+
 export const isInvalidated: (uri: string) => boolean = (uri: string) => {
 	const todoLog = todo[uri];
-	return todoLog === invalid || todoLog === undefined;
+	return !todoLog || todoLog.type === 'invalid';
 };
-export const getTODO: (uri: string) => Validated = (uri: string) => {
+
+export const getTODO = (uri: string): Validation => {
 	const data = todo[uri];
-	if (!data) {
+	if (data.type === 'invalid') {
 		vscode.window.showWarningMessage(`Error: uri was not validated before calling getTODO.  This is my fault.  Please message me and call me and idiot if you see this.`);
 		throw new Error('Make sure to validate your uri before calling getTODO!');
 	}
 	return data;
 };
-export function getTODONodes (fragmentUri: string): TODONode[] {
-	return todoNodes[fragmentUri];
-}
 
 export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
-
+	
 	//#region outline tree provider
 	disposables: vscode.Disposable[] = [];
     async initializeTree(): Promise<TODONode> {
@@ -128,33 +126,35 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 	async update (editor: vscode.TextEditor): Promise<void> {
 		const document = editor.document;
 		
-		let uri: vscode.Uri | undefined = document.uri;
-		let editedNode: TODONode | undefined | null = await this._getTreeElementByUri(uri);
-		
-		if (!editedNode) {
-			await vscode.commands.executeCommand('wt.todo.refresh');
+		const editedFragmentUri: vscode.Uri = document.uri;
+		const editedFragmentNode: TODONode | null = await this._getTreeElementByUri(editedFragmentUri);
+		if (!editedFragmentNode) {
+			this.tree = await initializeOutline((e) => new TODONode(e));
+			this.refresh(this.tree);
 		}
+
+		let currentUri: vscode.Uri = editedFragmentUri;
+		let currentNode: TODONode | null = editedFragmentNode;
 
 		// Traverse upwards from the current node and invalidate it as well as all of its
 		//		parents
-		while (editedNode && uri) {
+		while (currentNode && currentUri) {
 			// Invalidate the current node
-			todo[uri.fsPath] = invalid;
-			delete todoNodes[uri.fsPath];
+			todo[currentUri.toString()] = { type: 'invalid' };
 			
 			// Break once the root node's records have been removed
-			if (editedNode.data.ids.type === 'root') {
+			if (currentNode.data.ids.type === 'root') {
 				break;
 			}
 
 			// Traverse upwards
-			const parentUri = editedNode.data.ids.parentUri;
-			editedNode = await this._getTreeElementByUri(parentUri);
-			uri = editedNode?.getUri();
+			const parentUri = currentNode.data.ids.parentUri;
+			currentNode = await this._getTreeElementByUri(parentUri);
+			currentUri = currentNode?.getUri();
 		}
 
-		// Refresh all invalidated nodes on the tree
-		this.tree = await initializeOutline((e) => new TODONode(e));
+		// // Refresh all invalidated nodes on the tree
+		// this.tree = await initializeOutline((e) => new TODONode(e));
 		this.refresh(this.tree);
 	}
 
@@ -180,10 +180,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 
 		vscode.commands.registerCommand('wt.todo.refresh', async () => {
 			Object.getOwnPropertyNames(todo).forEach(uri => {
-				todo[uri] = invalid;
-			});
-			Object.getOwnPropertyNames(todoNodes).forEach(uri => {
-				delete todoNodes[uri];
+				todo[uri] = { type: 'invalid' };
 			});
 			this.tree = await initializeOutline((e) => new TODONode(e));
 			this.refresh(this.tree);
@@ -195,5 +192,76 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
                 detail: `The TODO panel is an area that logs all areas you've marked as 'to do' in your work.  The default (and only (for now)) way to mark a TODO in your work is to enclose the area you want to mark with square brackets '[]'`
             }, 'Okay');
 		});
+
+		// Command for recieving an updated outline tree from the outline view --
+		// Since the OutlineView handles A LOT of modification of its node tree, it's a lot easier
+		//		to just emit changes from there over to here and then reflect the changes on this end
+		//		rather than trying to make sure the two trees are always in sync with each other
+		// `updated` is always the root node of the outline tree
+		vscode.commands.registerCommand('wt.todo.updateTree', (updated: OutlineNode) => {
+			this.tree.data.ids = { ...updated.data.ids };
+			const outlineRoot = updated.data as RootNode<OutlineNode>;
+			const outlineChapters = outlineRoot.chapters;
+			const outlineWorkSnips = outlineRoot.snips;
+
+			// Converts an array of fragment OutlineNodes to an array of TODONodes for those fragments
+			const convertFragments = (fragments: OutlineNode[]): TODONode[] => {
+				return fragments.map(outlineFragment => {
+					return new TODONode(<FragmentData> {
+						ids: { ...outlineFragment.data.ids },
+						md: ''
+					})
+				})
+			}
+
+			// Converts a snip container OutlineNode into a snip container TODONode
+			const convertSnips = (snips: OutlineNode) => {
+				return new TODONode(<ContainerNode<TODONode>> {
+					ids: { ...snips.data.ids },
+					contents: (snips.data as ContainerNode<OutlineNode>).contents.map(outlineSnip => {
+						return new TODONode(<SnipNode<TODONode>> {
+							ids: { ...outlineSnip.data.ids },
+							textData: convertFragments((outlineSnip.data as SnipNode<OutlineNode>).textData)
+						})
+					})
+				})
+			}
+
+			// Converts a chapter container OutlineNode into a chapter container TODONode
+			const convertChapters = (chapters: OutlineNode) => {
+				return new TODONode(<ContainerNode<TODONode>> {
+					ids: { ...chapters.data.ids },
+					contents: (chapters.data as ContainerNode<OutlineNode>).contents.map(outlineChapter => {
+						const chapter: ChapterNode<OutlineNode> = outlineChapter.data as ChapterNode<OutlineNode>;
+						return new TODONode(<ChapterNode<TODONode>> {
+							ids: { ...outlineChapter.data.ids },
+							snips: convertSnips(chapter.snips),
+							textData: convertFragments(chapter.textData)
+						});
+					})
+				})
+			}
+
+			// Convert the outline's Outline nodes into TODO nodes and swap out the TODO tree's data
+			//		with those converted nodes
+			const todoRoot = this.tree.data as RootNode<TODONode>;
+			todoRoot.chapters = convertChapters(outlineChapters);
+			todoRoot.snips = convertSnips(outlineWorkSnips);
+		});
     }
+
+	async refresh(refreshRoot: TODONode): Promise<void> {
+		// First create a new tree
+		// try {
+		// 	this.tree = await this.initializeTree();
+		// }
+		// catch (e) {
+		// 	// If error occurs in initializing the tree, then dispose of this view
+		// 	// (So that the outline view can return to the home screen)
+		// 	this.view.dispose();
+		// 	throw e;
+		// }
+		// Then update the root node of the outline view
+		this.onDidChangeTreeData.fire(refreshRoot);
+	}
 }

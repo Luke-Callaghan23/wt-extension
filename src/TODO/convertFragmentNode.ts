@@ -13,12 +13,12 @@ export function convertToTODOData (this: TODONode): TODONode[] {
     }
 
     const todos = todo[uri];
-    if (!todos) throw new Error('Not possible');
-    if (todos.type === 'count') throw new Error('Not possible');
+    if (todos.type !== 'todos') throw new Error('Not possible');
     
     // Convert each of this fragment's TODOs into a TODOData struct
     //      and then into a TODO Node
-    const createdNodes = todos.data.map((data, index) => {
+    // Store the created TODO nodes in the global map for TODO ndoes
+    return todos.data.map((data, index) => {
         const todoData: TODOData = {
             // Create TODOData from this TODO
             ids: {
@@ -37,9 +37,5 @@ export function convertToTODOData (this: TODONode): TODONode[] {
             todo: data,
         } as TODOData;
         return new TODONode(todoData);
-    });
-
-    // Store the created TODO nodes in the global map for TODO ndoes
-    todoNodes[uri] = createdNodes;
-    return createdNodes;
+    });;
 }

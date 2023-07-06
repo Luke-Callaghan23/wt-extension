@@ -30,7 +30,7 @@ export class FileAccessManager implements Packageable {
         // Traverse upwards from the opened fragment until we find a node whose type is container
         const openedUri = document.uri;
         let uri: vscode.Uri | undefined = document.uri;
-		let node: OutlineNode | undefined | null = await outlineView._getTreeElementByUri(document.uri);
+		let node: OutlineNode | null = await outlineView._getTreeElementByUri(document.uri);
 		while (node && uri) {
 			// Break once the current node is a container
 			if (node.data.ids.type === 'container') {

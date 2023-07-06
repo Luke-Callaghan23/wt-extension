@@ -7,12 +7,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { ResourceType } from './fsNodes';
 
 export abstract class TreeNode {
-	// abstract getParentId(): string;
 	abstract getParentUri(): vscode.Uri;
 	abstract getTooltip(): string | vscode.MarkdownString;
 	abstract getUri(): vscode.Uri;
 	abstract getDisplayString(): string;
-	// abstract getId(): string;
 	abstract getChildren(): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
 	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>, moveOffset: number): Promise<number>;
@@ -87,20 +85,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
 	
-	async refresh(refreshRoot: T): Promise<void> {
-		// First create a new tree
-		// try {
-		// 	this.tree = await this.initializeTree();
-		// }
-		// catch (e) {
-		// 	// If error occurs in initializing the tree, then dispose of this view
-		// 	// (So that the outline view can return to the home screen)
-		// 	this.view.dispose();
-		// 	throw e;
-		// }
-		// Then update the root node of the outline view
-		this._onDidChangeTreeData.fire(refreshRoot);
-	}
+	abstract refresh(refreshRoot: T): Promise<void>;
 
 	// Tree data provider 
 
@@ -159,44 +144,6 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		};
 	}
 
-	// // Searches provided tree for the object whose key matches the targeted key
-	// async _getTreeElement (targetkey: string | undefined, tree?: TreeNode): Promise<any> {
-	// 	// If there is not targeted key, then assume that the caller is targeting
-	// 	//		the entire tree
-	// 	if (!targetkey) {
-	// 		return this.tree;
-	// 	}
-
-	// 	// If there is no provided tree, use the whole tree as the search space
-	// 	const currentNode = tree ?? this.tree;
-	// 	if (!currentNode.getChildren) return null;
-	// 	const currentChildren = await currentNode.getChildren();
-
-	// 	if (currentNode.getId() === targetkey) {
-	// 		return currentNode;
-	// 	}
-		
-	// 	// Iterate over all keys-value mappings in the current node
-	// 	for (const subtree of currentChildren) {
-	// 		const subtreeId = subtree.getId();
-
-	// 		// If the current key matches the targeted key, return the value mapping
-	// 		if (subtreeId === targetkey) {
-	// 			return subtree;
-	// 		} 
-	// 		// Otherwise, recurse into this function again, using the current
-	// 		//		subtree as the search space
-	// 		else {
-	// 			const treeElement = await this._getTreeElement(targetkey, subtree);
-				
-	// 			// If the tree was found, return it
-	// 			if (treeElement) {
-	// 				return treeElement;
-	// 			}
-	// 		}
-	// 	}
-	// }
-
 	async _getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: TreeNode): Promise<any> {
 		// If there is not targeted key, then assume that the caller is targeting
 		//		the entire tree
@@ -210,7 +157,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		const currentChildren = await currentNode.getChildren();
 
 		if (currentNode.getUri().fsPath === targetUri.fsPath) {
-			return currentNode;
+			return currentNode as T;
 		}
 		
 		// Iterate over all keys-value mappings in the current node
@@ -219,7 +166,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 			// If the current key matches the targeted key, return the value mapping
 			if (subtreeId === targetUri.fsPath) {
-				return subtree;
+				return subtree as T;
 			} 
 			// Otherwise, recurse into this function again, using the current
 			//		subtree as the search space
@@ -232,6 +179,8 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 				}
 			}
 		}
+
+		return null;
 	}
 
 

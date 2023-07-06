@@ -3,7 +3,7 @@ import * as console from '../vsconsole';
 import * as extension from '../extension';
 import * as vscode from 'vscode';
 import { FragmentData } from './TODONode';
-import { Validated, TODO, todo } from './TODOsView';
+import { Validation, TODO, todo } from './TODOsView';
 
 type IncompleteTODO = {
     rowStart: number,
@@ -11,7 +11,7 @@ type IncompleteTODO = {
     content: string,
 };
 
-export async function scanFragment(uri: vscode.Uri, fragmentNode: FragmentData): Promise<[ Validated, number ]> {
+export async function scanFragment(uri: vscode.Uri, fragmentNode: FragmentData): Promise<[ Validation, number ]> {
     const finishedTODOs: TODO[] = [];
     const unfinishedTodoStack: IncompleteTODO[] = [];
     
@@ -60,7 +60,7 @@ export async function scanFragment(uri: vscode.Uri, fragmentNode: FragmentData):
 
     // Create and return validated structure, as well as a count of
     //      all the TODOs in this fragment
-    const fragmentsTODOs: Validated = {
+    const fragmentsTODOs: Validation = {
         type: 'todos',
         data: finishedTODOs
     };

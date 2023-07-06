@@ -36,6 +36,17 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
     // Renaming ndoes
 	renameResource = renameFunctions.renameResource;
 
+	async refresh(refreshRoot: OutlineNode): Promise<void> {
+		// Because of all the various edits that the outline view does on the internal structure 
+		//		and because we want to avoid uneeded reading of the disk file structure, we
+		//		send over the outline node to the todo view whenever their is updates
+		//		to the outline view tree
+		vscode.commands.executeCommand('wt.todo.updateTree', this.tree);
+
+		// Then update the root node of the outline view
+		this.onDidChangeTreeData.fire(refreshRoot);
+	}
+
     // Register all the commands needed for the outline view to work
     registerCommands () {
         vscode.commands.registerCommand('wt.outline.openFile', (resource) => {
