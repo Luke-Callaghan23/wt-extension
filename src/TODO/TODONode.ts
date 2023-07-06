@@ -174,11 +174,14 @@ export class TODONode extends TreeNode {
                     fragments.push(textNode);
                 }
             }
+            // Sort the fragments of this chapter by their ordering
             fragments.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+
+            // 
+            const children: TreeNode[] = [ ...fragments ];
 
             // Add this chapter's snips container to the children array as well as long as the TODO
             //      count of the snips is non-zero
-            const children: TreeNode[] = [ ...fragments ];
             if (await chapter.snips.getTODOCounts() > 0) {
                 children.push(chapter.snips);
             }

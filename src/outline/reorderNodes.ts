@@ -173,15 +173,15 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
     const parentNode = (await this._getTreeElementByUri(resource.data.ids.parentUri)) as OutlineNode;
 
     // Find the unordered list from the parent node based on the mover type
-    let container: OutlineNode[];
+    let unordered: OutlineNode[];
     if (resource.data.ids.type === 'chapter') {
-        container = (parentNode.data as ContainerNode).contents;
+        unordered = (parentNode.data as ContainerNode).contents;
     }
     else if (resource.data.ids.type === 'fragment') {
-        container = (parentNode.data as SnipNode | ChapterNode).textData;
+        unordered = (parentNode.data as SnipNode | ChapterNode).textData;
     }
     else if (resource.data.ids.type === 'snip') {
-        container = (parentNode.data as ContainerNode).contents;
+        unordered = (parentNode.data as ContainerNode).contents;
     }
     else {
         throw `Not implemented [reorderNode.ts -> moveUp()]`
@@ -203,7 +203,7 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
         }
 
         // Find the current node in its parent's container
-        const node = container.find(un => un.data.ids.fileName === fileName);
+        const node = unordered.find(un => un.data.ids.fileName === fileName);
         if (!node) return;
 
         // Create expanded config file info for it (add a node: OutlineNode field)
@@ -214,28 +214,28 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
             title: config.title
         });
     });
-    
+
     // Re order the nodes
     const reorderedNodes = await reorderUp(newConfig, targets);
-
-    // Update the internal outline tree structure by first clearing the moving node's parent container
-    // Then, re-insert each node in the loop below
-    while (container.length) container.pop();
-
-    if (selfConfig) {
-        container.push(selfConfig);
-        reorderedNodes.unshift(selfConfig);
-    }
 
     // Re format the array of ConfigFileInfoExpandeds into a single object { string -> ConfigFileInfo }
     const reformated: { [index: string]: ConfigFileInfo } = {};
     reorderedNodes.forEach(({ fileName, ordering, title, node }) => {
         reformated[fileName] = { ordering, title };
 
-        // Since reOrderedNodes is sorted, we can insert those nodes back into
-        //      the parent container in order that they are presented to us in this array
-        container.push(node);
+        // Set the ordering for the actual internal data node that represents the current file
+        //      to reflect its (possibly) updated ordering 
+        node.data.ids.ordering = ordering;
     });
+    
+    // If the config entry for the self node (the container) does exits, we need to
+    //      add that node's config info back into the main config object before writing to disk
+    if (selfConfig) {
+        reformated['self'] = {
+            ordering: -1,
+            title: (selfConfig as ConfigFileInfoExpanded).title
+        };
+    }
 
     // Write the re formated .config file
     await writeDotConfig(dotConfigUri, reformated);
@@ -279,15 +279,15 @@ export async function moveDown (this: OutlineView, resource: any) {
     const parentNode = (await this._getTreeElementByUri(resource.data.ids.parentUri)) as OutlineNode;
 
     // Find the unordered list from the parent node based on the mover type
-    let container: OutlineNode[];
+    let unordered: OutlineNode[];
     if (resource.data.ids.type === 'chapter') {
-        container = (parentNode.data as ContainerNode).contents;
+        unordered = (parentNode.data as ContainerNode).contents;
     }
     else if (resource.data.ids.type === 'fragment') {
-        container = (parentNode.data as SnipNode | ChapterNode).textData;
+        unordered = (parentNode.data as SnipNode | ChapterNode).textData;
     }
     else if (resource.data.ids.type === 'snip') {
-        container = (parentNode.data as ContainerNode).contents;
+        unordered = (parentNode.data as ContainerNode).contents;
     }
     else {
         throw `Not implemented [reorderNode.ts -> moveUp()]`
@@ -309,7 +309,7 @@ export async function moveDown (this: OutlineView, resource: any) {
         }
 
         // Find the current node in its parent's container
-        const node = container.find(un => un.data.ids.fileName === fileName);
+        const node = unordered.find(un => un.data.ids.fileName === fileName);
         if (!node) return;
 
         // Create expanded config file info for it (add a node: OutlineNode field)
@@ -324,24 +324,24 @@ export async function moveDown (this: OutlineView, resource: any) {
     // Re order the nodes
     const reorderedNodes = await reorderDown(newConfig, targets);
 
-    // Update the internal outline tree structure by first clearing the moving node's parent container
-    // Then, re-insert each node in the loop below
-    while (container.length) container.pop();
-
-    if (selfConfig) {
-        container.push(selfConfig);
-        reorderedNodes.unshift(selfConfig);
-    }
-
     // Re format the array of ConfigFileInfoExpandeds into a single object { string -> ConfigFileInfo }
     const reformated: { [index: string]: ConfigFileInfo } = {};
     reorderedNodes.forEach(({ fileName, ordering, title, node }) => {
         reformated[fileName] = { ordering, title };
 
-        // Since reOrderedNodes is sorted, we can insert those nodes back into
-        //      the parent container in order that they are presented to us in this array
-        container.push(node);
+        /// Set the ordering for the actual internal data node that represents the current file
+        //      to reflect its (possibly) updated ordering 
+        node.data.ids.ordering = ordering;
     });
+    
+    // If the config entry for the self node (the container) does exits, we need to
+    //      add that node's config info back into the main config object before writing to disk
+    if (selfConfig) {
+        reformated['self'] = {
+            ordering: -1,
+            title: (selfConfig as ConfigFileInfoExpanded).title
+        };
+    }
     
     // Write the re formated .config file
     await writeDotConfig(dotConfigUri, reformated);

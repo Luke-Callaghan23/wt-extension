@@ -286,25 +286,17 @@ export class OutlineNode extends TreeNode {
                 unordered = (destinationContainer.data as ContainerNode).contents;
             }
 
-            // Now order the contents of the actual objects for refreshing the view
-            const reordered: OutlineNode[] = Array(Object.keys(containerConfig).length);
+            // Now change the ordering of the items inside the `unordered` array found above
+            //      in order to match the ordering of the items in `containerConfig`
             Object.entries(containerConfig).forEach(([ fileName, config ]) => {
-                // Find the node itself in the unordered list
+                // Find the node itself in the `unordered` list
                 const moving = unordered.find(un => un.data.ids.fileName === fileName);
                 if (!moving) return;
-                reordered[config.ordering] = moving;
-            });
 
-            // Do the inverse of the above
-            if (moverType === 'chapter') {
-                (destinationContainer.data as ContainerNode).contents = reordered;
-            }
-            else if (moverType === 'fragment') {
-                (destinationContainer.data as SnipNode | ChapterNode).textData = reordered;
-            }
-            else if (moverType === 'snip') {
-                (destinationContainer.data as ContainerNode).contents = reordered;
-            }
+                // Set the ordering of this node within the internal OutlineView tree
+                //      to reflect its newly calculated ordering
+                moving.data.ids.ordering = config.ordering;
+            });
 
             return off;
         }
