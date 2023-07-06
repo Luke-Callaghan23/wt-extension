@@ -41,7 +41,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
         vscode.commands.registerCommand('wt.outline.openFile', (resource) => {
 			vscode.window.showTextDocument(resource, { preserveFocus: true });
 		});
-		vscode.commands.registerCommand('wt.outline.refresh', (resource: OutlineNode) => super.refresh());
+		vscode.commands.registerCommand('wt.outline.refresh', (resource: OutlineNode) => super.refresh(resource));
 		vscode.commands.registerCommand('wt.outline.renameFile', () => {
 			if (this.view.selection.length > 1) return;
 			this.renameResource();

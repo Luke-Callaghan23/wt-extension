@@ -1,4 +1,4 @@
-import { OutlineNode, ResourceType } from "./outlineNodes";
+import { ChapterNode, ContainerNode, OutlineNode, ResourceType, SnipNode } from "./outlineNodes";
 import * as vscode from 'vscode';
 import { OutlineView } from "./outlineView";
 import * as extension from '../extension';
@@ -69,6 +69,20 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             };
             newLogs.push(logItem);
 
+
+            // Finally, remove the fragment from the parent's text node container
+            const fragmentParentUri = target.data.ids.parentUri;
+            const fragmentParent = await this._getTreeElementByUri(fragmentParentUri);
+            if (!fragmentParent) continue;
+
+            // Find the index of the target fragment
+            const fragmentParentTextNodes = (fragmentParent as ChapterNode | SnipNode).textData;
+            const targetFragUriStr = removedFragmentUri.toString();
+            const targetFragmentIndex = fragmentParentTextNodes.findIndex(frag => frag.data.ids.uri.toString() === targetFragUriStr);
+            if (targetFragmentIndex === -1) continue;
+
+            // Splice that fragment away
+            fragmentParentTextNodes.splice(targetFragmentIndex, 1);
         }
         else if (target.data.ids.type === 'chapter' || target.data.ids.type === 'snip') {
             // Shift all the chapters or snips that come after this one up in the order
@@ -93,6 +107,19 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             };
             newLogs.push(logItem);
 
+            // Finally, remove the chapter or snip from the parent container
+            const removedNodeParentUri = target.data.ids.parentUri;
+            const removedNodeParent = await this._getTreeElementByUri(removedNodeParentUri);
+            if (!removedNodeParent) continue;
+
+            // Find the index of the target fragment
+            const nodeParentContents = (removedNodeParent as ContainerNode).contents;
+            const targetNodeUriStr = target.getUri().toString();
+            const targetNodeIndex = nodeParentContents.findIndex(node => node.data.ids.uri.toString() === targetNodeUriStr);
+            if (targetNodeIndex === -1) continue;
+
+            // Splice that fragment away
+            nodeParentContents.splice(targetNodeIndex, 1);
         }
         else if (target.data.ids.type === 'container') {
             // When removing items in a container, we want to clear all the directory entries in that
@@ -141,6 +168,11 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
                 };
                 newLogs.push(logItem);
             }
+
+            // Instead of removing the container from the parent's content object structure as we do in the other
+            //      two cases above, here we don't actually delete the container, we just clear the contents of the
+            //      targeted container itself
+            (target.data as ContainerNode).contents = [];
         }
         else if (target.data.ids.type === 'root') {
             throw new Error('Not possible');
@@ -173,7 +205,6 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             vscode.window.showErrorMessage(`Error editing recycling bin log: ${e}`);
         }
     }
-    this.refresh();
-
-
+    // Refresh the whole tree as it's hard to determine what the deepest root node is
+    this.refresh(this.tree);
 }

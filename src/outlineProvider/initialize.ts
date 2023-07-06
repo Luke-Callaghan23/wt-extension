@@ -64,7 +64,7 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
     const chapterNodes: T[] = []
     for (const [ name, _ ] of chapters) {
         chapterNodes.push(init(await initializeChapter({
-            dotConfig: dotConfigChapters,
+            parentDotConfig: dotConfigChapters,
             relativePath: `data/chapters`, 
             fileName: name, 
             chaptersContainerUri: chaptersContainerUri,
@@ -97,7 +97,7 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
     for (const [ name,  _ ] of snips) {
         snipNodes.push(
             init(await initializeSnip({
-                dotConfig: dotConfigSnips,
+                parentDotConfig: dotConfigSnips,
                 relativePath: `data/snips`, 
                 fileName: name, 
                 parentTypeId: 'root', 
@@ -131,7 +131,7 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
             relativePath: 'data',
             fileName: '',
             parentTypeId: 'root',
-            parentUri: new vscode.Uri('root'),
+            parentUri: vscodeUris.Utils.joinPath(extension.rootPath, 'data'),
             ordering: 0,
         },
         chapters: chapterContainer as T,
@@ -141,15 +141,15 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
 }
 
 type ChapterParams<T extends TreeNode> = {
-    dotConfig: { [index: string]: ConfigFileInfo },
+    parentDotConfig: { [index: string]: ConfigFileInfo },
     relativePath: string,
     fileName: string,
     chaptersContainerUri: vscode.Uri,
     init: InitializeNode<T>,
 };
 
-async function initializeChapter <T extends TreeNode> ({
-    dotConfig,
+export async function initializeChapter <T extends TreeNode> ({
+    parentDotConfig,
     relativePath,
     fileName,
     chaptersContainerUri,
@@ -158,8 +158,8 @@ async function initializeChapter <T extends TreeNode> ({
     
     const chapterFolderUri = vscodeUris.Utils.joinPath(chaptersContainerUri, fileName);
 
-    const displayName = dotConfig[fileName] === undefined ? fileName : dotConfig[fileName].title;
-    const ordering = dotConfig[fileName] === undefined ? 10000 : dotConfig[fileName].ordering;
+    const displayName = parentDotConfig[fileName] === undefined ? fileName : parentDotConfig[fileName].title;
+    const ordering = parentDotConfig[fileName] === undefined ? 10000 : parentDotConfig[fileName].ordering;
 
     let chapterFolderEntries: [ string, vscode.FileType ][];
     try {
@@ -194,7 +194,7 @@ async function initializeChapter <T extends TreeNode> ({
         const fragment = await initializeFragment({
             relativePath: `${relativePath}/${fileName}`, 
             fileName: fragmentName, 
-            dotConfig: chapterFragmentsDotConfig,
+            parentDotConfig: chapterFragmentsDotConfig,
             parentTypeId: 'chapter',
             parentUri: chapterFolderUri,
         });
@@ -218,7 +218,7 @@ async function initializeChapter <T extends TreeNode> ({
             if (fileType !== vscode.FileType.Directory) { continue; }
             const snipName = name;
             const snip = await initializeSnip({
-                dotConfig: chapterSnipsDotConfig,
+                parentDotConfig: chapterSnipsDotConfig,
                 relativePath: `${relativePath}/${fileName}/snips`, 
                 fileName: snipName,
                 parentTypeId: 'chapter',
@@ -264,7 +264,7 @@ async function initializeChapter <T extends TreeNode> ({
 }
 
 type SnipParams<T extends TreeNode> = {
-    dotConfig: { [index: string]: ConfigFileInfo },
+    parentDotConfig: { [index: string]: ConfigFileInfo },
     relativePath: string,
     fileName: string,
     parentTypeId: ResourceType,
@@ -272,8 +272,8 @@ type SnipParams<T extends TreeNode> = {
     init: InitializeNode<T>,
 };
 
-async function initializeSnip<T extends TreeNode> ({
-    dotConfig,
+export async function initializeSnip<T extends TreeNode> ({
+    parentDotConfig,
     relativePath,
     fileName,
     parentTypeId,
@@ -283,8 +283,8 @@ async function initializeSnip<T extends TreeNode> ({
 
     const snipFolderUri = vscodeUris.Utils.joinPath(parentUri, fileName);
 
-    const displayName = dotConfig[fileName] === undefined ? fileName : dotConfig[fileName].title;
-    const ordering = dotConfig[fileName] === undefined ? 10000 : dotConfig[fileName].ordering;
+    const displayName = parentDotConfig[fileName] === undefined ? fileName : parentDotConfig[fileName].title;
+    const ordering = parentDotConfig[fileName] === undefined ? 10000 : parentDotConfig[fileName].ordering;
 
     let snipFolderEntries: [ string, vscode.FileType ][];
     try {
@@ -314,7 +314,7 @@ async function initializeSnip<T extends TreeNode> ({
         const fragment = await initializeFragment({
             relativePath: `${relativePath}/${fileName}`, 
             fileName: fragmentName, 
-            dotConfig: snipFragmentsDotConfig,
+            parentDotConfig: snipFragmentsDotConfig,
             parentTypeId: 'snip',
             parentUri: snipFolderUri,
         });
@@ -344,7 +344,7 @@ function readFilePreview (completePath: string, relativePath: string): string {
 }
 
 type FragmentParams = {
-    dotConfig: { [index: string]: ConfigFileInfo },
+    parentDotConfig: { [index: string]: ConfigFileInfo },
     relativePath: string,
     fileName: string,
     parentTypeId: ResourceType,
@@ -352,8 +352,8 @@ type FragmentParams = {
     watch?: (uri: vscode.Uri, options: { recursive: boolean; excludes: string[]; }) => vscode.Disposable
 };
 
-async function initializeFragment ({
-    dotConfig, 
+export async function initializeFragment ({
+    parentDotConfig, 
     relativePath,
     fileName,
     parentTypeId,
@@ -365,15 +365,15 @@ async function initializeFragment ({
     // If there is no specified display name in the .chapter file,
     //      then use the name of the file
     const fragmentName = fileName;
-    let info = dotConfig[fragmentName];
+    let info = parentDotConfig[fragmentName];
     if (!info) {
         // Store the displayName that we're using for future use
-        const maxOrdering = getLatestOrdering(dotConfig);
+        const maxOrdering = getLatestOrdering(parentDotConfig);
         info = {
             title: fileName,
             ordering: maxOrdering + 1
         };
-        dotConfig[fragmentName] = info;
+        parentDotConfig[fragmentName] = info;
     }
     const displayName = info.title;
     const ordering = info.ordering === undefined ? 10000 : info.ordering;

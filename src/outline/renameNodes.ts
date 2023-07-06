@@ -29,12 +29,11 @@ export async function renameResource (this: OutlineView) {
         return;
     }
 
-    const dotConfigRelativePath = await resource.getDotConfigPath(this);
-    if (!dotConfigRelativePath) {
+    const dotConfigUri = await resource.getDotConfigPath();
+    if (!dotConfigUri) {
         vscode.window.showErrorMessage(`Unable to find configuration file for resource: '${fullPath}'`);
         return;
     }
-    const dotConfigUri = vscode.Uri.joinPath(extension.rootPath, dotConfigRelativePath);
 
     const dotConfig = await readDotConfig(dotConfigUri);
     if (!dotConfig) return;
@@ -62,5 +61,5 @@ export async function renameResource (this: OutlineView) {
     await writeDotConfig(dotConfigUri, dotConfig);
 
     vscode.window.showInformationMessage(`Successfully renamed '${oldName}' to '${newName}'`);
-    this.refresh();
+    this.refresh(resource);
 }

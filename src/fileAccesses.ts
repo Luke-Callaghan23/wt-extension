@@ -38,8 +38,8 @@ export class FileAccessManager implements Packageable {
 			}
 
 			// Otherwise, traverse upwards
-			const parentId = node.data.ids.parentInternalId;
-			node = await outlineView._getTreeElement(parentId);
+			const parentId = node.data.ids.parentUri;
+			node = await outlineView._getTreeElementByUri(parentId);
 			uri = node?.getUri();
 		}
         if (node?.data.ids.type !== 'container') return;
@@ -54,6 +54,7 @@ export class FileAccessManager implements Packageable {
 
         // Also update the latest file access
         FileAccessManager.lastAccess = uri;
+
     }
 
     // Gets the last accessed document inside of a container

@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import { ConfigFileInfo, ConfigFileInfoExpanded, readDotConfig, writeDotConfig } from "../help";
-import { OutlineNode } from "./outlineNodes";
+import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "./outlineNodes";
 import { OutlineView } from "./outlineView";
 import * as extension from '../extension';
 import { RootNode } from './outlineNodes';
@@ -194,9 +194,8 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
     }
     
     // Get the path of the .config file for the moving nodes
-    const dotConfigRelativePath = await resource.getDotConfigPath(this);
-    if (!dotConfigRelativePath) return;
-    const dotConfigUri = vscode.Uri.joinPath(extension.rootPath, dotConfigRelativePath);
+    const dotConfigUri = await resource.getDotConfigPath();
+    if (!dotConfigUri) return;
 
     // Read .config from disk
     const dotConfig = await readDotConfig(dotConfigUri);
@@ -204,6 +203,40 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
     
     // Re order the nodes
     const reOrderedNodes = await reorderUp(dotConfig, targets);
+
+    const parentNode = (await this._getTreeElementByUri(resource.data.ids.parentUri)) as OutlineNode;
+    
+    // Find the unordered list from the parent node based on the mover type
+    let unordered: OutlineNode[];
+    if (resource.data.ids.type === 'chapter') {
+        unordered = (parentNode.data as ContainerNode).contents;
+    }
+    else if (resource.data.ids.type === 'fragment') {
+        unordered = (parentNode.data as SnipNode | ChapterNode).textData;
+    }
+    else if (resource.data.ids.type === 'snip') {
+        unordered = (parentNode.data as ContainerNode).contents;
+    }
+
+    // Now order the contents of the actual objects for refreshing the view
+    const reordered: OutlineNode[] = Array(reOrderedNodes.length);
+    reOrderedNodes.forEach(configExpanded => {
+        // Find the node itself in the unordered list
+        const moving = unordered.find(un => un.data.ids.fileName === configExpanded.fileName);
+        if (!moving) return;
+        reordered[configExpanded.ordering] = moving;
+    });
+
+    // Do the inverse of the above
+    if (resource.data.ids.type === 'chapter') {
+        (parentNode.data as ContainerNode).contents = reordered;
+    }
+    else if (resource.data.ids.type === 'fragment') {
+        (parentNode.data as SnipNode | ChapterNode).textData = reordered;
+    }
+    else if (resource.data.ids.type === 'snip') {
+        (parentNode.data as ContainerNode).contents = reordered;
+    }
 
     // Re format the array of ConfigFileInfoExpandeds into a single object { string -> ConfigFileInfo }
     const reFormated: { [index: string]: ConfigFileInfo } = {};
@@ -213,7 +246,7 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
 
     // Write the re formated .config file
     await writeDotConfig(dotConfigUri, reFormated);
-    await this.refresh();
+    await this.refresh(parentNode);
     this.view.reveal((this.tree.data as RootNode).chapters, { focus: false, select: true });
 }
 
@@ -242,9 +275,8 @@ export async function moveDown (this: OutlineView, resource: any) {
     }
 
     // Get the path of the .config file for the moving nodes
-    const dotConfigRelativePath = await resource.getDotConfigPath(this);
-    if (!dotConfigRelativePath) return;
-    const dotConfigUri = vscode.Uri.joinPath(extension.rootPath, dotConfigRelativePath);
+    const dotConfigUri = await resource.getDotConfigPath(this);
+    if (!dotConfigUri) return;
 
     // Read .config from disk
     const dotConfig = await readDotConfig(dotConfigUri);
@@ -259,8 +291,43 @@ export async function moveDown (this: OutlineView, resource: any) {
         reFormated[fileName] = { ordering, title };
     });
 
+    
+    const parentNode = (await this._getTreeElementByUri(resource.data.ids.parentUri)) as OutlineNode;
+    
+    // Find the unordered list from the parent node based on the mover type
+    let unordered: OutlineNode[];
+    if (resource.data.ids.type === 'chapter') {
+        unordered = (parentNode.data as ContainerNode).contents;
+    }
+    else if (resource.data.ids.type === 'fragment') {
+        unordered = (parentNode.data as SnipNode | ChapterNode).textData;
+    }
+    else if (resource.data.ids.type === 'snip') {
+        unordered = (parentNode.data as ContainerNode).contents;
+    }
+
+    // Now order the contents of the actual objects for refreshing the view
+    const reordered: OutlineNode[] = Array(reOrderedNodes.length);
+    reOrderedNodes.forEach(configExpanded => {
+        // Find the node itself in the unordered list
+        const moving = unordered.find(un => un.data.ids.fileName === configExpanded.fileName);
+        if (!moving) return;
+        reordered[configExpanded.ordering] = moving;
+    });
+
+    // Do the inverse of the above
+    if (resource.data.ids.type === 'chapter') {
+        (parentNode.data as ContainerNode).contents = reordered;
+    }
+    else if (resource.data.ids.type === 'fragment') {
+        (parentNode.data as SnipNode | ChapterNode).textData = reordered;
+    }
+    else if (resource.data.ids.type === 'snip') {
+        (parentNode.data as ContainerNode).contents = reordered;
+    }
+
     // Write the re formated .config file
     await writeDotConfig(dotConfigUri, reFormated);
-    await this.refresh();
+    await this.refresh(parentNode);
     this.view.reveal((this.tree.data as RootNode).chapters, { focus: true, select: true });
 }

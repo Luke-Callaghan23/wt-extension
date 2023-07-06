@@ -242,11 +242,11 @@ export class TODONode extends TreeNode {
     hasChildren (): boolean {
         // A node always has children, unless if it is a leaf TODO node
         // A leaf TODO node is unique in that its own type is 'fragment' and its parent type is also 'fragment'
-        return this.data.ids.type === 'fragment' && this.data.ids.parentTypeId === 'fragment';
+        return !(this.data.ids.type === 'fragment' && this.data.ids.parentTypeId === 'fragment');
     }
     
     getTooltip (): string | vscode.MarkdownString {
-        return `${this.data.ids.type} | TODOs: ${this.getTODOCounts()}`;
+        return `${this.data.ids.type} | TODOs: self: ${this.data.ids.type} parent: ${this.data.ids.parentTypeId}`;
     }
     
     async moveNode (newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): Promise<number> {
@@ -261,7 +261,7 @@ export class TODONode extends TreeNode {
         return this.data.ids.display;
     }
 
-    getParentUri(): string {
+    getParentUri(): vscode.Uri {
         return this.data.ids.parentUri;
     }
 

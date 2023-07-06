@@ -3,6 +3,8 @@ import * as vscodeUris from 'vscode-uri';
 import * as extension from '../extension';
 import { Packageable } from '../packageable';
 import * as console from '../vsconsole';
+import { v4 as uuidv4 } from 'uuid';
+import { ResourceType } from './fsNodes';
 
 export abstract class TreeNode {
 	// abstract getParentId(): string;
@@ -85,19 +87,19 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
 	
-	async refresh(): Promise<void> {
+	async refresh(refreshRoot: T): Promise<void> {
 		// First create a new tree
-		try {
-			this.tree = await this.initializeTree();
-		}
-		catch (e) {
-			// If error occurs in initializing the tree, then dispose of this view
-			// (So that the outline view can return to the home screen)
-			this.view.dispose();
-			throw e;
-		}
+		// try {
+		// 	this.tree = await this.initializeTree();
+		// }
+		// catch (e) {
+		// 	// If error occurs in initializing the tree, then dispose of this view
+		// 	// (So that the outline view can return to the home screen)
+		// 	this.view.dispose();
+		// 	throw e;
+		// }
 		// Then update the root node of the outline view
-		this._onDidChangeTreeData.fire(undefined);
+		this._onDidChangeTreeData.fire(refreshRoot);
 	}
 
 	// Tree data provider 
@@ -114,7 +116,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	}
 
 	public async getTreeItem (element: T): Promise<vscode.TreeItem> {
-		return this._getTreeItem(element.getUri());
+		return this._getTreeItem(element);
 	}
 
 
@@ -123,8 +125,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	// Helper methods
 	
-	async _getTreeItem (uri: vscode.Uri): Promise<vscode.TreeItem> {
-		const treeElement = (await this._getTreeElementByUri(uri)) as T;
+	async _getTreeItem (treeElement: T): Promise<vscode.TreeItem> {
 		const label = treeElement.getDisplayString();
 
 		let collapseState: vscode.TreeItemCollapsibleState;
@@ -146,7 +147,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		}
 
 		return {
-			id: uri.toString(),
+			id: uuidv4(),
 
 			label: /**vscode.TreeItemLabel**/<any>{ 
 				label: label
@@ -154,7 +155,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			// An example of how to use codicons in a MarkdownString in a tree item tooltip.
 			tooltip: treeElement.getTooltip(),
 			collapsibleState: collapseState,
-			resourceUri: uri,
+			resourceUri: treeElement.getUri(),
 		};
 	}
 
@@ -259,7 +260,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			for (const mover of filteredParents) {
 				offset += await mover.moveNode(targ, this, offset);
 			}
-			this.refresh();
+			this.refresh(this.tree);
 		}
     }
     public async handleDrag(source: T[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {

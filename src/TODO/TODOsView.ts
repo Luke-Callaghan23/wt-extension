@@ -154,7 +154,8 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 		}
 
 		// Refresh all invalidated nodes on the tree
-		this.refresh();
+		this.tree = await initializeOutline((e) => new TODONode(e));
+		this.refresh(this.tree);
 	}
 
 	async disable?(): Promise<void> {
@@ -177,14 +178,15 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 			vscode.window.showTextDocument(resourceUri, { selection: textDocumentRange });
 		});
 
-		vscode.commands.registerCommand('wt.todo.refresh', () => {
+		vscode.commands.registerCommand('wt.todo.refresh', async () => {
 			Object.getOwnPropertyNames(todo).forEach(uri => {
 				todo[uri] = invalid;
 			});
 			Object.getOwnPropertyNames(todoNodes).forEach(uri => {
 				delete todoNodes[uri];
 			});
-			this.refresh();
+			this.tree = await initializeOutline((e) => new TODONode(e));
+			this.refresh(this.tree);
 		});
 
 		vscode.commands.registerCommand('wt.todo.help', () => {

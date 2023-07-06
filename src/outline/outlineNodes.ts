@@ -69,17 +69,16 @@ export class OutlineNode extends TreeNode {
     // Shifts all the nodes that 
     async shiftTrailingNodesDown (view: OutlineTreeProvider<OutlineNode>): Promise<string> {
         // Edit the old .config to remove the moved record
-        const oldDotConfigRelativePath = await this.getDotConfigPath(view as OutlineView);
-        if (!oldDotConfigRelativePath) {
-            vscode.window.showErrorMessage(`Error: could not find .config file at expected path '${oldDotConfigRelativePath}'.  Please do not mess with the file system of a IWE environment!`);
+        const oldDotConfigUri = await this.getDotConfigPath();
+        if (!oldDotConfigUri) {
+            vscode.window.showErrorMessage(`Error: could not find .config file at expected path '${oldDotConfigUri}'.  Please do not mess with the file system of a IWE environment!`);
             throw new Error('Unable to retrieve .config path');
         }
-        const oldDotConfigUri = vscode.Uri.joinPath(extension.rootPath, oldDotConfigRelativePath);
 
         // Readh the .config
         const oldDotConfig = await readDotConfig(oldDotConfigUri);
         if (!oldDotConfig) {
-            vscode.window.showErrorMessage(`Error: could not read .config file at path '${oldDotConfigRelativePath}'.  Please do not mess with the file system of a IWE environment!`);
+            vscode.window.showErrorMessage(`Error: could not read .config file at path '${oldDotConfigUri}'.  Please do not mess with the file system of a IWE environment!`);
             throw new Error('Unable to retrieve .config data');
         }
         
@@ -146,25 +145,22 @@ export class OutlineNode extends TreeNode {
 
         // If the mover is not a container, then we're only moving a single item:
 
-        let destinationContainer: NodeTypes;
+        let destinationContainer: OutlineNode;
         if (moverType === 'snip') {
             // Use the root's .snips container
             if (newParentType === 'root') {
                 const root: RootNode = (provider.tree as OutlineNode).data as RootNode;
-                const workSnipsContainer: ContainerNode = (root.snips as OutlineNode).data as ContainerNode;
-                destinationContainer = workSnipsContainer;
+                destinationContainer = (root.snips as OutlineNode);
             }
             // Use the chapter's .snips container
             else if (newParentType === 'chapter') {
                 const chapterNode: ChapterNode = (await provider._getTreeElementByUri(newParentUri)).data;
-                const chapterSnipsContainer: ContainerNode = chapterNode.snips.data as ContainerNode;
-                destinationContainer = chapterSnipsContainer;
+                destinationContainer = chapterNode.snips;
             }
             // Traverse upwards until we find the nearest 'root' or 'chapter' node that we can move the snip into
             else if (newParentType === 'snip' || newParentType === 'container' || newParentType === 'fragment') {
                 const parentContainerNode = (await newParentNode.getContainerParent(provider)).data as ChapterNode | RootNode;
-                const parentSnipsContainer: ContainerNode = parentContainerNode.snips.data as ContainerNode;
-                destinationContainer = parentSnipsContainer;
+                destinationContainer = parentContainerNode.snips;
             }
             else {
                 throw new Error('Not possible');
@@ -172,17 +168,17 @@ export class OutlineNode extends TreeNode {
         }
         else if (moverType === 'fragment') {
             if (newParentType === 'chapter' || newParentType === 'snip') {
-                destinationContainer = (await provider._getTreeElementByUri(newParentUri)).data;
+                destinationContainer = (await provider._getTreeElementByUri(newParentUri));
             }
             else if (newParentType === 'fragment') {
-                destinationContainer = (await newParentNode.getContainerParent(provider, 'snip')).data;
+                destinationContainer = (await newParentNode.getContainerParent(provider, 'snip'));
             }
             else {
                 throw new Error('Not possible.');
             }
         }  
         else if (moverType === 'chapter') {
-            destinationContainer = ((provider.tree as OutlineNode).data as RootNode).chapters.data;
+            destinationContainer = ((provider.tree as OutlineNode).data as RootNode).chapters;
         }
         else {
             return -1;
@@ -190,14 +186,16 @@ export class OutlineNode extends TreeNode {
 
         // If the container of the destination is the same as the container of the mover
         // Then we're not actually moving the node anywhere, we are just changing the internal ordering
-        if (destinationContainer.ids.uri.toString() === moverParentUri.toString()) {
+        if (destinationContainer.getUri().toString() === moverParentUri.toString()) {
             
             // Get the .config for the container -- this contains the ordering values for both the mover
             //      and the destination item
             // (Destination item is just the item that the mover was dropped onto -- not actually destination,
             //      as there is no moving actually occurring)
-            const containerConfigUri = vscode.Uri.joinPath(extension.rootPath, destinationContainer.ids.relativePath, destinationContainer.ids.fileName, '.config');
-            const containerConfig = await readDotConfig(containerConfigUri);
+            const containerDotConfigUri = await destinationContainer.getDotConfigPath();
+            if (!containerDotConfigUri) return -1;
+
+            const containerConfig = await readDotConfig(containerDotConfigUri);
             if (!containerConfig) return -1;
 
             type FileInfo = {
@@ -274,17 +272,51 @@ export class OutlineNode extends TreeNode {
             }
 
             // Write the edited config back to the disk
-            await writeDotConfig(containerConfigUri, containerConfig);
+            await writeDotConfig(containerDotConfigUri, containerConfig);
+
+            // Find the unordered list from the parent node based on the mover type
+            let unordered: OutlineNode[];
+            if (moverType === 'chapter') {
+                unordered = (destinationContainer.data as ContainerNode).contents;
+            }
+            else if (moverType === 'fragment') {
+                unordered = (destinationContainer.data as SnipNode | ChapterNode).textData;
+            }
+            else if (moverType === 'snip') {
+                unordered = (destinationContainer.data as ContainerNode).contents;
+            }
+
+            // Now order the contents of the actual objects for refreshing the view
+            const reordered: OutlineNode[] = Array(Object.keys(containerConfig).length);
+            Object.entries(containerConfig).forEach(([ fileName, config ]) => {
+                // Find the node itself in the unordered list
+                const moving = unordered.find(un => un.data.ids.fileName === fileName);
+                if (!moving) return;
+                reordered[config.ordering] = moving;
+            });
+
+            // Do the inverse of the above
+            if (moverType === 'chapter') {
+                (destinationContainer.data as ContainerNode).contents = reordered;
+            }
+            else if (moverType === 'fragment') {
+                (destinationContainer.data as SnipNode | ChapterNode).textData = reordered;
+            }
+            else if (moverType === 'snip') {
+                (destinationContainer.data as ContainerNode).contents = reordered;
+            }
 
             return off;
         }
         
         // Path for the old config file and old file
-        const moverUri = vscode.Uri.joinPath(extension.rootPath, this.data.ids.relativePath, this.data.ids.fileName);
+        const moverUri = this.getUri();
 
         // Path for the new fragment, and its new .config file
-        const destinationFolderUri = vscode.Uri.joinPath(extension.rootPath, destinationContainer.ids.relativePath, destinationContainer.ids.fileName);
-        const destinationDotConfigUri = vscode.Uri.joinPath(destinationFolderUri, `.config`);
+        const destinationFolderUri = destinationContainer.getUri();
+        const destinationDotConfigUri = await destinationContainer.getDotConfigPath();
+        if (!destinationDotConfigUri) return  -1;
+
         const destinationUri = vscode.Uri.joinPath(destinationFolderUri, this.data.ids.fileName);
 
         try {
@@ -312,6 +344,43 @@ export class OutlineNode extends TreeNode {
             // Finally move data with the move function specified above
             await vscode.workspace.fs.rename(moverUri, destinationUri);
 
+            // Once the moves have occurred on disk, then move the nodes in the actual objects
+            if (moverType === 'snip') {
+
+                // Add this node to the contents of the destination container
+                ((destinationContainer.data as ChapterNode | RootNode).snips.data as ContainerNode).contents.push(this);
+
+                // Remove this node from the contents of its old parent
+                // Get the old parent
+                const oldParentUri = this.data.ids.parentUri;
+                const oldParentNode = ((await provider._getTreeElementByUri(oldParentUri)) as OutlineNode).data as ChapterNode | RootNode;
+                const oldParentContents = (oldParentNode.snips.data as ContainerNode).contents;
+
+                // Get the index of the mover in the parent's contents
+                const moverUri = this.getUri().toString();
+                const oldParentIndex = oldParentContents.findIndex(node => node.getUri().toString() === moverUri);
+                if (oldParentIndex === -1) return -1;
+
+                // Remove this from parent
+                oldParentContents.splice(oldParentIndex, 1);
+            }
+            else if (moverType === 'fragment') {
+                // Push this fragment into the new parent
+                (destinationContainer.data as ChapterNode | SnipNode).textData.push(this);
+
+                const oldParentUri = this.data.ids.parentUri;
+                const oldParentNode = (await provider._getTreeElementByUri(oldParentUri) as OutlineNode).data as ChapterNode | SnipNode;
+                const oldParentContents = oldParentNode.textData;
+
+                // Get the index of the mover in the parent's contents
+                const moverUri = this.getUri().toString();
+                const oldParentIndex = oldParentContents.findIndex(node => node.getUri().toString() === moverUri);
+                if (oldParentIndex === -1) return -1;
+
+                // Remove this from parent
+                oldParentContents.splice(oldParentIndex, 1);
+            }
+
             return 0;
         }
         catch (e) {
@@ -320,7 +389,7 @@ export class OutlineNode extends TreeNode {
         }
     }
 
-    getParentUri(): string {
+    getParentUri(): vscode.Uri {
         return this.data.ids.parentUri;
     }
     getTooltip (): string | vscode.MarkdownString {
@@ -332,7 +401,7 @@ export class OutlineNode extends TreeNode {
     }
 
     getUri(): vscode.Uri {
-        return vscode.Uri.joinPath(extension.rootPath, this.data.ids.relativePath, this.data.ids.fileName);
+        return this.data.ids.uri;
     }
     getDisplayString (): string {
         return this.data.ids.display;
@@ -384,19 +453,19 @@ export class OutlineNode extends TreeNode {
         }
     }
 
-    async getDotConfigPath (outlineView: OutlineView): Promise<string | null> {
+    async getDotConfigPath (): Promise<vscode.Uri | null> {
         if (this.data.ids.type === 'root') {
             return null;
         }
         else if (this.data.ids.type === 'container') {
             // Config file for a container is found at relativePath/.config
             const relative = this.getUri();
-            return `${relative}/.config`;
+            return vscodeUris.Utils.joinPath(relative, `.config`);
         }
         else if (this.data.ids.type === 'chapter' || this.data.ids.type === 'snip' || this.data.ids.type === 'fragment') {
             const parentContainerUri = this.data.ids.parentUri;
             const parentConfigUri = vscodeUris.Utils.joinPath(parentContainerUri, '.config');
-            return parentConfigUri.toString();
+            return parentConfigUri;
         }
         else {
             throw new Error('Not possible');
