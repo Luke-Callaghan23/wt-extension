@@ -50,9 +50,6 @@ export function registerCommands(this: TODOsView) {
         // Converts an array of fragment OutlineNodes to an array of TODONodes for those fragments
         const convertFragments = (fragments: OutlineNode[]): TODONode[] => {
             return fragments.map(outlineFragment => {
-                if (outlineFragment.data.ids.display === 'New Fragment (7)') {
-                    console.log("HELLO");
-                }
                 return new TODONode(<FragmentData> {
                     ids: { ...outlineFragment.data.ids },
                     md: ''
