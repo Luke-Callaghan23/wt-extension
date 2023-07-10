@@ -4,8 +4,6 @@ import { ChapterNode, ContainerNode, RootNode, SnipNode, TODONode } from "../nod
 export async function getChildren(
     this: TODONode
 ): Promise<TreeNode[]> {
-    console.log('calling getChildren');
-
     const data = this.data;
     if (data.ids.type === 'chapter') {
         // Collect all text fragments of the chapter node as well as all snips

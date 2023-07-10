@@ -7,8 +7,6 @@ export async function getTODOCounts (
     this: TODONode
 ): Promise<number> {
 
-    console.log('calling getTODOCounts');
-
     // A TODO entry (the child of a fragment in the TODO view) is identified by having 
     //      a type id of 'fragment' and a parent type id also of 'fragment'
     // These nodes represent a single identified TODO in a text document, so it has a 

@@ -8,6 +8,8 @@ export async function update (
     editor: vscode.TextEditor
 ): Promise<void> {
 
+    console.log("awdawdw");
+
     const document = editor.document;
     
     const editedFragmentUri: vscode.Uri = document.uri;

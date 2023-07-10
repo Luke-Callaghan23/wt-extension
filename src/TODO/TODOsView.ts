@@ -67,9 +67,6 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 
     // Overriding the parent getTreeItem method to add FS API to it
 	async getTreeItem(element: TODONode): Promise<vscode.TreeItem> {
-
-		console.log('calling getTreeItem');
-
 		const treeItem = await super.getTreeItem(element);
 		if (element.data.ids.type === 'fragment') {
 			if (element.data.ids.type === 'fragment' && element.data.ids.parentTypeId === 'fragment') {
