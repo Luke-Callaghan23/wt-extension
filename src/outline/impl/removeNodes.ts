@@ -206,5 +206,5 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
         }
     }
     // Refresh the whole tree as it's hard to determine what the deepest root node is
-    this.refresh(this.tree);
+    this.refresh();
 }

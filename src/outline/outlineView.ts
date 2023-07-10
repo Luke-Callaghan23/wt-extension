@@ -43,7 +43,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
         return initializeOutline(init);
     }
 
-	async refresh(refreshRoot: OutlineNode): Promise<void> {
+	async refresh(): Promise<void> {
 		// Because of all the various edits that the outline view does on the internal structure 
 		//		and because we want to avoid uneeded reading of the disk file structure, we
 		//		send over the outline node to the todo view whenever their is updates

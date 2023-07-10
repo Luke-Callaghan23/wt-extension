@@ -13,7 +13,7 @@ export async function update (
     const editedFragmentNode: TODONode | null = await this._getTreeElementByUri(editedFragmentUri, undefined, false);
     if (!editedFragmentNode) {
         this.tree = await initializeOutline((e) => new TODONode(e));
-        this.refresh(this.tree);
+        this.refresh();
         return;
     }
 
@@ -39,7 +39,7 @@ export async function update (
 
     // // Refresh all invalidated nodes on the tree
     // this.tree = await initializeOutline((e) => new TODONode(e));
-    this.refresh(this.tree);
+    this.refresh();
 }
 
 export async function disable(this: TODOsView): Promise<void> {

@@ -24,7 +24,7 @@ export function registerCommands(this: TODOsView) {
             this.todo[uri] = { type: 'invalid' };
         });
         this.tree = await initializeOutline((e) => new TODONode(e));
-        this.refresh(this.tree);
+        this.refresh();
     });
 
     vscode.commands.registerCommand('wt.todo.help', () => {
@@ -92,10 +92,7 @@ export function registerCommands(this: TODOsView) {
         //		with those converted nodes
         (this.tree.data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
         (this.tree.data as RootNode<TODONode>).snips = convertSnips(outlineWorkSnips);
-        
         Object.keys(this.todo).forEach(key => delete this.todo[key]);
-        console.log(this.todo);
-        
-        this.refresh(this.tree);
+        this.refresh();
     });
 }
