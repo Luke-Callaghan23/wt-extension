@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { ChapterNode, ContainerNode, FragmentData, RootNode, SnipNode, TODONode } from "../node";
-import { Validation, isInvalidated, todo } from "../TODOsView";
+import { TODOsView, Validation } from "../TODOsView";
 import { scanFragment } from "../impl/scanFragment";
 
 export async function getTODOCounts (
@@ -15,11 +15,13 @@ export async function getTODOCounts (
         return 1;
     }
 
+    const todosView: TODOsView = await vscode.commands.executeCommand('wt.todo.getView');
+
     const uri = this.getUri();
-    if (!isInvalidated(uri.fsPath)) {
+    if (!todosView.isInvalidated(uri.fsPath)) {
         // If the TODO count for the uri is validated, then use the validated TODO 
         //      count of this node
-        const thisTodo = todo[uri.fsPath];
+        const thisTodo = todosView.todo[uri.fsPath];
         
         if (thisTodo.type === 'count') {
             // type == count -> a 'folder' of todos, .data is a sum of all the todo counts of all the children
@@ -47,16 +49,19 @@ export async function getTODOCounts (
             //      the chapters container and the work snips container
             // Use Promise.all to concurrently perform both of these actions as they do not depend on each other
             //      I don't know if it actually speeds up in a vscode environment but oh well :)
-            const [ chaptersTODOs, snipsTODOs ] = await Promise.all([
-                chaptersContainer.getTODOCounts(),
-                snipsContainer.getTODOCounts()
-            ]);
+            // const [ chaptersTODOs, snipsTODOs ] = await Promise.all([
+            //     chaptersContainer.getTODOCounts(),
+            //     snipsContainer.getTODOCounts()
+            // ]);
+
+            const chaptersTODOs = await chaptersContainer.getTODOCounts()
+            const snipsTODOs = await snipsContainer.getTODOCounts()
 
             // Add the counts for each to get the new count of TODOs for the root
             const rootTODOs = chaptersTODOs + snipsTODOs;
 
             // Set the count for the root node in the todo tree and return the new count
-            todo[uri.fsPath] = {
+            todosView.todo[uri.fsPath] = {
                 type: 'count',
                 data: rootTODOs
             };
@@ -74,7 +79,7 @@ export async function getTODOCounts (
 
             // Set the count of TODOs for this container to the sum of the TODOs for all of
             //      its contents and return the new count
-            todo[uri.fsPath] = {
+            todosView.todo[uri.fsPath] = {
                 type: 'count',
                 data: containerTODOs
             };
@@ -103,7 +108,7 @@ export async function getTODOCounts (
             ])).reduce(((acc, cur) => acc + cur), 0);
 
             // Store the todo counts for the chapter, and return
-            todo[uri.fsPath] = {
+            todosView.todo[uri.fsPath] = {
                 type: 'count',
                 data: chapterTODOs
             };
@@ -118,7 +123,7 @@ export async function getTODOCounts (
                 fragments.map(currentFragment => currentFragment.getTODOCounts())
             )).reduce(((acc, cur) => acc + cur), 0);
 
-            todo[uri.fsPath] = {
+            todosView.todo[uri.fsPath] = {
                 type: 'count',
                 data: fragmentsTODOs
             };
@@ -134,7 +139,7 @@ export async function getTODOCounts (
             const [ fragmentTODOs, count ]: [ Validation, number ] = await scanFragment(uri, fragmentNode);
 
             // Insert the new fragment TODOs into todo object
-            todo[uri.fsPath] = fragmentTODOs;
+            todosView.todo[uri.fsPath] = fragmentTODOs;
             return count;
         }
     }

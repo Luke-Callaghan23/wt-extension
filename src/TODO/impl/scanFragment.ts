@@ -3,7 +3,7 @@ import * as console from '../../vsconsole';
 import * as extension from '../../extension';
 import * as vscode from 'vscode';
 import { FragmentData } from '../node';
-import { Validation, TODO, todo } from '../TODOsView';
+import { Validation, TODO } from '../TODOsView';
 
 type IncompleteTODO = {
     rowStart: number,

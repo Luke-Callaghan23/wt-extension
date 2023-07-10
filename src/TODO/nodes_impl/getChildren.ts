@@ -2,8 +2,10 @@ import { TreeNode } from "../../outlineProvider/outlineTreeProvider";
 import { ChapterNode, ContainerNode, RootNode, SnipNode, TODONode } from "../node";
 
 export async function getChildren(
-    this: TODONode
+    this: TODONode,
+    filter: boolean
 ): Promise<TreeNode[]> {
+
     const data = this.data;
     if (data.ids.type === 'chapter') {
         // Collect all text fragments of the chapter node as well as all snips
@@ -13,7 +15,7 @@ export async function getChildren(
         const fragments = [];
         for (const textNode of chapter.textData) {
             const todos = await textNode.getTODOCounts();
-            if (todos > 0) {
+            if (!filter || todos > 0) {
                 fragments.push(textNode);
             }
         }
@@ -39,7 +41,7 @@ export async function getChildren(
         const fragments = []
         for (const textNode of snip.textData) {
             const todos = await textNode.getTODOCounts();
-            if (todos > 0) {
+            if (!filter || todos > 0) {
                 fragments.push(textNode);
             }
         }
@@ -70,7 +72,7 @@ export async function getChildren(
         const contents = [];
         for (const content of container.contents){
             const todos = await content.getTODOCounts();
-            if (todos > 0) {
+            if (!filter || todos > 0) {
                 contents.push(content);
             }
         } 

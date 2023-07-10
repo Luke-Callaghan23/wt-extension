@@ -12,6 +12,7 @@ import { ChapterNode, ContainerNode, FragmentData, NodeTypes, RootNode, SnipNode
 import { update } from './impl/timerFunctions';
 import { disable } from '../wordWatcher/timer';
 import { registerCommands } from './impl/registerCommands';
+import { getTODOCounts } from './nodes_impl/getTODOCounts';
 
 export type TODO = {
 	rowStart: number,
@@ -32,23 +33,25 @@ export type Validation = {
 };
 
 type TODOInfo = { [index: string]: Validation };
-export const todo: TODOInfo = {};
-
-export const isInvalidated: (uri: string) => boolean = (uri: string) => {
-	const todoLog = todo[uri];
-	return !todoLog || todoLog.type === 'invalid';
-};
-
-export const getTODO = (uri: string): Validation => {
-	const data = todo[uri];
-	if (data.type === 'invalid') {
-		vscode.window.showWarningMessage(`Error: uri was not validated before calling getTODO.  This is my fault.  Please message me and call me and idiot if you see this.`);
-		throw new Error('Make sure to validate your uri before calling getTODO!');
-	}
-	return data;
-};
+// export const todo: TODOInfo = {};
 
 export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
+	
+	todo: TODOInfo = {};
+	isInvalidated = (uri: string): boolean => {
+		const todoLog = this.todo[uri];
+		return !todoLog || todoLog.type === 'invalid';
+	};
+	
+	getTODO = (uri: string): Validation => {
+		const data = this.todo[uri];
+		if (data.type === 'invalid') {
+			vscode.window.showWarningMessage(`Error: uri was not validated before calling getTODO.  This is my fault.  Please message me and call me and idiot if you see this.`);
+			throw new Error('Make sure to validate your uri before calling getTODO!');
+		}
+		return data;
+	};
+	
 	
 	enabled: boolean = false;
 	update = update;
@@ -62,7 +65,8 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
     }
 
 	async refresh(refreshRoot: TODONode): Promise<void> {
-		this._onDidChangeTreeData.fire(refreshRoot);
+		await this.tree.getTODOCounts();
+		return this._onDidChangeTreeData.fire(undefined);
 	}
 
     // Overriding the parent getTreeItem method to add FS API to it

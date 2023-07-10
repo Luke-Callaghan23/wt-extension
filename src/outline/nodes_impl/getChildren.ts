@@ -1,6 +1,6 @@
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from "../node";
 
-export async function getChildren (this: OutlineNode): Promise<OutlineNode[]> {
+export async function getChildren (this: OutlineNode, filter: boolean): Promise<OutlineNode[]> {
     const data = this.data;
     if (data.ids.type === 'chapter') {
         // Collect all text fragments of the chapter node as well as all snips

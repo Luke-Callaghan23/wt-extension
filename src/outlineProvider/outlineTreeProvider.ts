@@ -11,7 +11,7 @@ export abstract class TreeNode {
 	abstract getTooltip(): string | vscode.MarkdownString;
 	abstract getUri(): vscode.Uri;
 	abstract getDisplayString(): string;
-	abstract getChildren(): Promise<TreeNode[]>;
+	abstract getChildren(filter: boolean): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
 	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>, moveOffset: number): Promise<number>;
 }
@@ -91,9 +91,9 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	public async getChildren (element: T): Promise<T[]> {
 		if (!element) {
-			return (await this.tree.getChildren()).map(on => on as T);
+			return (await this.tree.getChildren(true)).map(on => on as T);
 		}
-		return (await element.getChildren()).map(on => on as T);
+		return (await element.getChildren(true)).map(on => on as T);
 	}
 
 	public async getParent?(element: T): Promise<T> {
@@ -145,7 +145,8 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		};
 	}
 
-	async _getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: TreeNode): Promise<any> {
+	
+	async _getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: TreeNode, filter?: boolean): Promise<any> {
 		// If there is not targeted key, then assume that the caller is targeting
 		//		the entire tree
 		if (!targetUri) {
@@ -155,12 +156,11 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		// If there is no provided tree, use the whole tree as the search space
 		const currentNode = tree ?? this.tree;
 		if (!currentNode.getChildren) return null;
-		const currentChildren = await currentNode.getChildren();
+		const currentChildren = await currentNode.getChildren(!!filter);
 
 		if (currentNode.getUri().fsPath === targetUri.fsPath) {
 			return currentNode as T;
 		}
-		
 		// Iterate over all keys-value mappings in the current node
 		for (const subtree of currentChildren) {
 			const subtreeId = subtree.getUri().fsPath;
@@ -172,7 +172,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			// Otherwise, recurse into this function again, using the current
 			//		subtree as the search space
 			else {
-				const treeElement = await this._getTreeElementByUri(targetUri, subtree);
+				const treeElement = await this._getTreeElementByUri(targetUri, subtree, filter);
 				
 				// If the tree was found, return it
 				if (treeElement) {

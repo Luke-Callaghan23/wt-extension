@@ -3,12 +3,15 @@ import * as vscode from 'vscode';
 // import * as console from '../../vsconsole';
 import { Ids } from '../../outlineProvider/fsNodes';
 import { TODOData, TODONode } from '../node';
-import { isInvalidated, todo } from '../TODOsView';
 import { v4 as uuidv4 } from 'uuid';
+import { TODOsView } from '../TODOsView';
 
-export function convertToTODOData (this: TODONode): TODONode[] {
+export async function convertToTODOData (this: TODONode): Promise<TODONode[]> {
     const uri = this.getUri().fsPath;
-    const todos = todo[uri];
+
+    const todosView: TODOsView = await vscode.commands.executeCommand('wt.todo.getView');
+
+    const todos = todosView.todo[uri];
     if (todos.type !== 'todos') throw new Error('Not possible');
     
     // Convert each of this fragment's TODOs into a TODOData struct

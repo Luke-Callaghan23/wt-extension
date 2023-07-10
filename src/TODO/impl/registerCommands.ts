@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TODO, TODOsView, todo } from '../TODOsView';
+import { TODO, TODOsView } from '../TODOsView';
 import { initializeOutline } from '../../outlineProvider/initialize';
 import { TODONode } from '../node';
 import { OutlineNode } from '../../outline/node';
@@ -20,8 +20,8 @@ export function registerCommands(this: TODOsView) {
     });
 
     vscode.commands.registerCommand('wt.todo.refresh', async () => {
-        Object.getOwnPropertyNames(todo).forEach(uri => {
-            todo[uri] = { type: 'invalid' };
+        Object.getOwnPropertyNames(this.todo).forEach(uri => {
+            this.todo[uri] = { type: 'invalid' };
         });
         this.tree = await initializeOutline((e) => new TODONode(e));
         this.refresh(this.tree);
@@ -34,15 +34,14 @@ export function registerCommands(this: TODOsView) {
         }, 'Okay');
     });
 
+    vscode.commands.registerCommand('wt.todo.getView', () => this);
+
     // Command for recieving an updated outline tree from the outline view --
     // Since the OutlineView handles A LOT of modification of its node tree, it's a lot easier
     //		to just emit changes from there over to here and then reflect the changes on this end
     //		rather than trying to make sure the two trees are always in sync with each other
     // `updated` is always the root node of the outline tree
     vscode.commands.registerCommand('wt.todo.updateTree', (updated: OutlineNode) => {
-        
-        console.log('calling wt.todo.updateTree')
-        
         this.tree.data.ids = { ...updated.data.ids };
         const outlineRoot = updated.data as RootNode<OutlineNode>;
         const outlineChapters = outlineRoot.chapters;
@@ -51,6 +50,9 @@ export function registerCommands(this: TODOsView) {
         // Converts an array of fragment OutlineNodes to an array of TODONodes for those fragments
         const convertFragments = (fragments: OutlineNode[]): TODONode[] => {
             return fragments.map(outlineFragment => {
+                if (outlineFragment.data.ids.display === 'New Fragment (7)') {
+                    console.log("HELLO");
+                }
                 return new TODONode(<FragmentData> {
                     ids: { ...outlineFragment.data.ids },
                     md: ''
@@ -88,8 +90,12 @@ export function registerCommands(this: TODOsView) {
 
         // Convert the outline's Outline nodes into TODO nodes and swap out the TODO tree's data
         //		with those converted nodes
-        const todoRoot = this.tree.data as RootNode<TODONode>;
-        todoRoot.chapters = convertChapters(outlineChapters);
-        todoRoot.snips = convertSnips(outlineWorkSnips);
+        (this.tree.data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
+        (this.tree.data as RootNode<TODONode>).snips = convertSnips(outlineWorkSnips);
+        
+        Object.keys(this.todo).forEach(key => delete this.todo[key]);
+        console.log(this.todo);
+        
+        this.refresh(this.tree);
     });
 }

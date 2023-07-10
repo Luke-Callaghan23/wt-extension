@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TODOsView, todo } from "../TODOsView";
+import { TODOsView } from "../TODOsView";
 import { TODONode } from '../node';
 import { initializeOutline } from '../../outlineProvider/initialize';
 
@@ -7,16 +7,14 @@ export async function update (
     this: TODOsView,
     editor: vscode.TextEditor
 ): Promise<void> {
-
-    console.log("awdawdw");
-
     const document = editor.document;
     
     const editedFragmentUri: vscode.Uri = document.uri;
-    const editedFragmentNode: TODONode | null = await this._getTreeElementByUri(editedFragmentUri);
+    const editedFragmentNode: TODONode | null = await this._getTreeElementByUri(editedFragmentUri, undefined, false);
     if (!editedFragmentNode) {
         this.tree = await initializeOutline((e) => new TODONode(e));
         this.refresh(this.tree);
+        return;
     }
 
     let currentUri: vscode.Uri | undefined = editedFragmentUri;
@@ -26,7 +24,7 @@ export async function update (
     //		parents
     while (currentNode && currentUri) {
         // Invalidate the current node
-        todo[currentUri.fsPath] = { type: 'invalid' };
+        this.todo[currentUri.fsPath] = { type: 'invalid' };
         
         // Break once the root node's records have been removed
         if (currentNode.data.ids.type === 'root') {
@@ -45,5 +43,5 @@ export async function update (
 }
 
 export async function disable(this: TODOsView): Promise<void> {
-    vscode.commands.executeCommand('wt.todo.refresh', true);
+    return vscode.commands.executeCommand('wt.todo.refresh', true);
 }

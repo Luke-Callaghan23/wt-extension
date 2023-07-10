@@ -5,7 +5,7 @@ import * as vscodeUris from 'vscode-uri';
 import * as console from '../vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
 import * as fsNodes from '../outlineProvider/fsNodes';
-import { todo, isInvalidated, getTODO, Validation, TODO, TODOsView } from './TODOsView';
+import { Validation, TODO, TODOsView } from './TODOsView';
 import * as extension from '../extension';
 import { scanFragment } from './impl/scanFragment';
 import { convertToTODOData } from './nodes_impl/convertFragmentNode';
