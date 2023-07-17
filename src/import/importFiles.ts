@@ -513,6 +513,7 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
     // Sort all doc names by the last modified date
     docLastModified.sort((a, b) => a.lastModified - b.lastModified);
 
+    // Process imports for each imported file
     for (let index = 0; index < docNames.length; index++) {
         const docRelativePath = docNames[index];
         const doc = docInfo[docRelativePath];
@@ -527,5 +528,8 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
 
     // Do the expensive full refresh
     vscode.commands.executeCommand('wt.outline.refresh');
-    vscode.commands.executeCommand('wt.todo.refresh');
+
+    // No longer need to perform TODO refresh as outline refresh feeds updated content to 
+    //      tree for TODOs
+    // vscode.commands.executeCommand('wt.todo.refresh');
 }
