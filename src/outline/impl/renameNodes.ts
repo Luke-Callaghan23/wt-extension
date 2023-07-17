@@ -65,5 +65,5 @@ export async function renameResource (this: OutlineView) {
     resource.data.ids.display = newName;
 
     vscode.window.showInformationMessage(`Successfully renamed '${oldName}' to '${newName}'`);
-    this.refresh();
+    this.refresh(false);
 }

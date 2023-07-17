@@ -43,7 +43,14 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
         return initializeOutline(init);
     }
 
-	async refresh(): Promise<void> {
+	async refresh(reload: boolean): Promise<void> {
+
+		// If the reload option is set to true, the caller wants us to reload the outline tree
+		//		completely from disk
+		if (reload) {
+			this.tree = await this.initializeTree();
+		}
+
 		// Because of all the various edits that the outline view does on the internal structure 
 		//		and because we want to avoid uneeded reading of the disk file structure, we
 		//		send over the outline node to the todo view whenever their is updates

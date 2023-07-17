@@ -161,7 +161,7 @@ export async function newChapter (
 
     if (!options?.preventRefresh) {
         vscode.window.showInformationMessage(`Successfully created new chapter with name 'New Chapter' (file name: ${chapterFileName})`);
-        this.refresh();
+        this.refresh(false);
     }
 
     await Promise.all(awaitables);
@@ -351,7 +351,7 @@ export async function newSnip (
     }
 
     if (!options?.preventRefresh) {
-        this.refresh();
+        this.refresh(false);
         vscode.window.showInformationMessage('Successfully created new snip');
     }
 
@@ -462,7 +462,7 @@ export async function newFragment (
     await writeDotConfig(parentDotConfigUri, parentDotConfig);
 
     if (!options?.preventRefresh) {
-        this.refresh();
+        this.refresh(false);
         vscode.window.showInformationMessage('Successfully created new snip');
     }
     return fragmentNode.getUri();

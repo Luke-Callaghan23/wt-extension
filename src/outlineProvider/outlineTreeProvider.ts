@@ -85,7 +85,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
 	
-	abstract refresh(): Promise<void>;
+	abstract refresh(reload: boolean): Promise<void>;
 
 	// Tree data provider 
 
@@ -210,7 +210,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			for (const mover of filteredParents) {
 				offset += await mover.moveNode(targ, this, offset);
 			}
-			this.refresh();
+			this.refresh(false);
 		}
     }
     public async handleDrag(source: T[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {

@@ -255,7 +255,7 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
 
     // Write the re formated .config file
     await writeDotConfig(dotConfigUri, reformated);
-    await this.refresh();
+    await this.refresh(false);
     this.view.reveal((this.tree.data as RootNode).chapters, { focus: false, select: true });
 }
 
@@ -361,6 +361,6 @@ export async function moveDown (this: OutlineView, resource: any) {
     
     // Write the re formated .config file
     await writeDotConfig(dotConfigUri, reformated);
-    await this.refresh();
+    await this.refresh(false);
     this.view.reveal((this.tree.data as RootNode).chapters, { focus: true, select: true });
 }
