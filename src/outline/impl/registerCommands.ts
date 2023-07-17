@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
 import { ContainerNode, OutlineNode, RootNode } from '../node';
 import * as extension from '../../extension';
+import { CopiedSelection } from './copyPaste';
 
 
 // Register all the commands needed for the outline view to work
@@ -22,9 +23,19 @@ export function registerCommands (this: OutlineView) {
         this.newChapter(resource);
     });
     vscode.commands.registerCommand("wt.outline.newSnip", (resource) => {
+        if (!resource && this.view.selection.length > 0) {
+            // If the resource of the command is undefined, but there are selected items in the view
+            //      then use the first selected item as the resource
+            resource = this.view.selection[0];
+        }
         this.newSnip(resource);
     });
     vscode.commands.registerCommand("wt.outline.newFragment", (resource) => {
+        if (!resource && this.view.selection.length > 0) {
+            // If the resource of the command is undefined, but there are selected items in the view
+            //      then use the first selected item as the resource
+            resource = this.view.selection[0];
+        }
         this.newFragment(resource);
     });
 

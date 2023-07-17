@@ -4,7 +4,7 @@ import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig } from '../../help';
 import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentData } from '../node';
 import { OutlineView } from '../outlineView';
-import * as console from '../../vsconsole';
+// import * as console from '../../vsconsole';
 import * as extension from '../../extension';
 import { v4 as uuidv4 } from 'uuid';
 import { FileAccessManager } from '../../fileAccesses';
@@ -144,6 +144,11 @@ export async function newChapter (
             // Push the fragment data inside of the chapter node's data tree
             const fragment = new OutlineNode(fragmentNode);
             chapterNode.textData.push(fragment);
+            
+            // Open the text document in the editor as well
+            if (!options?.preventRefresh) {
+                vscode.window.showTextDocument(fragmentUri);
+            }
         }
         
         // Write the .config for this chapter's fragments
@@ -174,6 +179,8 @@ export async function newSnip (
     options?: CreateOptions
 ): Promise<vscode.Uri | null> {
     
+    console.log(resource);
+
     // Need to determine where the snip is going to go
     // If the current resource is a snip or a fragment, insert the snip in the nearest chapter/root that parents that fragment
     // If the current resource is a chapter, insert the snip in that chapter
@@ -181,7 +188,52 @@ export async function newSnip (
 
     let parentNode: OutlineNode;
     if (!resource) {
-        parentNode = (this.tree.data as RootNode).snips;
+
+        // If the selected resource is `undefined`, then search for the the container
+        //      of the latest accessed fragment
+        // Using the work snips container as a fallback
+        const fallback = (this.tree.data as RootNode).snips;
+
+        // Get the closest snip container to the latest accessed snip:
+        const latestAccessedFragment = FileAccessManager.lastAccessedFragment;
+        if (!latestAccessedFragment) {
+            parentNode = fallback;
+        }
+        else {
+            // Case: there is a latest accessed fragment
+            const fragmentNode: OutlineNode | undefined | null = await this._getTreeElementByUri(latestAccessedFragment);
+            if (!fragmentNode) {
+                parentNode = fallback;
+            }
+            else {
+                // Case: fragment has a corresponding node in the outline view
+                const fragmentContainerUri = fragmentNode.data.ids.parentUri;
+                const fragmentContainer: OutlineNode | undefined | null = await this._getTreeElementByUri(fragmentContainerUri);
+                if (!fragmentContainer) {
+                    parentNode = fallback;
+                }
+                // Cases: fragment has a corresponding container
+                // If the parent of the latest accessed container is chapter, use
+                //      the snips container of that chapter as the destination of this
+                //      new snip
+                else if (fragmentContainer.data.ids.type === 'chapter') {
+                    parentNode = (fragmentContainer.data as ChapterNode).snips;
+                }
+                // If the parent of the latest accessed container is a snip, use
+                //      the parent container of that snip as the destination
+                else if (fragmentContainer.data.ids.type === 'snip') {
+                    const snipsContainerUri = fragmentContainer.data.ids.parentUri;
+                    const snipsContainer: OutlineNode | undefined | null = await this._getTreeElementByUri(snipsContainerUri);
+                    if (!snipsContainer) {
+                        parentNode = fallback;
+                    }
+                    else {
+                        parentNode = snipsContainer;
+                    }
+                }
+                else throw 'Not reachable';
+            }
+        }
     }
     else {
         switch (resource.data.ids.type) {
@@ -329,13 +381,17 @@ export async function newSnip (
 
         // Push this fragment to the parent snip
         snipNode.textData.push(new OutlineNode(fragmentNode));
-
         
         // Write the .config file for the new snips' fragments
         snipDotConfig[fragmentFileName] = {
             title: fragmentTitle,
             ordering: 0,
         };
+
+        // Open the text document in the editor as well
+        if (!options?.preventRefresh) {
+            vscode.window.showTextDocument(fragmentUri);
+        }
     }
 
     // Write the .config file for fragments of this snip
@@ -365,9 +421,15 @@ export async function newFragment (
     resource: OutlineNode | undefined, 
     options?: CreateOptions
 ): Promise<vscode.Uri | null> {
-    if (!resource) {
-        // If there is no selected resource, get the last opened file access from the FileAccessManager
-        const lastAccessedFragmentUri = FileAccessManager.lastAccess;
+
+
+    console.log(this.view.selection);
+
+    // If the root is the selected node or if there is no selected resource in the
+    //      view, it's too ambiguous to decide the destination, instead default to 
+    //      the last accessed fragment as the selected resource
+    if (!resource || resource.data.ids.type === 'root') {
+        const lastAccessedFragmentUri = FileAccessManager.lastAccessedFragment;
         if (lastAccessedFragmentUri === undefined) {
             vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
             return null;
@@ -391,7 +453,7 @@ export async function newFragment (
     }
     else if (resource.data.ids.type === 'container') {
         // Get the last fragment of the selected container that was accessed
-        const lastAccessedFragmentInContainerUri = FileAccessManager.containerLastAccessedDocument(resource);
+        const lastAccessedFragmentInContainerUri = FileAccessManager.lastAccessedFragmentForUri(resource.data.ids.uri);
         resource = await this._getTreeElementByUri(lastAccessedFragmentInContainerUri);
         if (!resource) {
             // Since a container is a something that holds other folder nodes, you cannot add a fragment direcly to a container
@@ -462,6 +524,7 @@ export async function newFragment (
     await writeDotConfig(parentDotConfigUri, parentDotConfig);
 
     if (!options?.preventRefresh) {
+        vscode.window.showTextDocument(fragmentUri);
         this.refresh(false);
         vscode.window.showInformationMessage('Successfully created new snip');
     }
