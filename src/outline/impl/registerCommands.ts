@@ -62,4 +62,52 @@ export function registerCommands (this: OutlineView) {
     });
 
     vscode.commands.registerCommand('wt.outline.getOutline', () => this);
+
+    vscode.commands.registerCommand('wt.outline.copyItems', () => {
+        // Ensure that there are selected items and then call the `copy` method
+        const selected = this.view.selection;
+        if (selected.length === 0) return;
+        this.copy(selected);
+    });
+
+    vscode.commands.registerCommand('wt.outline.pasteItems', async () => {
+        
+        // Ensure that there are items to paste currently stored in workspace state
+        const copied: CopiedSelection | undefined = this.context.workspaceState.get<CopiedSelection>('copied');
+        if (!copied) return;
+
+        // Find all copied items that still exist in the tree in the same location
+        const copies: (OutlineNode | undefined | null)[] = await Promise.all(copied.nodes.map(copy => {
+            return this._getTreeElementByUri(copy.data.ids.uri) as Promise<OutlineNode | null | undefined>;
+        }));
+        const validCopiedNodes = copies.filter(copy => copy) as OutlineNode[];
+
+        // Ensure that there still exists some valid nodes to paste
+        if (validCopiedNodes.length === 0) return;
+
+        // Create a new copied object for the copied data
+        const validCopied: CopiedSelection = validCopiedNodes.length === copied.nodes.length
+            ? copied : {
+                count: validCopiedNodes.length,
+                nodes: validCopiedNodes,
+                type: copied.type
+            };
+
+        // If there is no selected detination for the paste in the outline
+        //      view, then default to using the tree as the paste destination
+        let selected = this.view.selection;
+        if (selected.length === 0) selected = [ this.tree ];
+
+        const pasteLog: { [index: string]: 1 } = {};
+
+        // Now, for each node currently selected in the outline view, paste all
+        //      copied content into that destination
+        for (const destination of selected) {
+            const pasted = await this.paste(destination, validCopied, pasteLog);
+            if (!pasted) continue;
+
+            // Add the destination of the laste paste into the paste log
+            pasteLog[pasted.fsPath] = 1;
+        }
+    });
 }

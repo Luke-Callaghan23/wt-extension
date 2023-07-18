@@ -13,8 +13,9 @@ import * as renameFunctions from './impl/renameNodes';
 import { Workspace } from '../workspace/workspaceClass';
 import { NodeTypes } from '../outlineProvider/fsNodes';
 import * as console from '../vsconsole';
-import { registerCommands } from './impl/registerCommands';
-import { selectActiveDocument } from './impl/selectActiveDocument';
+import * as commands from './impl/registerCommands';
+import * as activeDocuments from './impl/selectActiveDocument';
+import * as  copyPaste from './impl/copyPaste';
 
 export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 
@@ -33,9 +34,13 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
     // Renaming ndoes
 	renameResource = renameFunctions.renameResource;
 
-	registerCommands = registerCommands;
+	// Copy and pasting files
+	copy = copyPaste.copy;
+	paste = copyPaste.paste;
 
-	selectActiveDocument = selectActiveDocument;
+	// Misc
+	registerCommands = commands.registerCommands;
+	selectActiveDocument = activeDocuments.selectActiveDocument;
 
 	//#region Tree Provider methods
 	async initializeTree(): Promise<OutlineNode> {
@@ -100,7 +105,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 	}
 
     constructor(
-        context: vscode.ExtensionContext, 
+        protected context: vscode.ExtensionContext, 
 		protected workspace: Workspace
     ) {
         super(context, 'wt.outline');

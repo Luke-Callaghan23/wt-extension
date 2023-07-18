@@ -9,6 +9,8 @@ import { Packageable } from './packageable';
 export class FileAccessManager implements Packageable {
 
     static lastAccessedFragment: vscode.Uri | undefined;
+    static lastAccessedChapter: vscode.Uri | undefined;
+    static lastAccessedSnip: vscode.Uri | undefined;
 
     // container uri -> uri of last accessed fragment of that container
     // private static fileAccesses: { [ index: string ]: vscode.Uri };
@@ -17,6 +19,7 @@ export class FileAccessManager implements Packageable {
     private static latestFragmentForUri: { [index: string]: vscode.Uri };
 
     private static positions: { [ index: string ]: vscode.Selection };
+
 
     static async documentOpened (openedUri: vscode.Uri, view?: OutlineView): Promise<void> {
         
@@ -29,29 +32,17 @@ export class FileAccessManager implements Packageable {
             outlineView = view;
         }
 
-
-        // Traverse upwards from the opened fragment until we find a node whose type is container
-        // const openedUri = document.uri;
-        // let uri: vscode.Uri | undefined = document.uri;
-		// let node: OutlineNode | null = await outlineView._getTreeElementByUri(document.uri);
-		// while (node && uri) {
-		// 	// Break once the current node is a container
-		// 	if (node.data.ids.type === 'container') {
-		// 		break;
-		// 	}
-
-		// 	// Otherwise, traverse upwards
-		// 	const parentId = node.data.ids.parentUri;
-		// 	node = await outlineView._getTreeElementByUri(parentId);
-		// 	uri = node?.getUri();
-		// }
-        // if (node?.data.ids.type !== 'container') return;
-
         // Mark the last opened document for each parental node as the document which was just opened
         let currentUri: vscode.Uri | undefined = openedUri;
         let currentNode : OutlineNode | null = await outlineView._getTreeElementByUri(openedUri);
         while (currentUri && currentNode) {
-            
+            // Mark latest accessed chapter or snip if the current node is a chapter or snip
+            if (currentNode.data.ids.type === 'chapter') {
+                FileAccessManager.lastAccessedChapter = currentUri;
+            }
+            else if (currentNode.data.ids.type === 'snip') {
+                FileAccessManager.lastAccessedSnip = currentUri;
+            }
 
             // Set the latest accessed fragment for the current uri to the fragment document which was just opened
             FileAccessManager.latestFragmentForUri[currentUri.fsPath] = openedUri;
@@ -65,55 +56,11 @@ export class FileAccessManager implements Packageable {
             currentNode = await outlineView._getTreeElementByUri(currentUri);
         }
 
-        // // Get the uri of the container
-        // const containerNode: OutlineNode = node;
-        // const containerUri = containerNode.getUri();
-        // const containerUsableUri = containerUri.fsPath.replace(extension.rootPath.fsPath, '');
-
-        // // Set the latest file access for the container of the opened uri to the opened uri
-        // FileAccessManager.fileAccesses[containerUsableUri] = openedUri;
-
-        console.log(openedUri)
-
         // Also update the latest file access
         FileAccessManager.lastAccessedFragment = openedUri;
     }
 
-    // Gets the last accessed document inside of a container
-    // If none of a container's 
-    // static containerLastAccessedDocument (container: OutlineNode): vscode.Uri {
-        
-    //     const containerUri = container.getUri();
-    //     const containerUsableUri = containerUri.fsPath.replace(extension.rootPath.fsPath, '');
-
-    //     // First, check if there is a log for this container 
-    //     const lastAccess: vscode.Uri | undefined = FileAccessManager.fileAccesses[containerUsableUri];
-    //     if (lastAccess !== undefined) {
-    //         // If there is a logged access for the target container, simply return that access
-    //         return lastAccess;
-    //     }
-
-    //     // If there has been no logged accesses for the target container, then use the latest fragment of the latest item
-    //     //      in the container
-    //     const containerNode: ContainerNode = container.data as ContainerNode;
-    //     const content: OutlineNode[] = containerNode.contents;
-    //     content.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
-        
-    //     // Content always holds ChapterNodes or SnipNodes -- both of which have .textData arrays
-    //     const lastContent: (ChapterNode | SnipNode) = content[content.length - 1].data as (ChapterNode | SnipNode);
-    //     const textFragments: OutlineNode[] = lastContent.textData;
-    //     textFragments.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
-
-    //     // Last fragment in the ordered list of fragments is the target
-    //     const lastFragment: OutlineNode = textFragments[textFragments.length - 1];
-    //     const fragmentUri = lastFragment.getUri();
-        
-    //     // Add the mapping from container uri to its last (ordered) fragment
-    //     FileAccessManager.fileAccesses[containerUsableUri] = fragmentUri;
-    //     return fragmentUri;
-    // }
-
-    static lastAccessedFragmentForUri (targetUri: vscode.Uri): vscode.Uri {
+    static lastAccessedFragmentForUri (targetUri: vscode.Uri): vscode.Uri | undefined {
         return FileAccessManager.latestFragmentForUri[targetUri.fsPath];
     }
 
@@ -193,20 +140,6 @@ export class FileAccessManager implements Packageable {
             await this.documentOpened(opened, outlineView);
         }
 
-
-        // FileAccessManager.fileAccesses = {};
-
-        // // On startup, log the accesses for all open tabs
-        
-        
-        // // Log each of the opened editors
-        // const editors: vscode.TextEditor[] = [...vscode.window.visibleTextEditors];
-        // for (const editor of editors) {
-        //     await FileAccessManager.documentOpened(editor.document, outlineView);
-        // }
-
-        // FileAccessManager.lastAccess = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document.uri : undefined;
-        // FileAccessManager.lastEditor = vscode.window.activeTextEditor;
         FileAccessManager.positions = {};
 
         // Register the commands associated with the file access manager

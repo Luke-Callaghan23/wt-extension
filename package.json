@@ -154,6 +154,14 @@
 				"title": "Writing Tool: Delete Resource in Outline"
 			},
 			{
+				"command": "wt.outline.copyItems",
+				"title": "Writing Tool: Copy Outline Tree Items"
+			},
+			{
+				"command": "wt.outline.pasteItems",
+				"title": "Writing Tool: Paste Outline Tree Items"
+			},
+			{
 				"command": "wt.import.fileExplorer.refresh",
 				"title": "Writing Tool: Refresh Import File Explorer",
 				"icon": "$(refresh)"
@@ -634,6 +642,16 @@
 			{
 				"command": "wt.outline.renameFile",
 				"key": "f2",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+			},
+			{
+				"command": "wt.outline.copyItems",
+				"key": "ctrl+c",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+			},
+			{
+				"command": "wt.outline.pasteItems",
+				"key": "ctrl+v",
 				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
 			},
 			{
