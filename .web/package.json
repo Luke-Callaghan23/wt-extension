@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.47",
+	"version": "0.0.48",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -138,6 +138,14 @@
 			{
 				"command": "wt.outline.removeResource",
 				"title": "Writing Tool: Delete Resource in Outline"
+			},
+			{
+				"command": "wt.outline.copyItems",
+				"title": "Writing Tool: Copy Outline Tree Items"
+			},
+			{
+				"command": "wt.outline.pasteItems",
+				"title": "Writing Tool: Paste Outline Tree Items"
 			},
 			{
 				"command": "wt.import.fileExplorer.refresh",
@@ -539,6 +547,16 @@
 					"when": "view == wt.outline"
 				},
 				{
+					"command": "wt.outline.copyItems",
+					"when": "view == wt.outline",
+					"group": "5_cutcopypaste"
+				},
+				{
+					"command": "wt.outline.pasteItems",
+					"when": "view == wt.outline",
+					"group": "5_cutcopypaste"
+				},
+				{
 					"command": "wt.wordWatcher.deleteWord",
 					"when": "view == wt.wordWatcher && (viewItem == watchedWord_disabled || viewItem == watchedWord_enabled)"
 				},
@@ -620,6 +638,16 @@
 			{
 				"command": "wt.outline.renameFile",
 				"key": "f2",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+			},
+			{
+				"command": "wt.outline.copyItems",
+				"key": "ctrl+c",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+			},
+			{
+				"command": "wt.outline.pasteItems",
+				"key": "ctrl+v",
 				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
 			},
 			{

@@ -100,14 +100,33 @@ export function registerCommands (this: OutlineView) {
 
         const pasteLog: { [index: string]: 1 } = {};
 
+        const copiedCount = validCopied.count;
+        let pastedCount = 0;
+        let pasteErrors = 0;
+
         // Now, for each node currently selected in the outline view, paste all
         //      copied content into that destination
         for (const destination of selected) {
             const pasted = await this.paste(destination, validCopied, pasteLog);
-            if (!pasted) continue;
+            if (!pasted) {
+                vscode.window.showWarningMessage(`WARN: Skipped paste to '${destination.data.ids.display}': unknown error`);
+                pasteErrors++;
+                continue;
+            }
 
             // Add the destination of the laste paste into the paste log
             pasteLog[pasted.fsPath] = 1;
+            pastedCount += 1;
+        }
+
+        if (pasteErrors === 0) {
+            vscode.window.showInformationMessage(`INFO: Successfully pasted (${copiedCount}) resources into (${pastedCount}) destinations`);
+        }
+        else if (pastedCount > 0) {
+            vscode.window.showWarningMessage(`WARN: Pasted (${copiedCount}) resources to only (${pastedCount}) of (${pasteErrors + pastedCount}) destinations`)
+        }
+        else {
+            vscode.window.showErrorMessage(`ERROR: Pasted to 0 destination`)
         }
     });
 }
