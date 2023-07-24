@@ -513,7 +513,9 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
         }
     }
     else {
-        if (startOffset === eolPosition) {
+        if (startOffset === eolPosition || 
+            (startOffset === eolPosition - 1 && docText[startOffset] === '\r')      // Thanks windows
+        ) {
             // Ditto for all the comments above, but going backwards
             const nextNewline = startOffset + 1;
             // Character before newline is the last character in a line
