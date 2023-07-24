@@ -2,12 +2,12 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
 import { ConfigFileInfo } from '../help';
-import { getUsableFileName } from '../outline/createNodes';
+import { getUsableFileName } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
 import * as console from '../vsconsole';
 import { ImportForm } from './importFormView';
-import { OutlineNode } from '../outline/outlineNodes';
+import { OutlineNode } from '../outline/node';
 import * as showdown from 'showdown';
 import * as mammoth from 'mammoth';
 const pdf2html = require('pdf2html');
@@ -391,7 +391,8 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
         // dest = 'chapter' -> inserted snips are inserted into the specified chapter
         // Find the chapter by its uri and use that as the parent node
         const chapterUri = vscode.Uri.joinPath(extension.rootPath, output.outputChapter);
-        const chapterNode: OutlineNode = await outlineView._getTreeElementByUri(chapterUri);
+        const chapterNode: OutlineNode | null = await outlineView._getTreeElementByUri(chapterUri);
+        if (!chapterNode) return;
         parentNode = chapterNode;
     }
 
@@ -512,6 +513,7 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
     // Sort all doc names by the last modified date
     docLastModified.sort((a, b) => a.lastModified - b.lastModified);
 
+    // Process imports for each imported file
     for (let index = 0; index < docNames.length; index++) {
         const docRelativePath = docNames[index];
         const doc = docInfo[docRelativePath];
@@ -523,7 +525,11 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
             vscode.window.showErrorMessage(`Error occurred when importing '${docRelativePath}': ${e}`);
         }
     }
-    // Refresh both the outline view and todo view to reflect changes
+
+    // Do the expensive full refresh
     vscode.commands.executeCommand('wt.outline.refresh');
-    vscode.commands.executeCommand('wt.todo.refresh');
+
+    // No longer need to perform TODO refresh as outline refresh feeds updated content to 
+    //      tree for TODOs
+    // vscode.commands.executeCommand('wt.todo.refresh');
 }

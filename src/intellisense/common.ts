@@ -124,3 +124,10 @@ export function capitalize (str: string): string {
     const end = str.substring(1);
     return str[0].toLocaleUpperCase() + end;
 }
+
+
+
+export type WordRange = {
+    text: string,
+    range: vscode.Range,
+};

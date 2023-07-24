@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { Packageable } from '../packageable';
-import { Workspace } from '../workspace/workspaceClass';
+import { Packageable } from '../../packageable';
+import { Workspace } from '../../workspace/workspaceClass';
 import { Dict } from './dictionary';
 
 export class PersonalDictionary implements Packageable {

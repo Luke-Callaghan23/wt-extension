@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as extension from './extension';
 import { Buff } from './Buffer/bufferSource';
+import { TreeNode } from './outlineProvider/outlineTreeProvider';
+import { OutlineNode } from './outline/node';
 
 export type PromptOptions = {
     placeholder: string,
@@ -42,7 +44,8 @@ export async function quickPickPrompt (options: QuickPickOptions): Promise<strin
 export type ConfigFileInfoExpanded = {
     title: string,
     ordering: number,
-    fileName: string
+    fileName: string,
+    node: OutlineNode
 };
 
 export type ConfigFileInfo = {
@@ -92,4 +95,13 @@ export function getNonce () {
 		text += possible.charAt(Math.floor(Math.random() * possible.length));
 	}
 	return text;
+}
+
+export function hexToRgb (hex: string): null | { r: number, g: number, b: number } {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
 }

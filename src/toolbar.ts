@@ -3,11 +3,14 @@ import * as vscode from 'vscode';
 import { gitCommit, gitiniter } from './gitTransactions';
 import * as console from './vsconsole';
 import * as extension from './extension';
-import { Buff } from './Buffer/bufferSource';
+import { Workspace } from './workspace/workspaceClass';
 
 
 // Function for surrounding selected text with a specified string
-function surroundSelectionWith (surround: string) {
+function surroundSelectionWith (start: string, end?: string) {
+
+    end = end || start;
+
     // Get the active text editor
     const editor = vscode.window.activeTextEditor;
 
@@ -22,16 +25,16 @@ function surroundSelectionWith (surround: string) {
     // Check if the string immediately before the selection is the same as the surround string
     let beforeSelection: vscode.Selection | undefined = undefined;
     {
-        if (selected.startsWith(surround)) {
-            const newEnd = new vscode.Position(selection.start.line, selection.start.character + surround.length);
+        if (selected.startsWith(start)) {
+            const newEnd = new vscode.Position(selection.start.line, selection.start.character + start.length);
             beforeSelection = new vscode.Selection(selection.start, newEnd);
         }
         else {
-            if (selection.start.character >= surround.length) {
-                const newStart = new vscode.Position(selection.start.line, selection.start.character - surround.length);
+            if (selection.start.character >= start.length) {
+                const newStart = new vscode.Position(selection.start.line, selection.start.character - start.length);
                 beforeSelection = new vscode.Selection(newStart, selection.start);
                 const beforeText = document.getText(beforeSelection);
-                if (beforeText !== surround) beforeSelection = undefined;
+                if (beforeText !== start) beforeSelection = undefined;
             }
         }
     }
@@ -39,15 +42,15 @@ function surroundSelectionWith (surround: string) {
     // Check if the string immediately after the selection is the same as the surround string
     let afterSelection: vscode.Selection | undefined = undefined;
     {
-        if (selected.endsWith(surround)) {
-            const newStart = new vscode.Position(selection.end.line, selection.end.character - surround.length);
+        if (selected.endsWith(end)) {
+            const newStart = new vscode.Position(selection.end.line, selection.end.character - end.length);
             afterSelection = new vscode.Selection(newStart, selection.end);
         }
         else {
-            const newEnd = new vscode.Position(selection.end.line, selection.end.character + surround.length);
+            const newEnd = new vscode.Position(selection.end.line, selection.end.character + end.length);
             afterSelection = new vscode.Selection(selection.end, newEnd);
             const afterText = document.getText(afterSelection);
-            if (afterText !== surround) afterSelection = undefined;
+            if (afterText !== start) afterSelection = undefined;
         }
     }
 
@@ -56,7 +59,7 @@ function surroundSelectionWith (surround: string) {
         //      to move the cursor outside of the the surround string
         // Simply shift the current editor's selection
         const currentOffset = editor.document.offsetAt(selection.end);
-        const afterSurroundString = currentOffset + surround.length;
+        const afterSurroundString = currentOffset + end.length;
         const afterSurroundPosition = editor.document.positionAt(afterSurroundString);
         editor.selection = new vscode.Selection(afterSurroundPosition, afterSurroundPosition);
     }
@@ -74,7 +77,7 @@ function surroundSelectionWith (surround: string) {
         // If before and after the selection is not already the surround string, add the surround string
     
         // Surround the selected text with the surround string
-        const surrounded = `${surround}${selected}${surround}`;
+        const surrounded = `${start}${selected}${end}`;
     
         // Replace selected text with the surrounded text
         editor.edit((editBuilder: vscode.TextEditorEdit) => {
@@ -87,11 +90,11 @@ function surroundSelectionWith (surround: string) {
             const curEditor = vscode.window.activeTextEditor;
             if (!curEditor) return;
             const end = curEditor.selection.end;
-            const surroundLength = surround.length;
+            const startLength = start.length;
 
             // The new position is the same as the current position, minus the amount of characters in the 
             //      surround string
-            const newPosition = new vscode.Position(end.line, end.character - surroundLength);
+            const newPosition = new vscode.Position(end.line, end.character - startLength);
 
             // New selection is the desired position of the cursor (provided to the constructor twice, to
             //      get an empty selection)
@@ -112,6 +115,34 @@ export function strikethrough () {
     return surroundSelectionWith('~~');
 }
 
+export function commasize () {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+    const document = editor.document;
+    if (!document) return;
+
+    const text = document.getText();
+
+    let startPos: vscode.Position = editor.selection.start;
+    let startStr = ', ';
+
+    let endPos: vscode.Position = editor.selection.end;
+    let endStr = ', ';
+
+    const startOffset = document.offsetAt(editor.selection.start);
+    if (text[startOffset - 1] === ' ') {
+        const prev = document.positionAt(startOffset - 1);
+        startPos = prev;
+        startStr = ',';
+    }
+    const endOffset = document.offsetAt(editor.selection.end);
+    if (text[endOffset] === ' ') {
+        endStr = ',';
+    }
+    editor.selection = new vscode.Selection(startPos, endPos);
+    return surroundSelectionWith(startStr, endStr);
+}
+
 export function remove () {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
@@ -128,21 +159,14 @@ export function header () {
     return vscode.commands.executeCommand('editor.action.commentLine');
 }
 
-async function packageContextItems () {
-    // Write context items to the file system before git save
-    const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
-    const contextJSON = JSON.stringify(contextItems);
-    const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-    return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
-}
 
 export async function save () {
-    await packageContextItems();
+    await Workspace.packageContextItems();
     return gitCommit();
 }
 
 export async function saveAll () {
-    await packageContextItems();
+    await Workspace.packageContextItems();
     return gitCommit();
 }
 
@@ -223,7 +247,9 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
         // If going forward, the character we're inspecting is actually the one behind the cursor
         offset -= 1;
     }
-
+    
+    const stopRegex = /[\.\?,"'-\(\)\[\]\{\}/\\]/;
+    
     // Move away from space characters
     let char = docText[offset];
     while (char && char === ' ') {
@@ -233,10 +259,19 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
         }
         char = docText[offset];
     }
-
-    // Main movement: 
-    const stopRegex = /[\s\.\?,"'-\(\)\[\]\{\}/\\]/;
-    if (stopRegex.test(char)) {
+    
+    if (char && /\s/.test(char)) {
+        // If the character is at whitespace, after moving away from spaces, then just move over all the whitespace
+        //      as well
+        while (char && /\s/.test(char)) {
+            offset += direction;
+            if (offset === -1) {
+                break;
+            }
+            char = docText[offset];
+        }
+    }
+    else if (stopRegex.test(char)) {
         // If the cursor is initially at a stop character, then go until we find a non-stop character
         while (char && stopRegex.test(char)) {
             offset += direction;
@@ -247,6 +282,7 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
         }
     }
     else {
+        const stopRegex = /[\s\.\?,"'-\(\)\[\]\{\}/\\]/;
         // If the cursor is at a non-stop character, then go until we find a stop character
         // (Also allow the character apostrophe character to be jumped -- as we don't want to stutter on the word 'don't')
         while (char && (char === "'" || !stopRegex.test(char))) {
@@ -286,118 +322,142 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
 
     const selection = editor.selection;
     const start = selection.isReversed ? selection.start : selection.end;
+    const anchor = selection.anchor;
 
-    const punctuation = /[\.\?\!]|[^\s]--\s/
+    const punctuation = /[\.\?\!]/
     const whitespace = /\s/;
+
     
-    // Need to track both the first 
-    let lastWhitespace = false;
-    let firstWhitespace: number | null = null;
-
-    let specialEndCondition;
-    let columnPosition = start.character;
-    let found: number = -1;
-
-    // Special case, jump sentence foreward is called in this situation:
-    //      `Hello, this is a sentence.|`
-    //      Where '|' is the cursor
-    // Need to adjust the start point for the loop to before the punctuation
-    // Without adjustment, loop will always end instantly, and no movement will 
-    //      be made as the cursor is searching for the first punctuation
-    // Expected result:
-    //      `|Hello, this is a sentence.`
-    // Result without adjustment:
-    //      `Hello, this is a sentence.|`
-    let oneMore = false;
-    while (columnPosition > 0 && punctuation.test(docText[document.offsetAt(new vscode.Position(start.line, columnPosition))-1])) {
-        oneMore = true;
-        columnPosition--;
-    }
-    if (oneMore) {
-        columnPosition--;
-    }
+    // Offset for end of line is found by getting the offset of the first character
+    //      of the next line and subtracting one (meaning the character prior to the 
+    //      first character of the next line (meaning the last character of this line
+    //      (meaning the end of the line for you, buckaroo))), and then subtract the
+    //      the offset for the beginning of this current line
+    const backwardColumnBound = 
+        document.offsetAt(new vscode.Position(start.line + 1, 0)) - 1
+        - document.offsetAt(new vscode.Position(start.line, 0));
     
-    while (true) {
+    // Offset for the beginning of the line is 0
+    const forwardColumnBound = 0;
 
-        // Temporary column position to be used in the below loop without editing columnPosition
-        let tmpCol = columnPosition;
+    const relevantColumnBound = jt === 'forward'
+        ? forwardColumnBound
+        : backwardColumnBound;
+
+    const lineNumber = start.line;
+    const initialColumn = start.character;
+    let columnOffset = 0;
+
+    const initialCharacterOffset = document.offsetAt(new vscode.Position(lineNumber, initialColumn));
+    const initialCharacter = docText[initialCharacterOffset];
+
+    const preceedingCharacterOffset = initialCharacterOffset + direction;
+    const preceedingCharacter = docText[preceedingCharacterOffset];
+
+    if (initialCharacter === '"' || punctuation.test(initialCharacter)) {
+        // If the initial character is on top of a punctuation or '"', then move it away
+        columnOffset += direction;
+    }
+
+    if (preceedingCharacter === '"' || punctuation.test(preceedingCharacter)) {
+        columnOffset += direction;
+        columnOffset += direction;
+    }
+
+    let finalColumn: number = -1;
+    if (initialColumn === relevantColumnBound) finalColumn = relevantColumnBound;
+    while (initialColumn !== relevantColumnBound) {
         
-        // Current position in the document (and temp variable to store it)
-        let currentPosition = document.offsetAt(new vscode.Position(start.line, tmpCol));
-        const tmpPosition = currentPosition;
+        // CASE: the relevant column bounding was reached
+        const iterationColumn = initialColumn + columnOffset;
+        if (iterationColumn === relevantColumnBound) {
+            finalColumn = relevantColumnBound;
+            break;
+        }
         
-        let passes = 0;
-        while (punctuation.test(docText[currentPosition])) {
-            tmpCol += direction;
-            currentPosition = document.offsetAt(new vscode.Position(start.line, tmpCol));
-            passes += 1;
-        }
+        const iterationCharacterOffset = document.offsetAt(new vscode.Position(lineNumber, iterationColumn));
+        const iterationCharacter = docText[iterationCharacterOffset];
 
-        // Test for the '-- ' condition
-
-        // Special conditions for tracking whitespace
-        // Whitespace needs to be tracked because the algorithm for searching for punctuation
-        //      is too greedy when going forward.  Need to be able to track all instances where 
-        //      a new area of whitespace was formed
-        // This is stored in `firstWhitespace`
-        // First whitespace tells the position of the starting point of the last chunk of whitespace
-        //      before puncuation
-        if (whitespace.test(docText[currentPosition])) {
-            if (!lastWhitespace) {
-                firstWhitespace = currentPosition;
-            }
-            lastWhitespace = true;
-        }
-        else {
-            lastWhitespace = false;
-        }
-
-        // Condition for when there is no sentence markers until be beginning or end of paragraph
-        if (jt === 'forward') {
-            specialEndCondition = columnPosition === 0;
-        }
-        else {
-            specialEndCondition = currentPosition === docText.length || docText[currentPosition] === '\n' || docText[currentPosition] === '\r';
-        }
-        if (passes > 0 || specialEndCondition) {
-            found = tmpPosition + passes;
+        // CASE: the current character matches a punction
+        if (punctuation.test(iterationCharacter)) {
+            finalColumn = iterationColumn;
             break;
         }
 
-        columnPosition += direction;
+        // CASE: the current character matches special stopping character '"'
+        if (iterationCharacter === '"') {
+            if (jt === 'forward') {
+                finalColumn = iterationColumn + 1;
+            }
+            else {
+                finalColumn = iterationColumn;
+            }
+            break;
+        }
+
+        columnOffset += direction;
     }
 
-    // Now we need to reorient the position of the cursor, depending on whether we're going forward or
-    //      backwards
-    if (jt === 'forward' && !specialEndCondition) {
-        // If jumping forward and column !== 0, then the cursor will look like this:
-        //      `Sentence before target|.  Target sentence.`
-        //      Where '|' is the cursor.
-        // We want the cursor to look like this:
-        //      `Sentence before target.  |Target sentence.`
-        if (firstWhitespace !== null) {
-            found = firstWhitespace + 1;
+    // if (finalColumn === -1) {
+    //     console.log("WARN: Final column was -1");
+    //     return null;
+    // } 
+
+    // Used for chaining multiple sentence jumps in a row
+    let position: vscode.Position;
+    if (finalColumn === initialColumn) {
+        if (finalColumn === relevantColumnBound) {
+
+            if (jt === 'forward' && document.offsetAt(new vscode.Position(start.line, finalColumn)) === 0) {
+                // Special case for when the final column is 1 and jump is forward:
+                // Long story short, going through the code below, the result would
+                //      move the column forward 1 (the while loop would test docText[-1], fall through
+                //      and increment the offset + 1 for forward jump, leading to position=1)
+                // So, to prepare for this, just set the position to 0, 0
+                position = new vscode.Position(0, 0);
+            }
+            else {
+                
+                // If final is initial and final is also the relevant column bound,
+                //      then skip all whitespace 
+                let currentOffset = document.offsetAt(new vscode.Position(start.line, finalColumn));
+                let currentCharacter = docText[currentOffset + direction];
+                while (whitespace.test(currentCharacter)) {
+    
+                    currentOffset += direction;
+                    currentCharacter = docText[currentOffset];
+    
+                    if (jt === 'forward' && currentOffset === 0) {
+                        // Set to -1 instead of 0, as right after this loop breaks,
+                        //      we add one to the `currentOffset` counter
+                        currentOffset = -1;
+                        break;
+                    }
+                    else if (jt === 'backward' && currentOffset === docText.length) {
+                        currentOffset = docText.length;
+                        break;
+                    }
+                }
+                if (jt === 'forward') {
+                    currentOffset += 1;
+                }
+                position = document.positionAt(currentOffset);
+            }
+        }
+        else {
+            position = new vscode.Position(start.line, finalColumn);
         }
     }
-    else if (jt === 'backward' && !specialEndCondition) {
-        // If jumping backwards and the cursor is not at the end of the current paragraph or document
-        //      AND there is multiple punc
-        // Then the cursor could look like this:
-        //      `Target sentence.|..  Sentence after target sentence.`
-        //      Where '|' is the cursor
-        // We want the cursor to look like this:
-        //      `Target sentence...|  Sentence after target sentence.`
-
+    else {
+        position = new vscode.Position(start.line, finalColumn);
     }
-    if (found === -1) return null;
-    
+
     // Set the new selection of the editor
-    const position: vscode.Position = document.positionAt(found);
     const select = new vscode.Selection (
-        position, 
         // If shift is held, use the start position of the previous selection as the active point
         //      of the new selection
-        shiftHeld ? start : position
+        shiftHeld ? anchor : position,
+        position, 
     );
     editor.selection = select;
     return select;
@@ -409,32 +469,78 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
 
     const document = editor.document;
     if (!document) return null;
+    
+    const docText = document.getText();
 
     const selection = editor.selection;
     const start = selection.isReversed ? selection.start : selection.end;
     const line = start.line;
+    const startOffset = document.offsetAt(start);
+    
+    const anchor = selection.anchor;
 
+    // Find the position of the end of the line (paragraph)
+    const nextLine = new vscode.Position(line + 1, 0);
+    const nextLinePosition = document.offsetAt(nextLine);
+    const eolPosition = nextLinePosition - 1;
+
+    
     // Find the jump position, depending on whether we're jumping forward or backward
     let position: vscode.Position;
+
     if (jt === 'forward') {
-        position = new vscode.Position(line, 0);
+        if (start.character === 0) {
+            // If we are already at the start of a line (paragraph) and we're jumping forward
+            //      then jump to the preceeding non-whitespace character
+            // Character before the first character in a line is always a newline
+            const preceedingNewline = startOffset - 1;
+            // Character before newline is the last character in a line
+            let preceedingParagraphOffset = preceedingNewline - 1;
+            let preceedingParagraphCharacter = docText[preceedingParagraphOffset];
+            while (/\s/.test(preceedingParagraphCharacter)) {
+                preceedingParagraphOffset -= 1;
+                preceedingParagraphCharacter = docText[preceedingParagraphOffset];
+                if (preceedingParagraphOffset === 0) {
+                    preceedingParagraphOffset = 0;
+                    break;
+                } 
+            }
+            position = document.positionAt(preceedingParagraphOffset + 1);
+        }
+        else {
+            // If not at the beginning of a line (paragraph), then jump there
+            position = new vscode.Position(line, 0);
+        }
     }
     else {
-
-        // Jumping backwards -> find position for the next line, and subtract one
-        const nextLine = new vscode.Position(line + 1, 0);
-        const nextLinePosition = document.offsetAt(nextLine);
-        const eolPosition = nextLinePosition - 1;
-
-        position = document.positionAt(eolPosition);
+        if (startOffset === eolPosition) {
+            // Ditto for all the comments above, but going backwards
+            const nextNewline = startOffset + 1;
+            // Character before newline is the last character in a line
+            let nextParagraphOffset = nextNewline + 1;
+            let nextParagraphCharacter = docText[nextParagraphOffset];
+            while (/\s/.test(nextParagraphCharacter)) {
+                nextParagraphOffset += 1;
+                nextParagraphCharacter = docText[nextParagraphOffset];
+                if (nextParagraphOffset === docText.length) {
+                    nextParagraphOffset = docText.length - 1;
+                    break;
+                } 
+            }
+            position = document.positionAt(nextParagraphOffset);
+        }
+        else {
+            // If not at the end of a line (paragrapg, then jump there)
+            position = document.positionAt(eolPosition);
+        }
     }
 
     // Set the new selection of the editor
-    const select = new vscode.Selection (
-        position, 
+    const select =  new vscode.Selection (
         // If shift is held, use the start position of the previous selection as the active point
         //      of the new selection
-        shiftHeld ? start : position
+        shiftHeld ? anchor : position,
+        position, 
     );
     editor.selection = select;
     return select;
@@ -448,6 +554,7 @@ export class Toolbar {
         vscode.commands.registerCommand('wt.editor.italisize', italisize);
         vscode.commands.registerCommand('wt.editor.bold', bold);
         vscode.commands.registerCommand('wt.editor.strikethrough', strikethrough);
+        vscode.commands.registerCommand('wt.editor.commasize', commasize);
         vscode.commands.registerCommand('wt.editor.header', header);
         vscode.commands.registerCommand('wt.editor.emdash', emDash);
         vscode.commands.registerCommand('wt.editor.emdashes', emDashes);

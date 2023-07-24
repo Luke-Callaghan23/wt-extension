@@ -1,6 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { v4 as uuidv4 } from 'uuid';
+import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, getLatestOrdering, readDotConfig } from '../help';
 import { TreeNode } from './outlineTreeProvider';
 import { ChapterNode, ContainerNode, FragmentData, NodeTypes, ResourceType, RootNode, SnipNode } from './fsNodes';
@@ -12,8 +12,8 @@ export type InitializeNode<T extends TreeNode> = (data: NodeTypes<T>) => T;
 export async function initializeOutline<T extends TreeNode>(init: InitializeNode<T>): Promise<T> {
 
     const dataFolderUri = vscode.Uri.joinPath(extension.rootPath, `data`);
-    const chaptersFolderUri = vscode.Uri.joinPath(dataFolderUri, `chapters`);
-    const snipsFolderUri = vscode.Uri.joinPath(dataFolderUri, `snips`);
+    const chaptersContainerUri = vscode.Uri.joinPath(dataFolderUri, `chapters`);
+    const workSnipsContainerUri = vscode.Uri.joinPath(dataFolderUri, `snips`);
 
     let chapterEntries: [ string, vscode.FileType ][];
     let snipEntries: [ string, vscode.FileType ][];
@@ -34,8 +34,8 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
             throw new Error(`Error initializing workspace from file system: '/data/snips' wasn't found.  Please do not mess with the file system of an IWE environment.`);
         }
 
-        chapterEntries = await vscode.workspace.fs.readDirectory(chaptersFolderUri);
-        snipEntries = await vscode.workspace.fs.readDirectory(snipsFolderUri);
+        chapterEntries = await vscode.workspace.fs.readDirectory(chaptersContainerUri);
+        snipEntries = await vscode.workspace.fs.readDirectory(workSnipsContainerUri);
     }
     catch (e) {
         vscode.commands.executeCommand('setContext', 'wt.valid', false);
@@ -52,26 +52,22 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
         throw e;
     }
 
-    const internalId = uuidv4();
-
     const chapters = chapterEntries.filter(([ _, fileType ]) => fileType === vscode.FileType.Directory);
     const snips = snipEntries.filter(([ _, fileType ]) => fileType === vscode.FileType.Directory);
     
-    const dotConfigChaptersUri = vscode.Uri.joinPath(chaptersFolderUri, `.config`);
+    const dotConfigChaptersUri = vscode.Uri.joinPath(chaptersContainerUri, `.config`);
     const dotConfigChapters = await readDotConfig(dotConfigChaptersUri);
     if (!dotConfigChapters) throw new Error('Error loading chapter config');
-
-    const chapterContainerId = uuidv4();
 
     // Parse all chapters
 
     const chapterNodes: T[] = []
     for (const [ name, _ ] of chapters) {
         chapterNodes.push(init(await initializeChapter({
-            dotConfig: dotConfigChapters,
+            parentDotConfig: dotConfigChapters,
             relativePath: `data/chapters`, 
             fileName: name, 
-            rootInternalId: chapterContainerId,
+            chaptersContainerUri: chaptersContainerUri,
             init
         })));
     }
@@ -82,9 +78,9 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
             type: 'container',
             display: 'Chapters',
             fileName: 'chapters',
-            internal: chapterContainerId,
+            uri: chaptersContainerUri,
             ordering: 0,
-            parentInternalId: internalId,
+            parentUri: dataFolderUri,
             parentTypeId: 'root',
             relativePath: 'data'
         },
@@ -92,22 +88,20 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
     };
     const chapterContainer = init(chapterContainerNode);
 
-    const dotConfigSnipsUri = vscode.Uri.joinPath(snipsFolderUri, '.config');
+    const dotConfigSnipsUri = vscode.Uri.joinPath(workSnipsContainerUri, '.config');
     const dotConfigSnips = await readDotConfig(dotConfigSnipsUri);
     if (!dotConfigSnips) throw new Error('Error loading snips config');
-
-    const snipsContainerId = uuidv4();
 
     // Parse all work snips
     const snipNodes: T[] = [];
     for (const [ name,  _ ] of snips) {
         snipNodes.push(
             init(await initializeSnip({
-                dotConfig: dotConfigSnips,
+                parentDotConfig: dotConfigSnips,
                 relativePath: `data/snips`, 
                 fileName: name, 
                 parentTypeId: 'root', 
-                parentId: snipsContainerId,
+                parentUri: workSnipsContainerUri,
                 init
             }))
         );
@@ -119,9 +113,9 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
             type: 'container',
             display: 'Work Snips',
             fileName: 'snips',
-            internal: snipsContainerId,
+            uri: workSnipsContainerUri,
             ordering: 1,
-            parentInternalId: internalId,
+            parentUri: dataFolderUri,
             parentTypeId: 'root',
             relativePath: 'data'
         },
@@ -133,11 +127,11 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
         ids: {
             type: 'root',
             display: 'root',
-            internal: internalId,
+            uri: dataFolderUri,
             relativePath: 'data',
             fileName: '',
             parentTypeId: 'root',
-            parentInternalId: 'root',
+            parentUri: vscodeUris.Utils.joinPath(extension.rootPath, 'data'),
             ordering: 0,
         },
         chapters: chapterContainer as T,
@@ -147,25 +141,25 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
 }
 
 type ChapterParams<T extends TreeNode> = {
-    dotConfig: { [index: string]: ConfigFileInfo },
+    parentDotConfig: { [index: string]: ConfigFileInfo },
     relativePath: string,
     fileName: string,
-    rootInternalId: string,
+    chaptersContainerUri: vscode.Uri,
     init: InitializeNode<T>,
 };
 
-async function initializeChapter <T extends TreeNode> ({
-    dotConfig,
+export async function initializeChapter <T extends TreeNode> ({
+    parentDotConfig,
     relativePath,
     fileName,
-    rootInternalId,
+    chaptersContainerUri,
     init,
 }: ChapterParams<T>): Promise<ChapterNode<T>> {
     
-    const chapterFolderUri = vscode.Uri.joinPath(extension.rootPath, relativePath, fileName);
+    const chapterFolderUri = vscodeUris.Utils.joinPath(chaptersContainerUri, fileName);
 
-    const displayName = dotConfig[fileName] === undefined ? fileName : dotConfig[fileName].title;
-    const ordering = dotConfig[fileName] === undefined ? 10000 : dotConfig[fileName].ordering;
+    const displayName = parentDotConfig[fileName] === undefined ? fileName : parentDotConfig[fileName].title;
+    const ordering = parentDotConfig[fileName] === undefined ? 10000 : parentDotConfig[fileName].ordering;
 
     let chapterFolderEntries: [ string, vscode.FileType ][];
     try {
@@ -189,12 +183,10 @@ async function initializeChapter <T extends TreeNode> ({
         return fileType === vscode.FileType.Directory && name === 'snips';
     });
 
-    const chapterFragmentsDotConfigUri = vscode.Uri.joinPath(chapterFolderUri, `.config`);
+    const chapterFragmentsDotConfigUri = vscodeUris.Utils.joinPath(chapterFolderUri, `.config`);
     const chapterFragmentsDotConfig = await readDotConfig(chapterFragmentsDotConfigUri);
     if (!chapterFragmentsDotConfig) throw new Error('Error loading chapter fragments config');
 
-    const chapterInternalId = uuidv4();
-    
     // Create all the text fragments
     const fragments: FragmentData[] = [];
     for (const [ name, _ ] of wtEntries) {
@@ -202,23 +194,20 @@ async function initializeChapter <T extends TreeNode> ({
         const fragment = await initializeFragment({
             relativePath: `${relativePath}/${fileName}`, 
             fileName: fragmentName, 
-            dotConfig: chapterFragmentsDotConfig,
+            parentDotConfig: chapterFragmentsDotConfig,
             parentTypeId: 'chapter',
-            parentInternalId: chapterInternalId,
+            parentUri: chapterFolderUri,
         });
         fragments.push(fragment);
     }
 
     // Create snips
     
-    const snipsContainerId = uuidv4();
-
     const snips: SnipNode<T>[] = [];
+    // Read the entries in the snips folder
+    const snipsContainerUri = vscode.Uri.joinPath(chapterFolderUri, `snips`);
     if (snipsFolder) {
-        // Read the entries in the snips folder
-        const snipsUri = vscode.Uri.joinPath(chapterFolderUri, `snips`);
-        const snipEntries: [ string, vscode.FileType ][] = await vscode.workspace.fs.readDirectory(snipsUri);
-
+        const snipEntries: [ string, vscode.FileType ][] = await vscode.workspace.fs.readDirectory(snipsContainerUri);
 
         const chapterSnipsDotConfigUri = vscode.Uri.joinPath(chapterFolderUri, `snips/.config`);
         const chapterSnipsDotConfig = await readDotConfig(chapterSnipsDotConfigUri);
@@ -229,11 +218,11 @@ async function initializeChapter <T extends TreeNode> ({
             if (fileType !== vscode.FileType.Directory) { continue; }
             const snipName = name;
             const snip = await initializeSnip({
-                dotConfig: chapterSnipsDotConfig,
+                parentDotConfig: chapterSnipsDotConfig,
                 relativePath: `${relativePath}/${fileName}/snips`, 
                 fileName: snipName,
                 parentTypeId: 'chapter',
-                parentId: snipsContainerId,
+                parentUri: snipsContainerUri,
                 init
             });
             snips.push(snip);
@@ -248,9 +237,9 @@ async function initializeChapter <T extends TreeNode> ({
             type: 'container',
             display: "Snips",
             fileName: 'snips',
-            internal: snipsContainerId,
+            uri: snipsContainerUri,
             ordering: 1000000,
-            parentInternalId: chapterInternalId,
+            parentUri: chapterFolderUri,
             parentTypeId: 'chapter',
             relativePath: `${relativePath}/${fileName}`,
         },
@@ -263,11 +252,11 @@ async function initializeChapter <T extends TreeNode> ({
             type: 'chapter',
             display: displayName,
             ordering: ordering,
-            internal: chapterInternalId,
+            uri: chapterFolderUri,
             relativePath: relativePath,
             fileName: fileName,
             parentTypeId: 'root',
-            parentInternalId: rootInternalId,
+            parentUri: chaptersContainerUri,
         },
         snips: snipContainer as T,
         textData: fragmentNodes as T[]
@@ -275,27 +264,27 @@ async function initializeChapter <T extends TreeNode> ({
 }
 
 type SnipParams<T extends TreeNode> = {
-    dotConfig: { [index: string]: ConfigFileInfo },
+    parentDotConfig: { [index: string]: ConfigFileInfo },
     relativePath: string,
     fileName: string,
     parentTypeId: ResourceType,
-    parentId: string,
+    parentUri: vscode.Uri,
     init: InitializeNode<T>,
 };
 
-async function initializeSnip<T extends TreeNode> ({
-    dotConfig,
+export async function initializeSnip<T extends TreeNode> ({
+    parentDotConfig,
     relativePath,
     fileName,
     parentTypeId,
-    parentId,
+    parentUri,
     init,
 }: SnipParams<T>): Promise<SnipNode<T>> {
 
-    const snipFolderUri = vscode.Uri.joinPath(extension.rootPath, relativePath, fileName);
+    const snipFolderUri = vscodeUris.Utils.joinPath(parentUri, fileName);
 
-    const displayName = dotConfig[fileName] === undefined ? fileName : dotConfig[fileName].title;
-    const ordering = dotConfig[fileName] === undefined ? 10000 : dotConfig[fileName].ordering;
+    const displayName = parentDotConfig[fileName] === undefined ? fileName : parentDotConfig[fileName].title;
+    const ordering = parentDotConfig[fileName] === undefined ? 10000 : parentDotConfig[fileName].ordering;
 
     let snipFolderEntries: [ string, vscode.FileType ][];
     try {
@@ -314,12 +303,10 @@ async function initializeSnip<T extends TreeNode> ({
         return fileType === vscode.FileType.File && name.endsWith('.wt');
     });
 
-    const snipFragmentsDotConfigUri = vscode.Uri.joinPath(snipFolderUri, `.config`);
+    const snipFragmentsDotConfigUri = vscodeUris.Utils.joinPath(snipFolderUri, `.config`);
     const snipFragmentsDotConfig = await readDotConfig(snipFragmentsDotConfigUri);
     if (!snipFragmentsDotConfig) throw new Error('Error loading chapter fragments config');
 
-    const snipInternalId = uuidv4();
-    
     // Create all the text fragments
     const fragments: FragmentData[] = [];
     for (const [ name, _ ] of wtEntries) {
@@ -327,9 +314,9 @@ async function initializeSnip<T extends TreeNode> ({
         const fragment = await initializeFragment({
             relativePath: `${relativePath}/${fileName}`, 
             fileName: fragmentName, 
-            dotConfig: snipFragmentsDotConfig,
+            parentDotConfig: snipFragmentsDotConfig,
             parentTypeId: 'snip',
-            parentInternalId: snipInternalId,
+            parentUri: snipFolderUri,
         });
         fragments.push(fragment);
     }
@@ -341,11 +328,11 @@ async function initializeSnip<T extends TreeNode> ({
             type: 'snip',
             display: displayName,
             ordering: ordering,
-            internal: snipInternalId,
+            uri: snipFolderUri,
             relativePath: relativePath,
             fileName: fileName,
             parentTypeId: parentTypeId,
-            parentInternalId: parentId
+            parentUri: parentUri
         },
         textData: fragmentNodes as T[]
     };
@@ -357,20 +344,20 @@ function readFilePreview (completePath: string, relativePath: string): string {
 }
 
 type FragmentParams = {
-    dotConfig: { [index: string]: ConfigFileInfo },
+    parentDotConfig: { [index: string]: ConfigFileInfo },
     relativePath: string,
     fileName: string,
     parentTypeId: ResourceType,
-    parentInternalId: string,
+    parentUri: vscode.Uri,
     watch?: (uri: vscode.Uri, options: { recursive: boolean; excludes: string[]; }) => vscode.Disposable
 };
 
-async function initializeFragment ({
-    dotConfig, 
+export async function initializeFragment ({
+    parentDotConfig, 
     relativePath,
     fileName,
     parentTypeId,
-    parentInternalId,
+    parentUri,
     watch,
 }: FragmentParams): Promise<FragmentData> {
 
@@ -378,38 +365,37 @@ async function initializeFragment ({
     // If there is no specified display name in the .chapter file,
     //      then use the name of the file
     const fragmentName = fileName;
-    let info = dotConfig[fragmentName];
+    let info = parentDotConfig[fragmentName];
     if (!info) {
         // Store the displayName that we're using for future use
-        const maxOrdering = getLatestOrdering(dotConfig);
+        const maxOrdering = getLatestOrdering(parentDotConfig);
         info = {
             title: fileName,
             ordering: maxOrdering + 1
         };
-        dotConfig[fragmentName] = info;
+        parentDotConfig[fragmentName] = info;
     }
     const displayName = info.title;
     const ordering = info.ordering === undefined ? 10000 : info.ordering;
 
 
     // Create full and relative paths for this fragment
-    const fragmentRelativePath = `${relativePath}/${fragmentName}`;
-    const completePath = vscode.Uri.joinPath(extension.rootPath, fragmentRelativePath);
+    const fragmentFullPath = vscodeUris.Utils.joinPath(parentUri, fragmentName);
 
 
     // Read the first 200 characters of the markdown string
-    const md = readFilePreview(completePath.fsPath, fragmentRelativePath);
+    const md = readFilePreview(fragmentFullPath.fsPath, fragmentName);
     
     return {
         ids: {
             type: 'fragment',
             display: displayName,
             ordering: ordering,
-            internal: uuidv4(),
+            uri: fragmentFullPath,
             relativePath: relativePath,
             fileName: fragmentName,
             parentTypeId: parentTypeId,
-            parentInternalId: parentInternalId
+            parentUri: parentUri
         },
         md: md
     };

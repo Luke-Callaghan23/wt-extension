@@ -4,7 +4,7 @@ import * as console from './../../vsconsole';
 import { createWorkspace } from './../workspace';
 import { Workspace } from './../workspaceClass';
 import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport } from './types';
-import { getUsableFileName } from '../../outline/createNodes';
+import { getUsableFileName } from '../../outline/impl/createNodes';
 import { ConfigFileInfo } from '../../help';
 import * as extension from './../../extension';
 import { Buff } from '../../Buffer/bufferSource'

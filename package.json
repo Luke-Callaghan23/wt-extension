@@ -2,7 +2,7 @@
 	"name": "wtaniwe",
 	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
 	"description": "Writing Tool, An Integrated Writing Environment",
-	"version": "0.0.28",
+	"version": "0.0.48",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -95,6 +95,18 @@
 				"enablement": "!wt.valid"
 			},
 			{
+				"command": "wt.workspace.loadContextValues",
+				"title": "Writing Tool: Load context values JSON file into this workspace."
+			},
+			{
+				"command": "wt.workspace.generateContextValues",
+				"title": "Writing Tool: Generate context values file for this workspace."
+			},
+			{
+				"command": "wt.wordCount.showWordCountRules",
+				"title": "Writing Tool: Show word count information."
+			},
+			{
 				"command": "wt.outline.refresh",
 				"title": "Writing Tool: Refresh Outline View",
 				"icon": "$(refresh)"
@@ -140,6 +152,14 @@
 			{
 				"command": "wt.outline.removeResource",
 				"title": "Writing Tool: Delete Resource in Outline"
+			},
+			{
+				"command": "wt.outline.copyItems",
+				"title": "Writing Tool: Copy Outline Tree Items"
+			},
+			{
+				"command": "wt.outline.pasteItems",
+				"title": "Writing Tool: Paste Outline Tree Items"
 			},
 			{
 				"command": "wt.import.fileExplorer.refresh",
@@ -235,6 +255,26 @@
 				"enablement": "wt.spellcheck.enabled"
 			},
 			{
+				"command": "wt.very.enable",
+				"title": "Writing Tool: Enable Very Checks",
+				"enablement": "!wt.very.enabled"
+			},
+			{
+				"command": "wt.colors.enable",
+				"title": "Writing Tool: Enable Color Checks",
+				"enablement": "!wt.colors.enabled"
+			},
+			{
+				"command": "wt.colors.enable",
+				"title": "Writing Tool: Enable Color Checks",
+				"enablement": "!wt.colors.enabled"
+			},
+			{
+				"command": "wt.colors.disable",
+				"title": "Writing Tool: Disable Color Checks",
+				"enablement": "wt.colors.enabled"
+			},
+			{
 				"command": "wt.proximity.addFilteredWord",
 				"title": "Writing Tool: Remove word from proximity checks"
 			},
@@ -278,6 +318,10 @@
 				"title": "Writing Tool: Jump to Next Instance of Watched Word"
 			},
 			{
+				"command": "wt.wordWatcher.changeColor",
+				"title": "Writing Tool: Change watched word color"
+			},
+			{
 				"command": "wt.synonyms.help",
 				"title": "Writing Tool: Synonyms View Help",
 				"icon": "$(question)"
@@ -306,6 +350,10 @@
 				"command": "wt.editor.italisize",
 				"title": "Writing Tool: Italisize Selection",
 				"icon": "$(italic)"
+			},
+			{
+				"command": "wt.editor.commasize",
+				"title": "Writing Tool: Commasize Selection"
 			},
 			{
 				"command": "wt.editor.bold",
@@ -395,6 +443,14 @@
 			{
 				"command": "wt.personalDictionary.remove",
 				"title": "Writing Tool: Remove word from personal dictionary"
+			},
+			{
+				"command": "wt.colors.addColor",
+				"title": "Writing Tool: Add Color to Color Group"
+			},
+			{
+				"command": "wt.colors.removeColor",
+				"title": "Writing Tool: Remove Color from Color Group"
 			}
 		],
 		"menus": {
@@ -505,11 +561,25 @@
 					"when": "view == wt.outline"
 				},
 				{
+					"command": "wt.outline.copyItems",
+					"when": "view == wt.outline",
+					"group": "5_cutcopypaste"
+				},
+				{
+					"command": "wt.outline.pasteItems",
+					"when": "view == wt.outline",
+					"group": "5_cutcopypaste"
+				},
+				{
 					"command": "wt.wordWatcher.deleteWord",
 					"when": "view == wt.wordWatcher && (viewItem == watchedWord_disabled || viewItem == watchedWord_enabled)"
 				},
 				{
 					"command": "wt.wordWatcher.disableWatchedWord",
+					"when": "view == wt.wordWatcher && viewItem == watchedWord_enabled"
+				},
+				{
+					"command": "wt.wordWatcher.changeColor",
 					"when": "view == wt.wordWatcher && viewItem == watchedWord_enabled"
 				},
 				{
@@ -585,6 +655,16 @@
 				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
 			},
 			{
+				"command": "wt.outline.copyItems",
+				"key": "ctrl+c",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+			},
+			{
+				"command": "wt.outline.pasteItems",
+				"key": "ctrl+v",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+			},
+			{
 				"command": "wt.outline.removeResource",
 				"key": "delete",
 				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
@@ -617,6 +697,11 @@
 			{
 				"command": "wt.editor.italisize",
 				"key": "ctrl+alt+i",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.commasize",
+				"key": "ctrl+alt+,",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{

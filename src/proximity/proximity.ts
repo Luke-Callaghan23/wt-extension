@@ -68,8 +68,6 @@ export class Proximity implements Timed, Packageable {
             let reg: RegExp;
             try {
                 reg = new RegExp(response);
-                console.log(response);
-                console.log(`${new RegExp(response)}`);
             }
             catch (e) {
                 const proceed = await vscode.window.showInformationMessage(`An error occurred while creating a Regular Expression from your response!`, {
@@ -82,7 +80,6 @@ export class Proximity implements Timed, Packageable {
 
             // If the word is valid and doesn't already exist in the word list, then continue adding the words
             this.additionalPatterns.push(reg);
-            console.log(this.additionalPatterns);
             this.context.workspaceState.update('wt.wordWatcher.additionalPatterns', this.additionalPatterns.map(pat => pat.source));
             if (vscode.window.activeTextEditor) {
                 this.update(vscode.window.activeTextEditor);
@@ -256,17 +253,13 @@ export class Proximity implements Timed, Packageable {
         }
 
         // Create paragraph objects for all the inspected paragraphs
-        const paragraphs: Paragraph[] = inspect.map(({
-            paragraph,
-            start,
-            end 
-        }) => {
-            return new Paragraph(this, editor, text, paragraph, start, end)
-        });
+        const paragraphs: Paragraph[] = inspect.map(({ paragraph, start, end }) => 
+            new Paragraph(this, editor, text, paragraph, start, end)
+        );
 
         // Get all words and all unique words in all the inspected paragraphs
         const allWords: Word[] = paragraphs.map(({ allWords }) => allWords).flat();
-        const uniqueWordsMap: { [index: string]: 1 } = {}
+        const uniqueWordsMap: { [index: string]: 1 } = {};
         allWords.forEach(({ text }) => {
             uniqueWordsMap[text] = 1;
         });

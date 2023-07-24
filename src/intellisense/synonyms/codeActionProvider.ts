@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
-import { capitalize, getHoveredWord } from './common';
-import { query } from './querySynonym';
-import { dictionary } from '../../spellcheck/dictionary';
-import { PersonalDictionary } from '../../spellcheck/personalDictionary';
+import { capitalize, getHoveredWord } from '../common';
+import { query } from '../querySynonym';
+import { dictionary } from './../spellcheck/dictionary';
+import { PersonalDictionary } from './../spellcheck/personalDictionary';
 
 export class CodeActionProvider implements vscode.CodeActionProvider {
     constructor (

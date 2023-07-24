@@ -5,18 +5,24 @@ import * as console from './vsconsole';
 import { OutlineView } from './outline/outlineView';
 import { TODOsView } from './TODO/TODOsView';
 import { WordWatcher } from './wordWatcher/wordWatcher';
-import { SynonymViewProvider } from './synonyms/synonymsView';
 import { Toolbar } from './toolbar';
 
+import { SynonymViewProvider } from './synonymsWebview/synonymsView';
 import { Workspace } from './workspace/workspaceClass';
 import { loadWorkspace, createWorkspace } from './workspace/workspace';
 import { FileAccessManager } from './fileAccesses';
 import { packageForExport } from './packageable';
 import { TimedView } from './timedView';
 import { Proximity } from './proximity/proximity';
-import { SynonymsIntellisense } from './synonyms/intellisense/synonymsIntellisense';
-import { PersonalDictionary } from './spellcheck/personalDictionary';
-import { Spellcheck } from './spellcheck/spellcheck';
+import { PersonalDictionary } from './intellisense/spellcheck/personalDictionary';
+import { SynonymsIntellisense } from './intellisense/intellisense';
+import { Spellcheck } from './intellisense/spellcheck/spellcheck';
+import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
+import { ColorGroups } from './intellisense/colors/colorGroups';
+import { VeryIntellisense } from './intellisense/very/veryIntellisense';
+import { WordCount } from './status/wordCount';
+
+
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -41,12 +47,19 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const personalDictionary = new PersonalDictionary(context, workspace);
 		const synonymsIntellisense = new SynonymsIntellisense(context, workspace, personalDictionary);
 		const spellcheck = new Spellcheck(context, workspace, personalDictionary);
+		const veryIntellisense = new VeryIntellisense(context, workspace);
+        const colorGroups = new ColorGroups(context);
+		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+
+		const wordCountStatus = new WordCount();
 
 		const timedViews = new TimedView(context, [
 			['wt.todo', todo],
 			['wt.wordWatcher', wordWatcher],
 			['wt.proximity', proximity],
-			['wt.spellcheck', spellcheck]
+			['wt.spellcheck', spellcheck],
+			['wt.very', veryIntellisense],
+			['wt.colors', colorIntellisense]
 		]);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
