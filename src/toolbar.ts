@@ -306,6 +306,7 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
         position
     );
     editor.selection = select;
+    vscode.window.activeTextEditor?.revealRange(editor.selection);
     return select;
 }
 
@@ -460,6 +461,7 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
         position, 
     );
     editor.selection = select;
+    vscode.window.activeTextEditor?.revealRange(editor.selection);
     return select;
 }
 
@@ -564,6 +566,7 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
         position, 
     );
     editor.selection = select;
+    vscode.window.activeTextEditor?.revealRange(editor.selection);
     return select;
 }
 
