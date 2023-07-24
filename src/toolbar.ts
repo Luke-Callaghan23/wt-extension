@@ -482,7 +482,26 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
     // Find the position of the end of the line (paragraph)
     const nextLine = new vscode.Position(line + 1, 0);
     const nextLinePosition = document.offsetAt(nextLine);
-    const eolPosition = nextLinePosition - 1;
+    let eolPosition;
+    
+    // Special case for when the cursor is at the end of the document
+    // Because of how vscode handles `new vscode.Position` when the line number
+    //      is out of range, end of line position will incorrectly be set to 
+    //      `docText.length - 1`
+    if (startOffset === docText.length) {
+        eolPosition = startOffset;
+    }
+    else {
+        eolPosition = nextLinePosition - 1;
+    }
+
+    // Special case for when the cursor will be traveling to the end of the document
+    // Again because of complications on `new vscode.Position`, when travelling to
+    //      the end of the document, the cursor will be set to `docText.length - 1`
+    //      mistakingly
+    if (eolPosition === docText.length - 1 && !/\s/.test(docText[eolPosition])) {
+        eolPosition = docText.length;
+    }
 
     
     // Find the jump position, depending on whether we're jumping forward or backward
