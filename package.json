@@ -753,6 +753,16 @@
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
+				"command": "wt.editor.jump.fragment.forward",
+				"key": "alt+[",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward",
+				"key": "alt+]",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
 				"command": "wt.editor.jump.paragraph.forward",
 				"key": "ctrl+alt+[",
 				"when": "editorAreaVisible && editorLangId == wt"
@@ -780,6 +790,16 @@
 			{
 				"command": "wt.editor.jump.sentence.backward.shift",
 				"key": "ctrl+shift+]",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.fragment.forward.shift",
+				"key": "alt+shift+[",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward.shift",
+				"key": "alt+shift+]",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
