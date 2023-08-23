@@ -24,6 +24,7 @@ import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
 import { ColorGroups } from './intellisense/colors/colorGroups';
 import { WordCount } from './status/wordCount';
+import { TextStyles } from './textStyles/textStyles';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -45,6 +46,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		await todo.init();
 		const wordWatcher = new WordWatcher(context, workspace);			// wt.wordWatcher
 		const proximity = new Proximity(context, workspace);
+		const textStyles = new TextStyles(context, workspace);			
 
 		const personalDictionary = new PersonalDictionary(context, workspace);
 		const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary);
