@@ -381,6 +381,14 @@
 				"title": "Writing Tool: Jump to Word (backward)."
 			},
 			{
+				"command": "wt.editor.jump.fragment.forward",
+				"title": "Writing Tool: Jump to Sentence Fragment (forward)."
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward",
+				"title": "Writing Tool: Jump to Sentence Fragment (backward)."
+			},
+			{
 				"command": "wt.editor.jump.sentence.forward",
 				"title": "Writing Tool: Jump to Sentence (forward)."
 			},
@@ -403,6 +411,14 @@
 			{
 				"command": "wt.editor.word.backward.shift",
 				"title": "Writing Tool: Jump to Word (backward) (select)."
+			},
+			{
+				"command": "wt.editor.jump.fragment.forward.shift",
+				"title": "Writing Tool: Jump to Sentence Framgent (forward) (select)."
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward.shift",
+				"title": "Writing Tool: Jump to Sentence Framgent (backward) (select)."
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward.shift",

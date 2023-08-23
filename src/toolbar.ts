@@ -309,7 +309,7 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
     return select;
 }
 
-async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Selection | null> {
+async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boolean): Promise<vscode.Selection | null> {
     const direction = jt === 'forward' ? -1 : 1;
     
     const editor = vscode.window.activeTextEditor;
@@ -324,10 +324,11 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
     const start = selection.isReversed ? selection.start : selection.end;
     const anchor = selection.anchor;
 
-    const punctuation = /[\.\?\!\n]/
     const whitespace = /\s/;
-
     
+    const punctuation = /[\.\?\!\n]/;               // Main stopping characters for jumping between entire sentences
+    const fragmentStop = /["-,;]/;                // Secondary stopping characters for jumping between fragments of sentences
+
     // Offset for end of line is found by getting the offset of the first character
     //      of the next line and subtracting one (meaning the character prior to the 
     //      first character of the next line (meaning the last character of this line
@@ -354,14 +355,42 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
     const preceedingCharacterOffset = initialCharacterOffset + direction;
     const preceedingCharacter = docText[preceedingCharacterOffset];
 
-    if (initialCharacter === '"' || punctuation.test(initialCharacter)) {
-        // If the initial character is on top of a punctuation or '"', then move it away
-        columnOffset += direction;
+    if ((jumpFragment && fragmentStop.test(initialCharacter)) || punctuation.test(initialCharacter)) {
+        if (initialCharacter === '-') {
+            // Special special case for the '-' fragment stop character:
+            //      only want to stop at double '--' (an em dash) and not single '-' (a hyphen)
+            // Must make sure that the next character in the same direction is also '-' in order to consider the jump
+            // And instead of making a single jump away from the character (as in the else block below), make a double
+            //      jump away from both '-'s
+            if (preceedingCharacter === '-') {
+                columnOffset += direction;
+                columnOffset += direction;
+            }
+        }
+        else {
+            // If the initial character is on top of a punctuation or a fragment stop, then move it away from that character
+            //      in order to be able to chain multiple sentence jumps in a row
+            columnOffset += direction;
+        }
     }
 
-    if (preceedingCharacter === '"' || punctuation.test(preceedingCharacter)) {
-        columnOffset += direction;
-        columnOffset += direction;
+    if ((jumpFragment && fragmentStop.test(preceedingCharacter)) || punctuation.test(preceedingCharacter)) {
+        if (preceedingCharacter === '-') {
+            // See special special case for '--' above:
+            // Instead of a double jump (else block below), make a triple jump away from both '-'s as well as the current character
+            const preceedingPreceedingCharacterOffset = initialCharacterOffset + direction + direction;
+            const preceedingPreceedingCharacter = docText[preceedingPreceedingCharacterOffset];1
+            if (preceedingPreceedingCharacter === '-') {
+                columnOffset += direction;
+                columnOffset += direction;
+                columnOffset += direction;
+            }
+        }
+        else {
+            // Do a double jump to move awat from the current character as well as the previous character
+            columnOffset += direction;
+            columnOffset += direction;
+        }
     }
 
     let finalColumn: number = -1;
@@ -379,13 +408,30 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
         const iterationCharacter = docText[iterationCharacterOffset];
 
         // CASE: the current character matches a punction
+        //      Stop at the exact column of iteration
         if (punctuation.test(iterationCharacter)) {
             finalColumn = iterationColumn;
             break;
         }
 
-        // CASE: the current character matches special stopping character '"'
-        if (iterationCharacter === '"') {
+        // CASE: the current character matches special fragment stopping character
+        //      Stop at the exact column of iteration if this is a backwards jump
+        //      Stop at the column behind the stop character if this is a forwards jump
+        if (jumpFragment && fragmentStop.test(iterationCharacter)) {
+            if (iterationCharacter === '-') {
+                // Special special case for '-'
+                // Only want to stop on the double '--' (em dash) and not the single '-' (hyphen)
+                // Check the next character in the iteration before making a decision to stop or not
+                const nextIterOffset = initialColumn + columnOffset + direction;
+                const nextIterCharacter = docText[nextIterOffset];
+                if (nextIterCharacter !== '-') {
+                    // If the next iteration character is also not a '-', then continue iterating
+                    columnOffset += direction;
+                    continue;
+                }
+            }
+
+            // On any other stopping character, break right away
             if (jt === 'forward') {
                 finalColumn = iterationColumn + 1;
             }
@@ -560,14 +606,18 @@ export class Toolbar {
         // Jump commands
         vscode.commands.registerCommand('wt.editor.jump.word.forward', () => jumpWord('forward'));
         vscode.commands.registerCommand('wt.editor.jump.word.backward', () => jumpWord('backward'));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.forward', () => jumpSentence('forward'));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.backward', () => jumpSentence('backward'));
+        vscode.commands.registerCommand('wt.editor.jump.sentence.forward', () => jumpSentence('forward', false, false));
+        vscode.commands.registerCommand('wt.editor.jump.sentence.backward', () => jumpSentence('backward', false, false));
+        vscode.commands.registerCommand('wt.editor.jump.fragment.forward', () => jumpSentence('forward', false, true));
+        vscode.commands.registerCommand('wt.editor.jump.fragment.backward', () => jumpSentence('backward', false, true));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.forward', () => jumpParagraph('forward'));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.backward', () => jumpParagraph('backward'));
         vscode.commands.registerCommand('wt.editor.jump.word.forward.shift', () => jumpWord('forward', true));
         vscode.commands.registerCommand('wt.editor.jump.word.backward.shift', () => jumpWord('backward', true));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.forward.shift', () => jumpSentence('forward', true));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.backward.shift', () => jumpSentence('backward', true));
+        vscode.commands.registerCommand('wt.editor.jump.sentence.forward.shift', () => jumpSentence('forward', true, false));
+        vscode.commands.registerCommand('wt.editor.jump.sentence.backward.shift', () => jumpSentence('backward', true, false));
+        vscode.commands.registerCommand('wt.editor.jump.fragment.forward.shift', () => jumpSentence('forward', true, true));
+        vscode.commands.registerCommand('wt.editor.jump.fragment.backward.shift', () => jumpSentence('backward', true, true));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.forward.shift', () => jumpParagraph('forward', true));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.backward.shift', () => jumpParagraph('backward', true));
     }
