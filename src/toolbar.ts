@@ -324,7 +324,7 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
     const start = selection.isReversed ? selection.start : selection.end;
     const anchor = selection.anchor;
 
-    const punctuation = /[\.\?\!]/
+    const punctuation = /[\.\?\!\n]/
     const whitespace = /\s/;
 
     
@@ -397,11 +397,6 @@ async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.
 
         columnOffset += direction;
     }
-
-    // if (finalColumn === -1) {
-    //     console.log("WARN: Final column was -1");
-    //     return null;
-    // } 
 
     // Used for chaining multiple sentence jumps in a row
     let position: vscode.Position;
