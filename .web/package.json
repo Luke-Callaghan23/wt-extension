@@ -344,6 +344,11 @@
 				"icon": "$(zap)"
 			},
 			{
+				"command": "wt.editor.underline",
+				"title": "Writing Tool: Underline Selection",
+				"icon": "$(layout-statusbar)"
+			},
+			{
 				"command": "wt.editor.header",
 				"title": "Writing Tool: Header",
 				"icon": "$(text-size)"
@@ -591,6 +596,21 @@
 			],
 			"editor/title": [
 				{
+					"command": "wt.editor.save",
+					"when": "editorLangId == wt",
+					"group": "navigation@1"
+				},
+				{
+					"command": "wt.editor.saveAll",
+					"when": "editorLangId == wt",
+					"group": "navigation@2"
+				},
+				{
+					"command": "wt.synonyms.searchWord",
+					"when": "editorLangId == wt",
+					"group": "navigation@3"
+				},
+				{
 					"command": "wt.editor.italisize",
 					"when": "editorLangId == wt",
 					"group": "navigation@3"
@@ -598,37 +618,27 @@
 				{
 					"command": "wt.editor.bold",
 					"when": "editorLangId == wt",
-					"group": "navigation@4"
+					"group": "navigation@5"
 				},
 				{
 					"command": "wt.editor.strikethrough",
 					"when": "editorLangId == wt",
-					"group": "navigation@5"
-				},
-				{
-					"command": "wt.editor.header",
-					"when": "editorLangId == wt",
 					"group": "navigation@6"
 				},
 				{
-					"command": "wt.editor.remove",
+					"command": "wt.editor.underline",
 					"when": "editorLangId == wt",
 					"group": "navigation@7"
 				},
 				{
-					"command": "wt.editor.save",
+					"command": "wt.editor.header",
 					"when": "editorLangId == wt",
 					"group": "navigation@8"
 				},
 				{
-					"command": "wt.editor.saveAll",
+					"command": "wt.editor.remove",
 					"when": "editorLangId == wt",
 					"group": "navigation@9"
-				},
-				{
-					"command": "wt.synonyms.searchWord",
-					"when": "editorLangId == wt",
-					"group": "navigation@2"
 				}
 			]
 		},
@@ -685,6 +695,11 @@
 			{
 				"command": "wt.editor.strikethrough",
 				"key": "ctrl+alt+d",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.underline",
+				"key": "ctrl+alt+u",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{

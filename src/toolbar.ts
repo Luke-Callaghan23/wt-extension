@@ -108,11 +108,15 @@ export function italisize () {
 }
 
 export function bold () {
-    return surroundSelectionWith('__');
+    return surroundSelectionWith('#');
 }
 
 export function strikethrough () {
-    return surroundSelectionWith('~~');
+    return surroundSelectionWith('~');
+}
+
+export function underline () {
+    return surroundSelectionWith('_');
 }
 
 export function commasize () {
