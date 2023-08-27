@@ -62,7 +62,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.proximity', proximity],
 			['wt.spellcheck', spellcheck],
 			['wt.very', veryIntellisense],
-			['wt.colors', colorIntellisense]
+			['wt.colors', colorIntellisense],
+			['wt.textStyle', textStyles]
 		]);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
