@@ -352,6 +352,11 @@
 				"icon": "$(zap)"
 			},
 			{
+				"command": "wt.editor.underline",
+				"title": "Writing Tool: Underline Selection",
+				"icon": "$(layout-statusbar)"
+			},
+			{
 				"command": "wt.editor.header",
 				"title": "Writing Tool: Header",
 				"icon": "$(text-size)"
@@ -383,6 +388,14 @@
 				"title": "Writing Tool: Jump to Sentence (backward)."
 			},
 			{
+				"command": "wt.editor.jump.fragment.forward",
+				"title": "Writing Tool: Jump to Sentence Fragment (forward)."
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward",
+				"title": "Writing Tool: Jump to Sentence Fragment (backward)."
+			},
+			{
 				"command": "wt.editor.jump.paragraph.forward",
 				"title": "Writing Tool: Jump to paragraph (forward)."
 			},
@@ -405,6 +418,14 @@
 			{
 				"command": "wt.editor.jump.sentence.backward.shift",
 				"title": "Writing Tool: Jump to Sentence (backward) (select)."
+			},
+			{
+				"command": "wt.editor.jump.fragment.forward.shift",
+				"title": "Writing Tool: Jump to Sentence Framgent (forward) (select)."
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward.shift",
+				"title": "Writing Tool: Jump to Sentence Framgent (backward) (select)."
 			},
 			{
 				"command": "wt.editor.jump.paragraph.forward.shift",
@@ -593,6 +614,21 @@
 			],
 			"editor/title": [
 				{
+					"command": "wt.editor.save",
+					"when": "editorLangId == wt",
+					"group": "navigation@1"
+				},
+				{
+					"command": "wt.editor.saveAll",
+					"when": "editorLangId == wt",
+					"group": "navigation@2"
+				},
+				{
+					"command": "wt.synonyms.searchWord",
+					"when": "editorLangId == wt",
+					"group": "navigation@3"
+				},
+				{
 					"command": "wt.editor.italisize",
 					"when": "editorLangId == wt",
 					"group": "navigation@3"
@@ -600,37 +636,27 @@
 				{
 					"command": "wt.editor.bold",
 					"when": "editorLangId == wt",
-					"group": "navigation@4"
+					"group": "navigation@5"
 				},
 				{
 					"command": "wt.editor.strikethrough",
 					"when": "editorLangId == wt",
-					"group": "navigation@5"
-				},
-				{
-					"command": "wt.editor.header",
-					"when": "editorLangId == wt",
 					"group": "navigation@6"
 				},
 				{
-					"command": "wt.editor.remove",
+					"command": "wt.editor.underline",
 					"when": "editorLangId == wt",
 					"group": "navigation@7"
 				},
 				{
-					"command": "wt.editor.save",
+					"command": "wt.editor.header",
 					"when": "editorLangId == wt",
 					"group": "navigation@8"
 				},
 				{
-					"command": "wt.editor.saveAll",
+					"command": "wt.editor.remove",
 					"when": "editorLangId == wt",
 					"group": "navigation@9"
-				},
-				{
-					"command": "wt.synonyms.searchWord",
-					"when": "editorLangId == wt",
-					"group": "navigation@2"
 				}
 			]
 		},
@@ -700,6 +726,11 @@
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
+				"command": "wt.editor.underline",
+				"key": "ctrl+alt+u",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
 				"command": "wt.editor.header",
 				"key": "ctrl+alt+h",
 				"when": "editorAreaVisible && editorLangId == wt"
@@ -735,6 +766,16 @@
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
+				"command": "wt.editor.jump.fragment.forward",
+				"key": "alt+[",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward",
+				"key": "alt+]",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
 				"command": "wt.editor.jump.paragraph.forward",
 				"key": "ctrl+alt+[",
 				"when": "editorAreaVisible && editorLangId == wt"
@@ -762,6 +803,16 @@
 			{
 				"command": "wt.editor.jump.sentence.backward.shift",
 				"key": "ctrl+shift+]",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.fragment.forward.shift",
+				"key": "alt+shift+[",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward.shift",
+				"key": "alt+shift+]",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{

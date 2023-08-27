@@ -45,7 +45,7 @@ export class Spellcheck implements Timed {
     
                 const word = fullText.substring(startOff, endOff);
                 words.push({
-                    text: word.toLocaleLowerCase(),
+                    text: word.toLocaleLowerCase().replaceAll(/[#~]/g, ''),
                     range: wordRange,
                 });
             }
