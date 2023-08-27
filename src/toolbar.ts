@@ -453,7 +453,6 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
             }
             break;
         }
-
         columnOffset += direction;
     }
 
