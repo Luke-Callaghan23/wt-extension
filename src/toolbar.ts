@@ -330,18 +330,21 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
 
     const whitespace = /\s/;
     
-    const punctuation = /[\.\?\!\n]/;               // Main stopping characters for jumping between entire sentences
-    const fragmentStop = /["-,;]/;                // Secondary stopping characters for jumping between fragments of sentences
+    const punctuation = jt === 'forward'
+        ? /[\.\?\!]/
+        : /[\.\?\!\n]/;               // Main stopping characters for jumping between entire sentences
+    const fragmentStop = /["\-,;\*#~_]/;                // Secondary stopping characters for jumping between fragments of sentences
 
     // Offset for end of line is found by getting the offset of the first character
     //      of the next line and subtracting one (meaning the character prior to the 
     //      first character of the next line (meaning the last character of this line
     //      (meaning the end of the line for you, buckaroo))), and then subtract the
     //      the offset for the beginning of this current line
-    const backwardColumnBound = 
-        document.offsetAt(new vscode.Position(start.line + 1, 0)) - 1
-        - document.offsetAt(new vscode.Position(start.line, 0));
-    
+    const nextLine = document.offsetAt(new vscode.Position(start.line + 1, 0));
+    const backwardColumnBound = nextLine < docText.length 
+        ? (nextLine - 1) - document.offsetAt(new vscode.Position(start.line, 0))
+        : nextLine - 1
+
     // Offset for the beginning of the line is 0
     const forwardColumnBound = 0;
 
@@ -351,7 +354,15 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
 
     const lineNumber = start.line;
     const initialColumn = start.character;
+
+    let skip = false;
     let columnOffset = 0;
+    let finalColumn = -1;
+    if (initialColumn === 1 && jt === 'forward') {
+        skip = true;
+        columnOffset = -1;
+        finalColumn = 0;
+    }
 
     const initialCharacterOffset = document.offsetAt(new vscode.Position(lineNumber, initialColumn));
     const initialCharacter = docText[initialCharacterOffset];
@@ -359,7 +370,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
     const preceedingCharacterOffset = initialCharacterOffset + direction;
     const preceedingCharacter = docText[preceedingCharacterOffset];
 
-    if ((jumpFragment && fragmentStop.test(initialCharacter)) || punctuation.test(initialCharacter)) {
+    if (!skip && ((jumpFragment && fragmentStop.test(initialCharacter)) || punctuation.test(initialCharacter))) {
         if (initialCharacter === '-') {
             // Special special case for the '-' fragment stop character:
             //      only want to stop at double '--' (an em dash) and not single '-' (a hyphen)
@@ -377,8 +388,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
             columnOffset += direction;
         }
     }
-
-    if ((jumpFragment && fragmentStop.test(preceedingCharacter)) || punctuation.test(preceedingCharacter)) {
+    if (!skip && ((jumpFragment && fragmentStop.test(preceedingCharacter)) || punctuation.test(preceedingCharacter))) {
         if (preceedingCharacter === '-') {
             // See special special case for '--' above:
             // Instead of a double jump (else block below), make a triple jump away from both '-'s as well as the current character
@@ -397,9 +407,8 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         }
     }
 
-    let finalColumn: number = -1;
     if (initialColumn === relevantColumnBound) finalColumn = relevantColumnBound;
-    while (initialColumn !== relevantColumnBound) {
+    while (!skip && initialColumn !== relevantColumnBound) {
         
         // CASE: the relevant column bounding was reached
         const iterationColumn = initialColumn + columnOffset;
@@ -426,7 +435,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
                 // Special special case for '-'
                 // Only want to stop on the double '--' (em dash) and not the single '-' (hyphen)
                 // Check the next character in the iteration before making a decision to stop or not
-                const nextIterOffset = initialColumn + columnOffset + direction;
+                const nextIterOffset = initialCharacterOffset + columnOffset + direction;
                 const nextIterCharacter = docText[nextIterOffset];
                 if (nextIterCharacter !== '-') {
                     // If the next iteration character is also not a '-', then continue iterating
@@ -505,6 +514,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         position, 
     );
     editor.selection = select;
+    editor.revealRange(select);
     return select;
 }
 
