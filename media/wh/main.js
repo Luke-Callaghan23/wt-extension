@@ -7,8 +7,6 @@
     let synonyms = [];
     const synonymElements = [];
 
-    let dicationatyApi;
-
     // Clear button
     const clearButton = document.querySelector('.add-color-button');
     clearButton.addEventListener('click', () => {
@@ -64,7 +62,6 @@
                     break;
                 case 'startupDelivery':
                     synonyms = message.synonyms;
-                    dicationatyApi = message.dicationatyApi;
                     startup();
                     break;
             }
@@ -107,66 +104,45 @@
         startupMessage.style.display = '';
     }
 
-    async function query (word) {
-        word = word.toLowerCase();
-        // @ts-ignore
-        const api = `https://dictionaryapi.com/api/v3/references/thesaurus/json/${word}?key=${dicationatyApi}`;
-        const resp = await fetch(api);
-        const json = await resp.json();
-
-        function parseList (defs) {
-            const ret = [];
-            for (const def of defs) {
-                if (def instanceof Array) {
-                    const newList = parseList(def);
-                    for (const item of newList) {
-                        ret.push(item);
-                    }
-                }
-                else {
-                    ret.push(def);
-                }
-            }
-            return ret;
+    async function query (words) {
+        let phrase;
+        if (words instanceof Array) {
+            phrase = words.join('_').toLowerCase();
+        }
+        else {
+            phrase = words.toLowerCase()
         }
 
-        // When the search fails, dictionaryapi sends us an array of suggested words
-        // This array's type is string[] -- so, if the first item in the result array
-        //      is a string, we assume that the search failed
-        // Send a message to vscode with the failed word and suggestions
-        if (typeof json[0] === 'string') {
-            vscode.postMessage({ 
-                type: 'failedSeach', 
-                word: word,
-                suggestions: json
-            });
-            return;
+        const text = await (await fetch(`https://www.wordhippo.com/what-is/another-word-for/${phrase}.html`)).text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+        const partsOfSpeech = doc.querySelectorAll('.wordtype');
+        const descriptions = doc.querySelectorAll('.tabdesc');
+        const allRelated = doc.querySelectorAll(".relatedwords");
+    
+        // { partOfSpeech: string, description: string, relatePhrases: string[] }[]
+        const definitions = []
+    
+        for (let defIndex = 0; defIndex < allRelated.length; defIndex++) {
+            const pos = partsOfSpeech[defIndex]?.textContent.replaceAll(/[^\w]/g, '');
+            const desc = descriptions[defIndex]?.textContent.trim();
+            const related = allRelated[defIndex];
+            const phrases = [...related.querySelectorAll('.wb'), ...related.querySelectorAll('.wordblock')]
+            const relatedPhrases = phrases.map(p => p.textContent);
+            definitions.push({
+                part: pos,
+                definitions: [ desc ],
+                synonyms: relatedPhrases,
+                antonyms: [],
+            })
         }
 
-
-        const definitions = json.map(
-            (definition) => {
-                if (definition.hwi.hw === word) {
-                    return {
-                        'definitions' :  parseList(definition[ 'shortdef' ]),
-                        'part'        :  definition[ 'fl' ],
-                        'synonyms'    :  parseList(definition[ 'meta' ][ 'syns' ]),
-                        'antonyms'    :  parseList(definition[ 'meta' ][ 'ants' ]),
-                    };
-                }
-                else {
-                    return null;
-                }
-            }
-        )
-        .filter(x => x);
-
-        console.log(definitions)
+        console.log(definitions);
 
         return {
-            word: word,
+            word: phrase,
             definitions
-        };
+        }
     }
 
     // Adding synonyms to the dom
@@ -286,23 +262,18 @@
     
             }
     
-            // @ts-ignore
             synonymBox.appendChild(synonymHeader);
-            // @ts-ignore
             synonymBox.appendChild(synonymContent);
     
             // Click handler for showing or hiding this synonyms content (the definition box)
             synonymHeader.addEventListener('click', (event) => {
-                // @ts-ignore
                 if (event.target.id !== synonymHeader.id && !event.target.id.startsWith(synonymHeader.id)) return;
                 const chevronId = `synonym-chevron-${term.word}`;
                 const chevron = document.getElementById(chevronId);
                 if (synonymContent.style.display === "block") {
-                    // @ts-ignore
                     synonymContent.style.display = "none";
                     chevron.name = 'chevron-right';
                 } else {
-                    // @ts-ignore
                     synonymContent.style.display = "block";
                     chevron.name = 'chevron-down';
                 }
@@ -347,9 +318,7 @@
                 if (elt.innerText !== term.word) return;
                 elt.classList.add("selected");
             });
-
         }
-
 
         addContent = _addContent;
     }

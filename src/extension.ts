@@ -25,6 +25,7 @@ import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
 import { ColorGroups } from './intellisense/colors/colorGroups';
 import { WordCount } from './status/wordCount';
 import { TextStyles } from './textStyles/textStyles';
+import { WHViewPorvider as WHViewProvider } from './whWebview/whWebview';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -42,6 +43,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		await outline.init();
 		const importFS = new ImportFileSystemView(context, workspace);		// wt.import.fileSystem
 		const synonyms = new SynonymViewProvider(context, workspace);		// wt.synonyms
+		const wh = new WHViewProvider(context, workspace);		// wt.synonyms
 		const todo = new TODOsView(context, workspace);						// wt.todo
 		await todo.init();
 		const wordWatcher = new WordWatcher(context, workspace);			// wt.wordWatcher
@@ -80,7 +82,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(),
-			personalDictionary, colorGroups
+			personalDictionary, colorGroups, wh
 		]));
 	}
 	catch (e) {

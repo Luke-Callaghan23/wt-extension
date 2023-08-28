@@ -73,6 +73,14 @@
 					"when": "wt.valid"
 				},
 				{
+					"type": "webview",
+					"id": "wt.wh",
+					"name": "Wh",
+					"icon": "media/dep.svg",
+					"contextualTitle": "Wh",
+					"when": "wt.valid"
+				},
+				{
 					"id": "wt.import.fileExplorer",
 					"name": "Import",
 					"icon": "media/dep.svg",
