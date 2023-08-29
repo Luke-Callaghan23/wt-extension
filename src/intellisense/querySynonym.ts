@@ -5,20 +5,20 @@ import { Fetch } from '../Fetch/fetchSource';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED='0'
 
-type Definition = {
+export type Definition = {
     definitions :  string[],
     part        :  string,
     synonyms    :  string[],
     antonyms    :  string[],
 };
 
-type Synonyms = {
+export type Synonyms = {
     type: 'success',
     word: string,
     definitions: Definition[]
 };
 
-type SynonymError = {
+export type SynonymError = {
     type: 'error',
     message: string,
     suggestions?: string[]
