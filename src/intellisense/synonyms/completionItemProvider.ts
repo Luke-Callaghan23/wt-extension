@@ -82,8 +82,9 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             //      state to effect this new word
             this.activationState = undefined;
 
-            // And use an all-empty array of activations, to mark that none of the definitions are currently activated
-            activations = Array.from({ length: defs.length }, () => false);
+            // If there is only a single definition for the selected word, then have that definition open by default
+            const defaultOpen = defs.length === 1;
+            activations = Array.from({ length: defs.length }, () => defaultOpen);
 
             // Also create a new activation state for this completion
             this.activationState = {
@@ -103,6 +104,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 insertText: wordText,
                 detail: `[${def.definitions.join(';')}]`,
                 range: hoverRange,
+                kind: vscode.CompletionItemKind.Folder,
 
                 // Preselect this definition if it was the last definition chosen
                 preselect: definitionIndex === this.activationState?.lastSelectedDefinition,
@@ -182,6 +184,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 insertText: insertText,
                 detail: `[${def.definitions[0]}]`,
                 range: hoverRange,
+                kind: vscode.CompletionItemKind.Snippet,
 
                 // Sort text is a string used by vscode to sort items within the completion items box
                 // Sort text is derived from the synonym itelf as well as the index of the definition
@@ -229,7 +232,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             this.activationState.lastSelectedDefinition = definitionIndex;
 
             // Then reopen the suggestions panel
-            vscode.commands.executeCommand('focusSuggestion');
+            vscode.commands.executeCommand('editor.action.triggerSuggest');
         });
     }
 }
