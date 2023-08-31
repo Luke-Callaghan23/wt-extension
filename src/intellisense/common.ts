@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { query } from './querySynonym';
 
-type HoverPosition = {
+export type HoverPosition = {
     start: number;
     end: number;
     text: string;

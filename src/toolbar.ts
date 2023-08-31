@@ -328,181 +328,206 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
     const start = selection.isReversed ? selection.start : selection.end;
     const anchor = selection.anchor;
 
-    const whitespace = /\s/;
+    const punctuation = /[\.\?\!\n]/;
+    const punctuationNoWhitespace = /[\.\?\!]/;
+
     
-    const punctuation = jt === 'forward'
-        ? /[\.\?\!]/
-        : /[\.\?\!\n]/;               // Main stopping characters for jumping between entire sentences
-    const fragmentStop = /["\-,;\*#~_]/;                // Secondary stopping characters for jumping between fragments of sentences
+    const fragmentStop = jumpFragment 
+        ? /["\-,;\*#~_]/                    // If fragment jumps are activated, use all stopping characters as pause for fragments
+        : /^[]/;                            // Otherwise, use a regex that the internet told me would never, ever (tm) match anything
+    
+    const startOffset = document.offsetAt(start);
 
-    // Offset for end of line is found by getting the offset of the first character
-    //      of the next line and subtracting one (meaning the character prior to the 
-    //      first character of the next line (meaning the last character of this line
-    //      (meaning the end of the line for you, buckaroo))), and then subtract the
-    //      the offset for the beginning of this current line
-    const nextLine = document.offsetAt(new vscode.Position(start.line + 1, 0));
-    const backwardColumnBound = nextLine < docText.length 
-        ? (nextLine - 1) - document.offsetAt(new vscode.Position(start.line, 0))
-        : nextLine - 1
 
-    // Offset for the beginning of the line is 0
-    const forwardColumnBound = 0;
+    // Initial iteration for forward jumps -- 
+    // When chaining together forward sentence jumps, we come across and issue:
+    // Initial: 'First sentence.  Current |sentence.  Last sentence.'
+    // After jump one: 'First sentence. |Current sentence.  Last sentence.'
+    // After jump two: 'First sentence. |Current sentence.  Last sentence.'
+    //      In this case, we can see the cursor getting "stuck" on the current
+    //          sentence -- no matter how many times we run `jumpSentence`, the 
+    //          cursor will not move past the first '.' which it gets stuck to
+    //      It's getting stuck because the main iteration (below) iterates forward
+    //          until it reaches punctuation.  In this case the punctuation
+    //          is the first '.' at the end of 'First sentence.', causing the 
+    //          result of the main iteration to be 'First sentence|.'.  This looks 
+    //          ugly, and is fixed by the use of a  secondary loop which pushes the 
+    //          cursor back to "current" sentence:  'First sentence.  |Current sentence.'.  
+    //          But, because of this, the cursor has no longer passed the period that 
+    //          stopped it earlier, and then, when `jumpSentence` is run again,
+    //          the cursor will get blocked by this '.' again, stopped, and then 
+    //          brought back to it's initial position.  Continue forever.
+    // The desired result for jump two is:
+    //      '|First sentence.  Current sentence.  Last sentence.'     
+    // To do this, if jumping forward, scoot past all leading whitespace and
+    //      punctuation characters
+    let initial = startOffset;
+    if (jt === 'forward' && initial !== 0) {
+        let current = initial - 1;
+        while (
+            (/\s/.test(docText[current]) || punctuation.test(docText[current]) )
+            && current !== 0
+        ) {
+            current--;
 
-    const relevantColumnBound = jt === 'forward'
-        ? forwardColumnBound
-        : backwardColumnBound;
+            // Special case: stop immediately at a '"' character -- special rules implemented
+            //      to stop at dialogue tags
+            if (fragmentStop.test(docText[current])) break;
+        }
+        initial = current;
+    }
+    else if (jt === 'backward') {
+        let current = initial;
+        while (
+            (/\s/.test(docText[current]) || punctuation.test(docText[current]) )
+            && current !== 0
+        ) {
+            current++;
 
-    const lineNumber = start.line;
-    const initialColumn = start.character;
-
-    let skip = false;
-    let columnOffset = 0;
-    let finalColumn = -1;
-    if (initialColumn === 1 && jt === 'forward') {
-        skip = true;
-        columnOffset = -1;
-        finalColumn = 0;
+            // Special case: stop immediately at a '"' character -- special rules implemented
+            //      to stop at dialogue tags
+            if (fragmentStop.test(docText[current])) break;
+        }
+        initial = current;
     }
 
-    const initialCharacterOffset = document.offsetAt(new vscode.Position(lineNumber, initialColumn));
-    const initialCharacter = docText[initialCharacterOffset];
+    // Ditto the above comment, but for jt === 'backward' and the problem character
+    //      being '"' instead of punctuation
+    if (jt === 'backward' && fragmentStop.test(docText[initial])) {
+        if (docText[initial] === '-' && docText[initial + 1] === '-') {
+            initial++;
+        }
+        initial++;
+    }  
 
-    const preceedingCharacterOffset = initialCharacterOffset + direction;
-    const preceedingCharacter = docText[preceedingCharacterOffset];
+    // More special forward cases:
+    if (jt === 'forward') {
+        // '"' stopping character: don't continue
+        // Made it to 0 already: don't continue
+        if (fragmentStop.test(docText[initial]) || initial === 0) {
+            let stop = true;
+            if (docText[initial] === '-') {
+                if (docText[initial - 1] === '-') {
+                    initial--;
+                }
+                else {
+                    // Only a single '-' means we don't actually want to stop at that character
+                    stop = false;
+                }
+            }
 
-    if (!skip && ((jumpFragment && fragmentStop.test(initialCharacter)) || punctuation.test(initialCharacter))) {
-        if (initialCharacter === '-') {
-            // Special special case for the '-' fragment stop character:
-            //      only want to stop at double '--' (an em dash) and not single '-' (a hyphen)
-            // Must make sure that the next character in the same direction is also '-' in order to consider the jump
-            // And instead of making a single jump away from the character (as in the else block below), make a double
-            //      jump away from both '-'s
-            if (preceedingCharacter === '-') {
-                columnOffset += direction;
-                columnOffset += direction;
+            if (stop) {
+                const position = document.positionAt(initial);
+                // Set the new selection of the editor
+                const select = new vscode.Selection (
+                    // If shift is held, use the start position of the previous selection as the active point
+                    //      of the new selection
+                    shiftHeld ? anchor : position,
+                    position, 
+                );
+                editor.selection = select;
+                vscode.window.activeTextEditor?.revealRange(editor.selection);
+                return select;
             }
         }
-        else {
-            // If the initial character is on top of a punctuation or a fragment stop, then move it away from that character
-            //      in order to be able to chain multiple sentence jumps in a row
-            columnOffset += direction;
-        }
-    }
-    if (!skip && ((jumpFragment && fragmentStop.test(preceedingCharacter)) || punctuation.test(preceedingCharacter))) {
-        if (preceedingCharacter === '-') {
-            // See special special case for '--' above:
-            // Instead of a double jump (else block below), make a triple jump away from both '-'s as well as the current character
-            const preceedingPreceedingCharacterOffset = initialCharacterOffset + direction + direction;
-            const preceedingPreceedingCharacter = docText[preceedingPreceedingCharacterOffset];1
-            if (preceedingPreceedingCharacter === '-') {
-                columnOffset += direction;
-                columnOffset += direction;
-                columnOffset += direction;
-            }
-        }
-        else {
-            // Do a double jump to move awat from the current character as well as the previous character
-            columnOffset += direction;
-            columnOffset += direction;
-        }
     }
 
-    if (initialColumn === relevantColumnBound) finalColumn = relevantColumnBound;
-    while (!skip && initialColumn !== relevantColumnBound) {
-        
-        // CASE: the relevant column bounding was reached
-        const iterationColumn = initialColumn + columnOffset;
-        if (iterationColumn === relevantColumnBound) {
-            finalColumn = relevantColumnBound;
-            break;
-        }
-        
-        const iterationCharacterOffset = document.offsetAt(new vscode.Position(lineNumber, iterationColumn));
-        const iterationCharacter = docText[iterationCharacterOffset];
 
+    // Main iteration:
+    // Traverse the document text -- forward or backward -- until we find punctuation or a special
+    //      stopping character
+    // And stop at that character
+    // let finalColumn: number = -1;
+    // if (initialColumn === relevantColumnBound) finalColumn = relevantColumnBound;
+    let iterOffset = initial;
+    while (
+        (jt === 'forward' && iterOffset !== 0) || 
+        (jt === 'backward' && iterOffset !== docText.length)
+    ) {
+        const iterationCharacter = docText[iterOffset];
+        
         // CASE: the current character matches a punction
-        //      Stop at the exact column of iteration
         if (punctuation.test(iterationCharacter)) {
-            finalColumn = iterationColumn;
             break;
         }
 
-        // CASE: the current character matches special fragment stopping character
-        //      Stop at the exact column of iteration if this is a backwards jump
-        //      Stop at the column behind the stop character if this is a forwards jump
-        if (jumpFragment && fragmentStop.test(iterationCharacter)) {
+        // CASE: the current character matches special stopping character '"'
+        if (fragmentStop.test(iterationCharacter)) {
+            let stop = true;
             if (iterationCharacter === '-') {
-                // Special special case for '-'
-                // Only want to stop on the double '--' (em dash) and not the single '-' (hyphen)
-                // Check the next character in the iteration before making a decision to stop or not
-                const nextIterOffset = initialCharacterOffset + columnOffset + direction;
-                const nextIterCharacter = docText[nextIterOffset];
-                if (nextIterCharacter !== '-') {
-                    // If the next iteration character is also not a '-', then continue iterating
-                    columnOffset += direction;
-                    continue;
+                if (docText[iterOffset + direction] === '-') {
+                    iterOffset += direction;
+                    iterOffset += direction;
+                }
+                else {
+                    stop = false;
                 }
             }
-
-            // On any other stopping character, break right away
-            if (jt === 'forward') {
-                finalColumn = iterationColumn + 1;
-            }
-            else {
-                finalColumn = iterationColumn;
-            }
-            break;
-        }
-        columnOffset += direction;
-    }
-
-    // Used for chaining multiple sentence jumps in a row
-    let position: vscode.Position;
-    if (finalColumn === initialColumn) {
-        if (finalColumn === relevantColumnBound) {
-
-            if (jt === 'forward' && document.offsetAt(new vscode.Position(start.line, finalColumn)) === 0) {
-                // Special case for when the final column is 1 and jump is forward:
-                // Long story short, going through the code below, the result would
-                //      move the column forward 1 (the while loop would test docText[-1], fall through
-                //      and increment the offset + 1 for forward jump, leading to position=1)
-                // So, to prepare for this, just set the position to 0, 0
-                position = new vscode.Position(0, 0);
-            }
-            else {
-                
-                // If final is initial and final is also the relevant column bound,
-                //      then skip all whitespace 
-                let currentOffset = document.offsetAt(new vscode.Position(start.line, finalColumn));
-                let currentCharacter = docText[currentOffset + direction];
-                while (whitespace.test(currentCharacter)) {
-    
-                    currentOffset += direction;
-                    currentCharacter = docText[currentOffset];
-    
-                    if (jt === 'forward' && currentOffset === 0) {
-                        // Set to -1 instead of 0, as right after this loop breaks,
-                        //      we add one to the `currentOffset` counter
-                        currentOffset = -1;
-                        break;
-                    }
-                    else if (jt === 'backward' && currentOffset === docText.length) {
-                        currentOffset = docText.length;
-                        break;
-                    }
-                }
+            if (stop) {
                 if (jt === 'forward') {
-                    currentOffset += 1;
+                    iterOffset++;
                 }
-                position = document.positionAt(currentOffset);
+                break;
             }
         }
-        else {
-            position = new vscode.Position(start.line, finalColumn);
-        }
+
+        iterOffset += direction;
     }
+
+    // Now, post jump, position will look like this:
+    // Initial state: 
+    //     'This is the previous sentence.  This is the current| sentence.  This is the next one.'
+    // Forward jump: 
+    //     'This is the previous sentence|.  This is the current sentence.  This is the next one.'
+    // Backward jump:
+    //     'This is the previous sentence.  This is the current sentence|.  This is the next one.'
+
+    // This, while passable, is slightly miss-aligned for my taste, so we're going to re-align
+    //      the sentence jumps to what one might expect
+    // New forward jump:
+    //     'This is the previous sentence.  |This is the current sentence.  This is the next one.'
+    // New backward jump:
+    //     'This is the previous sentence.  This is the current sentence.|  This is the next one.'
+
+    // Final position of the cursor
+    let position: vscode.Position;
+
+    // CASE: forward jump -- skip backward in the document past all punctuation and whitespace until
+    //      we reach the beginning of the sentence where we started
+    if (jt === 'forward') {
+        let current = iterOffset;
+        while (
+            /\s/.test(docText[current]) || 
+            punctuation.test(docText[current]) || 
+            fragmentStop.test(docText[current])
+        ) {
+            current++;
+        }
+        position = document.positionAt(current);
+    }
+    // CASE: backward jump -- skip backward in the document past all punctuation
     else {
-        position = new vscode.Position(start.line, finalColumn);
+        let current = iterOffset;
+        while (
+            punctuationNoWhitespace.test(docText[current])
+        ) {
+            current++;
+        }
+        position = document.positionAt(current);
+    }
+
+    // More special cases for when reaching a new line
+    // Whenever we move downwards to a new line, we want to start at the beginning of 
+    //      that line
+    if (position.line > start.line) {
+        position = new vscode.Position(position.line, 0);
+    }
+    // Whenever we move upwards to a new line, we want to start at the end of the 
+    //      next line
+    else if (position.line < start.line) {
+        const startOfNextLine = document.offsetAt(new vscode.Position(position.line + 1, 0));
+        const endOfThisLine = startOfNextLine - 1;
+        position = document.positionAt(endOfThisLine);
     }
 
     // Set the new selection of the editor
@@ -513,7 +538,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         position, 
     );
     editor.selection = select;
-    editor.revealRange(select);
+    vscode.window.activeTextEditor?.revealRange(editor.selection);
     return select;
 }
 
@@ -536,8 +561,26 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
     // Find the position of the end of the line (paragraph)
     const nextLine = new vscode.Position(line + 1, 0);
     const nextLinePosition = document.offsetAt(nextLine);
-    const eolPosition = nextLinePosition - 1;
+    let eolPosition; 
 
+    // Special case for when the cursor is at the end of the document
+    // Because of how vscode handles `new vscode.Position` when the line number
+    //      is out of range, end of line position will incorrectly be set to 
+    //      `docText.length - 1`
+    if (startOffset === docText.length) {
+        eolPosition = startOffset;
+    }
+    else {
+        eolPosition = nextLinePosition - 1;
+    }
+
+    // Special case for when the cursor will be traveling to the end of the document
+    // Again because of complications on `new vscode.Position`, when travelling to
+    //      the end of the document, the cursor will be set to `docText.length - 1`
+    //      mistakingly
+    if (eolPosition === docText.length - 1 && !/\s/.test(docText[eolPosition])) {
+        eolPosition = docText.length;
+    }
     
     // Find the jump position, depending on whether we're jumping forward or backward
     let position: vscode.Position;
