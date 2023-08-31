@@ -108,15 +108,11 @@ export function italisize () {
 }
 
 export function bold () {
-    return surroundSelectionWith('#');
+    return surroundSelectionWith('__');
 }
 
 export function strikethrough () {
-    return surroundSelectionWith('~');
-}
-
-export function underline () {
-    return surroundSelectionWith('_');
+    return surroundSelectionWith('~~');
 }
 
 export function commasize () {
@@ -310,10 +306,11 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
         position
     );
     editor.selection = select;
+    vscode.window.activeTextEditor?.revealRange(editor.selection);
     return select;
 }
 
-async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boolean): Promise<vscode.Selection | null> {
+async function jumpSentence (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Selection | null> {
     const direction = jt === 'forward' ? -1 : 1;
     
     const editor = vscode.window.activeTextEditor;
@@ -328,13 +325,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
     const start = selection.isReversed ? selection.start : selection.end;
     const anchor = selection.anchor;
 
-    const punctuation = /[\.\?\!\n]/;
-    const punctuationNoWhitespace = /[\.\?\!]/;
-
-    
-    const fragmentStop = jumpFragment 
-        ? /["\-,;\*#~_]/                    // If fragment jumps are activated, use all stopping characters as pause for fragments
-        : /^[]/;                            // Otherwise, use a regex that the internet told me would never, ever (tm) match anything
+    const punctuation = /[\.\?\!]/
     
     const startOffset = document.offsetAt(start);
 
@@ -372,31 +363,14 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
 
             // Special case: stop immediately at a '"' character -- special rules implemented
             //      to stop at dialogue tags
-            if (fragmentStop.test(docText[current])) break;
-        }
-        initial = current;
-    }
-    else if (jt === 'backward') {
-        let current = initial;
-        while (
-            (/\s/.test(docText[current]) || punctuation.test(docText[current]) )
-            && current !== 0
-        ) {
-            current++;
-
-            // Special case: stop immediately at a '"' character -- special rules implemented
-            //      to stop at dialogue tags
-            if (fragmentStop.test(docText[current])) break;
+            if ('"' === docText[current]) break;
         }
         initial = current;
     }
 
     // Ditto the above comment, but for jt === 'backward' and the problem character
     //      being '"' instead of punctuation
-    if (jt === 'backward' && fragmentStop.test(docText[initial])) {
-        if (docText[initial] === '-' && docText[initial + 1] === '-') {
-            initial++;
-        }
+    if (jt === 'backward' && docText[initial] === '"') {
         initial++;
     }  
 
@@ -404,31 +378,18 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
     if (jt === 'forward') {
         // '"' stopping character: don't continue
         // Made it to 0 already: don't continue
-        if (fragmentStop.test(docText[initial]) || initial === 0) {
-            let stop = true;
-            if (docText[initial] === '-') {
-                if (docText[initial - 1] === '-') {
-                    initial--;
-                }
-                else {
-                    // Only a single '-' means we don't actually want to stop at that character
-                    stop = false;
-                }
-            }
-
-            if (stop) {
-                const position = document.positionAt(initial);
-                // Set the new selection of the editor
-                const select = new vscode.Selection (
-                    // If shift is held, use the start position of the previous selection as the active point
-                    //      of the new selection
-                    shiftHeld ? anchor : position,
-                    position, 
-                );
-                editor.selection = select;
-                vscode.window.activeTextEditor?.revealRange(editor.selection);
-                return select;
-            }
+        if (docText[initial] === '"' || initial === 0) {
+            const position = document.positionAt(initial);
+            // Set the new selection of the editor
+            const select = new vscode.Selection (
+                // If shift is held, use the start position of the previous selection as the active point
+                //      of the new selection
+                shiftHeld ? anchor : position,
+                position, 
+            );
+            editor.selection = select;
+            vscode.window.activeTextEditor?.revealRange(editor.selection);
+            return select;
         }
     }
 
@@ -452,23 +413,11 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         }
 
         // CASE: the current character matches special stopping character '"'
-        if (fragmentStop.test(iterationCharacter)) {
-            let stop = true;
-            if (iterationCharacter === '-') {
-                if (docText[iterOffset + direction] === '-') {
-                    iterOffset += direction;
-                    iterOffset += direction;
-                }
-                else {
-                    stop = false;
-                }
+        if (iterationCharacter === '"') {
+            if (jt === 'forward') {
+                iterOffset++;
             }
-            if (stop) {
-                if (jt === 'forward') {
-                    iterOffset++;
-                }
-                break;
-            }
+            break;
         }
 
         iterOffset += direction;
@@ -499,7 +448,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         while (
             /\s/.test(docText[current]) || 
             punctuation.test(docText[current]) || 
-            fragmentStop.test(docText[current])
+            '"' === docText[current]
         ) {
             current++;
         }
@@ -509,25 +458,11 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
     else {
         let current = iterOffset;
         while (
-            punctuationNoWhitespace.test(docText[current])
+            punctuation.test(docText[current])
         ) {
             current++;
         }
         position = document.positionAt(current);
-    }
-
-    // More special cases for when reaching a new line
-    // Whenever we move downwards to a new line, we want to start at the beginning of 
-    //      that line
-    if (position.line > start.line) {
-        position = new vscode.Position(position.line, 0);
-    }
-    // Whenever we move upwards to a new line, we want to start at the end of the 
-    //      next line
-    else if (position.line < start.line) {
-        const startOfNextLine = document.offsetAt(new vscode.Position(position.line + 1, 0));
-        const endOfThisLine = startOfNextLine - 1;
-        position = document.positionAt(endOfThisLine);
     }
 
     // Set the new selection of the editor
@@ -561,8 +496,8 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
     // Find the position of the end of the line (paragraph)
     const nextLine = new vscode.Position(line + 1, 0);
     const nextLinePosition = document.offsetAt(nextLine);
-    let eolPosition; 
-
+    let eolPosition;
+    
     // Special case for when the cursor is at the end of the document
     // Because of how vscode handles `new vscode.Position` when the line number
     //      is out of range, end of line position will incorrectly be set to 
@@ -581,6 +516,7 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
     if (eolPosition === docText.length - 1 && !/\s/.test(docText[eolPosition])) {
         eolPosition = docText.length;
     }
+
     
     // Find the jump position, depending on whether we're jumping forward or backward
     let position: vscode.Position;
@@ -610,7 +546,9 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
         }
     }
     else {
-        if (startOffset === eolPosition) {
+        if (startOffset === eolPosition || 
+            (startOffset === eolPosition - 1 && docText[startOffset] === '\r')      // Thanks windows
+        ) {
             // Ditto for all the comments above, but going backwards
             const nextNewline = startOffset + 1;
             // Character before newline is the last character in a line
@@ -640,6 +578,7 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
         position, 
     );
     editor.selection = select;
+    vscode.window.activeTextEditor?.revealRange(editor.selection);
     return select;
 }
 
@@ -652,7 +591,6 @@ export class Toolbar {
         vscode.commands.registerCommand('wt.editor.bold', bold);
         vscode.commands.registerCommand('wt.editor.strikethrough', strikethrough);
         vscode.commands.registerCommand('wt.editor.commasize', commasize);
-        vscode.commands.registerCommand('wt.editor.underline', underline);
         vscode.commands.registerCommand('wt.editor.header', header);
         vscode.commands.registerCommand('wt.editor.emdash', emDash);
         vscode.commands.registerCommand('wt.editor.emdashes', emDashes);
@@ -663,18 +601,14 @@ export class Toolbar {
         // Jump commands
         vscode.commands.registerCommand('wt.editor.jump.word.forward', () => jumpWord('forward'));
         vscode.commands.registerCommand('wt.editor.jump.word.backward', () => jumpWord('backward'));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.forward', () => jumpSentence('forward', false, false));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.backward', () => jumpSentence('backward', false, false));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.forward', () => jumpSentence('forward', false, true));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.backward', () => jumpSentence('backward', false, true));
+        vscode.commands.registerCommand('wt.editor.jump.sentence.forward', () => jumpSentence('forward'));
+        vscode.commands.registerCommand('wt.editor.jump.sentence.backward', () => jumpSentence('backward'));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.forward', () => jumpParagraph('forward'));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.backward', () => jumpParagraph('backward'));
         vscode.commands.registerCommand('wt.editor.jump.word.forward.shift', () => jumpWord('forward', true));
         vscode.commands.registerCommand('wt.editor.jump.word.backward.shift', () => jumpWord('backward', true));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.forward.shift', () => jumpSentence('forward', true, false));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.backward.shift', () => jumpSentence('backward', true, false));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.forward.shift', () => jumpSentence('forward', true, true));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.backward.shift', () => jumpSentence('backward', true, true));
+        vscode.commands.registerCommand('wt.editor.jump.sentence.forward.shift', () => jumpSentence('forward', true));
+        vscode.commands.registerCommand('wt.editor.jump.sentence.backward.shift', () => jumpSentence('backward', true));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.forward.shift', () => jumpParagraph('forward', true));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.backward.shift', () => jumpParagraph('backward', true));
     }
