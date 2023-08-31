@@ -99,3 +99,66 @@ export async function query (word: string): Promise<Synonyms | SynonymError> {
         };
     }
 }
+
+export async function queryWordHippo (words: string[] | string): Promise<Synonyms | SynonymError> {
+    let phrase;
+    if (words instanceof Array) {
+        phrase = words.join('_').toLowerCase();
+    }
+    else {
+        phrase = words.toLowerCase()
+    }
+
+    let text;
+    try {
+        text = await (await fetch(`https://www.wordhippo.com/what-is/another-word-for/${phrase}.html`)).text();
+    }
+    catch (err: any) {
+        return {
+            type: 'error',
+            message: `An error occurred while querying word hippo: ${err}`
+        };
+    }
+
+    const JSDOM = require('jsdom').JSDOM;
+    const parser = new JSDOM(text);
+    const doc = parser.window.document;
+    const partsOfSpeech = doc.querySelectorAll('.wordtype');
+    const descriptions = doc.querySelectorAll('.tabdesc');
+    const allRelated = doc.querySelectorAll(".relatedwords");
+
+    // { partOfSpeech: string, description: string, relatePhrases: string[] }[]
+    const definitions: Definition[] = []
+
+    for (let defIndex = 0; defIndex < allRelated.length; defIndex++) {
+        let pos = partsOfSpeech[defIndex]?.textContent?.replaceAll(/[^\w]/g, '')?.toLowerCase();
+        if (pos === 'nearbywords') {
+            pos = 'Nearby Words';
+        }
+        const desc = descriptions[defIndex]?.textContent?.trim();
+        const related = allRelated[defIndex];
+        const phrases = [...related.querySelectorAll('.wb'), ...related.querySelectorAll('.wordblock')]
+        const relatedPhrases = phrases.map(p => {
+            const txt: string = p.textContent;
+            if (txt.endsWith('UK')) {
+                return [];
+            }
+            else if (txt.endsWith('US')) {
+                return txt.replace('US', '');
+            }
+            return txt;
+        }).flat();
+        definitions.push({
+            part: pos || '',
+            definitions: [ desc || '' ],
+            synonyms: relatedPhrases,
+            antonyms: [],
+        })
+    }
+
+    return {
+        type: 'success',
+        word: phrase,
+        definitions: definitions
+    }
+}

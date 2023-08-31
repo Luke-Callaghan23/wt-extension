@@ -340,6 +340,10 @@
 				"icon": "$(search)"
 			},
 			{
+				"command": "wt.intellisense.synonyms.shiftMode",
+				"title": "Writing Tool: Swap Synonyms Mode (between WordHippo (slower but better) and a generic API)"
+			},
+			{
 				"command": "wt.editor.remove",
 				"title": "Writing Tool: Clear Selection",
 				"icon": "$(trash)"
@@ -856,6 +860,11 @@
 			{
 				"command": "wt.editor.delete.backward",
 				"key": "ctrl+delete",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.intellisense.synonyms.shiftMode",
+				"key": "ctrl+shift+alt+space",
 				"when": "editorAreaVisible && editorLangId == wt"
 			}
 		],

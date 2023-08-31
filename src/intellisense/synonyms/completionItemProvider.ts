@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
 import { HoverPosition, getHoverText, getHoveredWord } from '../common';
-import { SynonymError, Synonyms, query } from '../querySynonym';
+import { SynonymError, Synonyms, query, queryWordHippo } from '../querySynonym';
 import { HoverProvider } from './hoverProvider';
 
 const NUMBER_COMPLETES = 20;
@@ -13,18 +13,24 @@ type ActivationState = {
     word: string, 
     lastSelectedDefinition: number,
     definitionsActivated: boolean[],
+    ts: number
 }
+
 
 export class CompletionItemProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
     private cache: { [index: string]: Synonyms };
     private activationState?: ActivationState;
 
+    private isWordHippo;
+
     constructor (
         private context: vscode.ExtensionContext,
-        private workspace: Workspace
+        private workspace: Workspace,
+        useWordHippo: boolean,
     ) { 
         this.cache = {};
         this.registerCommands();
+        this.isWordHippo = useWordHippo;
     }
 
     async provideCompletionItems(
@@ -33,21 +39,75 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         token: vscode.CancellationToken, 
         context: vscode.CompletionContext
     ): Promise<vscode.CompletionList<vscode.CompletionItem> | vscode.CompletionItem[]> {
-        const hoverPosition = getHoveredWord(document, position);
-        if (!hoverPosition) return [];
+        let wordText: string;
+        let hoverPosition: HoverPosition; 
+        let hoverRange: vscode.Range;
+        {
+            // 16m ~ 1 frame --> allow 10 frames to have passed between when .ts was set
+            if (this.activationState && Date.now() - this.activationState.ts < 16 * 10) {
+                // If the last activation of this compltion was less than 5 ms ago, then
+                //      use that activation state
+                // Hacky solution to allow the folders from #78 to word with word hippo
+                hoverPosition = this.activationState.hoverPosition;
+                hoverRange = this.activationState.hoverRange;
+                wordText = this.activationState.word;
+            }
+            else {
 
-        const hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
+                const selection = vscode.window.activeTextEditor?.selection;
+                if (this.isWordHippo && selection && !selection.isEmpty) {
+                    // If we're using word hippo and the selection is not empty then call get hovered position on both the start
+                    //      and end of the selection to get the full range of selected text
+                    const start = getHoveredWord(document, selection.start);
+                    const end = getHoveredWord(document, selection.end);
+    
+                    if (!start || !end) {
+                        return [];
+                    }
+    
+                    // Transform each to offsets
+                    start.start, start.end
+                    end.start, end.end
+    
+                    // Order start and end offsets
+                    const startOff = start.start < end.start ? start.start : end.start;
+                    const endOff = end.end < start.end ? start.end : end.end;
+    
+                    wordText = document.getText().substring(startOff, endOff);
+                    
+                    hoverRange = new vscode.Range(document.positionAt(startOff), document.positionAt(endOff));
+    
+                    hoverPosition = {
+                        start: startOff,
+                        end: endOff,
+                        text: wordText.split(/\s/g).join('_')
+                    }
+                }
+                else {
+                    // Otherwise, simply call hover position on the provided position
+                    const tmp = getHoveredWord(document, position);
+                    if (!tmp) return [];
+                    hoverPosition = tmp;
+                    wordText = tmp.text;
+                    hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
+                }
+            }
+        }
+
         
         // Query the synonym api for the hovered word
-        const wordText = hoverPosition.text.toLocaleLowerCase();
         let response: Synonyms;
         if (this.cache[wordText]) {
             response = this.cache[wordText];
         }
         else {
 
+            let q = this.isWordHippo 
+                ? queryWordHippo
+                : query;
+
             // Query the dictionary api for the selected word
-            const res = await query(wordText);
+            const res = await q(hoverPosition.text);
             if (res.type === 'error') {
                 return res.suggestions?.map(suggest => {
                     return <vscode.CompletionItem> {
@@ -75,6 +135,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             activations = this.activationState.definitionsActivated;
         }
         else {
+
             // Remove the current activation state if it does not match the same word as the 
             //      last time this function was called
             // Since activation state is used to keep track of which definitions of the *current*
@@ -93,16 +154,17 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 word: wordText,
                 lastSelectedDefinition: 0,
                 definitionsActivated: activations,
+                ts: Date.now()
             };
         }
 
         // Create completion items for each of the definitions
-        return defs.map((def, definitionIndex) => {
+        const a = defs.map((def, definitionIndex) => {
             const definitionCompletion = <vscode.CompletionItem> {
                 label: `(${def.part}) ${def.definitions[0]}`,
                 filterText: wordText,
                 insertText: wordText,
-                detail: `[${def.definitions.join(';')}]`,
+                detail: `(${def.synonyms.length} synonyms)`,
                 range: hoverRange,
                 kind: vscode.CompletionItemKind.Folder,
 
@@ -145,6 +207,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 ...synonymCompletions
             ];
         }).flat();
+        return a;
     }
 
     // Returns a list of completion items for each synonym for a selected word's selected definition
@@ -180,11 +243,11 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
             return <vscode.CompletionItem> {
                 label: `${syn}`,
-                filterText: hoverPosition.text,
+                filterText: word,
                 insertText: insertText,
                 detail: `[${def.definitions[0]}]`,
                 range: hoverRange,
-                kind: vscode.CompletionItemKind.Snippet,
+                kind: vscode.CompletionItemKind.Event,
 
                 // Sort text is a string used by vscode to sort items within the completion items box
                 // Sort text is derived from the synonym itelf as well as the index of the definition
@@ -193,7 +256,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 //      definition will appear below that definition
                 // Using the synonym text itself next will ensure that all synonyms within a certain
                 //      block of definitions will be sorted alphabetically
-                sortText: `${definitionIndex}__${syn}`
+                sortText: `${definitionIndex}!!${syn}`
             }
         }).flat();
     }
@@ -230,9 +293,22 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             const currentDefinitionState = this.activationState.definitionsActivated[definitionIndex];
             this.activationState.definitionsActivated[definitionIndex] = !currentDefinitionState;
             this.activationState.lastSelectedDefinition = definitionIndex;
+            this.activationState.ts = Date.now();
 
             // Then reopen the suggestions panel
             vscode.commands.executeCommand('editor.action.triggerSuggest');
+        });
+
+        vscode.commands.registerCommand('wt.intellisense.synonyms.shiftMode', () => {
+            // Reset word hippo status, activation state, and cache
+            this.isWordHippo = !this.isWordHippo;
+            this.activationState = undefined;
+            this.cache = {};
+
+            const using = this.isWordHippo
+                ? 'Word Hippo'
+                : 'Dictionary API'
+            vscode.window.showInformationMessage(`[INFO] Synonyms intellisense is now using ${using} for completion`);
         });
     }
 }

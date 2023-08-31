@@ -10,12 +10,13 @@ export class SynonymsIntellisense {
     constructor (
         private context: vscode.ExtensionContext,
         workspace: Workspace,
-        personalDictionary: PersonalDictionary
+        personalDictionary: PersonalDictionary,
+        useWordHippo: boolean,
     ) {
         const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
             language: 'wt'
         };
-        vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace));
+        vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace, useWordHippo));
         vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace));
         vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(context, workspace, personalDictionary));
     

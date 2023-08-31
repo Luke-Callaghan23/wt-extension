@@ -47,7 +47,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const textStyles = new TextStyles(context, workspace);			
 
 		const personalDictionary = new PersonalDictionary(context, workspace);
-		const synonymsIntellisense = new SynonymsIntellisense(context, workspace, personalDictionary);
+		const synonymsIntellisense = new SynonymsIntellisense(context, workspace, personalDictionary, false);
 		const spellcheck = new Spellcheck(context, workspace, personalDictionary);
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
