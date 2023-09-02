@@ -7,12 +7,19 @@ import { HoverProvider } from './hoverProvider';
 
 const NUMBER_COMPLETES = 20;
 
+
+function numDigits(x: number): number {
+    return Math.max(Math.floor(Math.log10(Math.abs(x))), 0) + 1;
+}
+
 type ActivationState = {
     hoverRange: vscode.Range,
     hoverPosition: HoverPosition,
     word: string, 
     lastSelectedDefinition: number,
     definitionsActivated: boolean[],
+    definitionsExpanded: boolean[],
+    selected: number,
     ts: number
 }
 
@@ -22,6 +29,8 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     private activationState?: ActivationState;
 
     private isWordHippo;
+    private allCompletionItems: vscode.CompletionItem[] = [];
+    private forceSelectIndex: boolean = false;
 
     constructor (
         private context: vscode.ExtensionContext,
@@ -123,16 +132,19 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             response = res;
             this.cache[wordText] = response;
         }
+
         
         const defs = response.definitions;
 
 
         let activations: boolean[];
+        let expansions: boolean[];
         if (this.activationState && this.activationState.word === wordText && this.activationState.hoverRange.isEqual(hoverRange)) {
             // If the activation state of the current hover is for the same word and same range
             //      in the text document as the previous activation, use the activations of that 
             //      state for this call
             activations = this.activationState.definitionsActivated;
+            expansions = this.activationState.definitionsExpanded;
         }
         else {
 
@@ -147,6 +159,10 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             const defaultOpen = defs.length === 1;
             activations = Array.from({ length: defs.length }, () => defaultOpen);
 
+            // We can copy the falses from activations for the expansions array
+            // Don't use the same array for obv reasons
+            expansions = [...activations];
+
             // Also create a new activation state for this completion
             this.activationState = {
                 hoverPosition: hoverPosition,
@@ -154,12 +170,40 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 word: wordText,
                 lastSelectedDefinition: 0,
                 definitionsActivated: activations,
+                definitionsExpanded: expansions,
+                selected: 0,
                 ts: Date.now()
             };
         }
 
+        let itemsCount = 0;
+
+        const maxDigits = numDigits(defs.length);
+
         // Create completion items for each of the definitions
-        const a = defs.map((def, definitionIndex) => {
+        const allItems = defs.map((def, definitionIndex) => {
+
+            console.log(`def Index: ${definitionIndex}`);
+            const forceSelection = this.forceSelectIndex && itemsCount + 1 === this.activationState?.selected;
+            console.log(`force select: ${forceSelection}`)
+            let preselectDefinition: boolean = false;
+            if (this.forceSelectIndex) {
+                console.log(itemsCount);
+                console.log(this.activationState?.selected)
+                preselectDefinition = itemsCount === this.activationState?.selected;
+            }
+            else {
+                preselectDefinition = definitionIndex === this.activationState?.lastSelectedDefinition;
+                if (preselectDefinition && this.activationState) {
+                    this.activationState.selected = itemsCount;
+                }
+
+            }
+
+            console.log(`preselect: ${preselectDefinition}`)
+
+            
+            const indexStr = ("" + definitionIndex).padStart(maxDigits, '0')
             const definitionCompletion = <vscode.CompletionItem> {
                 label: `(${def.part}) ${def.definitions[0]}`,
                 filterText: wordText,
@@ -169,36 +213,61 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 kind: vscode.CompletionItemKind.Folder,
 
                 // Preselect this definition if it was the last definition chosen
-                preselect: definitionIndex === this.activationState?.lastSelectedDefinition,
+                preselect: preselectDefinition,
 
-                // Sort text is a string used by vscode to sort items within the completion items box
-                // Sort text === the index of this definition
-                // Since vscode uses strings for sorting instead of numbers, when definitions count > 10
-                //      then definitions will start appearing out of order from the original order sent by
-                //      the API (string '10' will be sorted before string '2', even though int `10` gets
-                //      sorted after int `2`)
-                // But, since I don't believe the order sent by the api has any particular meaning, this
-                //      shouldn't matter
-                // I also don't know if any words do have more than 10 definitions
-                // Sort text of activated synonyms also uses the definition index as a prefix so that they 
-                //      will all be sorted underneath their respective definitions
-                sortText: definitionIndex + '',
+                sortText: indexStr,
 
                 // Command to be executed *after* the `insertText` above is inserted over the `hoverRange`
                 // `activateDefinition` will toggle the activation status of this definition and then
                 //      reopen the completion items menu
                 // To the user, this appears as if they had toggled an option and added all the synonyms
                 //      of the selected definition into the completion box
-                command: <vscode.Command> {
+                command: {
                     command: 'wt.intellisense.synonyms.activateDefinition',
                     arguments: [ definitionIndex ]
                 },
             };
+            itemsCount++;
 
             // If the current definition is activated, then also show all the synonyms for the hovered definition
             let synonymCompletions: vscode.CompletionItem[] = []
             if (activations[definitionIndex]) {
-                synonymCompletions = this.resolveDefinitionItems(hoverRange, hoverPosition, wordText, definitionIndex);
+                synonymCompletions = this.resolveDefinitionItems(hoverRange, hoverPosition, wordText, definitionIndex, indexStr);
+                const originalLength = synonymCompletions.length;
+                if (!expansions[definitionIndex] && originalLength > 5) {
+                    synonymCompletions = synonymCompletions.slice(0, 5);
+                    synonymCompletions.push({
+                        label: 'Show more . . . ',
+                        detail: `${originalLength - 5} more`,
+                        filterText: wordText,
+                        insertText: wordText,
+                        range: hoverRange,
+                        kind: vscode.CompletionItemKind.Enum,
+                        sortText: `${indexStr}!!expand`,
+                        command: {
+                            command: `wt.intellisense.synonyms.activateShowMoreLess`,
+                            arguments: [ definitionIndex ],
+                            title: 'Activate Show More'
+                        }
+                    });
+                }
+                else if (expansions[definitionIndex] && originalLength > 5) {
+                    synonymCompletions.push({
+                        label: 'Show less . . . ',
+                        detail: `hide ${originalLength - 5} synonyms`,
+                        filterText: wordText,
+                        insertText: wordText,
+                        range: hoverRange,
+                        kind: vscode.CompletionItemKind.EnumMember,
+                        sortText: `${indexStr}!!collapse`,
+                        command: {
+                            command: `wt.intellisense.synonyms.activateShowMoreLess`,
+                            arguments: [ definitionIndex ],
+                            title: 'Activate Show Less'
+                        }
+                    });
+                }
+                itemsCount += synonymCompletions.length;
             }
 
             // Return the definition completion item and all the synonyms for that definition (if the definition is activated)
@@ -207,7 +276,8 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 ...synonymCompletions
             ];
         }).flat();
-        return a;
+        this.allCompletionItems = allItems;
+        return allItems;
     }
 
     // Returns a list of completion items for each synonym for a selected word's selected definition
@@ -216,6 +286,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         hoverPosition: HoverPosition,
         word: string, 
         definitionIndex: number,
+        defIndexStr: string
     ): vscode.CompletionItem[] {
         
         const synonyms = this.cache[word];
@@ -225,8 +296,10 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         const inserts: { [index: string]: 1 } = {};
         const def = synonyms.definitions[definitionIndex];
 
+        const maxDigits = numDigits(def.synonyms.length);
+
         // Return completion items for all synonyms of the selection definition
-        return def.synonyms.map(syn => {
+        return def.synonyms.map((syn, index) => {
             // Clean up the text of the definition for replacing
             // Some synonyms have some extra bits in parentheses
             // EX:
@@ -241,6 +314,8 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             }
             inserts[insertText] = 1;
 
+            const indexStr = ("" + index).padStart(maxDigits, '0')
+
             return <vscode.CompletionItem> {
                 label: `${syn}`,
                 filterText: word,
@@ -250,13 +325,11 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 kind: vscode.CompletionItemKind.Event,
 
                 // Sort text is a string used by vscode to sort items within the completion items box
-                // Sort text is derived from the synonym itelf as well as the index of the definition
-                //      it belongs to
+                // Sort text is derived index of the definition and a the padded index of
+                //      this synonym
                 // Using the definition index first in the sort key makes it so all synonyms to a certain
                 //      definition will appear below that definition
-                // Using the synonym text itself next will ensure that all synonyms within a certain
-                //      block of definitions will be sorted alphabetically
-                sortText: `${definitionIndex}!!${syn}`
+                sortText: `${defIndexStr}!!${indexStr}`
             }
         }).flat();
     }
@@ -284,7 +357,6 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         }
     }
 
-
     private registerCommands () {
         vscode.commands.registerCommand(`wt.intellisense.synonyms.activateDefinition`, (definitionIndex: number) => {
             if (!this.activationState) return;
@@ -292,6 +364,20 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             // Flip the activation status of the selected definition
             const currentDefinitionState = this.activationState.definitionsActivated[definitionIndex];
             this.activationState.definitionsActivated[definitionIndex] = !currentDefinitionState;
+            this.activationState.lastSelectedDefinition = definitionIndex;
+            this.activationState.ts = Date.now();
+
+            // Then reopen the suggestions panel
+            vscode.commands.executeCommand('editor.action.triggerSuggest');
+        });
+
+        
+        vscode.commands.registerCommand(`wt.intellisense.synonyms.activateShowMoreLess`, (definitionIndex: number) => {
+            if (!this.activationState) return;
+
+            // Flip the activation status of the selected definition
+            const currentDefinitionState = this.activationState.definitionsExpanded[definitionIndex];
+            this.activationState.definitionsExpanded[definitionIndex] = !currentDefinitionState;
             this.activationState.lastSelectedDefinition = definitionIndex;
             this.activationState.ts = Date.now();
 
@@ -310,5 +396,86 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 : 'Dictionary API'
             vscode.window.showInformationMessage(`[INFO] Synonyms intellisense is now using ${using} for completion`);
         });
+
+        vscode.commands.registerCommand("wt.intellisense.synonyms.prevSelection", async () => {
+            if (!this.activationState) return;
+            this.activationState.selected--;
+            if (this.activationState.selected < 0) {
+                this.activationState.selected = this.allCompletionItems.length - 1;
+            }
+            vscode.commands.executeCommand('selectPrevSuggestion')
+        })
+        vscode.commands.registerCommand("wt.intellisense.synonyms.nextSelection", async () => {
+            if (!this.activationState) return;
+            this.activationState.selected = (this.activationState.selected + 1) % this.allCompletionItems.length;
+            vscode.commands.executeCommand('selectNextSuggestion')
+        })
+
+        vscode.commands.registerCommand(`wt.intellisense.synonyms.prevDefinition`, async () => {
+            if (!this.activationState) return;
+            if (this.activationState.selected === 0) {
+                let lastDefIndex = 0;
+                this.allCompletionItems.forEach((item, index) => {
+                    if (!item.sortText?.includes('!!')) {
+                        lastDefIndex = index;
+                    }
+                })
+                this.activationState.selected = lastDefIndex;
+            }
+            else {
+                // Parse int still words on synonym's sort keys:
+                //      parseInt('0!!001') === 0
+                //      parseInt('324!!024') === 324
+                const selectedItemIndex = this.allCompletionItems[this.activationState.selected].sortText!;
+                const selectedDefinitionIndex = parseInt(selectedItemIndex);
+                for (; this.activationState.selected > 0; this.activationState.selected--) {
+                    const curItem = this.allCompletionItems[this.activationState.selected];
+                    
+                    if (curItem.sortText?.includes('!!')) continue;
+                    
+                    const curItemDefIndex = parseInt(curItem.sortText!);
+                    if (curItemDefIndex < selectedDefinitionIndex ||  (curItemDefIndex === selectedDefinitionIndex && selectedItemIndex !== curItem.sortText)) {
+                        break;
+                    }
+                }
+            }
+
+            
+            this.activationState.ts = Date.now();
+
+            this.forceSelectIndex = true;
+            await vscode.commands.executeCommand('hideSuggestWidget');
+            await vscode.commands.executeCommand('editor.action.triggerSuggest');
+            this.forceSelectIndex = false;
+        });
+
+        vscode.commands.registerCommand(`wt.intellisense.synonyms.nextDefinition`, async () => {
+            if (!this.activationState) return;
+            if (this.activationState.selected === this.allCompletionItems.length - 1) {
+                this.activationState.selected = 0;
+            }
+            else {
+                // Parse int still words on synonym's sort keys:
+                //      parseInt('0!!001') === 0
+                //      parseInt('324!!024') === 324
+                const selectedItemIndex = this.allCompletionItems[this.activationState.selected].sortText!;
+                const selectedDefinitionIndex = parseInt(selectedItemIndex);
+                for (; this.activationState.selected < this.allCompletionItems.length; this.activationState.selected++) {
+                    const curItem = this.allCompletionItems[this.activationState.selected];
+                    const curItemDefIndex = parseInt(curItem.sortText!);
+                    if (curItemDefIndex > selectedDefinitionIndex) {
+                        break;
+                    }
+                }
+            }
+
+            this.activationState.ts = Date.now();
+
+            this.forceSelectIndex = true;
+            await vscode.commands.executeCommand('hideSuggestWidget');
+            await vscode.commands.executeCommand('editor.action.triggerSuggest');
+            this.forceSelectIndex = false;
+        });
+
     }
 }

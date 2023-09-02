@@ -866,6 +866,27 @@
 				"command": "wt.intellisense.synonyms.shiftMode",
 				"key": "ctrl+shift+alt+space",
 				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.intellisense.synonyms.prevDefinition",
+				"key": "ctrl+up",
+				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && editorLangId == wt"
+			},
+			{
+				"command": "wt.intellisense.synonyms.nextDefinition",
+				"key": "ctrl+down",
+				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && editorLangId == wt"
+			},
+			{
+				"command": "wt.intellisense.synonyms.prevSelection",
+				"key": "up",
+				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && editorLangId == wt"
+
+			},
+			{
+				"command": "wt.intellisense.synonyms.nextSelection",
+				"key": "down",
+				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && editorLangId == wt"
 			}
 		],
 		"languages": [
