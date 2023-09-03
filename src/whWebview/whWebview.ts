@@ -3,6 +3,7 @@ import * as console from '../vsconsole';
 import { getNonce } from '../help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
+import { queryWordHippo } from '../intellisense/querySynonym';
 
 export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 
@@ -135,6 +136,21 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 				case 'deliveredSynonyms':
 					this.synonyms = (data.synonyms as string[]);
 					this.context.workspaceState.update('wt.wh.synonyms', this.synonyms);
+					break;
+				case 'requestWH':
+					const phrase = data.phrase;
+					this.synonyms.push(phrase);
+					this.context.workspaceState.update('wt.wh.synonyms', this.synonyms);
+
+					const phraseUnderscored = phrase.replaceAll(' ', '_');
+					queryWordHippo(phraseUnderscored).then(res => {
+						if (res.type === 'error') return;
+						webviewView.webview.postMessage({
+							type: 'whResponse',
+							result: res
+						})
+					})
+
 					break;
 			}
 		});

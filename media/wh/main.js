@@ -64,20 +64,23 @@
                     synonyms = message.synonyms;
                     startup();
                     break;
+                case 'whResponse':
+                    const results = message.result;
+                    addContent(results).then(() => {
+                        synonyms.push(results.word);
+                        vscode.setState({ synonyms: synonyms });
+                    })
+                    break;
             }
         });
     }
     
-    async function addSynonym (term) {
+    async function addSynonym (phrase) {
         startupMessage.style.display = 'none';
         clearButton.disabled = false;
-        const result = await query(term);
-        await addContent(result);
-        synonyms.push(result.word);
-        vscode.setState({ synonyms: synonyms });
         vscode.postMessage({ 
-            type: 'deliveredSynonyms',
-            synonyms: synonyms
+            type: 'requestWH',
+            phrase: phrase
         });
     }
 
@@ -102,47 +105,6 @@
     function showStartupMessage () {
         clearButton.disabled = true;
         startupMessage.style.display = '';
-    }
-
-    async function query (words) {
-        let phrase;
-        if (words instanceof Array) {
-            phrase = words.join('_').toLowerCase();
-        }
-        else {
-            phrase = words.toLowerCase()
-        }
-
-        const text = await (await fetch(`https://www.wordhippo.com/what-is/another-word-for/${phrase}.html`)).text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, 'text/html');
-        const partsOfSpeech = doc.querySelectorAll('.wordtype');
-        const descriptions = doc.querySelectorAll('.tabdesc');
-        const allRelated = doc.querySelectorAll(".relatedwords");
-    
-        // { partOfSpeech: string, description: string, relatePhrases: string[] }[]
-        const definitions = []
-    
-        for (let defIndex = 0; defIndex < allRelated.length; defIndex++) {
-            const pos = partsOfSpeech[defIndex]?.textContent.replaceAll(/[^\w]/g, '');
-            const desc = descriptions[defIndex]?.textContent.trim();
-            const related = allRelated[defIndex];
-            const phrases = [...related.querySelectorAll('.wb'), ...related.querySelectorAll('.wordblock')]
-            const relatedPhrases = phrases.map(p => p.textContent);
-            definitions.push({
-                part: pos,
-                definitions: [ desc ],
-                synonyms: relatedPhrases,
-                antonyms: [],
-            })
-        }
-
-        console.log(definitions);
-
-        return {
-            word: phrase,
-            definitions
-        }
     }
 
     // Adding synonyms to the dom
