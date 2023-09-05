@@ -116,11 +116,15 @@ export async function queryWordHippo (words: string[] | string): Promise<Synonym
             text = await (await fetch(`https://www.wordhippo.com/what-is/another-word-for/${phrase}.html`)).text();
         }
         catch (err: any) {
+            console.log(err.message);
+            console.log(err);
             return {
                 type: 'error',
                 message: `An error occurred while querying word hippo: ${err}`
             };
         }
+
+        console.log(text);
     
         const JSDOM = require('jsdom').JSDOM;
         const parser = new JSDOM(text);

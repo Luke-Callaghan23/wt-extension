@@ -112,7 +112,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 
 		// Set up callback for text editor change that displays the opened document in the outline view
-		// vscode.window.onDidChangeActiveTextEditor((editor) => this.selectActiveDocument(editor));
-		// this.selectActiveDocument(vscode.window.activeTextEditor);
+		vscode.window.onDidChangeActiveTextEditor((editor) => this.selectActiveDocument(editor));
+		this.selectActiveDocument(vscode.window.activeTextEditor);
 	}
 }

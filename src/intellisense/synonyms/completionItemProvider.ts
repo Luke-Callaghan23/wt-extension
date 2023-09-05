@@ -449,9 +449,6 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 this.activationState.selected = 0;
             }
             else {
-                // Parse int still words on synonym's sort keys:
-                //      parseInt('0!!001') === 0
-                //      parseInt('324!!024') === 324
                 const selectedItemIndex = this.allCompletionItems[this.activationState.selected].sortText!;
                 const selectedDefinitionIndex = parseInt(selectedItemIndex);
                 for (; this.activationState.selected < this.allCompletionItems.length; this.activationState.selected++) {
