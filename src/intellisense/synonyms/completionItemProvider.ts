@@ -118,11 +118,15 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             // Query the dictionary api for the selected word
             const res = await q(hoverPosition.text);
             if (res.type === 'error') {
-                return res.suggestions?.map(suggest => {
+                if (!res.suggestions) return [];
+                const maxDigits = numDigits(res.suggestions.length);
+                return res.suggestions?.map((suggest, index) => {
+                    const indexStr = ("" + index).padStart(maxDigits, '0')
                     return <vscode.CompletionItem> {
                         label: suggest,
                         range: hoverRange,
                         filterText: wordText,
+                        sortText: indexStr
                     }
                 }) || [];
             }
@@ -182,14 +186,8 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
         // Create completion items for each of the definitions
         const allItems = defs.map((def, definitionIndex) => {
-
-            console.log(`def Index: ${definitionIndex}`);
-            const forceSelection = this.forceSelectIndex && itemsCount + 1 === this.activationState?.selected;
-            console.log(`force select: ${forceSelection}`)
             let preselectDefinition: boolean = false;
             if (this.forceSelectIndex) {
-                console.log(itemsCount);
-                console.log(this.activationState?.selected)
                 preselectDefinition = itemsCount === this.activationState?.selected;
             }
             else {
@@ -197,12 +195,8 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 if (preselectDefinition && this.activationState) {
                     this.activationState.selected = itemsCount;
                 }
-
             }
 
-            console.log(`preselect: ${preselectDefinition}`)
-
-            
             const indexStr = ("" + definitionIndex).padStart(maxDigits, '0')
             const definitionCompletion = <vscode.CompletionItem> {
                 label: `(${def.part}) ${def.definitions[0]}`,
@@ -398,17 +392,17 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         });
 
         vscode.commands.registerCommand("wt.intellisense.synonyms.prevSelection", async () => {
-            if (!this.activationState) return;
+            if (!this.activationState) return vscode.commands.executeCommand('selectPrevSuggestion');
             this.activationState.selected--;
             if (this.activationState.selected < 0) {
                 this.activationState.selected = this.allCompletionItems.length - 1;
             }
-            vscode.commands.executeCommand('selectPrevSuggestion')
+            return vscode.commands.executeCommand('selectPrevSuggestion')
         })
         vscode.commands.registerCommand("wt.intellisense.synonyms.nextSelection", async () => {
-            if (!this.activationState) return;
+            if (!this.activationState) return vscode.commands.executeCommand('selectNextSuggestion')
             this.activationState.selected = (this.activationState.selected + 1) % this.allCompletionItems.length;
-            vscode.commands.executeCommand('selectNextSuggestion')
+            return vscode.commands.executeCommand('selectNextSuggestion');
         })
 
         vscode.commands.registerCommand(`wt.intellisense.synonyms.prevDefinition`, async () => {
