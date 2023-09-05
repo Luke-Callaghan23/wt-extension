@@ -445,7 +445,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
         vscode.commands.registerCommand(`wt.intellisense.synonyms.nextDefinition`, async () => {
             if (!this.activationState) return;
-            if (this.activationState.selected === this.allCompletionItems.length - 1) {
+            if (this.activationState.selected >= this.allCompletionItems.length - 1) {
                 this.activationState.selected = 0;
             }
             else {
@@ -458,6 +458,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                     const curItem = this.allCompletionItems[this.activationState.selected];
                     const curItemDefIndex = parseInt(curItem.sortText!);
                     if (curItemDefIndex > selectedDefinitionIndex) {
+                        console.log("borp")
                         break;
                     }
                 }
