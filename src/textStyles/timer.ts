@@ -63,7 +63,12 @@ const regex: RegExp = new RegExp(mainRegex, 'gi');
 
 export async function update (this: TextStyles, editor: vscode.TextEditor): Promise<void> {
     
-    const text = editor.document.getText();
+    // To prevent from triple tilde "~~~" being matched as open/close/open tilde,
+    //      we'll replace all instances of "~~~" with a junk string that won't be matched
+    // Junk string must be the same length as the replace string to keep everything aligned,
+    //      however
+    const text = editor.document.getText().replaceAll("~~~", "@@@");
+
     Object.entries(stylePatterns).forEach(([ s, pattern ]) => {
         const style = s as WordStyles;
         const decorations = styleDecorations[style];
