@@ -2,7 +2,7 @@
 	"name": "wtaniwe",
 	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
 	"description": "Writing Tool, An Integrated Writing Environment",
-	"version": "0.0.57",
+	"version": "0.0.58",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -881,7 +881,6 @@
 				"command": "wt.intellisense.synonyms.prevSelection",
 				"key": "up",
 				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && editorLangId == wt"
-
 			},
 			{
 				"command": "wt.intellisense.synonyms.nextSelection",
