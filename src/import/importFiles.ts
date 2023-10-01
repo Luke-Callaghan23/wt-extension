@@ -38,14 +38,24 @@ type NoSplit = {
     data: string
 };
 
+type NamedSingleSplit = {
+    title: string | null; 
+    data: string;
+};
+
+type NamedSnipSplit = {
+    title: string | null;
+    data: NamedSingleSplit[];
+}
+
 type SingleSplit = {
     type: 'single',
-    data: string[]
+    data: NamedSingleSplit[];
 };
 
 type MultiSplit = {
     type: 'multi',
-    data: string[][],
+    data: NamedSnipSplit[],
 };
 
 type DocSplit = NoSplit | SingleSplit | MultiSplit;
@@ -56,35 +66,78 @@ type SplitInfo = {
 };
 
 function splitMd (content: string, split: SplitInfo): DocSplit | undefined {
+
+    const processTitledSplit = (splitter: RegExp, text: string): NamedSingleSplit[] => {
+        
+        let m;
+        let nextTitle: string | null = null;
+        let cursor = 0;
+
+        const out: NamedSingleSplit[] = [];
+        while ((m = splitter.exec(text))) {
+            const match: RegExpExecArray = m;
+            const matchStart = match.index;
+
+            // Push the previous split text into the splits array
+            const prevSplitFullText = content.substring(cursor, matchStart);
+            const formattedSplit = prevSplitFullText.trim();
+            if (formattedSplit.length !== 0) {
+                out.push({
+                    // Use the previous `nextTitle` value for the title of the current split
+                    title: nextTitle, 
+                    data: formattedSplit
+                });
+            }
+
+            // From the substring that was matched attempt to read a title for the next split
+            const group = match.groups;
+            nextTitle = group && group['title'] ? group['title'] : null;
+
+            // And advance the cursor past the matched area
+            cursor = match.index + match.input.length;
+        }
+
+        // Add the last split starting from the current cursor position to the end of the document
+        out.push({
+            title: nextTitle,
+            data: content.substring(cursor, content.length).trim()
+        });
+        return out;
+    }   
+
     if (split.fragmentSplitRegex) {
         if (split.outerSplitRegex) {
             // Document split and snip split -> return a multi split
-            const snipSplit = split.outerSplitRegex as RegExp;
-            const fragmentSplit = split.fragmentSplitRegex as RegExp;
+            const snipSplitter = split.outerSplitRegex as RegExp;
+            const fragmentSplitter = split.fragmentSplitRegex as RegExp;
 
-            // Split the content by the snip splitter regex
-            const snips = content.split(snipSplit);
-            // Then split each snip split above by the fragment split regex
-            const data = snips.map(snip => {
-                const splits = snip.split(fragmentSplit);
-                const trimmed = splits.map(splt => splt.trim());
-                return trimmed.filter(trim => trim.length > 0);
+            // Split the full text of the document by the snip splitter
+            const snipsSplit = processTitledSplit(snipSplitter, content);
+
+            // Iterate over full text data of each snip and split each of them on the fragment
+            //      separator
+            const fullSplit: NamedSnipSplit[] = snipsSplit.map(snip => {
+                const { title: snipTitle, data } = snip;
+                const fragmentsSplit = processTitledSplit(fragmentSplitter, data);
+                return {
+                    title: snipTitle,
+                    data: fragmentsSplit
+                }
             });
 
             // Return the multisplit
             return {
                 type: 'multi',
-                data: data
+                data: fullSplit
             } as MultiSplit;
         }
         else {
             // Document split, but no snipSplit -> return a Single split
+            const singleSplits = processTitledSplit(split.fragmentSplitRegex, content);
+
             return {
                 type: 'single',
-                data: content
-                    .split(split.fragmentSplitRegex)
-                    .map(split => split.trim())
-                    .filter(trim => trim.length > 0)
+                data: singleSplits
             } as SingleSplit;
         }
     }
@@ -98,6 +151,7 @@ function splitMd (content: string, split: SplitInfo): DocSplit | undefined {
 }
 
 
+// Replace common unicode characters in writing with more usable versions
 const replace = {
     '”': '"',
     '“': '"',
@@ -110,7 +164,6 @@ const replace = {
     '–': ' -- ',
     '­': '',
 };
-// Replace common unicode characters in writing with more usable versions
 function replaceCommonUnicode (content: string): string {
     return Object.entries(replace).reduce((acc, [ from, to ]) => {
         return acc.replaceAll(from , to);
@@ -309,6 +362,7 @@ function getWriteInfo (docInfo: DocInfo): WriteInfo {
 
 async function createFragmentFromSource (
     containerUri: vscode.Uri, 
+    title: string | null,
     content: string,
     config: { [index: string]: ConfigFileInfo },
     ordering: number,
@@ -320,7 +374,7 @@ async function createFragmentFromSource (
 
     // Add the record for this fragment to the config map
     config[fragmentFileName] = {
-        title: `Imported Fragment (${ordering})`,
+        title: title ?? `Imported Fragment (${ordering})`,
         ordering: ordering
     };
 
@@ -334,15 +388,20 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
 
         // First create snip info
         for (let index = 0; index < docSplits.data.length; index++) {
+            const { title: chapterName, data } = docSplits.data[index];
             const currentChapter: ChapterInfo = {
                 type: 'chapter',
-                outputChapterName: `${chapterInfo.outputChapterName} ${index}`
+                outputChapterName: chapterName 
+                    ? `${chapterName} -- ${chapterInfo.outputChapterName} ${index}`
+                    : `${chapterInfo.outputChapterName} ${index}`
             };
+
             const currentChapterFragments: DocSplit = {
                 type: 'single',
-                data: docSplits.data[index]
+                data: data,
             };
             await writeChapter(currentChapterFragments, currentChapter);
+
         }
         return;
     }
@@ -359,13 +418,14 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
 
     if (docSplits.type === 'none') {
         // Create the single snip and store their config data inside of the dotConfig created above
-        await createFragmentFromSource(chapterUri, docSplits.data, dotConfig, 0);
+        await createFragmentFromSource(chapterUri, null, docSplits.data, dotConfig, 0);
     }
     else if (docSplits.type === 'single') {
         // Create all snips and store their config data inside of the dotConfig created above
         let ordering = 0;
-        await Promise.all(docSplits.data.map(content => {
-            const promise = createFragmentFromSource(chapterUri, content, dotConfig, ordering);
+        await Promise.all(docSplits.data.map(split => {
+            const { title, data: content } = split;
+            const promise = createFragmentFromSource(chapterUri, title, content, dotConfig, ordering);
             ordering++;
             return promise;
         }));
@@ -397,12 +457,13 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
     }
 
     // Uploads fragments in a content array into specified path
-    const fragmentUpload = async (contents: string[], snipUri: vscode.Uri) => {
+    const fragmentUpload = async (splits: NamedSingleSplit[], snipUri: vscode.Uri) => {
         const dotConfig: { [index: string]: ConfigFileInfo } = {};
 
         let ordering = 0;
-        await Promise.all(contents.map(content => {
-            const promise = createFragmentFromSource(snipUri, content, dotConfig, ordering);
+        await Promise.all(splits.map(split => {
+            const { title, data: content } = split;
+            const promise = createFragmentFromSource(snipUri, title, content, dotConfig, ordering);
             ordering++;
             return promise;
         }));
@@ -416,7 +477,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
     if (docSplits.type === 'multi') {
         // Create multiple snips, and load fragment data inside of each
         for (let snipOrdering = 0; snipOrdering < docSplits.data.length; snipOrdering++) {
-            const snipContent = docSplits.data[snipOrdering];
+            const { title: snipTitle, data: fragmentContent } = docSplits.data[snipOrdering];
 
             // Create current snip
             const snipName = `${snipInfo.outputSnipName} (${snipOrdering})`;
@@ -428,7 +489,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
             if (!snipUri) return;
             
             // Upload this snip's fragments
-            await fragmentUpload(snipContent, snipUri);
+            await fragmentUpload(fragmentContent, snipUri);
         }
     }
     else {
@@ -440,11 +501,18 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
         });
         if (!snipUri) return;
 
-        const contents = docSplits.type === 'none'
+        let contents: NamedSingleSplit[];
+        if (docSplits.type === 'none') {
             // If there are no splits, put the single content item in an array
-            ? [ docSplits.data ]
+            contents = [ {
+                title: null,
+                data: docSplits.data
+            } ];
+        }
+        else {
             // Otherwise, use the data array from single split
-            : docSplits.data;
+            contents = docSplits.data;
+        }
 
         await fragmentUpload(contents, snipUri);
     }
