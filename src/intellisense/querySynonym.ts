@@ -123,6 +123,7 @@ export async function queryWordHippo (words: string[] | string): Promise<Synonym
             };
         }
 
+
         const JSDOM = require('jsdom').JSDOM;
         const parser = new JSDOM(text);
         const doc = parser.window.document;

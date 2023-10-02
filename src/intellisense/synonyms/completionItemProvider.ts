@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
-import { HoverPosition, getHoverText, getHoveredWord } from '../common';
+import { HoverPosition, capitalize, getHoverText, getHoveredWord } from '../common';
 import { SynonymError, Synonyms, query, queryWordHippo } from '../querySynonym';
 import { HoverProvider } from './hoverProvider';
 
@@ -203,6 +203,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 filterText: wordText,
                 insertText: wordText,
                 detail: `(${def.synonyms.length} synonyms)`,
+                documentation: new vscode.MarkdownString(`- ${def.definitions.filter(d => d.length > 0).map(d => capitalize(d)).join('\n- ')}`),
                 range: hoverRange,
                 kind: vscode.CompletionItemKind.Folder,
 
