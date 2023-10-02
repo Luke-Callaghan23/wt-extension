@@ -82,7 +82,8 @@ function splitMd (content: string, split: SplitInfo): DocSplit | undefined {
             // Push the previous split text into the splits array
             const prevSplitFullText = text.substring(cursor, matchStart);
             const formattedSplit = prevSplitFullText.trim();
-            if (formattedSplit.length !== 0) {
+            // Only push the snip if the snip is not empty and the title is also not empty
+            if (formattedSplit.length !== 0 && nextTitle && nextTitle.length > 0) {
                 out.push({
                     // Use the previous `nextTitle` value for the title of the current split
                     title: nextTitle, 
