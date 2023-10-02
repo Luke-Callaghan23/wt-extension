@@ -69,17 +69,18 @@ function splitMd (content: string, split: SplitInfo): DocSplit | undefined {
 
     const processTitledSplit = (splitter: RegExp, text: string): NamedSingleSplit[] => {
         
-        let m;
         let nextTitle: string | null = null;
         let cursor = 0;
 
         const out: NamedSingleSplit[] = [];
-        while ((m = splitter.exec(text))) {
+        
+        let m: RegExpExecArray | null;
+        while ((m = splitter.exec(text)) !== null) {
             const match: RegExpExecArray = m;
             const matchStart = match.index;
 
             // Push the previous split text into the splits array
-            const prevSplitFullText = content.substring(cursor, matchStart);
+            const prevSplitFullText = text.substring(cursor, matchStart);
             const formattedSplit = prevSplitFullText.trim();
             if (formattedSplit.length !== 0) {
                 out.push({
@@ -90,17 +91,16 @@ function splitMd (content: string, split: SplitInfo): DocSplit | undefined {
             }
 
             // From the substring that was matched attempt to read a title for the next split
-            const group = match.groups;
-            nextTitle = group && group['title'] ? group['title'] : null;
+            nextTitle = match[1] ?? null;
 
             // And advance the cursor past the matched area
-            cursor = match.index + match.input.length;
+            cursor = match.index + match[0].length;
         }
 
         // Add the last split starting from the current cursor position to the end of the document
         out.push({
             title: nextTitle,
-            data: content.substring(cursor, content.length).trim()
+            data: text.substring(cursor, text.length).trim()
         });
         return out;
     }   
@@ -286,7 +286,7 @@ function getSplitInfo (doc: DocInfo): SplitInfo {
     if (doc.shouldSplitFragments) {
         const fragmentSplit = doc.fragmentSplitRegex;
         try {
-            fragmentSplitRegex = new RegExp(fragmentSplit);
+            fragmentSplitRegex = new RegExp(fragmentSplit, 'g');
         }
         catch (e) {
             vscode.window.showErrorMessage(`Error creating regex from provided fragment split string '${fragmentSplit}': ${e}`);
@@ -298,7 +298,7 @@ function getSplitInfo (doc: DocInfo): SplitInfo {
     if (doc.shouldSplitSnips) {
         const snipSplit = doc.outerSplitRegex;
         try {
-            snipSplitRegex = new RegExp(snipSplit);
+            snipSplitRegex = new RegExp(snipSplit, 'g');
         }
         catch (e) {
             vscode.window.showErrorMessage(`Error creating regex from provided snip split string '${snipSplit}': ${e}`);
@@ -374,7 +374,7 @@ async function createFragmentFromSource (
 
     // Add the record for this fragment to the config map
     config[fragmentFileName] = {
-        title: title ?? `Imported Fragment (${ordering})`,
+        title: title && title.length !== 0 ? title : `Imported Fragment (${ordering})`,
         ordering: ordering
     };
 
@@ -391,8 +391,8 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
             const { title: chapterName, data } = docSplits.data[index];
             const currentChapter: ChapterInfo = {
                 type: 'chapter',
-                outputChapterName: chapterName 
-                    ? `${chapterName} -- ${chapterInfo.outputChapterName} ${index}`
+                outputChapterName: chapterName && chapterName.length !== 0
+                    ? chapterName
                     : `${chapterInfo.outputChapterName} ${index}`
             };
 
@@ -480,7 +480,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
             const { title: snipTitle, data: fragmentContent } = docSplits.data[snipOrdering];
 
             // Create current snip
-            const snipName = `${snipInfo.outputSnipName} (${snipOrdering})`;
+            const snipName = snipTitle && snipTitle.length !== 0 ? snipTitle : `${snipInfo.outputSnipName} (${snipOrdering})`;
             const snipUri: vscode.Uri | null = await outlineView.newSnip(parentNode, {
                 preventRefresh: true, 
                 defaultName: snipName,

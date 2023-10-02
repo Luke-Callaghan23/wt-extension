@@ -5,7 +5,7 @@ import { Workspace } from '../workspace/workspaceClass';
 import * as console from '../vsconsole';
 import { ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
-
+import * as extension from './../extension';
 
 export interface Entry {
 	uri: vscode.Uri;
@@ -200,7 +200,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 
 
 		vscode.commands.registerCommand('wt.import.fileExplorer.openFileExplorer', () => {
-			vscode.window.showOpenDialog();
+			vscode.commands.executeCommand('revealFileInOS', this.workspace.importFolder);
 		});
 	}
 

@@ -40,7 +40,7 @@
                 outputChapterName: `${name} (Imported)`,
                 
                 shouldSplitFragments: false,
-                outerSplitRegex: '\\[{3,}\\]{3,}',
+                outerSplitRegex: '\\[{3,}([^\\]]*)\\]{3,}',
                 shouldSplitSnips: false,
                 fragmentSplitRegex: '~{3,}',
             };
