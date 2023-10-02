@@ -284,13 +284,10 @@ export async function moveDown (this: OutlineView, resource: any) {
     }
 
     // Get the path of the .config file for the moving nodes
-    const dotConfigUri = await resource.getDotConfigPath(this);
-    if (!dotConfigUri) return;
-
     // Read .config from disk
+    const dotConfigUri = vscodeUris.Utils.joinPath(resource.data.ids.parentUri, '.config');
     const dotConfig = await readDotConfig(dotConfigUri);
     if (!dotConfig) return;
-    
 
     const parentNode = (await this._getTreeElementByUri(resource.data.ids.parentUri)) as OutlineNode;
 
@@ -342,12 +339,12 @@ export async function moveDown (this: OutlineView, resource: any) {
 
     // Re format the array of ConfigFileInfoExpandeds into a single object { string -> ConfigFileInfo }
     const reformated: { [index: string]: ConfigFileInfo } = {};
-    reorderedNodes.forEach(({ fileName, ordering, title, node }, index) => {
-        reformated[fileName] = { ordering: index, title };
+    reorderedNodes.forEach(({ fileName, ordering, title, node }) => {
+        reformated[fileName] = { ordering: ordering, title };
 
         /// Set the ordering for the actual internal data node that represents the current file
         //      to reflect its (possibly) updated ordering 
-        node.data.ids.ordering = index;
+        node.data.ids.ordering = ordering;
     });
     
     // If the config entry for the self node (the container) does exits, we need to
