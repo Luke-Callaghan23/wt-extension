@@ -87,6 +87,18 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	
 	abstract refresh(reload: boolean): Promise<void>;
 
+	public setOpenedStatusNoUpdate (uri: vscode.Uri, opened: boolean) {
+		const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '');
+		this.uriToVisibility[usableUri] = opened;
+		// Also save the state of all collapse and expands to workspace context state
+		this.context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
+	}
+
+	public getOpenedStatusOfNode (uri: vscode.Uri): boolean | undefined {
+		const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '');
+		return this.uriToVisibility[usableUri];
+	}
+
 	// Tree data provider 
 
 	public async getChildren (element: T): Promise<T[]> {

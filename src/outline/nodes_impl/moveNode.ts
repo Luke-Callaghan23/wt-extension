@@ -261,13 +261,19 @@ async function handleContainerSwap (
 ): Promise<number> {
     // Old path of the node we will be moving
     const moverOriginalUri = node.getUri();
+    const moverOriginalOpenState = provider.getOpenedStatusOfNode(moverOriginalUri);
 
     // Path for the new fragment, and its new .config file
     const destinationContainerUri = destinationContainer.getUri();
     const destinationDotConfigUri = vscodeUris.Utils.joinPath(destinationContainerUri, '.config');
-
+    
     // Uri where the mover will be moved to
     const moverDestinationUri = vscode.Uri.joinPath(destinationContainerUri, node.data.ids.fileName);
+    
+    // Set the opened status of the destination to the original open status
+    if (moverOriginalOpenState !== undefined) {
+        provider.setOpenedStatusNoUpdate(moverDestinationUri, moverOriginalOpenState);
+    }
     
     // Array of promises that do not need to be awaited right away and can be done concurrently in the 
     //      background while other processes execute
