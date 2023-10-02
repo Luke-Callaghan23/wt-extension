@@ -266,7 +266,7 @@
                                 ? `
                                     <vscode-label for="input-fragment-split" class="label">Fragment Separator:</vscode-label>
                                     <vscode-form-helper>
-                                    <p>Regex used to split the text in this document into separate snips. By default, I use the pattern '~{3,}' which is three or more tildes '~' in a row.  <a href="https://regex101.com/">Learn more about regexes</a></p>
+                                    <p>Regex used to split the text in this document into separate snips. By default, I use the pattern '~{3,}' which is three or more tildes '~' in a row.  To include matching for custom titles in your regex, use a capture group '()' with the regex pattern you want to match for that title.  For example, the regex '~~~([^~]*)~~~' will allow fragments to be split on two pairs of '~~~' strings and will name those fragments according to any text that is between those pairs ('~~~fragment where the guy dies~~~' will create a fragment with the title 'fragment where the guy dies').  <a href="https://regex101.com/">Learn more about regexes</a></p>
                                     </vscode-form-helper>
                                     <vscode-inputbox 
                                         value="${docInfo.fragmentSplitRegex}" 
@@ -294,7 +294,7 @@
                                         <div class="spacer"></div>
                                         <vscode-label for="input-outer-split" class="label">Snip Separator:</vscode-label>
                                         <vscode-form-helper>
-                                            <p>Regex used to split the text in this document into separate snips. By default, I use the pattern '\\[{3,}\\]{3,}' which separates the text document on lines where there are three or more opening brackets '[', followed by three or more closing brackets ']'.  <a href="https://regex101.com/">Learn more about regexes</a></p>
+                                            <p>Regex used to split the text in this document into separate snips. By default, I use the pattern '\\[{3,}([^\\]]*)\\]{3,}' which separates the text document on lines where there are three or more opening brackets '[', followed by three or more closing brackets ']'.  It also includes an capture group '([\\]]]*)' which allows to match any text within the bracket pairs where the user can specify a title for the snip.  For example a file with this text '[[[The part where the guy dies]]] Blah blah blah' will create a new snip named 'The part where the guy dies' with a fragment with the text 'Blah blah blah'.  To include matching for custom titles in your regex, use a capture group '()' with the regex pattern you want to match for that title.  <a href="https://regex101.com/">Learn more about regexes</a></p>
                                         </vscode-form-helper>
                                         <vscode-inputbox 
                                             value="${docInfo.outerSplitRegex}" 
