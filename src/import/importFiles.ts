@@ -91,7 +91,8 @@ function splitMd (content: string, split: SplitInfo): DocSplit | undefined {
             }
 
             // From the substring that was matched attempt to read a title for the next split
-            nextTitle = match[1] ?? null;
+            nextTitle = match[1].trim();
+            nextTitle = nextTitle && nextTitle.length > 0 ? nextTitle : null;
 
             // And advance the cursor past the matched area
             cursor = match.index + match[0].length;
