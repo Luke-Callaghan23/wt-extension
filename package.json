@@ -784,22 +784,22 @@
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward",
-				"key": "alt+[",
-				"when": "editorAreaVisible && editorLangId == wt"
-			},
-			{
-				"command": "wt.editor.jump.sentence.backward",
-				"key": "alt+]",
-				"when": "editorAreaVisible && editorLangId == wt"
-			},
-			{
-				"command": "wt.editor.jump.fragment.forward",
 				"key": "ctrl+[",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
-				"command": "wt.editor.jump.fragment.backward",
+				"command": "wt.editor.jump.sentence.backward",
 				"key": "ctrl+]",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.fragment.forward",
+				"key": "alt+[",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward",
+				"key": "alt+]",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
@@ -824,22 +824,22 @@
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward.shift",
-				"key": "alt+shift+[",
-				"when": "editorAreaVisible && editorLangId == wt"
-			},
-			{
-				"command": "wt.editor.jump.sentence.backward.shift",
-				"key": "alt+shift+]",
-				"when": "editorAreaVisible && editorLangId == wt"
-			},
-			{
-				"command": "wt.editor.jump.fragment.forward.shift",
 				"key": "ctrl+shift+[",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
-				"command": "wt.editor.jump.fragment.backward.shift",
+				"command": "wt.editor.jump.sentence.backward.shift",
 				"key": "ctrl+shift+]",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.fragment.forward.shift",
+				"key": "alt+shift+[",
+				"when": "editorAreaVisible && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward.shift",
+				"key": "alt+shift+]",
 				"when": "editorAreaVisible && editorLangId == wt"
 			},
 			{
