@@ -29,8 +29,8 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	abstract initializeTree (): Promise<T>;
 
 
-	dropMimeTypes = [];
-    dragMimeTypes = [];
+	dropMimeTypes = ['application/vnd.code.tree.outline', 'text/uri-list'];
+	dragMimeTypes = ['text/uri-list'];
 	constructor (
 		protected context: vscode.ExtensionContext, 
 		private viewName: string,
@@ -47,9 +47,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			// Bug in typescript?
 
 			// @ts-ignore
-			this.dropMimeTypes = ['application/vnd.code.tree.outline', 'text/uri-list'];
 			// @ts-ignore
-			this.dragMimeTypes = ['text/uri-list'];
 		}
 	}
 
@@ -242,7 +240,6 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		treeDataTransfer.set('application/vnd.code.tree.outline', new vscode.DataTransferItem(source));
 
 		const uris: string[] = [];
-		console.log('==========')
 		
 		const queue: TreeNode[] = source;
 		while (queue.length > 0) {
@@ -253,20 +250,16 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 				// An item having children implies that that item is a folder
 				// Folders cannot be opening in VScode so we do not add that uri
 				//		to the uris list
-				//@ts-ignore
-				uris.push(item.getUri()._formatted);
-				//@ts-ignore
-				console.log(item.getUri()._formatted);
+				uris.push(item.getUri().toString());
 			}
 			else {
 				// Queue all the children of this item for uri collection
 				queue.push(...(await item.getChildren(false)));
 			}
 		}
-		console.log('==========')
-
 		// Combine all collected uris into a single string
 		const sourceUriList = uris.join('\n');
+		console.log(sourceUriList);
 		treeDataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
 	}
 
