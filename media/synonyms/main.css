@@ -67,7 +67,7 @@ body {
 	border: none;
 	text-align: left;
 	outline: none;
-	font-size: 13px;
+	font-size: larger;
 	font-family: Segoe WPC,Segoe UI,sans-serif;
 }
 
@@ -77,6 +77,9 @@ body {
 
 .sub {
 	background-color: #303030;
+}
+
+.separator {
 }
 
 .content {
@@ -107,6 +110,7 @@ body {
 	font-weight: 600;
 	text-decoration: underline;
 	cursor: pointer;
+	font-size: larger;
 }
 
 

@@ -222,7 +222,7 @@
                     // Synonym element
                     const a = document.createElement('a');
                     a.className = "synonym";
-                    a.innerText = syn;
+                    a.innerText = capitalize(syn);
                     
                     // If the current item is already a synonym that has been searched before,
                     //      then aff the selected class to the `a` element
@@ -235,7 +235,7 @@
 
                     // Separator
                     const span = document.createElement('span');
-                    span.innerText = ', '
+                    span.innerText = '  •  '
                     synonymContainer.appendChild(span)
                 });
                 definitionContent.appendChild(synonymContainer);
