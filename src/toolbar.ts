@@ -377,6 +377,10 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         initial = current;
     }
     else if (jt === 'backward') {
+
+        const isEol = docText[initial] === '\n';
+
+
         let current = initial;
         while (
             (/\s/.test(docText[current]) || punctuation.test(docText[current]) )
@@ -384,9 +388,8 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         ) {
             current++;
 
-            // Special case: stop immediately at a '"' character -- special rules implemented
-            //      to stop at dialogue tags
-            if (fragmentStop.test(docText[current])) break;
+            // Special case: stop immediately at a fragment stop character
+            if (!isEol && fragmentStop.test(docText[current])) break;
         }
         initial = current;
     }
