@@ -53,7 +53,6 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 		
-
 		const wordCountStatus = new WordCount();
 
 		const timedViews = new TimedView(context, [
