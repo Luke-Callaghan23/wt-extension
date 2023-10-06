@@ -27,6 +27,7 @@ import { WordCount } from './status/wordCount';
 import { TextStyles } from './textStyles/textStyles';
 import { WHViewPorvider as WHViewProvider } from './whWebview/whWebview';
 import { CoderModer } from './status/codeMode/codeMode';
+import { WorldNotes } from './worldNotes/worldNotes';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -59,6 +60,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 
 		new CoderModer(context);
+		new WorldNotes(context);
 
 		const wordCountStatus = new WordCount();
 
