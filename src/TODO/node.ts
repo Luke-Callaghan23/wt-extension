@@ -25,7 +25,6 @@ export type ResourceType = fsNodes.ResourceType;
 export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentData | ContainerNode | TODOData;
 
 export class TODONode extends TreeNode {
-
     convertToTODOData = convertToTODOData;
     getChildren = getChildren;
     getTODOCounts = getTODOCounts;
@@ -54,6 +53,56 @@ export class TODONode extends TreeNode {
 
     getParentUri(): vscode.Uri {
         return this.data.ids.parentUri;
+    }
+
+    getDroppableUris(): vscode.Uri[] {
+        switch (this.data.ids.type) {
+            // Root and containers cannot drop any uris
+            case 'root': case 'container': return [];
+            // Chapters and snips drop just the immediate fragment node children
+            case 'chapter': case 'snip':
+                const data = this.data as ChapterNode | SnipNode;
+                return data.textData.map(fragment => {
+                    return fragment.getUri()
+                })
+            // Fragments drop themselves
+            case 'fragment':
+                if (this.data.ids.parentTypeId === 'fragment') {
+                    // If a child of a fragment (a TODO node) is dragged into the
+                    //      editor, then open the editor to that TODO node
+                    const data = this.data as TODOData;
+                    const col = data.todo.colStart;
+                    const line = data.todo.rowStart;
+                    
+                    const fragUri = this.getUri();
+                    fragUri.with({ 
+                        fragment: `L${line},${col}`
+                    });
+                    return [ fragUri ];
+                }
+                else {
+                    // Otherwise, if the fragment itself is dropped:
+                    const children = TODOsView.getTODO(this.getUri().fsPath);
+                    if (children.type === 'todos' && children.data.length === 1) {
+                        // If there is only one TODO child, open that
+                        const child = children.data[0];
+                        const col = child.colStart;
+                        const line = child.rowStart;
+
+                        const fragUri = this.getUri();
+                        fragUri.with({ 
+                            fragment: `L${line},${col}`
+                        });
+                        return [ fragUri ];
+                    }
+                    else {
+                        // Otherwise, if there is more than one TODO child, 
+                        //      there's no way to determine whish to open,
+                        //      so just open the fragment normally
+                        return [ this.getUri() ];
+                    }
+                }
+        }
     }
 
     data: NodeTypes;

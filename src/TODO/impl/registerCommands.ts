@@ -20,8 +20,8 @@ export function registerCommands(this: TODOsView) {
     });
 
     vscode.commands.registerCommand('wt.todo.refresh', async () => {
-        Object.getOwnPropertyNames(this.todo).forEach(uri => {
-            this.todo[uri] = { type: 'invalid' };
+        Object.getOwnPropertyNames(TODOsView.todo).forEach(uri => {
+            TODOsView.todo[uri] = { type: 'invalid' };
         });
         // Refresh command involves ambiguous changes to TODO tree structure
         //      so should reload the tree fully from disk
@@ -90,7 +90,7 @@ export function registerCommands(this: TODOsView) {
         //		with those converted nodes
         (this.tree.data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
         (this.tree.data as RootNode<TODONode>).snips = convertSnips(outlineWorkSnips);
-        Object.keys(this.todo).forEach(key => delete this.todo[key]);
+        Object.keys(TODOsView.todo).forEach(key => delete TODOsView.todo[key]);
         this.refresh(false);
     });
 }

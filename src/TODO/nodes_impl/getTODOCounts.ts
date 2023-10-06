@@ -21,7 +21,7 @@ export async function getTODOCounts (
     if (!todosView.isInvalidated(uri.fsPath)) {
         // If the TODO count for the uri is validated, then use the validated TODO 
         //      count of this node
-        const thisTodo = todosView.todo[uri.fsPath];
+        const thisTodo = TODOsView.todo[uri.fsPath];
         
         if (thisTodo.type === 'count') {
             // type == count -> a 'folder' of todos, .data is a sum of all the todo counts of all the children
@@ -61,7 +61,7 @@ export async function getTODOCounts (
             const rootTODOs = chaptersTODOs + snipsTODOs;
 
             // Set the count for the root node in the todo tree and return the new count
-            todosView.todo[uri.fsPath] = {
+            TODOsView.todo[uri.fsPath] = {
                 type: 'count',
                 data: rootTODOs
             };
@@ -79,7 +79,7 @@ export async function getTODOCounts (
 
             // Set the count of TODOs for this container to the sum of the TODOs for all of
             //      its contents and return the new count
-            todosView.todo[uri.fsPath] = {
+            TODOsView.todo[uri.fsPath] = {
                 type: 'count',
                 data: containerTODOs
             };
@@ -108,7 +108,7 @@ export async function getTODOCounts (
             ])).reduce(((acc, cur) => acc + cur), 0);
 
             // Store the todo counts for the chapter, and return
-            todosView.todo[uri.fsPath] = {
+            TODOsView.todo[uri.fsPath] = {
                 type: 'count',
                 data: chapterTODOs
             };
@@ -123,7 +123,7 @@ export async function getTODOCounts (
                 fragments.map(currentFragment => currentFragment.getTODOCounts())
             )).reduce(((acc, cur) => acc + cur), 0);
 
-            todosView.todo[uri.fsPath] = {
+            TODOsView.todo[uri.fsPath] = {
                 type: 'count',
                 data: fragmentsTODOs
             };
@@ -139,7 +139,7 @@ export async function getTODOCounts (
             const [ fragmentTODOs, count ]: [ Validation, number ] = await scanFragment(uri, fragmentNode);
 
             // Insert the new fragment TODOs into todo object
-            todosView.todo[uri.fsPath] = fragmentTODOs;
+            TODOsView.todo[uri.fsPath] = fragmentTODOs;
             return count;
         }
     }

@@ -13,6 +13,7 @@ export abstract class TreeNode {
 	abstract getDisplayString(): string;
 	abstract getChildren(filter: boolean): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
+	abstract getDroppableUris(): vscode.Uri[];
 	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>, moveOffset: number): Promise<number>;
 }
 
@@ -34,21 +35,10 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	constructor (
 		protected context: vscode.ExtensionContext, 
 		private viewName: string,
-		private dragDropEnabled: boolean,
 	) {
 		this.view = {} as vscode.TreeView<T>;
 		this.tree = {} as T;
 		this.uriToVisibility = {};
-
-		if (this.dragDropEnabled) {
-
-			// Using ts-ignore because typescript is treating `dropMimeTypes` and `dragMimeTypes` as
-			//		`never[]` but it's actually supposed to be `string[]` due to inherited property
-			// Bug in typescript?
-
-			// @ts-ignore
-			// @ts-ignore
-		}
 	}
 
 	abstract init(): Promise<void>;
@@ -236,30 +226,13 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		}
     }
     public async handleDrag(source: T[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-		if (!this.dragDropEnabled) return;
 		treeDataTransfer.set('application/vnd.code.tree.outline', new vscode.DataTransferItem(source));
 
-		const uris: string[] = [];
+		const uris: vscode.Uri[] = source.map(src => src.getDroppableUris()).flat();
+		const uriStrings = uris.map(uri => uri.toString());
 		
-		const queue: TreeNode[] = source;
-		while (queue.length > 0) {
-			const item = queue.shift();
-			if (!item) continue;
-
-			if (!item.hasChildren()) {
-				// An item having children implies that that item is a folder
-				// Folders cannot be opening in VScode so we do not add that uri
-				//		to the uris list
-				uris.push(item.getUri().toString());
-			}
-			else {
-				// Queue all the children of this item for uri collection
-				queue.push(...(await item.getChildren(false)));
-			}
-		}
 		// Combine all collected uris into a single string
-		const sourceUriList = uris.join('\n');
-		console.log(sourceUriList);
+		const sourceUriList = uriStrings.join('\n');
 		treeDataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
 	}
 

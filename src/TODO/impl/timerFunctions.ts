@@ -24,7 +24,7 @@ export async function update (
     //		parents
     while (currentNode && currentUri) {
         // Invalidate the current node
-        this.todo[currentUri.fsPath] = { type: 'invalid' };
+        TODOsView.todo[currentUri.fsPath] = { type: 'invalid' };
         
         // Break once the root node's records have been removed
         if (currentNode.data.ids.type === 'root') {

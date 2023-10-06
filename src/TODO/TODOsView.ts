@@ -37,13 +37,13 @@ type TODOInfo = { [index: string]: Validation };
 
 export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 	
-	todo: TODOInfo = {};
+	static todo: TODOInfo = {};
 	isInvalidated = (uri: string): boolean => {
-		const todoLog = this.todo[uri];
+		const todoLog =TODOsView.todo[uri];
 		return !todoLog || todoLog.type === 'invalid';
 	};
 	
-	getTODO = (uri: string): Validation => {
+	static getTODO = (uri: string): Validation => {
 		const data = this.todo[uri];
 		if (data.type === 'invalid') {
 			vscode.window.showWarningMessage(`Error: uri was not validated before calling getTODO.  This is my fault.  Please message me and call me and idiot if you see this.`);
@@ -129,7 +129,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
     registerCommands = registerCommands;
 
 	constructor(context: vscode.ExtensionContext, protected workspace: Workspace) {
-        super(context, 'wt.todo', false);
+        super(context, 'wt.todo');
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 	}
 

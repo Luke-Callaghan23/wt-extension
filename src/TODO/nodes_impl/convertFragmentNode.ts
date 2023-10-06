@@ -11,7 +11,7 @@ export async function convertToTODOData (this: TODONode): Promise<TODONode[]> {
 
     const todosView: TODOsView = await vscode.commands.executeCommand('wt.todo.getView');
 
-    const todos = todosView.todo[uri];
+    const todos = TODOsView.todo[uri];
     if (todos.type !== 'todos') throw new Error('Not possible');
     
     // Convert each of this fragment's TODOs into a TODOData struct
