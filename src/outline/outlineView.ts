@@ -108,7 +108,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
         protected context: vscode.ExtensionContext, 
 		protected workspace: Workspace
     ) {
-        super(context, 'wt.outline', true);
+        super(context, 'wt.outline');
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 
 		// Set up callback for text editor change that displays the opened document in the outline view

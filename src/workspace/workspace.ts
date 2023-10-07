@@ -153,6 +153,7 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
         console.log(`${e}`);
     }
 
+    
     // Set the value of the context item wt.valid to the result of the validation process 
     vscode.commands.executeCommand('setContext', 'wt.valid', valid);
     
@@ -160,6 +161,9 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
         return null;
     }
     else {
+        // Only after we know that that the workspace is valid should we register
+        //      commands for that workspace
+        workspace.registerCommands(context);
         return workspace;
     }
 }

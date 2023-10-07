@@ -101,8 +101,6 @@ export class Workspace {
         this.exportFolder = vscode.Uri.joinPath(extension.rootPath, `data/export`);
         this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-
-        this.registerCommands(context);
     }
 
     registerCommands(context: vscode.ExtensionContext): void {
