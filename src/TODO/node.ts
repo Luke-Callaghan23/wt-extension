@@ -74,9 +74,9 @@ export class TODONode extends TreeNode {
                     const col = data.todo.colStart;
                     const line = data.todo.rowStart;
                     
-                    const fragUri = this.getUri();
-                    fragUri.with({ 
-                        fragment: `L${line},${col}`
+                    let fragUri = this.getUri();
+                    fragUri = fragUri.with({ 
+                        fragment: `L${line+1},${col+1}`
                     });
                     return [ fragUri ];
                 }
@@ -89,9 +89,9 @@ export class TODONode extends TreeNode {
                         const col = child.colStart;
                         const line = child.rowStart;
 
-                        const fragUri = this.getUri();
-                        fragUri.with({ 
-                            fragment: `L${line},${col}`
+                        let fragUri = this.getUri();
+                        fragUri = fragUri.with({ 
+                            fragment: `L${line+1},${col+1}`
                         });
                         return [ fragUri ];
                     }
