@@ -25,7 +25,7 @@ export class SynonymsIntellisense {
 
     registerCommands() {
         vscode.commands.registerCommand('wt.synonyms.getSynonyms', () => {
-            console.log('awdawdw');
+            // TODO    
         })
     }
 }

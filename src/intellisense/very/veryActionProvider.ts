@@ -17,9 +17,6 @@ type QueryResult = {
 const alreadyObtained: { [index: string]: QueryResult } = {};
 
 export class VeryActionProvider implements vscode.CodeActionProvider {
-
-
-
     async provideCodeActions (
         document: vscode.TextDocument, 
         range: vscode.Range | vscode.Selection, 

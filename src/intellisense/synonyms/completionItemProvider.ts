@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
 import { HoverPosition, capitalize, getHoverText, getHoveredWord } from '../common';
-import { SynonymError, Synonyms, query, queryWordHippo } from '../querySynonym';
+import { SynonymError, SynonymSearchResult, Synonyms, query, queryWordHippo } from '../querySynonym';
 import { HoverProvider } from './hoverProvider';
 
 const NUMBER_COMPLETES = 20;
@@ -25,7 +25,7 @@ type ActivationState = {
 
 
 export class CompletionItemProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
-    private cache: { [index: string]: Synonyms };
+    private cache: { [index: string]: SynonymSearchResult };
     private activationState?: ActivationState;
 
     private isWordHippo;
@@ -107,7 +107,11 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         // Query the synonym api for the hovered word
         let response: Synonyms;
         if (this.cache[wordText]) {
-            response = this.cache[wordText];
+            const result = this.cache[wordText];
+            if (result.type === 'error') {
+                return getSuggestedWords(result, hoverRange, wordText);
+            }
+            response = result;
         }
         else {
 
@@ -118,17 +122,8 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             // Query the dictionary api for the selected word
             const res = await q(hoverPosition.text);
             if (res.type === 'error') {
-                if (!res.suggestions) return [];
-                const maxDigits = numDigits(res.suggestions.length);
-                return res.suggestions?.map((suggest, index) => {
-                    const indexStr = ("" + index).padStart(maxDigits, '0')
-                    return <vscode.CompletionItem> {
-                        label: suggest,
-                        range: hoverRange,
-                        filterText: wordText,
-                        sortText: indexStr
-                    }
-                }) || [];
+                this.cache[wordText] = res;
+                return getSuggestedWords(res, hoverRange, wordText);
             }
 
             // If there was no error querying for synonyms of the selected word, then store the response from
@@ -285,7 +280,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     ): vscode.CompletionItem[] {
         
         const synonyms = this.cache[word];
-        if (!synonyms) return [];
+        if (!synonyms || synonyms.type === 'error') return [];
 
         // Create completion items for all synonyms of all definitions
         const inserts: { [index: string]: 1 } = {};
@@ -471,4 +466,18 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         });
 
     }
+}
+
+const getSuggestedWords = (res: SynonymError, hoverRange: vscode.Range, wordText: string) => {
+    if (!res.suggestions) return [];
+    const maxDigits = numDigits(res.suggestions.length);
+    return res.suggestions?.map((suggest, index) => {
+        const indexStr = ("" + index).padStart(maxDigits, '0')
+        return <vscode.CompletionItem> {
+            label: suggest,
+            range: hoverRange,
+            filterText: wordText,
+            sortText: indexStr
+        }
+    }) || [];
 }

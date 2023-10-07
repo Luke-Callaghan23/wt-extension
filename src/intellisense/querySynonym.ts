@@ -1,6 +1,7 @@
 import * as console from '../vsconsole';
 // const fetch = require('node-fetch-commonjs');
 import { Fetch } from '../Fetch/fetchSource';
+import { queryVery } from './very/veryQuery';
 
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED='0'
@@ -24,6 +25,8 @@ export type SynonymError = {
     suggestions?: string[]
 }
 
+export type SynonymSearchResult = Synonyms | SynonymError;
+
 function parseList (defs: (string | string[])[]): string[] {
     const ret: string[] = [];
     for (const def of defs) {
@@ -41,7 +44,7 @@ function parseList (defs: (string | string[])[]): string[] {
 }
 
 
-export async function query (word: string): Promise<Synonyms | SynonymError> {
+export async function query (word: string): Promise<SynonymSearchResult> {
     try {
         word = word.toLowerCase();
         // @ts-ignore
@@ -100,7 +103,7 @@ export async function query (word: string): Promise<Synonyms | SynonymError> {
     }
 }
 
-export async function queryWordHippo (words: string[] | string): Promise<Synonyms | SynonymError> {
+export async function queryWordHippo (words: string[] | string): Promise<SynonymSearchResult> {
     try {
         
         let phrase;
@@ -132,7 +135,7 @@ export async function queryWordHippo (words: string[] | string): Promise<Synonym
         const allRelated = doc.querySelectorAll(".relatedwords");
     
         // { partOfSpeech: string, description: string, relatePhrases: string[] }[]
-        const definitions: Definition[] = []
+        const definitions: Definition[] = [];
     
         for (let defIndex = 0; defIndex < allRelated.length; defIndex++) {
             let pos = partsOfSpeech[defIndex]?.textContent?.replaceAll(/[^\w]/g, '')?.toLowerCase();
@@ -158,6 +161,20 @@ export async function queryWordHippo (words: string[] | string): Promise<Synonym
                 synonyms: relatedPhrases,
                 antonyms: [],
             })
+        }
+
+        // If the word was not recognized by word hippo, then query
+        //      the dictionary API instead
+        // (Dictionary API seems to provide better results for unrecognized
+        //      words in general)
+        if (definitions.length === 0) {
+            return query(phrase);
+        } 
+        else if (definitions.length === 1) {
+            const onlyDef = definitions[0];
+            if (onlyDef.part === 'Nearby Words') {
+                return query(phrase);
+            }
         }
     
         return {
