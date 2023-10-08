@@ -491,6 +491,11 @@
 				"when": "wt.valid && view == wt.wordWatcher"
 			},
 			{
+				"title": "Writing Tool: Change Code Mode Repo",
+				"command": "wt.codeMode.changeCodeModeRepo",
+				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
 				"title": "Writing Tool: Exit Code Mode",
 				"command": "wt.codeMode.exitCodeMode",
 				"when": "wt.valid && view == wt.wordWatcher"

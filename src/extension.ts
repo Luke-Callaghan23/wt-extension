@@ -26,7 +26,7 @@ import { ColorGroups } from './intellisense/colors/colorGroups';
 import { WordCount } from './status/wordCount';
 import { TextStyles } from './textStyles/textStyles';
 import { WHViewPorvider as WHViewProvider } from './whWebview/whWebview';
-import { CoderModer } from './codeMode/codeMode';
+import { CoderModer } from './status/codeMode/codeMode';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
