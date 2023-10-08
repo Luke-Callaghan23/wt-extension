@@ -484,6 +484,16 @@
 			{
 				"command": "wt.colors.removeColor",
 				"title": "Writing Tool: Remove Color from Color Group"
+			},
+			{
+				"title": "Writing Tool: Enter Code Mode",
+				"command": "wt.codeMode.enterCodeMode",
+				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
+				"title": "Writing Tool: Exit Code Mode",
+				"command": "wt.codeMode.exitCodeMode",
+				"when": "wt.valid && view == wt.wordWatcher"
 			}
 		],
 		"menus": {
@@ -927,8 +937,10 @@
 		"@bendera/vscode-webview-elements": "^0.8.1",
 		"@types/markdown-it": "^12.2.3",
 		"@vscode/codicons": "^0.0.32",
+		"file-type": "^18.5.0",
 		"html-pdf": "^3.0.1",
 		"html-to-docx": "^1.6.5",
+		"istextorbinary": "^6.0.0",
 		"jsdom": "^21.1.0",
 		"mammoth": "^1.5.1",
 		"node-fetch": "^3.3.1",
