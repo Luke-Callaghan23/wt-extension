@@ -40,6 +40,13 @@
 					"title": "Writing Tool",
 					"icon": "$(bookmark)"
 				}
+			],
+			"panel": [
+				{
+					"id": "worldNotes",
+					"title": "World Notes",
+					"icon": "$(bookmark)"
+				}
 			]
 		},
 		"views": {
@@ -93,6 +100,14 @@
 					"icon": "media/dep.svg",
 					"contextualTitle": "Export",
 					"when": "wt.valid"
+				}
+			],
+			"worldNotes": [
+				{
+					"id": "wt.worldNotes.tree",
+					"name": "World Notes",
+					"icon": "media/dep.svg",
+					"contextualTitle": "World Notes"
 				}
 			]
 		},
