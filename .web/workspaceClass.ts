@@ -25,6 +25,7 @@ export class Workspace {
     public workSnipsFolder: vscode.Uri;
     public recyclingBin: vscode.Uri;
     public contextValuesFilePath: vscode.Uri;
+    public worldNotesPath: vscode.Uri;
 
     // Returns a list of all 
     getFolders() {
@@ -96,7 +97,7 @@ export class Workspace {
         this.workSnipsFolder = vscode.Uri.joinPath(extension.rootPath, `data/snips`);
         this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-    
+        this.worldNotesPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotes.json');
         this.registerCommands(context);
     }
 

@@ -6,6 +6,7 @@ import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
 import * as console from './../../vsconsole';
 import { WordRange } from '../../intellisense/common';
+import { WorldNotes } from '../../worldNotes/worldNotes';
 
 
 export class Spellcheck implements Timed {
@@ -71,6 +72,20 @@ export class Spellcheck implements Timed {
             for (const { text, range } of words) {
                 if (dictionary[text]) continue;
                 if (this.personalDictionary.search(text)) continue;
+
+                // Do not add red decorations to words that have been matched by world notes
+                const worldNotes: WorldNotes = WorldNotes.singleton;
+                if (worldNotes) {
+                    const matchedNotes = worldNotes.matchedNotes;
+                    if (
+                        matchedNotes 
+                        && matchedNotes.docUri.fsPath === document.uri.fsPath
+                        && matchedNotes.matches.find(note => note.range.contains(range))
+                    ) {
+                        continue;
+                    }
+                }
+
                 decorations.push({
                     range: range,
                     hoverMessage: `Unrecognized word: ${text}`

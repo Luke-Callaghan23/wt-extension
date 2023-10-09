@@ -2,7 +2,7 @@
 	"name": "wtaniwe",
 	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
 	"description": "Writing Tool, An Integrated Writing Environment",
-	"version": "0.0.61",
+	"version": "0.0.62",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -38,6 +38,13 @@
 				{
 					"id": "wt",
 					"title": "Writing Tool",
+					"icon": "$(bookmark)"
+				}
+			],
+			"panel": [
+				{
+					"id": "worldNotes",
+					"title": "World Notes",
 					"icon": "$(bookmark)"
 				}
 			]
@@ -93,6 +100,14 @@
 					"icon": "media/dep.svg",
 					"contextualTitle": "Export",
 					"when": "wt.valid"
+				}
+			],
+			"worldNotes": [
+				{
+					"id": "wt.worldNotes.tree",
+					"name": "World Notes",
+					"icon": "media/dep.svg",
+					"contextualTitle": "World Notes"
 				}
 			]
 		},
@@ -281,6 +296,16 @@
 				"command": "wt.colors.disable",
 				"title": "Writing Tool: Disable Color Checks",
 				"enablement": "wt.colors.enabled"
+			},
+			{
+				"command": "wt.worldNotes.enable",
+				"title": "Writing Tool: Enable Automatic World Notes Querying",
+				"enablement": "!wt.todo.enabled"
+			},
+			{
+				"command": "wt.worldNotes.disable",
+				"title": "Writing Tool: Disable Automatic World Notes Querying",
+				"enablement": "wt.todo.enabled"
 			},
 			{
 				"command": "wt.proximity.addFilteredWord",
@@ -499,6 +524,36 @@
 				"title": "Writing Tool: Exit Code Mode",
 				"command": "wt.codeMode.exitCodeMode",
 				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
+				"title": "Writing Tool: Add Note",
+				"command": "wt.worldNotes.addNote",
+				"icon": "$(add)"
+			},
+			{
+				"title": "Writing Tool: Remove Note",
+				"command": "wt.worldNotes.removeNote",
+				"icon": "$(remove)"
+			},
+			{
+				"title": "Writing Tool: Add Alias",
+				"command": "wt.worldNotes.addAlias",
+				"icon": "$(add)"
+			},
+			{
+				"title": "Writing Tool: Remove Alias",
+				"command": "wt.worldNotes.removeAlias",
+				"icon": "$(remove)"
+			},
+			{
+				"title": "Writing Tool: Add Description",
+				"command": "wt.worldNotes.addDescription",
+				"icon": "$(add)"
+			},
+			{
+				"title": "Writing Tool: Remove Description",
+				"command": "wt.worldNotes.removeDescription",
+				"icon": "$(remove)"
 			}
 		],
 		"menus": {
@@ -582,6 +637,11 @@
 					"command": "wt.wordWatcher.help",
 					"when": "wt.valid && view == wt.wordWatcher",
 					"group": "navigation@3"
+				},
+				{
+					"command": "wt.worldNotes.addNote",
+					"when": "view == wt.worldNotes.tree",
+					"group": "navigation"
 				}
 			],
 			"view/item/context": [
@@ -651,6 +711,54 @@
 					"command": "wt.import.fileExplorer.defilter",
 					"when": "view == wt.import.fileExplorer && viewItem == filtered",
 					"group": "inline"
+				},
+				{
+					"command": "wt.worldNotes.addNote",
+					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"group": "inline@1"
+				},
+				{
+					"command": "wt.worldNotes.removeNote",
+					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"group": "inline@2"
+				},
+				{
+					"command": "wt.worldNotes.addDescription",
+					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"group": "inline@1"
+				},
+				{
+					"command": "wt.worldNotes.removeDescription",
+					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"group": "inline@2"
+				},
+				{
+					"command": "wt.worldNotes.addAlias",
+					"when": "view == wt.worldNotes.tree && viewItem == note"
+				},
+				{
+					"command": "wt.worldNotes.removeAlias",
+					"when": "view == wt.worldNotes.tree && viewItem == note"
+				},
+				{
+					"command": "wt.worldNotes.addNote",
+					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"group": "update@1"
+				},
+				{
+					"command": "wt.worldNotes.removeNote",
+					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"group": "update@2"
+				},
+				{
+					"command": "wt.worldNotes.addDescription",
+					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"group": "update@1"
+				},
+				{
+					"command": "wt.worldNotes.removeDescription",
+					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"group": "update@2"
 				}
 			],
 			"editor/title": [
