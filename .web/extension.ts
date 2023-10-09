@@ -22,6 +22,7 @@ import { ColorGroups } from './intellisense/colors/colorGroups';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { WordCount } from './status/wordCount';
 import { TextStyles } from './textStyles/textStyles';
+import { WorldNotes } from './worldNotes/worldNotes';
 
 
 
@@ -53,9 +54,11 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 		
+		const worldNotes = new WorldNotes(workspace, context);
 		const wordCountStatus = new WordCount();
 
 		const timedViews = new TimedView(context, [
+			['wt.worldNotes.tree', worldNotes],
 			['wt.todo', todo],
 			['wt.wordWatcher', wordWatcher],
 			['wt.proximity', proximity],
