@@ -60,18 +60,19 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 
 		new CoderModer(context);
-		new WorldNotes(context);
+		const worldNotes = new WorldNotes(workspace, context);
 
 		const wordCountStatus = new WordCount();
 
 		const timedViews = new TimedView(context, [
+			['wt.worldNotes.tree', worldNotes],
 			['wt.todo', todo],
 			['wt.wordWatcher', wordWatcher],
 			['wt.proximity', proximity],
 			['wt.spellcheck', spellcheck],
 			['wt.very', veryIntellisense],
 			['wt.colors', colorIntellisense],
-			['wt.textStyle', textStyles]
+			['wt.textStyle', textStyles],
 		]);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
