@@ -232,7 +232,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		const uriStrings = uris.map(uri => uri.toString());
 		
 		// Combine all collected uris into a single string
-		const sourceUriList = uriStrings.join('\n');
+		const sourceUriList = uriStrings.join('\r\n');
 		treeDataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
 	}
 
