@@ -121,7 +121,8 @@ export class CoderModer {
         const visited: Set<vscode.Uri> = new Set();
         const leaves: vscode.Uri[] = [];
         const queue: vscode.Uri[] = [ repo ];
-        while (queue) {
+        while (queue.length > 0) {
+            queue.sort((a, b) => 0.5 - Math.random());
             if (leaves.length > 50) break;          // useless to get more thant 100 leaves
             const next = queue.shift();
             if (!next) break;                       // should never happen
@@ -129,6 +130,7 @@ export class CoderModer {
 
             const dirContent = await vscode.workspace.fs.readDirectory(next);
             for (const [ name, fileType ] of dirContent) {
+                if (name === '.git' || name === 'notde_modules') continue;
                 const fullPath = vscode.Uri.from({
                     ...next,
                     path: next.path + '/' + name
