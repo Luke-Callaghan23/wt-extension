@@ -22,6 +22,11 @@ export async function exit (this: CoderModer): Promise<void> {
         if (ind === -1) continue;
         await vscode.window.tabGroups.close(group.tabs[ind]);
     }
+
+    // Bring back terminal in bottom pane and writing tool in side pane
+    vscode.commands.executeCommand('workbench.view.extension.wt');
+    vscode.commands.executeCommand('workbench.action.terminal.toggleTerminal');
+
     this.openedCodeUris = [];
     this.state = 'noCodeMode';
 }

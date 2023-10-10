@@ -122,8 +122,8 @@ export class CoderModer {
         const leaves: vscode.Uri[] = [];
         const queue: vscode.Uri[] = [ repo ];
         while (queue.length > 0) {
-            queue.sort((a, b) => 0.5 - Math.random());
-            if (leaves.length > 50) break;          // useless to get more thant 100 leaves
+            // queue.sort((a, b) => 0.5 - Math.random());
+            // if (leaves.length > 50) break;          // useless to get more thant 100 leaves
             const next = queue.shift();
             if (!next) break;                       // should never happen
             if (visited.has(next)) continue;        // never visit same dir again
@@ -135,19 +135,12 @@ export class CoderModer {
                     ...next,
                     path: next.path + '/' + name
                 });
-                // vscode.Uri.joinPath(next, name);
-                
+
                 if (fileType === vscode.FileType.Directory) {
                     queue.push(fullPath);
                 } 
                 else if (fileType === vscode.FileType.File) {
-                    const buf = await vscode.workspace.fs.readFile(fullPath);
-                    if (isText(null, Buff.from(buf))) {
-                        leaves.push(fullPath);
-                    }
-                    // const ft = await fileTypeFromBuffer(buf);
-                    // if (ft?.mime.startsWith('text')) {
-                    // }
+                    leaves.push(fullPath);
                 }
             }
         }
