@@ -26,11 +26,12 @@ export class CoderModer {
 
         const repo = context.globalState.get<vscode.Uri>('wt.codeMode.codeRepo');
         const repoUris = context.globalState.get<vscode.Uri[]>('wt.codeMode.repoUris');
+        console.log(repoUris?.length);
         if (repo) {
             this.repoLocation = repo;
             if (!repoUris) (async () => {
                 this.repoUris = await this.getRepoLeaves(repo);
-                context.globalState.update<vscode.Uri[]>('wt.codeMode.repoUris', this.repoUris);
+                context.globalState.update('wt.codeMode.repoUris', this.repoUris);
                 vscode.window.showInformationMessage('[INFO] Loaded Code Mode . . . ');
             })();
         }
@@ -62,7 +63,7 @@ export class CoderModer {
 
             if (!this.repoUris) {
                 this.repoUris = await this.getRepoLeaves(this.repoLocation!);
-                context.globalState.update<vscode.Uri[]>('wt.codeMode.repoUris', this.repoUris);
+                context.globalState.update('wt.codeMode.repoUris', this.repoUris);
                 vscode.window.showInformationMessage('[INFO] Loaded Code Mode . . . ');
             }
 
@@ -80,6 +81,8 @@ export class CoderModer {
             const { repoLocation, repoUris } = res;
             this.repoLocation = repoLocation;
             this.repoUris = repoUris;
+            this.context.globalState.update('wt.codeMode.codeRepo', repoLocation);
+            this.context.globalState.update('wt.codeMode.repoUris', repoUris);
             vscode.window.showInformationMessage(`[INFO] Changed Repo`);
         });
         
