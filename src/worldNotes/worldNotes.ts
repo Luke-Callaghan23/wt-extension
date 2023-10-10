@@ -136,7 +136,7 @@ implements
 
     private getNounsRegex () {
         const nounFragments = this.notes.map(note => this.getNounPattern(note))
-        const regexString = nounFragments.join('|');
+        const regexString = '[^a-zA-Z0-9]' + nounFragments.join('[^a-zA-Z0-9]|[^a-zA-Z0-9]') + '[^a-zA-Z0-9]';
         const nounsRegex = new RegExp(regexString, 'gi');
         return nounsRegex;
     }
