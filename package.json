@@ -526,6 +526,11 @@
 				"when": "wt.valid && view == wt.wordWatcher"
 			},
 			{
+				"title": "Writing Tool: Toggle Code Mode",
+				"command": "wt.codeMode.swapMode",
+				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
 				"title": "Writing Tool: Add Note",
 				"command": "wt.worldNotes.addNote",
 				"icon": "$(add)"
@@ -1009,6 +1014,11 @@
 				"command": "wt.intellisense.synonyms.nextSelection",
 				"key": "down",
 				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && editorLangId == wt"
+			},
+			{
+				"command": "wt.codeMode.swapMode",
+				"key": "ctrl+shift+alt+m",
+				"when": "editorAreaVisible"
 			}
 		],
 		"languages": [
