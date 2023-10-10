@@ -38,7 +38,7 @@ export async function readNotes (this: WorldNotes, worldNotesPath: vscode.Uri): 
         return result;
     }
     catch (err: any) {
-        vscode.window.showErrorMessage(`[ERR] An error occurred while reading notes from disk: ${err.message}`);
+        vscode.window.showWarningMessage(`[WARNING] An error occurred while world notes from disk: ${err.message}.  Creating a new world notes file instead.`);
         console.log(err);
 
         // Write an empty array to disk for the world notes
