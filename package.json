@@ -559,6 +559,10 @@
 				"title": "Writing Tool: Remove Description",
 				"command": "wt.worldNotes.removeDescription",
 				"icon": "$(remove)"
+			},
+			{
+				"title": "Writing Tool: Search For Note",
+				"command": "wt.worldNotes.search"
 			}
 		],
 		"menus": {
@@ -764,6 +768,11 @@
 					"command": "wt.worldNotes.removeDescription",
 					"when": "view == wt.worldNotes.tree && viewItem == description",
 					"group": "update@2"
+				},
+				{
+					"command": "wt.worldNotes.search",
+					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"group": "search@1"
 				}
 			],
 			"editor/title": [

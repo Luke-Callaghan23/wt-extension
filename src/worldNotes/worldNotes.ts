@@ -7,6 +7,7 @@ import { Timed } from '../timedView';
 import { disable, update } from './timer';
 import { v4 as uuidv4 } from 'uuid';
 import { provideHover } from './hoverProvider';
+import { searchNote } from './search';
 
 export interface Note {
     kind: 'note';
@@ -48,6 +49,8 @@ implements
     removeNote = removeNote;
     addDescription = addDescription;
     removeDescription = removeDescription;
+
+    searchNote = searchNote;
 
     provideHover = provideHover;
     
@@ -121,13 +124,18 @@ implements
 		this._onDidChangeTreeData.fire(undefined);
 	}
 
+    protected getNounPattern (note: Note, withId: boolean = true) {
+        const aliasesAddition = note.aliases.length > 0 
+            ? `|${note.aliases.join('|')}`
+            : ``;
+        const idAddition = withId
+            ? `?<${note.noteId}>`
+            : ``;
+        return `(${idAddition}${note.noun}${aliasesAddition})`
+    }
+
     private getNounsRegex () {
-        const nounFragments = this.notes.map(note => {
-            const aliasesAddition = note.aliases.length > 0 
-                ? `|${note.aliases.join('|')}`
-                : ``;
-            return `(?<${note.noteId}>${note.noun}${aliasesAddition})`
-        })
+        const nounFragments = this.notes.map(note => this.getNounPattern(note))
         const regexString = nounFragments.join('|');
         const nounsRegex = new RegExp(regexString, 'gi');
         return nounsRegex;
@@ -140,6 +148,7 @@ implements
         vscode.commands.registerCommand("wt.worldNotes.removeNote", (resource: Note) => { this.removeNote(resource) });
         vscode.commands.registerCommand("wt.worldNotes.addDescription", (resource: Description) => { this.addDescription(resource) });
         vscode.commands.registerCommand("wt.worldNotes.removeDescription", (resource: Description) => { this.removeDescription(resource) });
+        vscode.commands.registerCommand('wt.worldNotes.search', (resource: Note) => { this.searchNote(resource) });
     }
 
     getPackageItems(): { [index: string]: any; } {
