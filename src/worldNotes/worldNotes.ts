@@ -143,8 +143,10 @@ implements
     }
 
     getPackageItems(): { [index: string]: any; } {
-        throw new Error('Method not implemented.');
+        return {};
     }
+
+
     getTreeItem(noteNode: Note | Description): vscode.TreeItem | Thenable<vscode.TreeItem> {
         switch (noteNode.kind) {
             case 'note': 
@@ -181,8 +183,5 @@ implements
                 }));
             case 'description': return [];
         }
-    }
-    getParent?(element: Note | Description): vscode.ProviderResult<Note | Description> {
-        throw new Error('Method not implemented.');
     }
 }
