@@ -25,8 +25,18 @@ export class CoderModer {
         this.swapModeStatus.show();
 
         const repo = context.globalState.get<vscode.Uri>('wt.codeMode.codeRepo');
+        const repoUris = context.globalState.get<vscode.Uri[]>('wt.codeMode.repoUris');
         if (repo) {
             this.repoLocation = repo;
+            if (!repoUris) (async () => {
+                this.repoUris = await this.getRepoLeaves(repo);
+                context.globalState.update<vscode.Uri[]>('wt.codeMode.repoUris', this.repoUris);
+                vscode.window.showInformationMessage('[INFO] Loaded Code Mode . . . ');
+            })();
+        }
+        
+        if (repoUris) {
+            this.repoUris = repoUris;
         }
 
         vscode.commands.registerCommand('wt.codeMode.enterCodeMode', async () => {
@@ -44,10 +54,16 @@ export class CoderModer {
                 const { repoLocation, repoUris } = requestResult;
                 this.repoLocation = repoLocation;
                 this.repoUris = repoUris;
+
+                // Store the repo location and leaves in global state
+                this.context.globalState.update('wt.codeMode.codeRepo', repoLocation);
+                this.context.globalState.update('wt.codeMode.repoUris', repoUris);
             }
 
             if (!this.repoUris) {
                 this.repoUris = await this.getRepoLeaves(this.repoLocation!);
+                context.globalState.update<vscode.Uri[]>('wt.codeMode.repoUris', this.repoUris);
+                vscode.window.showInformationMessage('[INFO] Loaded Code Mode . . . ');
             }
 
             // Enter code mode
@@ -108,9 +124,6 @@ export class CoderModer {
             vscode.window.showErrorMessage('[ERR] Code repo for code mode cannot be empty!');
             return this.requestRepoLocation();
         }
-
-        // Store the repo location in global state
-        this.context.globalState.update('wt.codeMode.codeRepo', repo);
         return {
             repoLocation: repo,
             repoUris: leaves
@@ -140,7 +153,10 @@ export class CoderModer {
                     queue.push(fullPath);
                 } 
                 else if (fileType === vscode.FileType.File) {
-                    leaves.push(fullPath);
+                    const buf = await vscode.workspace.fs.readFile(fullPath);
+                    if (isText(null, Buff.from(buf))) {
+                        leaves.push(fullPath);
+                    }
                 }
             }
         }
