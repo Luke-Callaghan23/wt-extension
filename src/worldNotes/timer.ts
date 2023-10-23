@@ -62,7 +62,13 @@ export async function update (this: WorldNotes, editor: vscode.TextEditor): Prom
         }
 
         let start: number = match.index;
+        if (match.index !== 0) {
+            start += 1;
+        }
         let end: number = match.index + match[0].length;
+        if (match.index + match[0].length !== text.length) {
+            end -= 1;
+        }
         const startPos = editor.document.positionAt(start);
         const endPos = editor.document.positionAt(end);
 
