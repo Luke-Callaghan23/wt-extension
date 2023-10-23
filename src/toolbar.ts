@@ -333,8 +333,8 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
 
     
     const fragmentStop = jumpFragment 
-        ? /["\-,;\*#~_]/                    // If fragment jumps are activated, use all stopping characters as pause for fragments
-        : /^[]/;                            // Otherwise, use a regex that the internet told me would never, ever (tm) match anything
+        ? /["\-,;\*#~_()\[\]\{\}]/                    // If fragment jumps are activated, use all stopping characters as pause for fragments
+        : /^[]/;                                      // Otherwise, use a regex that the internet told me would never, ever (tm) match anything
     
     const startOffset = document.offsetAt(start);
 
