@@ -185,6 +185,10 @@
 				"title": "Writing Tool: Paste Outline Tree Items"
 			},
 			{
+				"command": "wt.outline.duplicateItems",
+				"title": "Writing Tool: Duplicate Outline Tree Items"
+			},
+			{
 				"command": "wt.import.fileExplorer.refresh",
 				"title": "Writing Tool: Refresh Import File Explorer",
 				"icon": "$(refresh)"
@@ -680,12 +684,17 @@
 				{
 					"command": "wt.outline.copyItems",
 					"when": "view == wt.outline",
-					"group": "5_cutcopypaste"
+					"group": "5_cutcopypaste@1"
 				},
 				{
 					"command": "wt.outline.pasteItems",
 					"when": "view == wt.outline",
-					"group": "5_cutcopypaste"
+					"group": "5_cutcopypaste@2"
+				},
+				{
+					"command": "wt.outline.duplicateItems",
+					"when": "view == wt.outline",
+					"group": "5_cutcopypaste@3"
 				},
 				{
 					"command": "wt.wordWatcher.deleteWord",

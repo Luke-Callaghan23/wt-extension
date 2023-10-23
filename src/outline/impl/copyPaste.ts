@@ -174,7 +174,8 @@ export async function paste (
     this: OutlineView,
     destination: OutlineNode,
     copied: CopiedSelection,
-    pasteLog: { [index: string]: 1 }            // A log of all the locations that have been pasted into in the current paste
+    pasteLog: { [index: string]: 1 },            // A log of all the locations that have been pasted into in the current paste
+    nameModifier: string = 'copy'                // string to be inserted in parentheses after the name of the pasted item (default is `OLD NAME (copy)`)
 ): Promise<vscode.Uri | null> {
 
     type Paste = {
@@ -460,7 +461,7 @@ export async function paste (
         const copyPromise = vscode.workspace.fs.copy(src.data.ids.uri, destinationFullUri);
         awaitables.push(copyPromise);
 
-        const copiedDisplay = `${src.data.ids.display} (copy)`;
+        const copiedDisplay = `${src.data.ids.display} (${nameModifier})`;
         const fragmentConfig = {
             ordering: ordering,
             title: copiedDisplay
@@ -472,7 +473,7 @@ export async function paste (
         // Create a new object for the copied fragment
         const newFragmentData: FragmentData = {
             ids: {
-                display: `${src.data.ids.display} (copy)`,
+                display: `${src.data.ids.display} (${nameModifier})`,
                 fileName: newFileName,
                 relativePath: `${dest.data.ids.relativePath}/${dest.data.ids.fileName}`,
                 ordering: ordering,
@@ -516,7 +517,7 @@ export async function paste (
         await vscode.workspace.fs.createDirectory(destinationFullUri);
         
         // Create the configuration item for this new snip
-        const copiedDisplay = `${src.data.ids.display} (copy)`;
+        const copiedDisplay = `${src.data.ids.display} (${nameModifier})`;
         const snipConfig = {
             ordering: ordering,
             title: copiedDisplay
@@ -599,7 +600,7 @@ export async function paste (
         await vscode.workspace.fs.createDirectory(copiedChapterSnipsContainerUri);
         
         // Create the configuration item for this new chapter
-        const copiedDisplay = `${src.data.ids.display} (copy)`;
+        const copiedDisplay = `${src.data.ids.display} (${nameModifier})`;
         const chapterConfig = {
             ordering: ordering,
             title: copiedDisplay
@@ -757,4 +758,3 @@ export async function paste (
 
     return pasteData.destination.data.ids.uri;
 }
-

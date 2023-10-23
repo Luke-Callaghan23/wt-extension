@@ -70,7 +70,7 @@ export function registerCommands (this: OutlineView) {
         this.copy(selected);
     });
 
-    vscode.commands.registerCommand('wt.outline.pasteItems', async () => {
+    vscode.commands.registerCommand('wt.outline.pasteItems', async (nameModifier: string | undefined) => {
         
         // Ensure that there are items to paste currently stored in workspace state
         const copied: CopiedSelection | undefined = this.context.workspaceState.get<CopiedSelection>('copied');
@@ -107,7 +107,7 @@ export function registerCommands (this: OutlineView) {
         // Now, for each node currently selected in the outline view, paste all
         //      copied content into that destination
         for (const destination of selected) {
-            const pasted = await this.paste(destination, validCopied, pasteLog);
+            const pasted = await this.paste(destination, validCopied, pasteLog, nameModifier);
             if (!pasted) {
                 vscode.window.showWarningMessage(`WARN: Skipped paste to '${destination.data.ids.display}': unknown error`);
                 pasteErrors++;
@@ -128,5 +128,10 @@ export function registerCommands (this: OutlineView) {
         else {
             vscode.window.showErrorMessage(`ERROR: Pasted to 0 destination`)
         }
+    });
+
+    vscode.commands.registerCommand('wt.outline.duplicateItems', async () => {
+        await vscode.commands.executeCommand('wt.outline.copyItems');
+        await vscode.commands.executeCommand('wt.outline.pasteItems', 'duplicated');
     });
 }
