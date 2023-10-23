@@ -26,7 +26,6 @@ export class CoderModer {
 
         const repo = context.globalState.get<vscode.Uri>('wt.codeMode.codeRepo');
         const repoUris = context.globalState.get<vscode.Uri[]>('wt.codeMode.repoUris');
-        console.log(repoUris?.length);
         if (repo) {
             this.repoLocation = repo;
             if (!repoUris) (async () => {
@@ -37,8 +36,17 @@ export class CoderModer {
         }
         
         if (repoUris) {
-            this.repoUris = repoUris;
+            // If repo uris were read from global state, vscode automatically converts their scheme
+            //      to vscode-remote, but we need 'file' uris
+            // So, remap all uris to file uris
+            this.repoUris = repoUris.map(({ path }) => {
+                return vscode.Uri.from({
+                    scheme: 'file',
+                    path: path
+                });
+            });
         }
+        console.log(this.repoUris)
 
         vscode.commands.registerCommand('wt.codeMode.enterCodeMode', async () => {
             if (this.state !== 'noCodeMode') {

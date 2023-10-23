@@ -35,3 +35,13 @@ export async function enter (this: CoderModer): Promise<void> {
 
     this.state = 'codeMode';
 }
+
+/*
+
+
+$mid: 1
+authority: 'wsl+ubuntu'
+path: '/home/luke-callaghan/dev/node/vscode/vscode-extension-samples/tree-view-sample/node_modules/resolve-from/license'
+scheme: 'vscode-remote'
+
+*/
