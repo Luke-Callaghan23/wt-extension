@@ -193,4 +193,13 @@ implements
             case 'description': return [];
         }
     }
+
+    getParent(element: Note | Description): vscode.ProviderResult<Note | Description> {
+        if (element.kind === 'description') {
+            return this.notes.find(note => note.noteId === element.noteId);
+        }
+        else {
+            return null;
+        }
+    }
 }

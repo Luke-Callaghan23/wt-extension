@@ -13,11 +13,9 @@ export function provideHover(
 
     const matchedNote = this.matchedNotes.matches.find(match => match.range.contains(position));
     if (!matchedNote) return null;
-
     this.view.reveal(matchedNote.note, {
         select: true,
         expand: true,
-    });
-
+    })
     return null;
 }
