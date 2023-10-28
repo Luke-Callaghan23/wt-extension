@@ -110,7 +110,9 @@ export class TimedView implements Packageable {
                 // Clear decorations
                 timed.disable?.();
             });
-        })
+        });
+
+        vscode.commands.registerCommand('wt.timedViews.update', () => this.triggerUpdates(true));
     }
     
     getPackageItems(): { [index: string]: any; } {
