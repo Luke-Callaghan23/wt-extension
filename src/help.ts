@@ -105,3 +105,11 @@ export function hexToRgb (hex: string): null | { r: number, g: number, b: number
         b: parseInt(result[3], 16)
     } : null;
 }
+
+export function clamp(num: number, min: number, max: number) {
+    return num <= min 
+        ? min 
+        : num >= max 
+            ? max 
+            : num
+  }

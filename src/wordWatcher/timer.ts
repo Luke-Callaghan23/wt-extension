@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as extension from './../extension';
 import * as console from './../vsconsole';
 import { WordEnrty, WordWatcher } from './wordWatcher';
-import { hexToRgb } from '../help';
+import { clamp, hexToRgb } from '../help';
 
 const defaultDecorations: vscode.DecorationRenderOptions = {
     borderWidth: '1px',
@@ -250,7 +250,12 @@ function readColorFromString (src: string): { errMessage: string } | Rgba {
                 if (isNaN(ai)) return { errMessage: `'a' (${a}) could not be parsed as an integer` };
             }
 
-            return { r: ri, b: bi, g: gi, a: ai };
+            return { 
+                r: clamp(ri, 0, 255), 
+                b: clamp(bi, 0, 255), 
+                g: clamp(gi, 0, 255), 
+                a: ai 
+            };
         }
         else return { errMessage: `(rgba color error) Missing 'r', 'g', or 'b' from input'` };
     }
@@ -280,7 +285,12 @@ function readColorFromString (src: string): { errMessage: string } | Rgba {
                 if (isNaN(ai)) return { errMessage: `'a' (${a}) could not be parsed as an integer` };
             }
 
-            return { r: ri, b: bi, g: gi, a: ai };
+            return { 
+                r: clamp(ri, 0, 255), 
+                b: clamp(bi, 0, 255), 
+                g: clamp(gi, 0, 255), 
+                a: ai 
+            };
         }
         else return { errMessage: `(hex color error) Missing 'r', 'g', or 'b' from input'` };
     }
