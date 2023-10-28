@@ -359,6 +359,10 @@
 				"title": "Writing Tool: Change watched word color"
 			},
 			{
+				"command": "wt.wordWatcher.changePattern",
+				"title": "Writing Tool: Change watched word pattern"
+			},
+			{
 				"command": "wt.synonyms.help",
 				"title": "Writing Tool: Synonyms View Help",
 				"icon": "$(question)"
@@ -706,6 +710,10 @@
 				},
 				{
 					"command": "wt.wordWatcher.changeColor",
+					"when": "view == wt.wordWatcher && viewItem == watchedWord_enabled"
+				},
+				{
+					"command": "wt.wordWatcher.changePattern",
 					"when": "view == wt.wordWatcher && viewItem == watchedWord_enabled"
 				},
 				{

@@ -4,6 +4,7 @@ import * as extension from './../extension';
 import * as console from './../vsconsole';
 import { WordEnrty, WordWatcher } from './wordWatcher';
 import { clamp, hexToRgb } from '../help';
+import { addWordToWatchedWords } from './engine';
 
 const defaultDecorations: vscode.DecorationRenderOptions = {
     borderWidth: '1px',
@@ -320,4 +321,26 @@ export function convertWordColorsToContextItem(wordColors: { [index: string]: Co
         context[watched] = rgbaString;
     });
     return context;
+}
+
+export async function changePattern (this: WordWatcher, word: WordEnrty) {
+    if (word.type !== 'watchedWord') return;
+    
+    // Get the index of the selected watched word in the watched word in the array
+    const index = this.watchedWords.findIndex(ww => {
+        return ww === word.uri.toString()
+    });
+    if (index === -1) return;
+
+    // Prompt the user for the new pattern
+    const newPattern = await this.addWord({
+        addWord: false,
+        watched: true,
+        placeholder: word.uri,
+        value: word.uri
+    });
+    if (newPattern === null) return;
+
+    // Update context and view with new pattern
+    this.updateWords('replace', newPattern, 'wt.wordWatcher.watchedWords', index);
 }

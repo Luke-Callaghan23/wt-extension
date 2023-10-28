@@ -5,7 +5,7 @@ import * as console from '../vsconsole';
 import { Packageable } from '../packageable';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
-import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString } from './timer';
+import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, changePattern, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString } from './timer';
 import { getChildren, getTreeItem } from './tree';
 import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';
 import { hexToRgb } from '../help';
@@ -61,6 +61,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
     update = update;
     disable = disable;
     changeColor = changeColor;
+    changePattern = changePattern;
 
     public wasUpdated: boolean = true;
     public lastCalculatedRegeces: {
@@ -115,8 +116,10 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
 	}
 
     registerCommands () {
-        vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.addWord(true));
-        vscode.commands.registerCommand('wt.wordWatcher.newUnwatchedWord', () => this.addWord(false));
+        vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.addWord({ watched: true }));
+        vscode.commands.registerCommand('wt.wordWatcher.newUnwatchedWord', () => this.addWord({
+            watched: false,
+        }));
         
         vscode.commands.registerCommand('wt.wordWatcher.jumpNextInstanceOf', (word: string) => {
             this.jumpNextInstanceOf(word);
@@ -142,6 +145,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         });
         vscode.commands.registerCommand('wt.wordWatcher.changeColor', (resource: WordEnrty) => {
             this.changeColor(resource);
+        });
+        vscode.commands.registerCommand('wt.wordWatcher.changePattern', (resource: WordEnrty) => {
+            this.changePattern(resource);
         });
 	}
 

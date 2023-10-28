@@ -4,9 +4,10 @@ import { WordWatcher } from './wordWatcher';
 
 export function addOrDeleteTargetedWord (
     this: WordWatcher,
-    operation: 'add' | 'delete',
+    operation: 'add' | 'delete' | 'replace',
     target: string,
-    contextItem: 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.disabledWatchedWords'
+    contextItem: 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.disabledWatchedWords',
+    replaceIndex: number=-1
 ) {
     // Get the targeted array, depending on the context that this updateWords function call was made in
     let targetArray: string[];
@@ -35,6 +36,9 @@ export function addOrDeleteTargetedWord (
         }
         targetArray.splice(targetIndex, 1);
     }
+    else if (operation === 'replace' && replaceIndex >= 0) {
+        targetArray[replaceIndex] = target;
+    }
     else {
         throw new Error(`Not possible -- operation '${operation}' is invalid`);
     }
@@ -48,17 +52,35 @@ export function addOrDeleteTargetedWord (
     this.refresh();
 }
 
-export async function addWordToWatchedWords (this: WordWatcher, watchedWord: boolean = true) {
+export async function addWordToWatchedWords (this: WordWatcher, options?: {
+    watched?: boolean,          // default true
+    addWord?: boolean           // default true
+    placeholder?: string,       // default 'very'
+    value?: string,             // default undefined
+}): Promise<string | null> {
+    options = options || {};
+    if (options.watched === undefined) {
+        options.watched = true;
+    }
+    if (options.addWord === undefined) {
+        options.addWord = true;
+    }
+    if (options.placeholder === undefined) {
+        options.placeholder = 'very';
+    }
+
+    const watchedWord = options.watched;
     const not = !watchedWord ? 'not' : '';
     const un = !watchedWord ? 'un-' : '';
     while (true) {
         const response = await vscode.window.showInputBox({
-            placeHolder: 'very',
+            placeHolder: options.placeholder,
+            value: options.value,
             ignoreFocusOut: false,
             prompt: `Enter the word or word pattern that you would like to ${not} watch out for (note: only alphabetical characters are allowed inside of watched words)`,
             title: 'Add word'
         });
-        if (!response) return;
+        if (!response) return null;
 
         // Regex for filtering out responses that do not follow the regex subset for specifying watched words
         // Subset onyl includes: groupings '()', sets '[]', one or more '+', zero or more '*', and alphabetical characters
@@ -73,7 +95,7 @@ export async function addWordToWatchedWords (this: WordWatcher, watchedWord: boo
                 modal: true,
                 detail: "List of allowed characters in watched word/pattern is: a-z, A-Z, '*', '+', '?', '(', ')', '[', ']', and '-', where all non alphabetic characters must not be escaped."
             }, 'Okay', 'Cancel');
-            if (proceed === 'Cancel') return;
+            if (proceed === 'Cancel') return null;
             continue;
         }
 
@@ -86,7 +108,7 @@ export async function addWordToWatchedWords (this: WordWatcher, watchedWord: boo
             const proceed = await vscode.window.showInformationMessage(`Word '${response}' already in list of ${un}watched words!`, {
                 modal: true
             }, 'Okay', 'Cancel');
-            if (proceed === 'Cancel') return;
+            if (proceed === 'Cancel') return null;
             continue;
         }
 
@@ -99,14 +121,17 @@ export async function addWordToWatchedWords (this: WordWatcher, watchedWord: boo
                 modal: true,
                 detail: `Error: ${e}`
             }, 'Okay', 'Cancel');
-            if (proceed === 'Cancel') return;
+            if (proceed === 'Cancel') return null;
             continue;
         }
 
-        // If the word is valid and doesn't already exist in the word list, then continue adding the words
-        this.updateWords('add', response, watchedWord ? 'wt.wordWatcher.watchedWords' : 'wt.wordWatcher.unwatchedWords');
-        return;
+        if (options.addWord) {
+            // If the word is valid and doesn't already exist in the word list, then continue adding the words
+            this.updateWords('add', response, watchedWord ? 'wt.wordWatcher.watchedWords' : 'wt.wordWatcher.unwatchedWords');
+        }
+        return response;
     }
+    return null;
 }
 
 export async function jumpNextInstanceOfWord (this: WordWatcher, word: string) {
