@@ -72,9 +72,11 @@ export class OutlineNode extends TreeNode {
             // Chapters and snips drop just the immediate fragment node children
             case 'chapter': case 'snip':
                 const data = this.data as ChapterNode | SnipNode;
-                return data.textData.map(fragment => {
-                    return fragment.getUri()
-                })
+                return data.textData
+                    .sort((a, b) => a.data.ids.ordering - b.data.ids.ordering)
+                    .map(fragment => {
+                        return fragment.getUri()
+                    });
             // Fragments drop themselves
             case 'fragment':
                 return [ this.getUri() ];
