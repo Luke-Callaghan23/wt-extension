@@ -20,7 +20,7 @@ const defaultDecorations: vscode.DecorationRenderOptions = {
 export const defaultWatchedWordDecoration = vscode.window.createTextEditorDecorationType(defaultDecorations);
 
 export type ColorEntry = {
-    color: string,
+    rgbaString: string,
     decoratorsIndex: number
 };
 
@@ -163,19 +163,27 @@ export async function disable(this: WordWatcher): Promise<void> {
     })
 }
 
-const defaultColor = "#a10808";
+const DEFAULT_ALPHA = 0.3;
+type Rgba = {
+    r: number,
+    g: number, 
+    b: number,
+    a: number
+};
+
+const defaultColor = "rgb(161, 8, 8, 0.3)";
 export async function changeColor(this: WordWatcher, word: WordEnrty) {
     const colorMap = this.wordColors[word.uri];
-    const currentColor = (colorMap || { color: defaultColor }).color;
+    const currentColor: string = (colorMap || { rgbaString: defaultColor }).rgbaString;
 
     // Read the user's rgb response
-    let hexResult: string;
-    let result: { r: number, g: number, b: number };
+    let rgbaString: string;
+    let result: Rgba;
     while (true) {
         const newColor = await vscode.window.showInputBox({
             ignoreFocusOut: false,
-            prompt: `Enter the hex code of the color you want to highlight this watched word with`,
-            title: `Enter the hex code of the color you want to highlight this watched word with`,
+            prompt: `Enter the hex code or rgb(#, #, #, #) formatted color you would like to use:`,
+            title: `Enter the hex code or rgb(#, #, #, #) formatted color you would like to use:`,
             value: currentColor,
             placeHolder: currentColor,
             valueSelection: [ 0, currentColor.length ]
@@ -183,13 +191,15 @@ export async function changeColor(this: WordWatcher, word: WordEnrty) {
         if (!newColor) return;
 
         // Try parsing the color with an extra hastag or without
-        const rgb = hexToRgb(newColor);
-        if (!rgb) {
-            vscode.window.showErrorMessage(`Could not parse '${newColor}' as a hex string.  Please try again.  Or hit escape to quit.`);
+
+        const res = readColorFromString(newColor);
+        if ('errMessage' in res) {
+            vscode.window.showErrorMessage(`Could not parse '${newColor}': ${res.errMessage}`);
             continue;
         }
-        result = rgb;
-        hexResult = newColor;
+
+        result = res;
+        rgbaString = `rgb(${res.r}, ${res.g}, ${res.b}, ${res.a})`;
         break;
     }
 
@@ -199,13 +209,12 @@ export async function changeColor(this: WordWatcher, word: WordEnrty) {
     this.allDecorationTypes.push(decoratorType);
 
     // Insert a color entry into the color map
-    const insert: ColorEntry = { color: hexResult, decoratorsIndex: index };
-    insert.color = hexResult;
+    const insert: ColorEntry = { rgbaString: rgbaString, decoratorsIndex: index };
     this.wordColors[word.uri] = insert;
 
     // Update context
     const context = convertWordColorsToContextItem(this.wordColors);
-    this.context.workspaceState.update('wt.wordWatcher.colors', context);
+    this.context.workspaceState.update('wt.wordWatcher.rgbaColors', context);
 
 
     if (vscode.window.activeTextEditor) {
@@ -213,9 +222,79 @@ export async function changeColor(this: WordWatcher, word: WordEnrty) {
     }
 }
 
+function readColorFromString (src: string): { errMessage: string } | Rgba {
+    const rgbaRegex = /\s*rgba?\s*\(\s*(?<r>\d{1,3})\s*,\s*(?<g>\d{1,3})\s*,\s*(?<b>\d{1,3})\s*(\s*,\s*(?<a>0\.\d+)\s*)?\)\s*/gi;
 
-export function createDecorationType (color: { r: number, g: number, b: number }): vscode.TextEditorDecorationType {
-    const colorString = `rgb(${color.r}, ${color.g}, ${color.b}, 0.3)`
+    let match: RegExpExecArray | null;
+    if ((match = rgbaRegex.exec(src)) !== null) {
+        const groups = match.groups;
+        if (groups && 'r' in groups && 'g' in groups && 'b' in groups) {
+            const rgba = groups as {
+                r: string,
+                g: string,
+                b: string,
+                a?: string
+            };
+            const { r, g, b, a } = rgba;
+            const ri = parseInt(r);
+            const gi = parseInt(g);
+            const bi = parseInt(b);
+
+            if (isNaN(ri)) return { errMessage: `'r' (${r}) could not be parsed as an integer` };
+            if (isNaN(gi)) return { errMessage: `'g' (${g}) could not be parsed as an integer` };
+            if (isNaN(bi)) return { errMessage: `'b' (${b}) could not be parsed as an integer` };
+
+            let ai = DEFAULT_ALPHA;
+            if (a) {
+                ai = parseFloat(a);
+                if (isNaN(ai)) return { errMessage: `'a' (${a}) could not be parsed as an integer` };
+            }
+
+            return { r: ri, b: bi, g: gi, a: ai };
+        }
+        else return { errMessage: `(rgba color error) Missing 'r', 'g', or 'b' from input'` };
+    }
+
+    const hexRegex = /\s*#(?<r>[a-f0-9]{2})(?<g>[a-f0-9]{2})(?<b>[a-f0-9]{2})(?<a>[a-f0-9]{2})?/;
+    if ((match = hexRegex.exec(src)) !== null) {
+        const groups = match.groups;
+        if (groups && 'r' in groups && 'g' in groups && 'b' in groups) {
+            const rgba = groups as {
+                r: string,
+                g: string,
+                b: string,
+                a?: string
+            };
+            const { r, g, b, a } = rgba;
+            const ri = parseInt(r, 16);
+            const gi = parseInt(g, 16);
+            const bi = parseInt(b, 16);
+
+            if (isNaN(ri)) return { errMessage: `'r' (${r}) could not be parsed as a hex integer` };
+            if (isNaN(gi)) return { errMessage: `'g' (${g}) could not be parsed as a hex integer` };
+            if (isNaN(bi)) return { errMessage: `'b' (${b}) could not be parsed as a hex integer` };
+
+            let ai = DEFAULT_ALPHA;
+            if (a) {
+                ai = parseInt(a, 16) / 0xff;
+                if (isNaN(ai)) return { errMessage: `'a' (${a}) could not be parsed as an integer` };
+            }
+
+            return { r: ri, b: bi, g: gi, a: ai };
+        }
+        else return { errMessage: `(hex color error) Missing 'r', 'g', or 'b' from input'` };
+    }
+
+    return { errMessage: `Could not parse color in either color format!` };
+}
+
+
+export function createDecorationType (color: Rgba): vscode.TextEditorDecorationType {
+    const colorString = `rgb(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
+    return createDecorationFromRgbString(colorString);
+}
+
+export function createDecorationFromRgbString (colorString: string): vscode.TextEditorDecorationType {
     const newDecoration: vscode.DecorationRenderOptions = { ...defaultDecorations };
     newDecoration.overviewRulerColor = colorString;
     newDecoration.backgroundColor = colorString;
@@ -227,8 +306,8 @@ export function createDecorationType (color: { r: number, g: number, b: number }
 
 export function convertWordColorsToContextItem(wordColors: { [index: string]: ColorEntry }): { [index: string]: string } {
     const context: { [index: string]: string } = {};
-    Object.entries(wordColors).forEach(([ watched, { color } ]) => {
-        context[watched] = color;
+    Object.entries(wordColors).forEach(([ watched, { rgbaString } ]) => {
+        context[watched] = rgbaString;
     });
     return context;
 }

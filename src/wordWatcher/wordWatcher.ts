@@ -5,7 +5,7 @@ import * as console from '../vsconsole';
 import { Packageable } from '../packageable';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
-import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, ColorEntry, createDecorationType, convertWordColorsToContextItem } from './timer';
+import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString } from './timer';
 import { getChildren, getTreeItem } from './tree';
 import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';
 import { hexToRgb } from '../help';
@@ -96,18 +96,14 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         this.wordColors = {};
 
         // Create decorations for all the unique colors in the workspace state
-        const contextColors: { [index: string]: string } = context.workspaceState.get('wt.wordWatcher.colors') || {};
+        const contextColors: { [index: string]: string } = context.workspaceState.get('wt.wordWatcher.rgbaColors') || {};
         this.watchedWords.forEach(watched => {
             const color = contextColors[watched];
             if (!color) return;
 
-            // If the watched word has a color mapping in context, then create a decorator type for that 
-            //      and record the mapping to wordColors and allDecorationTypes
-            const colorRGB = hexToRgb(color);
-            if (!colorRGB) return;
-            const decoratorType = createDecorationType(colorRGB);
+            const decoratorType = createDecorationFromRgbString(color);
             this.wordColors[watched] = {
-                color: color,
+                rgbaString: color,
                 decoratorsIndex: this.allDecorationTypes.length
             };
 
@@ -154,7 +150,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             'wt.wordWatcher.watchedWords': this.watchedWords,
             'wt.wordWatcher.disabledWatchedWords': this.disabledWatchedWords,
             'wt.wordWatcher.unwatchedWords': this.unwatchedWords,
-            'wt.wordWatcher.colors': convertWordColorsToContextItem(this.wordColors)
+            'wt.wordWatcher.rgbaColors': convertWordColorsToContextItem(this.wordColors)
         }
     }
 }
