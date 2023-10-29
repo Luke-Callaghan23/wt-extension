@@ -1015,7 +1015,6 @@
 		"@types/markdown-it": "^12.2.3",
 		"@vscode/codicons": "^0.0.32",
 		"buffer": "^6.0.3",
-		"istextorbinary": "^6.0.0",
 		"minimist": "^1.2.6",
 		"node-fetch-commonjs": "^3.2.4",
 		"uuid": "^9.0.0",
