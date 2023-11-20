@@ -56,7 +56,7 @@ export class PersonalDictionary implements Packageable {
     // Called from command pallette
     async removeWordCommand (): Promise<void> {
         // Show a quick pick for all the words currently in the personal dictionary
-        const wordsInDict = Object.keys(this.dict);
+        const wordsInDict = Object.keys(this.dict).reverse();
         const remove: string | undefined = await vscode.window.showQuickPick(
             wordsInDict, 
             {
