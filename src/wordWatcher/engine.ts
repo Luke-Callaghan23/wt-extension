@@ -84,7 +84,7 @@ export async function addWordToWatchedWords (this: WordWatcher, options?: {
 
         // Regex for filtering out responses that do not follow the regex subset for specifying watched words
         // Subset onyl includes: groupings '()', sets '[]', one or more '+', zero or more '*', and alphabetical characters
-        const allowCharacters = /^[a-zA-Z\(\)\[\]\*\+\?-\s]+$/;
+        const allowCharacters = /^[a-zA-Z\(\)\[\]\*\+\?-\s|]+$/;
         // Regex for matching any escaped non-alphabetical character
         const escapedNonAlphabetics = /\\\(|\\\[|\\\]|\\\)|\\\*|\\\+|\\\?|\\\-/;
 
