@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, getLatestOrdering, readDotConfig } from '../help';
 import { TreeNode } from './outlineTreeProvider';
-import { ChapterNode, ContainerNode, FragmentData, NodeTypes, ResourceType, RootNode, SnipNode } from './fsNodes';
+import { ChapterNode, ContainerNode, FragmentNode, NodeTypes, ResourceType, RootNode, SnipNode } from './fsNodes';
 import * as extension from '../extension';
 
 
@@ -188,7 +188,7 @@ export async function initializeChapter <T extends TreeNode> ({
     if (!chapterFragmentsDotConfig) throw new Error('Error loading chapter fragments config');
 
     // Create all the text fragments
-    const fragments: FragmentData[] = [];
+    const fragments: FragmentNode[] = [];
     for (const [ name, _ ] of wtEntries) {
         const fragmentName = name;
         const fragment = await initializeFragment({
@@ -308,7 +308,7 @@ export async function initializeSnip<T extends TreeNode> ({
     if (!snipFragmentsDotConfig) throw new Error('Error loading chapter fragments config');
 
     // Create all the text fragments
-    const fragments: FragmentData[] = [];
+    const fragments: FragmentNode[] = [];
     for (const [ name, _ ] of wtEntries) {
         const fragmentName = name;
         const fragment = await initializeFragment({
@@ -359,7 +359,7 @@ export async function initializeFragment ({
     parentTypeId,
     parentUri,
     watch,
-}: FragmentParams): Promise<FragmentData> {
+}: FragmentParams): Promise<FragmentNode> {
 
     // Get the display name for the fragment
     // If there is no specified display name in the .chapter file,

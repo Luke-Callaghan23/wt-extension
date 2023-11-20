@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { CoderModer } from './codeMode';
-import { Buff } from '../../Buffer/bufferSource';
+import { Buff } from '../Buffer/bufferSource';
 import { isText } from 'istextorbinary';
 
 export async function enter (this: CoderModer): Promise<void> {

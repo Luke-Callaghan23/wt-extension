@@ -18,9 +18,9 @@ export type ChapterNode = fsNodes.ChapterNode<OutlineNode>;
 export type ContainerNode = fsNodes.ContainerNode<OutlineNode>;
 export type SnipNode = fsNodes.SnipNode<OutlineNode>;
 export type RootNode = fsNodes.RootNode<OutlineNode>;
-export type FragmentData = fsNodes.FragmentData;
+export type FragmentNode = fsNodes.FragmentNode;
 export type ResourceType = fsNodes.ResourceType;
-export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentData | ContainerNode;
+export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentNode | ContainerNode;
 
 export class OutlineNode extends TreeNode {
 

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ChapterNode, ContainerNode, FragmentData, OutlineNode, RootNode, SnipNode } from '../node';
+import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../node';
 import { OutlineView } from '../outlineView';
 import { FileAccessManager } from '../../fileAccesses';
 import * as vscodeUris from 'vscode-uri';
@@ -471,7 +471,7 @@ export async function paste (
         const destContent = (dest.data as ChapterNode | SnipNode).textData;
         
         // Create a new object for the copied fragment
-        const newFragmentData: FragmentData = {
+        const newFragmentData: FragmentNode = {
             ids: {
                 display: `${src.data.ids.display} (${nameModifier})`,
                 fileName: newFileName,

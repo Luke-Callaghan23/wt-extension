@@ -23,10 +23,10 @@ import { Spellcheck } from './intellisense/spellcheck/spellcheck';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
 import { ColorGroups } from './intellisense/colors/colorGroups';
-import { WordCount } from './status/wordCount';
+import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
 import { WHViewPorvider as WHViewProvider } from './whWebview/whWebview';
-import { CoderModer } from './status/codeMode/codeMode';
+import { CoderModer } from './codeMode/codeMode';
 import { WorldNotes } from './worldNotes/worldNotes';
 
 export const decoder = new TextDecoder();
@@ -90,6 +90,11 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			outline, synonyms, timedViews, new FileAccessManager(),
 			personalDictionary, colorGroups, wh
 		]));
+
+		// Lastly, clear the 'tmp' folder
+		// This is used to store temporary data for a session and should not last between sessions
+		const tmpFolderPath = vscode.Uri.joinPath(rootPath, 'tmp');
+		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
 	}
 	catch (e) {
 		handleLoadFailure(e);

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { ChapterNode, ContainerNode, FragmentData, RootNode, SnipNode, TODONode } from "../node";
+import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode, TODONode } from "../node";
 import { TODOsView, Validation } from "../TODOsView";
 import { scanFragment } from "../impl/scanFragment";
 
@@ -130,7 +130,7 @@ export async function getTODOCounts (
             return fragmentsTODOs;
         }
         case 'fragment': {
-            const fragmentNode: FragmentData = this.data as FragmentData;
+            const fragmentNode: FragmentNode = this.data as FragmentNode;
 
             // To get the TODO counts of a fragment, we need to stop recursing into this function
             //      and actually read some text

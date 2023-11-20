@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 import { enter } from './enterCodeMode';
 import { exit } from './exitCodeMode';
 import * as vscodeUri from 'vscode-uri';
-import * as console from '../../vsconsole';
+import * as console from '../vsconsole';
 import { isText } from 'istextorbinary';
 // import { fileTypeFromBuffer, fileTypeFromStream } from 'file-type';
-import { Buff } from '../../Buffer/bufferSource';
+import { Buff } from '../Buffer/bufferSource';
 export class CoderModer {
 
     swapModeStatus: vscode.StatusBarItem;

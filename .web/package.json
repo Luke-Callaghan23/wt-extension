@@ -93,6 +93,10 @@
 				"title": "Writing Tool: Show word count information."
 			},
 			{
+				"command": "wt.wordCount.showFullWordCounts",
+				"title": "Writing Tool: Show word counts for full project."
+			},
+			{
 				"command": "wt.outline.refresh",
 				"title": "Writing Tool: Refresh Outline View",
 				"icon": "$(refresh)"

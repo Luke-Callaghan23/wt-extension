@@ -3,7 +3,7 @@ import { TODO, TODOsView } from '../TODOsView';
 import { initializeOutline } from '../../outlineProvider/initialize';
 import { TODONode } from '../node';
 import { OutlineNode } from '../../outline/node';
-import { ChapterNode, ContainerNode, FragmentData, RootNode, SnipNode } from '../../outlineProvider/fsNodes';
+import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode } from '../../outlineProvider/fsNodes';
 
 export function registerCommands(this: TODOsView) {
     vscode.commands.registerCommand('wt.todo.openFile', async (resourceUri: vscode.Uri, todoData: TODO) => {
@@ -51,7 +51,7 @@ export function registerCommands(this: TODOsView) {
         // Converts an array of fragment OutlineNodes to an array of TODONodes for those fragments
         const convertFragments = (fragments: OutlineNode[]): TODONode[] => {
             return fragments.map(outlineFragment => {
-                return new TODONode(<FragmentData> {
+                return new TODONode(<FragmentNode> {
                     ids: { ...outlineFragment.data.ids },
                     md: ''
                 })

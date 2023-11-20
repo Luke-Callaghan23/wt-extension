@@ -79,6 +79,11 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager()
 		]));
+		
+		// Lastly, clear the 'tmp' folder
+		// This is used to store temporary data for a session and should not last between sessions
+		const tmpFolderPath = vscode.Uri.joinPath(rootPath, 'tmp');
+		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
 	}
 	catch (e) {
 		handleLoadFailure(e);

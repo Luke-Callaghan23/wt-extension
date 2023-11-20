@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig } from '../../help';
-import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentData } from '../node';
+import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentNode } from '../node';
 import { OutlineView } from '../outlineView';
 // import * as console from '../../vsconsole';
 import * as extension from '../../extension';
@@ -127,7 +127,7 @@ export async function newChapter (
             };
 
             // Create internal data to represent this fragment in the outline tree
-            const fragmentNode = <FragmentData> {
+            const fragmentNode = <FragmentNode> {
                 ids: {
                     display: fragmentTitle,
                     fileName: fragmentFileName,
@@ -365,7 +365,7 @@ export async function newSnip (
         }
 
         // Internal object to represent the fragment in the outline view
-        const fragmentNode = <FragmentData> {
+        const fragmentNode = <FragmentNode> {
             ids: {
                 display: fragmentTitle,
                 fileName: fragmentFileName,
@@ -491,7 +491,7 @@ export async function newFragment (
 
     // Write the fragment file
     const fragmentUri = vscodeUris.Utils.joinPath(parentUri, fileName);
-    const fragment = <FragmentData> {
+    const fragment = <FragmentNode> {
         ids: {
             display: title,
             fileName: fileName,

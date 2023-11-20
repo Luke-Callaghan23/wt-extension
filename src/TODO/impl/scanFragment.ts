@@ -2,7 +2,7 @@
 import * as console from '../../vsconsole';
 import * as extension from '../../extension';
 import * as vscode from 'vscode';
-import { FragmentData } from '../node';
+import { FragmentNode } from '../node';
 import { Validation, TODO } from '../TODOsView';
 
 type IncompleteTODO = {
@@ -11,7 +11,7 @@ type IncompleteTODO = {
     content: string,
 };
 
-export async function scanFragment(uri: vscode.Uri, fragmentNode: FragmentData): Promise<[ Validation, number ]> {
+export async function scanFragment(uri: vscode.Uri, fragmentNode: FragmentNode): Promise<[ Validation, number ]> {
     const finishedTODOs: TODO[] = [];
     const unfinishedTodoStack: IncompleteTODO[] = [];
     

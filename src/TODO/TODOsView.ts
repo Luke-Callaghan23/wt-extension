@@ -8,7 +8,7 @@ import { OutlineTreeProvider } from '../outlineProvider/outlineTreeProvider';
 import { InitializeNode, initializeOutline } from '../outlineProvider/initialize';
 import { Timed } from '../timedView';
 import { OutlineNode } from '../outline/node';
-import { ChapterNode, ContainerNode, FragmentData, NodeTypes, RootNode, SnipNode } from '../outlineProvider/fsNodes';
+import { ChapterNode, ContainerNode, FragmentNode, NodeTypes, RootNode, SnipNode } from '../outlineProvider/fsNodes';
 import { update } from './impl/timerFunctions';
 import { disable } from '../wordWatcher/timer';
 import { registerCommands } from './impl/registerCommands';

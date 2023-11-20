@@ -16,13 +16,13 @@ export type ChapterNode = fsNodes.ChapterNode<TODONode>;
 export type ContainerNode = fsNodes.ContainerNode<TODONode>;
 export type SnipNode = fsNodes.SnipNode<TODONode>;
 export type RootNode = fsNodes.RootNode<TODONode>;
-export type FragmentData = fsNodes.FragmentData;
+export type FragmentNode = fsNodes.FragmentNode;
 export type TODOData = {
     ids: fsNodes.Ids
     todo: TODO,
 };
 export type ResourceType = fsNodes.ResourceType;
-export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentData | ContainerNode | TODOData;
+export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentNode | ContainerNode | TODOData;
 
 export class TODONode extends TreeNode {
     convertToTODOData = convertToTODOData;
