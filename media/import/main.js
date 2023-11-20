@@ -144,9 +144,9 @@
             if (docInfo.outputIntoChapter) {
                 chapterSelectString = chapterUris.map(([ uri, chapterName ]) => {
                     if (docInfo.outputChapter === uri) {
-                        return `<vscode-option selected value="${uri}" selected>${chapterName}</vscode-option>`;
+                        return `<vscode-option selected value="${uri}">${chapterName}</vscode-option>`;
                     }
-                    return `<vscode-option selected value="${uri}">${chapterName}</vscode-option>`;
+                    return `<vscode-option value="${uri}">${chapterName}</vscode-option>`;
                 }).join('');
             }
 
