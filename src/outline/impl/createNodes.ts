@@ -526,7 +526,7 @@ export async function newFragment (
     if (!options?.preventRefresh) {
         vscode.window.showTextDocument(fragmentUri);
         this.refresh(false);
-        vscode.window.showInformationMessage('Successfully created new snip');
+        vscode.window.showInformationMessage('Successfully created new fragment');
     }
     return fragmentNode.getUri();
 }
