@@ -78,6 +78,7 @@ export class CoderModer {
             // Enter code mode
             await this.enter();
             vscode.window.showInformationMessage(`[INFO] Entered Code Mode`);
+            vscode.commands.executeCommand('wt.statusBarTimer.enteredCodeMode');
         });
 
         vscode.commands.registerCommand('wt.codeMode.changeCodeModeRepo', async () => {
@@ -98,6 +99,7 @@ export class CoderModer {
             if (this.state !== 'codeMode') return;
             await this.exit();
             vscode.window.showInformationMessage(`[INFO] Exited Code Mode`);
+            vscode.commands.executeCommand('wt.statusBarTimer.exitedCodeMode');
         });
         
         vscode.commands.registerCommand('wt.codeMode.swapMode', async () => {
@@ -109,7 +111,7 @@ export class CoderModer {
             }
             this.swapModeStatus.text = this.state === 'codeMode' ? 'Turn Off Code Mode' : 'Turn On Code Mode';
             this.swapModeStatus.show();
-        })
+        });
     }
 
     private async requestRepoLocation (): Promise<{

@@ -166,11 +166,13 @@ export function header () {
 
 export async function save () {
     await Workspace.packageContextItems();
+    vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
     return gitCommit();
 }
 
 export async function saveAll () {
     await Workspace.packageContextItems();
+    vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
     return gitCommit();
 }
 

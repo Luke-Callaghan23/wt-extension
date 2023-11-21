@@ -23,6 +23,7 @@ import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { WordCount } from './status/wordCount';
 import { TextStyles } from './textStyles/textStyles';
 import { WorldNotes } from './worldNotes/worldNotes';
+import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 
 
 
@@ -56,6 +57,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		
 		const worldNotes = new WorldNotes(workspace, context);
 		const wordCountStatus = new WordCount();
+		const statusBarTimer = new StatusBarTimer(context);
 
 		const timedViews = new TimedView(context, [
 			['wt.worldNotes.tree', worldNotes],

@@ -543,6 +543,21 @@
 				"when": "wt.valid && view == wt.wordWatcher"
 			},
 			{
+				"title": "Writing Tool: Display Options",
+				"command": "wt.statusBarTimer.displayOptions",
+				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
+				"title": "Writing Tool: Show Timer Rules",
+				"command": "wt.statusBarTimer.showInfo",
+				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
+				"title": "Writing Tool: Reset Timer",
+				"command": "wt.statusBarTimer.resetTimer",
+				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
 				"title": "Writing Tool: Add Note",
 				"command": "wt.worldNotes.addNote",
 				"icon": "$(add)"
