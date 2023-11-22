@@ -11,6 +11,8 @@ import { OutlineNode, RootNode } from '../outline/node';
 import * as showdown from 'showdown';
 import * as mammoth from 'mammoth';
 const pdf2html = require('pdf2html');
+// const TurndownService = require('turndown');
+const TurndownService = require('turndown');
 import { JSDOM } from 'jsdom';
 import { Buff } from '../Buffer/bufferSource';
 
@@ -193,22 +195,36 @@ const readAndSplitTxt = readAndSplitMd;
 
 async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<DocSplit | null> {
     // Create a converter for turning the provided html into md
-    const showdownConverter = new showdown.Converter({
-        ellipsis: true,
-        ghCodeBlocks: true,
-        openLinksInNewWindow: true,
-        underline: true,
-        tables: true,
-        emoji: true,
-        simplifiedAutoLink: true,
-        completeHTMLDocument: true,
-        strikethrough: true,
-        tasklists: true,
-        
+    const turndownService = new TurndownService({ 
+        bulletListMarker: '-',
+        hr: '~~~',
+        emDelimiter: '*'
+    });
+
+    turndownService.addRule('strikethrough', {
+        //@ts-ignore
+        filter: ['del', 's', 'strike' ],
+        replacement: function (content: string) {
+            return '~' + content + '~'
+        }
+    });
+
+    turndownService.addRule('bold', {
+        filter: [ 'b', 'strong' ],
+        replacement: function (content: string) {
+            return '#' + content + '#'
+        }
+    });
+
+    turndownService.addRule('underline', {
+        filter: [ 'u' ],
+        replacement: function (content: string) {
+            return '_' + content + '_'
+        }
     });
     
     // Convert the html to markdown
-    const convertedMd = showdownConverter.makeMarkdown(htmlContent, new JSDOM('...').window.document);
+    const convertedMd = turndownService.turndown(htmlContent);
 
     // Showdown escapes all tildes ... we don't like that so, we take out all the escape characters
     const withoutEscapedTildes = convertedMd.replaceAll('\\~', '~');
@@ -265,7 +281,10 @@ async function readAndSplitDocx (split: SplitInfo, fileRelativePath: string): Pr
             path: fullFilePath.fsPath
         }, {
             ignoreEmptyParagraphs: false,
-            includeDefaultStyleMap: true
+            includeDefaultStyleMap: true,
+            styleMap: [
+                'u => u'
+            ]
         });
     
         // Record messages if there are any
