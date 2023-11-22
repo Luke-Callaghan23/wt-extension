@@ -192,7 +192,8 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		const allowedFileTypes = importFiles.join("', '");
 		const allowedFullTypes = `${allowedFileTypes}', and '${lastOne}'`;
 		vscode.commands.registerCommand('wt.import.fileExplorer.help', () => {
-			vscode.window.showInformationMessage(`Drag '${allowedFullTypes}' files into the /data/imports/ folder at the root of this workspace and hit the 'Import' button on this panel to import them into the workspace.`, { modal: true });
+			// vscode.window.showInformationMessage(`Drag '${allowedFullTypes}' files into the /data/imports/ folder at the root of this workspace and hit the 'Import' button on this panel to import them into the workspace.`, { modal: true });
+			vscode.commands.executeCommand('wt.walkthroughs.openImports');
 		});
 
 		// Adding files to the import folder

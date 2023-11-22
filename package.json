@@ -1195,11 +1195,73 @@
 				"description": "An in depth look at WTANIWE's imports feature",
 				"steps": [
 					{
-						"id": "wt.introWalkthrough.organizeIntoChapters",
-						"title": "Organize Your Project by the Chapter",
-						"description": "- The main impetus behind WANIWE's creation was the ability to organize my extremely fragmented WIP in an easier way.\n- One of the main features of WTANIWE, therefore, is the outline tree, where users can get a clear overview of their progress.",
+						"id": "wt.importsWalkthrough.overview",
+						"title": "Overview",
+						"description": "- Overview of the Imports Pane: \n- Hit the folder icon in the imports view to open the folder where all your imported documents should go.\n- Hit the refresh button to update the GUI.\n- Hit the plus button to import all documents in the imports folder.\n- Click on a single file to import just that file (or a folder to import all files in that folder).\n- Before we continue, I recommend you open up some of the generic example docx files to familiarize yourself with the content of this walkthrough.",
 						"media": {
-							"image": "media/walkthroughs/intro/imports.png",
+							"markdown": "media/walkthroughs/imports/overview.md"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importSingleChapter",
+						"title": "Import a Single Chapter",
+						"description": "- The most basic kind of imports are a single chapter, so let's start there.\n- In the imports form, select the 'Chapter' output type.\n- If you would like to separate the text into separate chapters based on scene breaks, then click on the 'Split the document?' checkbox and enter the pattern you use for scene breaks in the new text box.\n- All separators in WTANIWE are based on regex.  Common scene separators may include three tildes (~~~), three newlines (\\n\\n\\n), or a dot on a line (^\\.$).\n- To learn more about regexes, click [here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet).\n- Test out your regexes [here](https://www.regex101.com).\n- Don't forget to name your chapter as well!\n- Test this out by importing the example document 'Example Single Chapter Import.docx' with the options seen here and you should see a new chapter in the outline tree with the title 'Bob 4 (Bob's No Good, Very Bad Day)' with four lorem ipsum-filled text fragments.",
+						"media": {
+							"image": "media/walkthroughs/imports/single_chapter.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importMultipleChapters",
+						"title": "Import Multiple Chapters",
+						"description": "- To split a single document into multiple imported chapters, use the same steps as before but also select the 'Split on chapters?' checkbox.\n- In the new text box that appears, enter the pattern you would like to use to separate your chapters.\n- For example, if you separated your chapters in your imported document with the the text 'CH ###' on a new line between each chapter, enter the regex pattern 'CH \\d+'.\n- ('\\d' indicates a number 0-9, '+' indicates one or more repetitions).\n- To learn more about regexes, click [here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet).\n- Test out your regexes [here](https://www.regex101.com).\n- Don't forget to name your chapter as well!\n- Test this out by importing the example document 'Example Multiple Chapter Import.docx' with the options seen here and you should see three new chapter in the outline tree with the titles 'Wow, so much new (imported) misery for Bob!' with two, one, and three lorem ipsum-filled text fragments respectively.",
+						"media": {
+							"image": "media/walkthroughs/imports/multiple_chapters.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importSingleChapterSnip",
+						"title": "Import a Single Chapter Snippet",
+						"description": "- The other main import type is importing notes or text fragments into existing chapters.\n- To import notes into chapters, select the 'Snip' output type.\n- Check the 'Output into Chapter' checkbox to indicate that the destination of the notes is a chapter (and not uncategorized 'Work Snips').\n- And, finally, in the drop down that appears, select the chapter that you would like to insert the snips into.\n- Test this out by importing the example document 'Example Single Snip Import.docx' with the options seen here and you should see one new snip with four new lorem ipsum filled fragments in the selected chapter.",
+						"media": {
+							"image": "media/walkthroughs/imports/single_snip_into_chapter.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importSingleWorkSnip",
+						"title": "Import a Single Work Snippet",
+						"description": "- To import uncategorized notes -- or text fragments that do not have a chapter placement yet -- follow the same steps as before, but do no select to import into a specific chapter.\n- Test this out by importing the example document 'Example Single Snip Import.docx' with the options seen here and you should see one new snip with four new lorem ipsum filled fragments in the work snips area.",
+						"media": {
+							"image": "media/walkthroughs/imports/single_snip_into_work_snips.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importMultipleSnips",
+						"title": "Import Multiple Text Snippets",
+						"description": "- To import multiple text snippets from a single document, follow the same steps as the multiple chapters import description along with the single snip import instructions.\n- Test this out by importing the example document 'Example Multiple Snip Import.docx' with the options seen here and you should see three new snips in the work snips area.",
+						"media": {
+							"image": "media/walkthroughs/imports/multiple_snips.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importMultipleNamedChapters",
+						"title": "Import Multiple Chapters with Unique Names",
+						"description": "- One issue you may have noticed with the importing system so far is that whenever there are more than one imported item in single document, all the Outline Tree items that get produced have similarly patterned names.\n- To fix this, you can assign names to specific sections of the inner items of split documents by using [regex capture groups](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Capturing_group) for capturing unique a part of the splitter pattern.  The part of the split text that is captured by the rightmost capture group in the splitter regex will be used as the title of the chapter.\n- For example, the multiple chapters split step from earlier used the regex pattern 'CH \\d+' to split the single document into multiple chapters.  But, if we changed the splitting pattern to surround the original pattern with parentheses: '(CH \\d+)', we can utilize this capture group to assign unique names to each imported chapter.\n- Test this out by importing the example document 'Example Single Chapter Import.docx' with the options seen here and you should see three chapters added with the names 'CH 1', 'CH 2', and 'CH 3' from the document.",
+						"media": {
+							"image": "media/walkthroughs/imports/multiple_chapters_named.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importMultipleNamedSnipsNamedFragments",
+						"title": "Import Text Snippets with Unique Names and Named Text Fragments",
+						"description": "- A more detailed usage of splitter capture groups can be seen on the right.\n- Use more complicated regex patterns such as the splitter '\\[{3,}([^\\]]*)\\]{3,}' to match pairings of triple (or more) square brackets enclosing some (or none) generic text within.\n- For example '\\\\[{3,}([^\\\\]\\]*)\\\\]{3,}' matches the text '\\[\\[\\[\\[\\[Title of the first snip\\]\\]\\]' and uses 'Title of the first snip' as the title of the snip that follows.  It also matches '\\[\\[\\[\\[\\[\\[\\[More brackets\\]\\]\\]\\]\\]\\]\\]' or '\\[\\[\\[Minimum Brackets\\]\\]\\]' or even '\\[\\[\\[\\[\\[[\\]\\]\\]' with no title.\n- In the example document 'Example Named Snips.docx' you can see two splitter patterns used: First the afformentioned pattern '\\[{3,}([^\\]]*)\\]{3,}' to split snips, and also a new pattern '~{3,}([^~]*])~{3,}' which is very similar to that pattern except replace square brackets with tildes.\n- See how the content of the example document corresponds to the imported Outline Tree items.\n- Fragments without preceding '~~~Title~~~' separators recieve generic names 'Imported Fragment (###)' titles, whereas others get names like 'Title of the first fragment'.  Similarly, all the snips recieved names from between the triple bracket pairs.",
+						"media": {
+							"image": "media/walkthroughs/imports/multiple_snips_named.gif",
 							"altText": "Organize By Chapters"
 						}
 					}
