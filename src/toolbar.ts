@@ -4,6 +4,7 @@ import { gitCommit, gitiniter } from './gitTransactions';
 import * as console from './vsconsole';
 import * as extension from './extension';
 import { Workspace } from './workspace/workspaceClass';
+import { isSpace } from 'markdown-it/lib/common/utils';
 
 
 // Function for surrounding selected text with a specified string
@@ -438,6 +439,28 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
     }
 
 
+    // Get the next non-whitespace and non-punctuation character following an offset
+    const getNextNonPunctuationNonWhitespaceCharacter = (text: string, offset: number): {
+        char: string,
+        dist: number,
+    } => {
+        // Scan backward for next non-space, non-punctuation character
+        let backwardChar;
+        let backwardOff = offset + 1;
+        let backwardDist = 1;
+        do {
+            backwardChar = text[backwardOff];
+            if ((!punctuation.test(backwardChar) && !/\s/.test(backwardChar)) || backwardChar === undefined) {
+                break;
+            }
+            backwardOff++;
+            backwardDist++;
+        }
+        while (true);
+        return { char: backwardChar, dist: backwardDist };
+    };
+
+
     // Main iteration:
     // Traverse the document text -- forward or backward -- until we find punctuation or a special
     //      stopping character
@@ -453,10 +476,25 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         
         // CASE: the current character matches a punction
         if (punctuation.test(iterationCharacter)) {
-            break;
+            // Fragment jumps always pause at any punctuation
+            if (jumpFragment) {
+                break;
+            }
+            // Sentence jumps sometimes do not pause at punctuation because of the existence of mid-sentece punctuation
+            //      such as an acronym "C.H.O.A.M.", a mid-sentence question "What is a meter? ten feet?",
+            //      or mid-sentence elipses "I know what that means... revenge!"
+            // Read the next non-punctuation and non-whitespace character after the current offset
+            // If the following character is a capital letter, then break here and jump to this offset
+            // If the following character is a capital letter BUT it came right after the stopped punctuation
+            //      then assume that the reason for the pause was because of an acronym "C.H.O.A.M." and continue
+            //      iterating
+            const after = getNextNonPunctuationNonWhitespaceCharacter(docText, iterOffset);
+            if (/[A-Z]/.test(after.char) && after.dist !== 1) {
+                break;
+            }
         }
 
-        // CASE: the current character matches special stopping character '"'
+        // CASE: the current character matches a special fragment stopping character
         if (fragmentStop.test(iterationCharacter)) {
             let stop = true;
             if (iterationCharacter === '-') {
