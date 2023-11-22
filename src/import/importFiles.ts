@@ -7,7 +7,7 @@ import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
 import * as console from '../vsconsole';
 import { ImportForm } from './importFormView';
-import { OutlineNode } from '../outline/node';
+import { OutlineNode, RootNode } from '../outline/node';
 import * as showdown from 'showdown';
 import * as mammoth from 'mammoth';
 const pdf2html = require('pdf2html');
@@ -83,7 +83,7 @@ function splitMd (content: string, split: SplitInfo): DocSplit | undefined {
             const prevSplitFullText = text.substring(cursor, matchStart);
             const formattedSplit = prevSplitFullText.trim();
             // Only push the snip if the snip is not empty and the title is also not empty
-            if (formattedSplit.length !== 0 && nextTitle && nextTitle.length > 0) {
+            if (formattedSplit.length !== 0) {
                 out.push({
                     // Use the previous `nextTitle` value for the title of the current split
                     title: nextTitle, 
@@ -446,8 +446,8 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
     let parentNode: OutlineNode | undefined;
     const output = snipInfo.output;
     if (output.dest === 'snip') {
-        // dest = 'snip' -> inserted snips are work snips, parent is undefined (root node)
-        parentNode = undefined;
+        // dest = 'snip' -> inserted snips are work snips
+        parentNode = (outlineView.tree.data as RootNode).snips;
     }
     else if (output.dest === 'chapter') {
         // dest = 'chapter' -> inserted snips are inserted into the specified chapter

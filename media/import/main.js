@@ -280,7 +280,7 @@
                                         id="checkbox-split-snips" 
                                         name="split-snips" 
                                         class="checkbox"
-                                        label="Indicates that you would like to use the above separator to split the document into separate ${docInfo.outputType}s"
+                                        label="Indicates that you would like to use the following separator to split the document into separate ${docInfo.outputType}s"
                                         ${docInfo.shouldSplitSnips && 'checked'}
                                     ></vscode-checkbox>`
                                 : ''
