@@ -107,15 +107,16 @@ export function activate (context: vscode.ExtensionContext) {
 }
 
 async function activateImpl (context: vscode.ExtensionContext) {
+	vscode.commands.registerCommand("wt.walkthroughs.openIntro", () => {
+		vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
+	});
+	vscode.commands.registerCommand("wt.walkthroughs.openImports", () => {
+		vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.importsWalkthrough`, false);
+	});
 
 	// Load the root path of file system where the extension was loaded
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
 		? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
-
-	
-	// rootPath = rootPath.replaceAll('\\', '/');
-	// rootPath = rootPath.replaceAll('c:/', 'C:\\');
-
 
 	vscode.commands.registerCommand('wt.reload', async () => {
 		const workspace = await loadWorkspace(context);

@@ -107,8 +107,9 @@ export async function createWorkspace (
         throw e;
     }
 
-    vscode.window.showInformationMessage(`Successfully initialized the workspace.`);
-    vscode.commands.executeCommand('setContext', 'wt.valid', true);
+    await vscode.window.showInformationMessage(`Successfully initialized the workspace.`);
+    await vscode.commands.executeCommand('setContext', 'wt.valid', true);
+    await vscode.commands.executeCommand('wt.walkthroughs.openIntro');
     return workspace;
 }
 

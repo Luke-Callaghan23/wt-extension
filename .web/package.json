@@ -991,6 +991,106 @@
 				],
 				"configuration": "./language-configuration.json"
 			}
+		],
+		"walkthroughs": [
+			{
+				"id": "wt.introWalkthrough",
+				"title": "Introduction to WTANIWE",
+				"icon": "media/walkthroughs/icon.png",
+				"description": "A broad overview of Writing Tool's major features.",
+				"steps": [
+					{
+						"id": "wt.introWalkthrough.organizeIntoChapters",
+						"title": "Organize Your Project by the Chapter",
+						"description": "- The main impetus behind WANIWE's creation was the ability to organize my extremely fragmented WIP in an easier way.\n- One of the main features of WTANIWE, therefore, is the outline tree, where users can get a clear overview of their progress.",
+						"media": {
+							"image": "media/walkthroughs/intro/organize_into_chapters.png",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.introWalkthrough.organizeIntoFragments",
+						"title": "Organize Your Project by Text Fragments",
+						"description": "- Instead of throwing all content of a chapter into a single text file, with WTANIWE you can organize the content of your work by smaller, chunkable, text fragments.\n- Anywhere where you would insert a scene break in your work, just create a new text fragment and start with a fresh file.",
+						"media": {
+							"image": "media/walkthroughs/intro/organize_by_fragments.png",
+							"altText": "Organize By Fragments"
+						}
+					},
+					{
+						"id": "wt.introWalkthrough.organizeChapterNotes",
+						"title": "Organize Notes/Text Snippets for Each Chapter",
+						"description": "- Another major motivation for WTANIWE was the ability to organize notes and snippets of text for each chapter in an easily organizable way.\n- Instead of opening twenty different word documents at a time while scouring for that one piece of dialogue I wrote two months ago, and killing my computer in the process, I can place all notes for a project in one place.\n- Just as with chapters, each text note (called snip by WTANIWE) can have multiple text fragments associated with it.",
+						"media": {
+							"image": "media/walkthroughs/intro/organize_chapter_notes.png",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.introWalkthrough.organizeWorkNotes",
+						"title": "Organize Snips for Project",
+						"description": "- If you're like me, you have about a hundred tiny fragments of text laying around which have a loose place in your story but no solid chapter commitement yet.  Work Snips is a section of the Outline Tree where you can store all misc. text snippets with no solid home yet.\n- Like Chapters and Chapter Snips, Work Snips can be separated into multiple text fragments.",
+						"media": {
+							"image": "media/walkthroughs/intro/organize_work_notes.png",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.introWalkthrough.usePlaintext",
+						"title": "Write in Plain Text",
+						"description": "- No wasting time for Microsoft to stir up twelve different processes to load one Word Document or for Google to serve you one fragment of your own project, all WTANIWE text files are stored in plain text on your own hard drive.\n- All text stylings you would expect from word are available through a modified version of MarkDown which is more amenable to writing (and, admittedly less feature-rich).\n- Surround text with asterisks (*) to italisize, hashtags (#) to bold, underscores (_) to underline, and tildes (~) to strike through.",
+						"media": {
+							"image": "media/walkthroughs/intro/style_text.png",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.introWalkthrough.wordWatcher",
+						"title": "Highlight Problem Words or Phrases",
+						"description": "- All people have crutch words and phrases that they over rely on when writing.\n- When using the Word Watcher panel you can enter these words and phrases into the Word Watcher panel, and WTANIWE will highlight them for you.\n- Use [regex](https://www.regex101.com) patterns to select text which fits a pattern instead of whole, known words.  (Such as the regex '[a-zA-Z]+ly' which captures all words that end in 'ly').\n- Modify the colors in the Word Watcher panel to clearly separate each watched word in a visually distinctive way.",
+						"media": {
+							"image": "media/walkthroughs/intro/word_watcher.png",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.introWalkthrough.synonyms",
+						"title": "Quickly Find Synonyms For Words",
+						"description": "- Without leaving the VS Code window or moving your mouse whatsoever, you can get synonyms for any selected word or phrase by hitting ctrl+space over a selection.\n- This will bring up an intellisense window of synonymous definitions.  Open a definition with enter, then select a synonym with enter again to replace the original.",
+						"media": {
+							"image": "media/walkthroughs/intro/use_synonyms.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.introWalkthrough.navigate",
+						"title": "Quickly Navigate your Text",
+						"description": "- Use built in writing-focused keybindings to quickly navigate over sentences, sentence fragments, and paragraphs.\n- ctrl+[ / ctrl+] Jumps forward and backward through sentences.\n- alt+[ / alt+] Jumps forward and backward through sentence fragments.\n- ctrl+alt+[ / ctrl+alt+] Jumps forward and backward through paragraphs.",
+						"media": {
+							"image": "media/walkthroughs/intro/use_navigations.gif",
+							"altText": "Use navigation"
+						}
+					},
+					{
+						"id": "wt.introWalkthrough.git",
+						"title": "Use Git to Track your Progress",
+						"description": "- If you've downloaded this from VS Code, you probably know all about git so I won't waste your time explaining it.\n- Git is the de facto source control management software in industry, so why not use it to track your WIP?",
+						"media": {
+							"image": "media/walkthroughs/intro/git.png",
+							"altText": "Use navigation"
+						}
+					},
+					{
+						"id": "wt.introWalkthrough.importWork",
+						"title": "Import Your Work",
+						"description": "- WTANIWE makes it easy to import work from outside sources AND organize that work withing WTANIWE's outline.\n- WTANIWE's importing tool is feature rich and has an entirely separate walkthrough that you can open now or browse through when you want to import\n\n[Open Imports Walkthrough](command:wt.walkthroughs.openImports)",
+						"media": {
+							"image": "media/walkthroughs/intro/imports.png",
+							"altText": "Organize By Chapters"
+						}
+					}
+				]
+			}
 		]
 	},
 	"scripts": {
