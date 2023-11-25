@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.67",
+	"version": "0.0.69",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -1136,6 +1136,7 @@
 		"buffer": "^6.0.3",
 		"minimist": "^1.2.6",
 		"node-fetch-commonjs": "^3.2.4",
+		"turndown": "^7.1.2",
 		"uuid": "^9.0.0",
 		"vscode-uri": "^3.0.7"
 	}

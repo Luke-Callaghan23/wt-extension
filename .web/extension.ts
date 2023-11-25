@@ -20,7 +20,7 @@ import { Spellcheck } from './intellisense/spellcheck/spellcheck';
 import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
 import { ColorGroups } from './intellisense/colors/colorGroups';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
-import { WordCount } from './status/wordCount';
+import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
 import { WorldNotes } from './worldNotes/worldNotes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';

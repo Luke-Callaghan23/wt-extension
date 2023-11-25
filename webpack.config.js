@@ -43,7 +43,7 @@ const webExtensionConfig = {
 			path.resolve(__dirname, 'src', 'import'),
 			path.resolve(__dirname, 'src', 'export'),
 			path.resolve(__dirname, 'src', 'workspace', 'importExport'),
-			path.resolve(__dirname, 'src', 'status', 'codeMode')
+			path.resolve(__dirname, 'src', 'codeMode')
 		],
 		rules: [{
 			test: /\.ts$/,

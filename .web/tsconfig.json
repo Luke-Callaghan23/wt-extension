@@ -19,7 +19,7 @@
 	"exclude": [
 		"src/import/*",
 		"src/export/*",
-		"src/status/codeMode/*",
+		"src/codeMode/*",
 		"src/workspace/importExport/*"
 	]
 }
