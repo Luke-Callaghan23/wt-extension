@@ -98,7 +98,6 @@ export class Workspace {
         this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         this.worldNotesPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotes.json');
-        this.registerCommands(context);
     }
 
     registerCommands(context: vscode.ExtensionContext): void {
