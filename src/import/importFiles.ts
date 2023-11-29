@@ -13,6 +13,28 @@ import * as mammoth from 'mammoth';
 const pdf2html = require('pdf2html');
 // const TurndownService = require('turndown');
 const TurndownService = require('turndown');
+
+// REMOVE SQUARE BRACKETS [ AND ] FROM ESCAPE CHARACTERS
+TurndownService.prototype.escape = function (string: string) {
+    return [
+        [/\\/g, '\\\\'],
+        [/\*/g, '\\*'],
+        [/^-/g, '\\-'],
+        [/^\+ /g, '\\+ '],
+        [/^(=+)/g, '\\$1'],
+        [/^(#{1,6}) /g, '\\$1 '],
+        [/`/g, '\\`'],
+        [/^~~~/g, '\\~~~'],
+        [/^>/g, '\\>'],
+        [/_/g, '\\_'],
+        [/^(\d+)\. /g, '$1\\. ']
+    ].reduce(function (accumulator, escape) {
+        //@ts-ignore
+        return accumulator.replace(escape[0], escape[1])
+    }, string)
+};
+
+
 import { JSDOM } from 'jsdom';
 import { Buff } from '../Buffer/bufferSource';
 
@@ -222,6 +244,8 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
             return '_' + content + '_'
         }
     });
+
+    TurndownService.prototype
     
     // Convert the html to markdown
     const convertedMd = turndownService.turndown(htmlContent);
