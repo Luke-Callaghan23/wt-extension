@@ -70,7 +70,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.worldNotes.tree', worldNotes],
 			['wt.todo', todo],
 			['wt.wordWatcher', wordWatcher],
-			['wt.proximity', proximity],
+			// ['wt.proximity', proximity],
 			['wt.spellcheck', spellcheck],
 			['wt.very', veryIntellisense],  
 			['wt.colors', colorIntellisense],

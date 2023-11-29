@@ -450,7 +450,11 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         let backwardDist = 1;
         do {
             backwardChar = text[backwardOff];
-            if ((!punctuation.test(backwardChar) && !/\s/.test(backwardChar)) || backwardChar === undefined) {
+            if ((
+                !punctuation.test(backwardChar) 
+                && !/\s/.test(backwardChar)
+                && !/["\-,;\*#~_()\[\]\{\}]/.test(backwardChar)
+            ) || backwardChar === undefined) {
                 break;
             }
             backwardOff++;
@@ -485,6 +489,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
             //      or mid-sentence elipses "I know what that means... revenge!"
             // Read the next non-punctuation and non-whitespace character after the current offset
             // If the following character is a capital letter, then break here and jump to this offset
+            // If the following character is a double quotes mark, then break here and jump to this offset
             // If the following character is a capital letter BUT it came right after the stopped punctuation
             //      then assume that the reason for the pause was because of an acronym "C.H.O.A.M." and continue
             //      iterating
