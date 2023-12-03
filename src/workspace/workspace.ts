@@ -92,6 +92,7 @@ export async function createWorkspace (
         await vscode.workspace.fs.createDirectory(dotVscodeUri);
         const settingsUri = vscode.Uri.joinPath(extension.rootPath, `.vscode/settings.json`);
         await vscode.workspace.fs.writeFile(settingsUri, Buff.from(settingsJSON, 'utf-8'));
+        await vscode.workspace.fs.createDirectory(workspace.workBibleFolder);
     }
     catch (e) {
         vscode.window.showErrorMessage(`Error creating directory: ${e}`);

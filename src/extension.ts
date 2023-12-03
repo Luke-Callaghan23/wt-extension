@@ -29,6 +29,7 @@ import { WHViewPorvider as WHViewProvider } from './whWebview/whWebview';
 import { CoderModer } from './codeMode/codeMode';
 import { WorldNotes } from './worldNotes/worldNotes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
+import { WorkBible } from './workBible/workBible';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -61,13 +62,15 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 
 		new CoderModer(context);
-		const worldNotes = new WorldNotes(workspace, context);
+		// const worldNotes = new WorldNotes(workspace, context);
+		const workBible = new WorkBible(workspace, context);
 
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);
 
 		const timedViews = new TimedView(context, [
-			['wt.worldNotes.tree', worldNotes],
+			// ['wt.worldNotes.tree', worldNotes],
+			['wt.workBible.tree', workBible],
 			['wt.todo', todo],
 			['wt.wordWatcher', wordWatcher],
 			// ['wt.proximity', proximity],

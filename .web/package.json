@@ -72,6 +72,14 @@
 					"contextualTitle": "Synonyms",
 					"when": "wt.valid"
 				}
+			],
+			"worldNotes": [
+				{
+					"id": "wt.worldNotes.tree",
+					"name": "World Notes",
+					"icon": "media/dep.svg",
+					"contextualTitle": "World Notes"
+				}
 			]
 		},
 		"commands": [
