@@ -9,7 +9,9 @@ const decorationsOptions: vscode.DecorationRenderOptions = {
 };
 export const decorations = vscode.window.createTextEditorDecorationType(decorationsOptions);
 
-export async function update (this: WorldNotes, editor: vscode.TextEditor): Promise<void> {
+export async function update (this: WorldNotes, editor: vscode.TextEditor, _commentedRanges: vscode.Range[]): Promise<void> {
+    // Don't use commented ranges in this timed view, as I think world notes should still be specially commented in
+
     if (!this.nounsRegex) return;
     let match: RegExpExecArray | null;
     

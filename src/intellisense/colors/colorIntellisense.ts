@@ -26,7 +26,7 @@ export class ColorIntellisense implements Timed {
     });
 
 
-    async update (editor: vscode.TextEditor): Promise<void> {
+    async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
         const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/g;
 
         const document = editor.document;
@@ -57,6 +57,13 @@ export class ColorIntellisense implements Timed {
                 const start = document.positionAt(startOff);
                 const end = document.positionAt(endOff);
                 if (Math.abs(startOff - endOff) <= 1) continue;
+
+                const isCommented = commentedRanges.find(cr => {
+                    if (cr.contains(start)) {
+                        return cr;
+                    }
+                });
+                if (isCommented !== undefined) continue;
                 
                 const word = fullText.substring(startOff, endOff).toLocaleLowerCase();
                 const group = this.colorGroups.getColorGroup(word);

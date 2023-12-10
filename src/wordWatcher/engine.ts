@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as extension from './../extension';
 import { WordWatcher } from './wordWatcher';
+import { TimedView } from '../timedView';
 
 export function addOrDeleteTargetedWord (
     this: WordWatcher,
@@ -47,7 +48,7 @@ export function addOrDeleteTargetedWord (
     this.wasUpdated = true;
     this.context.workspaceState.update(contextItem, targetArray);
     if (vscode.window.activeTextEditor) {
-        this.update(vscode.window.activeTextEditor);
+        this.update(vscode.window.activeTextEditor, TimedView.findCommentedRanges(vscode.window.activeTextEditor));
     }
     this.refresh();
 }

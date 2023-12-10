@@ -1267,6 +1267,14 @@
 					}
 				]
 			}
+		],
+		"grammars": [
+			{
+				"language": "wt",
+				"scopeName": "source.wt",
+				"path": "./syntaxes/wt.tmLanguage.json",
+				"injectTo": ["wt"]
+			}
 		]
 	},
 	"scripts": {

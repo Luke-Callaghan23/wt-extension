@@ -5,6 +5,7 @@ import * as console from './../vsconsole';
 import { WordEnrty, WordWatcher } from './wordWatcher';
 import { clamp, hexToRgb } from '../help';
 import { addWordToWatchedWords } from './engine';
+import { TimedView } from '../timedView';
 
 const defaultDecorations: vscode.DecorationRenderOptions = {
     borderWidth: '1px',
@@ -25,7 +26,7 @@ export type ColorEntry = {
     decoratorsIndex: number
 };
 
-export async function update (this: WordWatcher, editor: vscode.TextEditor): Promise<void> {
+export async function update (this: WordWatcher, editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
     let watchedAndEnabled: string[];
     let regexString: string;
     let regex: RegExp;
@@ -118,6 +119,14 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor): Pro
             range: new vscode.Range(startPos, endPos), 
             hoverMessage: new vscode.MarkdownString(tag)
         };
+
+        
+        const isCommented = commentedRanges.find(cr => {
+            if (cr.contains(startPos)) {
+                return cr;
+            }
+        });
+        if (isCommented !== undefined) continue;
         
         const watched = watchedRegeces.find(({ reg }) => reg.test(matchReal[0]));
         if (!watched) continue;
@@ -218,8 +227,10 @@ export async function changeColor(this: WordWatcher, word: WordEnrty) {
     this.context.workspaceState.update('wt.wordWatcher.rgbaColors', context);
 
 
+
+
     if (vscode.window.activeTextEditor) {
-        this.update(vscode.window.activeTextEditor);
+        this.update(vscode.window.activeTextEditor, TimedView.findCommentedRanges(vscode.window.activeTextEditor));
     }
 }
 

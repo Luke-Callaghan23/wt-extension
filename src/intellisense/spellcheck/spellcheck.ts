@@ -19,7 +19,7 @@ export class Spellcheck implements Timed {
     });
 
     lastUpdate: WordRange[];
-    async update (editor: vscode.TextEditor): Promise<void> {
+    async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
         const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/g;
 
         const document = editor.document;
@@ -41,6 +41,14 @@ export class Spellcheck implements Timed {
                 const start = document.positionAt(startOff);
                 const end = document.positionAt(endOff);
                 if (Math.abs(startOff - endOff) <= 1) return;
+
+                // Do not add the word if it is inside of commented ranges
+                const isCommented = commentedRanges.find(cr => {
+                    if (cr.contains(start)) {
+                        return cr;
+                    }
+                });
+                if (isCommented !== undefined) return;
                 
                 const wordRange = new vscode.Range(start, end);
     
