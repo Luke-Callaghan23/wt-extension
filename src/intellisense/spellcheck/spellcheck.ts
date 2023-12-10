@@ -70,8 +70,9 @@ export class Spellcheck implements Timed {
             // Create red underline decorations for each word that does not
             //      exist in the dictionary or personal dictionary
             for (const { text, range } of words) {
-                if (dictionary[text]) continue;
-                if (this.personalDictionary.search(text)) continue;
+                if (/\d+/.test(text)) continue;                                                         // do not make red if the word is made up entirely of numbers
+                if (dictionary[text]) continue;                                                         // do not make red if the dictionary contains this word
+                if (this.personalDictionary.search(text)) continue;                                     // do not make red if the personal dictionary contains this word
 
                 // Do not add red decorations to words that have been matched by world notes
                 const worldNotes: WorldNotes = WorldNotes.singleton;
