@@ -998,6 +998,18 @@
 					"Markdown"
 				],
 				"configuration": "./language-configuration.json"
+			},
+			{
+				"id": "wtNote",
+				"extensions": [
+					".wtnote"
+				],
+				"aliases": [
+					"writingToolNotes",
+					"markdown",
+					"Markdown"
+				],
+				"configuration": "./language-configuration.json"
 			}
 		],
 		"walkthroughs": [
@@ -1099,6 +1111,28 @@
 					}
 				]
 			}
+		],
+		"grammars": [
+			{
+				"language": "wtNote",
+				"scopeName": "source.wtNote",
+				"path": "./syntaxes/wtNote.tmLanguage.json",
+				"injectTo": ["wtNote"]
+			},
+			{
+				"language": "wt",
+				"scopeName": "source.wt",
+				"path": "./syntaxes/wt.tmLanguage.json",
+				"injectTo": ["wt"]
+			}
+		],
+		"themes": [
+            {
+				"id": "wtNoteTheme",
+                "label": "WT Note",
+                "uiTheme": "vs-dark",
+                "path": "./themes/wtNoteTheme.json"
+            }
 		]
 	},
 	"scripts": {
