@@ -16,6 +16,15 @@
                 "fontStyle": "italic",
 				"foreground": "#666561"
 			}
+		},
+		{
+			"name": "Comments",
+			"scope": "comment.line.number-sign.wt",
+			"settings": {
+				"foreground": "#6A9955",
+				"fontStyle": "bold"
+			}
 		}
+
 	]
 }

@@ -11,6 +11,7 @@ export const decorations = vscode.window.createTextEditorDecorationType(decorati
 export async function update (this: WorkBible, editor: vscode.TextEditor): Promise<void> {
     if (!this.nounsRegex) return;
     let match: RegExpExecArray | null;
+
     
     const decorationLocations: vscode.DecorationOptions[] = [];
 

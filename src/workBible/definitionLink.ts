@@ -13,8 +13,6 @@ export function provideDefinition(
     const matchedNote = this.matchedNotes.matches.find(match => match.range.contains(position));
     if (!matchedNote) return null;
 
-    console.log(matchedNote);
-
     this.view.reveal(matchedNote.note, {
         select: true,
         expand: true,

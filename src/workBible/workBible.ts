@@ -115,11 +115,17 @@ implements
                 showCollapseAll: true,
             });
             vscode.languages.registerHoverProvider({
-                language: 'wt'
+                language: 'wt',
+            }, this);
+            vscode.languages.registerHoverProvider({
+                language: 'wtNote',
             }, this);
 
             vscode.languages.registerDefinitionProvider({
                 language: 'wt',
+            }, this);
+            vscode.languages.registerDefinitionProvider({
+                language: 'wtNote',
             }, this);
 
             this.registerCommands();
@@ -178,8 +184,12 @@ implements
 	}
 
     protected getNounPattern (note: Note, withId: boolean = true) {
-        const aliasesAddition = note.aliases.length > 0 
-            ? `|${note.aliases.join('|')}`
+        const realAliases = note.aliases
+            .map(a => a.trim())
+            .filter(a => a.length > 0);
+
+        const aliasesAddition = realAliases.length > 0 
+            ? `|${realAliases.join('|')}`
             : ``;
         const idAddition = withId
             ? `?<${note.noteId}>`
@@ -189,7 +199,7 @@ implements
 
     private getNounsRegex () {
         const nounFragments = this.notes.map(note => this.getNounPattern(note))
-        const regexString = '[^a-zA-Z0-9]' + nounFragments.join('[^a-zA-Z0-9]|[^a-zA-Z0-9]') + '[^a-zA-Z0-9]';
+        const regexString = '[^a-zA-Z0-9]' + `(${nounFragments.join('|')})` + '[^a-zA-Z0-9]';
         const nounsRegex = new RegExp(regexString, 'gi');
         return nounsRegex;
     }

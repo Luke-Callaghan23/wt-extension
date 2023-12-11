@@ -4,9 +4,9 @@ import { Timed } from '../../timedView';
 import { Workspace } from '../../workspace/workspaceClass';
 import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
-import * as console from './../../vsconsole';
 import { WordRange } from '../../intellisense/common';
 import { WorldNotes } from '../../worldNotes/worldNotes';
+import { WorkBible } from '../../workBible/workBible';
 
 
 export class Spellcheck implements Timed {
@@ -83,7 +83,7 @@ export class Spellcheck implements Timed {
                 if (this.personalDictionary.search(text)) continue;                                     // do not make red if the personal dictionary contains this word
 
                 // Do not add red decorations to words that have been matched by world notes
-                const worldNotes: WorldNotes = WorldNotes.singleton;
+                const worldNotes: WorkBible = WorkBible.singleton;
                 if (worldNotes) {
                     const matchedNotes = worldNotes.matchedNotes;
                     if (

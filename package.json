@@ -1319,7 +1319,7 @@
 				"id": "wtNoteTheme",
                 "label": "WT Note",
                 "uiTheme": "vs-dark",
-                "path": "./themes/beep.json"
+                "path": "./themes/wtNoteTheme.json"
             }
 		]
 	},

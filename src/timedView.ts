@@ -71,7 +71,10 @@ export class TimedView implements Packageable {
 
     private doUpdates (editor: vscode.TextEditor, uncommentedRanges: vscode.Range[]) {
         // Only do updates on .wt files
-        if (!editor.document.fileName.endsWith('.wt')) return;
+        if (
+            !editor.document.fileName.toLocaleLowerCase().endsWith('.wt') && 
+            !editor.document.fileName.toLocaleLowerCase().endsWith('.wtnote')
+        ) return;
         // Iterate over all timed views and call their update functions if they're enabled
         this.timedViews.forEach(([ id, timed ]) => {
             console.log(`UPDATE: ${id} (${timed.enabled ? 'enabled' : 'disabled'})`);
