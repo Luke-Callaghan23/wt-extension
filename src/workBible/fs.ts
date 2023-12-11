@@ -4,190 +4,142 @@ import * as extension from '../extension';
 import { v4 as uuidv4 } from 'uuid';
 import { getNoteText } from './editNote';
 
+
+const aliasesSplitter = /-- Enter ALIASES for .* here, separated by semicolons -- ALSO, DON'T DELETE THIS LINE!/;
+const appearancesSplitter = /-- Enter APPEARANCE descriptions for .* here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!/;
+const generalSplitter = /-- Enter GENERAL DESCRIPTIONS for .* here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!/;
+
+
+export function readSingleNote (this: WorkBible, noteId: string, content: string): Note {
+    // If the aliases splitter was not found, use the first newline as the separator instead
+    let [ name, remaining ] = content.split(aliasesSplitter);
+    if (remaining === undefined) {
+        const newlineIdx = content.indexOf('\n');
+        name = content.slice(0, newlineIdx);
+        remaining = content.slice(newlineIdx+1).trim();
+    }
+
+    if (remaining === undefined) {
+        remaining = '';
+    }
+
+    // If the appearances splitter was not found, use the first newline as the separator isntead
+    let [ aliases, remaining2 ] = remaining.split(appearancesSplitter);
+    if (remaining2 === undefined) {
+        const newlineIdx = content.indexOf('\n');
+        aliases = content.slice(0, newlineIdx);
+        remaining2 = content.slice(newlineIdx+1).trim();
+    }
+
+    if (remaining2 === undefined) {
+        remaining2 = '';
+    }
+
+    // If the general splitter was not found, use the first newline as the separator instead
+    let [ appearances, descriptions ] = remaining2.split(generalSplitter);
+    if (descriptions === undefined) {
+        const newlineIdx = content.indexOf('\n');
+        appearances = content.slice(0, newlineIdx);
+        descriptions = content.slice(newlineIdx+1).trim();
+    }
+
+    if (descriptions === undefined) {
+        descriptions = '';
+    }
+
+    // Since the note name and aliases both only use one line, find the content on the first line
+    //      and use that
+    let nameReal: string | undefined;
+    name.split('\n').forEach(n => {
+        n = n.trim();
+        if (n.length === 0) return;
+        if (nameReal === undefined) nameReal = n;
+    });
+    if (nameReal === undefined) nameReal = '';
+
+    let aliasesReal: string | undefined;
+    aliases.split('\n').forEach(n => {
+        n = n.trim();
+        if (n.length === 0) return;
+        if (aliasesReal === undefined) aliasesReal = n;
+    });
+    if (aliasesReal === undefined) aliasesReal = '';
+
+    const aliasesRealArr = aliasesReal!.split(';').map(alias => alias.trim());
+
+    // Process multiline blocks
+    const appearancesReal = appearances.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+    const descriptionsReal = descriptions.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+    return {
+        noteId: noteId,
+        aliases: aliasesRealArr,
+        appearance: appearancesReal,
+        description: descriptionsReal,
+        kind: 'note',
+        noun: nameReal
+    };
+}
+
 export async function readNotes (this: WorkBible, workBiblePath: vscode.Uri): Promise<Note[]> {
     try {
-
-        const example: Note[] = [
-            {
-                "noun": "Tom Tomington",
-                "aliases": [
-                    "Tommy",
-                    "Tomster",
-                    "The Dark Lord",
-                    "The boy who lived"
-                ],
-                "descriptions": [
-                    "Tommy is a guy in the story who does things",
-                    "Tommy is a Dark Lord who genocides people and what not",
-                    "Tommy's hobbies include knitting and supporting his local shelter"
-                ],
-                noteId: WorkBible.getNewNoteId(),
-                kind: 'note',
-                appearance: [
-                    'blue eyes',
-                    'blonde hair',
-                    "who's surprised"
-                ]
-            },
-            {
-                "noun": "Tim Timington",
-                "aliases": [
-                    "Timmy",
-                    "Timster",
-                    "T Man",
-                    "The Dark Lord"
-                ],
-                "descriptions": [
-                    "Timmy is a guy in the story who does things"
-                ],
-                noteId: WorkBible.getNewNoteId(),
-                kind: 'note',
-                appearance: [
-                    'beeop', 'bop'
-                ]
-            },
-            {
-                "noun": "Lizzard Lundard",
-                "aliases": [
-                    "pingle",
-                    "poop",
-                    "clang"
-                ],
-                "descriptions": [
-                    "Evil serpent queen :O",
-                    "Clarg"
-                ],
-                noteId: WorkBible.getNewNoteId(),
-                kind: 'note',
-                appearance: [
-                    'plorb'
-                ]
-            },
-            {
-                "noun": "bloop",
-                "aliases": [],
-                "descriptions": [
-                    "blang",
-                    "awl;kda;wl"
-                ],
-                noteId: WorkBible.getNewNoteId(),
-                kind: 'note',
-                appearance: []
-            },
-            {
-                "noun": "clingle",
-                "aliases": [],
-                "descriptions": [
-                    "clinglo",
-                    "aw;lkd"
-                ],
-                noteId: WorkBible.getNewNoteId(),
-                kind: 'note',
-                appearance: [
-                    'Eiusmod labore eu exercitation fugiat veniam duis amet non minim fugiat reprehenderit. Occaecat adipisicing officia qui incididunt non cupidatat ut fugiat aute qui deserunt anim dolor ad. Velit amet laboris irure consequat Lorem est consequat consequat ut esse incididunt cupidatat veniam adipisicing. Reprehenderit labore dolore esse amet magna quis pariatur dolore eu dolor aliquip veniam sunt.',
-                    'Irure',
-                    'irure ',
-                    'cillum ',
-                    'id ',
-                    'in ',
-                    'dolore ',
-                    'occaecat ',
-                    'culpa. ',
-                    'Ipsum ',
-                    'non ',
-                    'reprehenderit ',
-                    'quis ',
-                    'incididunt ',
-                    'cupidatat tempor excepteur proident nisi. Pariatur amet reprehenderit veniam anim excepteur nulla officia nostrud officia ipsum ea elit reprehenderit laboris. Ex culpa adipisicing in officia in officia magna culpa culpa tempor dolor sit.',
-                ]
-            },
-            {
-                "noun": "Kingdom of Kings",
-                "aliases": [
-                    "KoK"
-                ],
-                "descriptions": [
-                    "Generic fantasy kingdom with kings"
-                ],
-                noteId: WorkBible.getNewNoteId(),
-                kind: 'note',
-                appearance: []
+        const folders = await vscode.workspace.fs.readDirectory(this.workBibleFolderPath);
+        const readPromises: Thenable<{
+            noteId: string,
+            content: string
+        } | null>[] = folders.map(([ name, ft ]) => {
+            if (ft !== vscode.FileType.File || !name.endsWith('wtnote')) {
+                return new Promise((resolve, reject) => resolve(null));
             }
-        ]
+            const noteId = name.replace('.wtnote', '');
+            const path = vscode.Uri.joinPath(this.workBibleFolderPath, name)
+            return vscode.workspace.fs.readFile(path).then(buff => {
+                return {
+                    noteId: noteId,
+                    content: extension.decoder.decode(buff),
+                }
+            });
+        });
 
+        const notes: Note[] = [];
 
-        // const data = await vscode.workspace.fs.readFile(worldNotesPath);
-        // const notesJSON = extension.decoder.decode(data);
-        // const notes: Note[] = JSON.parse(notesJSON);
+        const contents = await Promise.all(readPromises);
+        for (const data of contents) {
+            if (data === null) continue;
+            const { content, noteId } = data;
+            notes.push(this.readSingleNote(noteId, content));
+        }
 
-        // const result: Note[] = [];
-        // for (const note of notes) {
-
-        //     let noun: string = '';
-        //     if (note.noun && typeof note.noun === 'string') {
-        //         noun = note.noun;
-        //     }
-
-        //     let aliases: string[] = [];
-        //     if (note.aliases && Array.isArray(note.aliases)) {
-        //         aliases = note.aliases.map(alias => alias + '');
-        //     }
-
-        //     let descriptions: string[] = [];
-        //     if (note.descriptions && Array.isArray(note.descriptions)) {
-        //         descriptions = note.descriptions.map(desc => desc + '');
-        //     }
-
-        //     result.push({
-        //         kind: 'note',
-        //         noteId: WorkBible.getNewNoteId(),
-        //         noun: noun,
-        //         aliases: aliases,
-        //         descriptions: descriptions,
-        //     });
-        // }
-        // return result;
-        return example
+        return notes;
     }
     catch (err: any) {
-        // vscode.window.showWarningMessage(`[WARNING] An error occurred while world notes from disk: ${err.message}.  Creating a new world notes file instead.`);
-        // console.log(err);
-
-        // // Write an empty array to disk for the world notes
-        // vscode.workspace.fs.writeFile(worldNotesPath, extension.encoder.encode('[]'));
-        // return [];
+        vscode.window.showWarningMessage(`[WARNING] An error occurred while world notes from disk: ${err.message}.  Creating a new world notes file instead.`);
+        console.log(err);
         return [];
     }
 }
 
 
-export async function writeNotes (this: WorkBible, worldNotesPath: vscode.Uri): Promise<void> {
-    throw `not implemented`;
-    // try {
-    //     // Get only the writeable fields for each note
-    //     const writeable: {
-    //         noun: string, 
-    //         aliases: string[],
-    //         descriptions: string[]
-    //     }[] = [];
-    //     for (const { noun, aliases, descriptions } of this.notes) {
-    //         writeable.push({ noun, aliases, descriptions });
-    //     }
-
-    //     // Write the writeables to disk
-    //     const notesJSON = JSON.stringify(writeable);
-    //     const encoded = extension.encoder.encode(notesJSON);
-    //     await vscode.workspace.fs.writeFile(worldNotesPath, encoded);
-    // }
-    // catch (err: any) {
-    //     vscode.window.showErrorMessage(`[ERR] An error occurred while writing notes to disk: ${err.message}`);
-    //     console.log(err);
-    // }
+export async function writeNotes (this: WorkBible): Promise<void> {
+    try {
+        const writePromises = this.notes.map(note => {
+            return this.writeSingleNote(note);
+        });
+        await Promise.all(writePromises);
+    }
+    catch (err: any) {
+        vscode.window.showErrorMessage(`[ERR] An error occurred while writing notes to disk: ${err.message}`);
+        console.log(err);
+    }
 }
 
 
 
-export async function writeSingleNote (this: WorkBible, note: Note): Promise<void> {
+export async function writeSingleNote (this: WorkBible, note: Note): Promise<vscode.Uri | null> {
     const noteText = getNoteText(note);
 
     const noteFileName = `${note.noteId}.wtnote`
@@ -196,11 +148,10 @@ export async function writeSingleNote (this: WorkBible, note: Note): Promise<voi
     try {
         const encodedNote = extension.encoder.encode(noteText);
         await vscode.workspace.fs.writeFile(notePath, encodedNote);
-        const document = await vscode.workspace.openTextDocument(notePath);
-        vscode.window.showTextDocument(document);
+        return notePath;
     }
     catch (err: any) {
         vscode.window.showErrorMessage(`[ERRROR]: An error occurred while writing note for '${note.noun}' to '${notePath}': ${err.message}`);
-        return;
+        return null;
     }
 }

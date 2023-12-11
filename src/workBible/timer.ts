@@ -49,7 +49,7 @@ export async function update (this: WorkBible, editor: vscode.TextEditor): Promi
                         ? `#### (*${aliasesString}*)\n`
                         : '';
 
-                    const descriptions = note.descriptions
+                    const descriptions = note.description
                         .map(desc => `- ${desc}`)
                         .join('\n');
 

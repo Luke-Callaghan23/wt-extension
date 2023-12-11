@@ -5,9 +5,7 @@
     "patterns": [
         {
             "include": "#comments"
-
         }
-
     ],
     "repository": {
         "comments": {

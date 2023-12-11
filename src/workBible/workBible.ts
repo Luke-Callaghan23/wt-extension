@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Packageable } from '../packageable';
-import { readNotes, writeNotes, writeSingleNote } from './fs';
+import { readNotes, readSingleNote, writeNotes, writeSingleNote } from './fs';
 import { Workspace } from '../workspace/workspaceClass';
 import { addAlias, addSubNote, addNote, removeAlias, removeSubNote, removeNote, addAppearance } from './update';
 import { Timed } from '../timedView';
@@ -17,7 +17,7 @@ export interface Note {
     noun: string;
     appearance: string[];
     aliases: string[];
-    descriptions: string[];
+    description: string[];
 }
 
 export interface AppearanceContainer {
@@ -50,7 +50,9 @@ implements
 {
 
     readNotes = readNotes;
+    readSingleNote = readSingleNote;
     writeNotes = writeNotes;
+    writeSingleNote = writeSingleNote;
 
     addAlias = addAlias;
     removeAlias = removeAlias;
@@ -61,7 +63,7 @@ implements
     addAppearance = addAppearance;
 
     searchNote = searchNote;
-    editNote = writeSingleNote;
+    editNote = editNote;
 
     provideHover = provideHover;
 
@@ -123,6 +125,34 @@ implements
             this.registerCommands();
         })();
         WorkBible.singleton = this;
+
+        vscode.workspace.onDidSaveTextDocument(async (e: vscode.TextDocument) => {
+            if (!e.fileName.endsWith('.wtnote')) return;
+            if (!e.uri.fsPath.includes(this.workBibleFolderPath.fsPath)) return;
+
+            // Read the note id from the file name and the note from the newly saved
+            //      document
+            const noteIdSplit = e.fileName.replace('.wtnote', '').split('/');
+            const noteId = noteIdSplit[noteIdSplit.length - 1] || '';
+            const note = this.readSingleNote(noteId, e.getText());
+
+            // Find the location of the saved note in the existing notes array
+            const oldNoteIdx = this.notes.findIndex(on => {
+                return on.noteId === noteId;
+            });
+
+            // If the note existed in the existing array, replace it
+            // Or, push the new note
+            if (oldNoteIdx === -1) {
+                this.notes.push(note);
+            }
+            else {
+                this.notes[oldNoteIdx] = note;
+            }
+
+            // Refresh the treeview
+            this.refresh();
+        });
     }
 
     static getNewNoteId (): string {
@@ -165,15 +195,26 @@ implements
     }
 
     private registerCommands () {
-        vscode.commands.registerCommand("wt.workBible.addAlias", (resource: Note) => { this.addAlias(resource) });
-        vscode.commands.registerCommand("wt.workBible.removeAlias", (resource: Note) => { this.removeAlias(resource) });
-        vscode.commands.registerCommand("wt.workBible.addNote", (resource: Note | undefined) => { this.addNote(resource) });
-        vscode.commands.registerCommand("wt.workBible.removeNote", (resource: Note) => { this.removeNote(resource) });
-        vscode.commands.registerCommand("wt.workBible.addSubNote", (resource: SubNote) => { this.addSubNote(resource) });
-        vscode.commands.registerCommand("wt.workBible.removeSubNote", (resource: SubNote) => { this.removeSubNote(resource) });
-        vscode.commands.registerCommand("wt.workBible.addAppearance", (resource: AppearanceContainer) => { this.addAppearance(resource) });
+
+        const doTheThingAndWrite = async (f: () => Promise<string | null>) => {
+            const result = await f();
+            if (result === null) return;
+            const noteId = result;
+
+            const note = this.notes.find(note => note.noteId === noteId);
+            if (note === undefined) return;
+            this.writeSingleNote(note);
+        }
+
+        vscode.commands.registerCommand("wt.workBible.addAlias", (resource: Note) => { doTheThingAndWrite(() => this.addAlias(resource)) });
+        vscode.commands.registerCommand("wt.workBible.removeAlias", (resource: Note) => { doTheThingAndWrite(() => this.removeAlias(resource)) });
+        vscode.commands.registerCommand("wt.workBible.addNote", (resource: Note | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) });
+        vscode.commands.registerCommand("wt.workBible.removeNote", (resource: Note) => { doTheThingAndWrite(() => this.removeNote(resource)) });
+        vscode.commands.registerCommand("wt.workBible.addSubNote", (resource: SubNote) => { doTheThingAndWrite(() => this.addSubNote(resource)) });
+        vscode.commands.registerCommand("wt.workBible.removeSubNote", (resource: SubNote) => { doTheThingAndWrite(() => this.removeSubNote(resource)) });
+        vscode.commands.registerCommand("wt.workBible.addAppearance", (resource: AppearanceContainer) => { doTheThingAndWrite(() => this.addAppearance(resource)) });
         vscode.commands.registerCommand('wt.workBible.search', (resource: Note) => { this.searchNote(resource) });
-        vscode.commands.registerCommand('wt.workBible.editNote', (resource: Note) => { this.editNote(resource) });
+        vscode.commands.registerCommand('wt.workBible.editNote', (resource: Note | AppearanceContainer | SubNote) => { this.editNote(resource) });
     }
 
     getPackageItems(): { [index: string]: any; } {
@@ -211,7 +252,7 @@ implements
                 id: `${noteNode.noteId}__appearanceContainer`,
                 contextValue: noteNode.kind,
                 label: 'Appearance',
-                collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+                collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
                 tooltip: 'Appearance',
             }
         }
@@ -220,7 +261,7 @@ implements
         if (!element) return this.notes;
         switch (element.kind) {
             case 'note': 
-                const descriptions: SubNote[] = element.descriptions.map((desc, idx) => ({
+                const descriptions: SubNote[] = element.description.map((desc, idx) => ({
                     kind: 'description',
                     idx: idx,
                     noteId: element.noteId,

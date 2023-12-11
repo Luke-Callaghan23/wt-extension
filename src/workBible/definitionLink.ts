@@ -13,14 +13,17 @@ export function provideDefinition(
     const matchedNote = this.matchedNotes.matches.find(match => match.range.contains(position));
     if (!matchedNote) return null;
 
+    console.log(matchedNote);
+
     this.view.reveal(matchedNote.note, {
         select: true,
         expand: true,
     });
 
-
+    const fileName = `${matchedNote.note.noteId}.wtnote`;
+    const filePath = vscode.Uri.joinPath(this.workBibleFolderPath, fileName);
     return {
-        uri: vscode.Uri.file(`/home/luke-callaghan/dev/node/vscode/wt/envs/new-text-env/data/snips/snip-1701228481838-8d186827-a93a-4b4c-ab43-c8813a205fcc/fragment-1701228481939-fb3bfb79-e810-4589-bf64-cfe112e6a0df.wt`),
+        uri: filePath,
         range: new vscode.Range(position, position)
     };
 }

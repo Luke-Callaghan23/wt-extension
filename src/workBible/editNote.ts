@@ -1,19 +1,35 @@
-import vscode from 'vscode';
+import * as vscode from 'vscode';
 import { AppearanceContainer, Note, SubNote, WorkBible } from './workBible';
 
 export async function editNote (this: WorkBible, resource: Note | SubNote | AppearanceContainer) {
     
+    let note: Note | undefined = undefined;
+    switch (resource.kind) {
+        case 'appearance': case 'appearanceContainer': case 'description':
+            note = this.notes.find(note => {
+                return note.noteId === resource.noteId;
+            });
+        case 'note':
+            note = resource as Note;
+    }
+    if (note === undefined) return;
+
+    const noteFileName = `${note.noteId}.wtnote`
+    const notePath = vscode.Uri.joinPath(this.workBibleFolderPath, noteFileName);
+    
+    const document = await vscode.workspace.openTextDocument(notePath);
+    vscode.window.showTextDocument(document);
 }
 
 export function getNoteText (note: Note): string {
     const aliasesText = note.aliases
-        .map(alias => alias.replace(';', '\\;'))
+        .map(alias => alias.trim().replace(';', '\\;'))
         .join('; ')
 
     const appearancesText = note.appearance
         .join('\n\n');
 
-    const descriptionsText = note.descriptions
+    const descriptionsText = note.description
         .join('\n\n');
 
     return `${note.noun}
@@ -31,11 +47,3 @@ ${appearancesText}
 ${descriptionsText}
 `;
 }
-
-
-/*
-${note.name}
--- Enter ALIASES for ${note.name} here, separated by commas -- ALSO, DON'T DELETE THIS LINE!
--- Enter APPEARANCE descriptions for ${note.name} here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!
--- Enter GENERAL DESCRIPTIONS for ${note.name} here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!
-*/
