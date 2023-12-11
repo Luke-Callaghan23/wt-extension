@@ -61,7 +61,7 @@ const styleGroups: string[] = Object.entries(stylePatterns).map(([ _, pattern ],
 const mainRegex = styleGroups.join(`|`);
 const regex: RegExp = new RegExp(mainRegex, 'gi');
 
-export async function update (this: TextStyles, editor: vscode.TextEditor): Promise<void> {
+export async function update (this: TextStyles, editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
     
     // To prevent from triple tilde "~~~" being matched as open/close/open tilde,
     //      we'll replace all instances of "~~~" with a junk string that won't be matched
@@ -75,16 +75,27 @@ export async function update (this: TextStyles, editor: vscode.TextEditor): Prom
 
         // Find the indeces of the current pattern in the text
         const matchIndeces = [...text.matchAll(pattern)].map(({ index }) => index!);
-        if (matchIndeces.length % 2 !== 0) {
+
+        // Filter out any index of any style pattern that falls inside of a comment
+        const uncommentedIndeces = matchIndeces.filter(idx => {
+            const position = editor.document.positionAt(idx);
+            return undefined === commentedRanges.find(commentedRange => {
+                if (commentedRange.contains(position)) {
+                    return commentedRange;
+                }
+            })
+        });
+
+        if (uncommentedIndeces.length % 2 !== 0) {
             // Whenever there is an uneven amount of matches for the pattern, then the last 'opening' pattern symbol will
             //      extend to the end of the document
-            matchIndeces.push(text.length - 1);
+            uncommentedIndeces.push(text.length - 1);
         }
 
         // Pair each of the indeces into 2-index groups
         const pairs: [number, number][] = [];
-        for (let index = 0; index < matchIndeces.length - 1; index += 2) {
-            pairs.push([matchIndeces[index], matchIndeces[index + 1]]);
+        for (let index = 0; index < uncommentedIndeces.length - 1; index += 2) {
+            pairs.push([uncommentedIndeces[index], uncommentedIndeces[index + 1]]);
         }
 
         // Create ranges
