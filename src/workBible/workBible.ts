@@ -138,7 +138,7 @@ implements
 
             // Read the note id from the file name and the note from the newly saved
             //      document
-            const noteIdSplit = e.fileName.replace('.wtnote', '').split('/');
+            const noteIdSplit = e.fileName.replace('.wtnote', '').split(/\/|\\/);
             const noteId = noteIdSplit[noteIdSplit.length - 1] || '';
             const note = this.readSingleNote(noteId, e.getText());
 
@@ -198,6 +198,7 @@ implements
     }
 
     private getNounsRegex () {
+        console.log(this.notes);
         const nounFragments = this.notes.map(note => this.getNounPattern(note))
         const regexString = '[^a-zA-Z0-9]' + `(${nounFragments.join('|')})` + '[^a-zA-Z0-9]';
         const nounsRegex = new RegExp(regexString, 'gi');

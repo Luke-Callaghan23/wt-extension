@@ -96,6 +96,7 @@ export async function readNotes (this: WorkBible, workBiblePath: vscode.Uri): Pr
                 return new Promise((resolve, reject) => resolve(null));
             }
             const noteId = name.replace('.wtnote', '');
+            console.log(noteId);
             const path = vscode.Uri.joinPath(this.workBibleFolderPath, name)
             return vscode.workspace.fs.readFile(path).then(buff => {
                 return {
