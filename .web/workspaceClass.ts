@@ -26,6 +26,7 @@ export class Workspace {
     public recyclingBin: vscode.Uri;
     public contextValuesFilePath: vscode.Uri;
     public worldNotesPath: vscode.Uri;
+    public workBibleFolder: vscode.Uri;
 
     // Returns a list of all 
     getFolders() {
@@ -98,6 +99,7 @@ export class Workspace {
         this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         this.worldNotesPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotes.json');
+        this.workBibleFolder = vscode.Uri.joinPath(extension.rootPath, 'data/workBible');
     }
 
     registerCommands(context: vscode.ExtensionContext): void {

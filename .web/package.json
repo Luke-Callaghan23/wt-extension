@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.70",
+	"version": "0.0.71",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -40,6 +40,13 @@
 					"title": "Writing Tool",
 					"icon": "$(bookmark)"
 				}
+			],
+			"panel": [
+				{
+					"id": "workBible",
+					"title": "Work Bible",
+					"icon": "$(bookmark)"
+				}
 			]
 		},
 		"views": {
@@ -73,12 +80,12 @@
 					"when": "wt.valid"
 				}
 			],
-			"worldNotes": [
+			"worldBible": [
 				{
-					"id": "wt.worldNotes.tree",
-					"name": "World Notes",
+					"id": "wt.worldBible.tree",
+					"name": "World Bible",
 					"icon": "media/dep.svg",
-					"contextualTitle": "World Notes"
+					"contextualTitle": "World Bible"
 				}
 			]
 		},
@@ -277,12 +284,12 @@
 				"enablement": "wt.colors.enabled"
 			},
 			{
-				"command": "wt.worldNotes.enable",
+				"command": "wt.workBible.enable",
 				"title": "Writing Tool: Enable Automatic World Notes Querying",
 				"enablement": "!wt.todo.enabled"
 			},
 			{
-				"command": "wt.worldNotes.disable",
+				"command": "wt.workBible.disable",
 				"title": "Writing Tool: Disable Automatic World Notes Querying",
 				"enablement": "wt.todo.enabled"
 			},
@@ -487,33 +494,47 @@
 			},
 			{
 				"title": "Writing Tool: Add Note",
-				"command": "wt.worldNotes.addNote",
+				"command": "wt.workBible.addNote",
 				"icon": "$(add)"
 			},
 			{
 				"title": "Writing Tool: Remove Note",
-				"command": "wt.worldNotes.removeNote",
+				"command": "wt.workBible.removeNote",
 				"icon": "$(remove)"
 			},
 			{
 				"title": "Writing Tool: Add Alias",
-				"command": "wt.worldNotes.addAlias",
+				"command": "wt.workBible.addAlias",
 				"icon": "$(add)"
 			},
 			{
 				"title": "Writing Tool: Remove Alias",
-				"command": "wt.worldNotes.removeAlias",
+				"command": "wt.workBible.removeAlias",
 				"icon": "$(remove)"
 			},
 			{
-				"title": "Writing Tool: Add Description",
-				"command": "wt.worldNotes.addDescription",
+				"title": "Writing Tool: Add Sub Note",
+				"command": "wt.workBible.addSubNote",
 				"icon": "$(add)"
 			},
 			{
-				"title": "Writing Tool: Remove Description",
-				"command": "wt.worldNotes.removeDescription",
+				"title": "Writing Tool: Remove Sub Note",
+				"command": "wt.workBible.removeSubNote",
 				"icon": "$(remove)"
+			},
+			{
+				"title": "Writing Tool: Add Appearance",
+				"command": "wt.workBible.addAppearance",
+				"icon": "$(add)"
+			},
+			{
+				"title": "Writing Tool: Search For Note",
+				"command": "wt.workBible.search"
+			},
+			{
+				"title": "Writing Tool: Open Note in editor",
+				"command": "wt.workBible.editNote",
+				"icon": "$(edit)"
 			},
 			{
 				"title": "Writing Tool: Display Options",
@@ -614,8 +635,8 @@
 					"group": "navigation@3"
 				},
 				{
-					"command": "wt.worldNotes.addNote",
-					"when": "view == wt.worldNotes.tree",
+					"command": "wt.workBible.addNote",
+					"when": "view == wt.workBible.tree",
 					"group": "navigation"
 				}
 			],
@@ -693,52 +714,67 @@
 					"group": "inline"
 				},
 				{
-					"command": "wt.worldNotes.addNote",
-					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"command": "wt.workBible.addNote",
+					"when": "view == wt.workBible.tree && viewItem == note",
 					"group": "inline@1"
 				},
 				{
-					"command": "wt.worldNotes.removeNote",
-					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"command": "wt.workBible.removeNote",
+					"when": "view == wt.workBible.tree && viewItem == note",
 					"group": "inline@2"
 				},
 				{
-					"command": "wt.worldNotes.addDescription",
-					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"command": "wt.workBible.addSubNote",
+					"when": "view == wt.workBible.tree && (viewItem == description || viewItem == appearance)",
 					"group": "inline@1"
 				},
 				{
-					"command": "wt.worldNotes.removeDescription",
-					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"command": "wt.workBible.removeSubNote",
+					"when": "view == wt.workBible.tree && (viewItem == description || viewItem == appearance)",
 					"group": "inline@2"
 				},
 				{
-					"command": "wt.worldNotes.addAlias",
-					"when": "view == wt.worldNotes.tree && viewItem == note"
+					"command": "wt.workBible.addAppearance",
+					"when": "view == wt.workBible.tree && (viewItem == appearanceContainer)",
+					"group": "inline@1"
 				},
 				{
-					"command": "wt.worldNotes.removeAlias",
-					"when": "view == wt.worldNotes.tree && viewItem == note"
+					"command": "wt.workBible.addAlias",
+					"when": "view == wt.workBible.tree && viewItem == note"
 				},
 				{
-					"command": "wt.worldNotes.addNote",
-					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"command": "wt.workBible.removeAlias",
+					"when": "view == wt.workBible.tree && viewItem == note"
+				},
+				{
+					"command": "wt.workBible.addNote",
+					"when": "view == wt.workBible.tree && viewItem == note",
 					"group": "update@1"
 				},
 				{
-					"command": "wt.worldNotes.removeNote",
-					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"command": "wt.workBible.removeNote",
+					"when": "view == wt.workBible.tree && viewItem == note",
 					"group": "update@2"
 				},
 				{
-					"command": "wt.worldNotes.addDescription",
-					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"command": "wt.workBible.addSubNote",
+					"when": "view == wt.workBible.tree && (viewItem == description || viewItem === appearance)",
 					"group": "update@1"
 				},
 				{
-					"command": "wt.worldNotes.removeDescription",
-					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"command": "wt.workBible.removeSubNote",
+					"when": "view == wt.workBible.tree && (viewItem == description || viewItem === appearance)",
 					"group": "update@2"
+				},
+				{
+					"command": "wt.workBible.search",
+					"when": "view == wt.workBible.tree && viewItem == note",
+					"group": "search@1"
+				},
+				{
+					"command": "wt.workBible.editNote",
+					"when": "view == wt.workBible.tree",
+					"group": "inline@3"
 				}
 			],
 			"editor/title": [
