@@ -63,7 +63,7 @@ export class TimedView implements Packageable {
             const match: RegExpExecArray = m;
             commentedRanges.push(new vscode.Range(
                 editor.document.positionAt(match.index),
-                editor.document.positionAt(match.index + match[0].length)
+                editor.document.positionAt(match.index + match[0].length - 1)
             ))
         }
         return commentedRanges;
