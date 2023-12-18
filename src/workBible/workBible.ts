@@ -197,8 +197,10 @@ implements
         return `(${idAddition}${note.noun}${aliasesAddition})`
     }
 
-    private getNounsRegex () {
-        console.log(this.notes);
+    private getNounsRegex (): RegExp {
+        if (this.notes.length === 0) {
+            return /^_^/
+        }
         const nounFragments = this.notes.map(note => this.getNounPattern(note))
         const regexString = '[^a-zA-Z0-9]' + `(${nounFragments.join('|')})` + '[^a-zA-Z0-9]';
         const nounsRegex = new RegExp(regexString, 'gi');
