@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.73",
+	"version": "0.0.74",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -780,47 +780,47 @@
 			"editor/title": [
 				{
 					"command": "wt.editor.save",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@1"
 				},
 				{
 					"command": "wt.editor.saveAll",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@2"
 				},
 				{
 					"command": "wt.synonyms.searchWord",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@3"
 				},
 				{
 					"command": "wt.editor.italisize",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@3"
 				},
 				{
 					"command": "wt.editor.bold",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@5"
 				},
 				{
 					"command": "wt.editor.strikethrough",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@6"
 				},
 				{
 					"command": "wt.editor.underline",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@7"
 				},
 				{
 					"command": "wt.editor.header",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@8"
 				},
 				{
 					"command": "wt.editor.remove",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@9"
 				}
 			]
@@ -859,22 +859,22 @@
 			{
 				"command": "wt.synonyms.searchWord",
 				"key": "ctrl+alt+f",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.save",
 				"key": "ctrl+alt+s",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.saveAll",
 				"key": "ctrl+alt+shift+s",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.italisize",
 				"key": "ctrl+alt+i",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.commasize",
@@ -883,122 +883,122 @@
 			{
 				"command": "wt.editor.bold",
 				"key": "ctrl+alt+b",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.strikethrough",
 				"key": "ctrl+alt+d",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.underline",
 				"key": "ctrl+alt+u",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.header",
 				"key": "ctrl+alt+h",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.emdash",
 				"key": "ctrl+alt+-",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.emdashes",
 				"key": "ctrl+alt+shift+-",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.word.forward",
 				"key": "ctrl+left",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.word.backward",
 				"key": "ctrl+right",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward",
 				"key": "alt+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.sentence.backward",
 				"key": "alt+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.fragment.forward",
 				"key": "ctrl+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.fragment.backward",
 				"key": "ctrl+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.forward",
 				"key": "ctrl+alt+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.backward",
 				"key": "ctrl+alt+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.word.forward.shift",
 				"key": "ctrl+shift+left",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.word.backward.shift",
 				"key": "ctrl+shift+right",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward.shift",
 				"key": "alt+shift+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.sentence.backward.shift",
 				"key": "alt+shift+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.fragment.forward.shift",
 				"key": "ctrl+shift+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.fragment.backward.shift",
 				"key": "ctrl+shift+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.forward.shift",
 				"key": "ctrl+alt+shift+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.backward.shift",
 				"key": "ctrl+alt+shift+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.delete.forward",
 				"key": "ctrl+backspace",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.delete.backward",
 				"key": "ctrl+delete",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.intellisense.synonyms.prevDefinition",
