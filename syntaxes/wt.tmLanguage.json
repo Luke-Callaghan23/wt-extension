@@ -9,10 +9,12 @@
     ],
     "repository": {
         "comments": {
+            "name": "comment.line.number-sign.wt",
+            "begin": "\\[",
             "patterns": [{
-                "name": "comment.line.number-sign.wt",
-                "match": "\\[.*\\]"
-            }]
+                "include": "#comments"
+            }],
+            "end": "\\]"
         }
     }
 }
