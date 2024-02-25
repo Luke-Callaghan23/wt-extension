@@ -39,7 +39,7 @@ type WordStyles = 'italics' | 'bold' | 'underline' | 'strikethrough';
 // Pattern for text that can be stylized
 const stylePatterns: { [key in WordStyles]: RegExp } = {
     'italics': /\*/g,                                   // italics
-    'bold': /#/g,                                        // bold
+    'bold': /\^/g,                                        // bold
     'underline': /_/g,                                   // underline
     'strikethrough': /~/g,                               // strikethrough
 };

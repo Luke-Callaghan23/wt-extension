@@ -109,7 +109,7 @@ export function italisize () {
 }
 
 export function bold () {
-    return surroundSelectionWith('#');
+    return surroundSelectionWith('^');
 }
 
 export function strikethrough () {

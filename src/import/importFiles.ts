@@ -234,7 +234,7 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
     turndownService.addRule('bold', {
         filter: [ 'b', 'strong' ],
         replacement: function (content: string) {
-            return '#' + content + '#'
+            return '^' + content + '^'
         }
     });
 
