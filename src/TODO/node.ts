@@ -36,7 +36,8 @@ export class TODONode extends TreeNode {
     }
     
     getTooltip (): string | vscode.MarkdownString {
-        return `${this.data.ids.type} | TODOs: self: ${this.data.ids.type} parent: ${this.data.ids.parentTypeId}`;
+        
+        return `${this.data.ids.type} | '${this.data.ids.display}'`;
     }
     
     async moveNode (newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): Promise<number> {
