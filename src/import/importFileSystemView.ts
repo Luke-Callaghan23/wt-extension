@@ -217,7 +217,8 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		const documentDropProvider = new ImportDocumentProvider(this.importFolder, this.workspace, this);
 		context.subscriptions.push(vscode.window.createTreeView('wt.import.fileExplorer', { 
 			treeDataProvider: this,
-			dragAndDropController: documentDropProvider
+			dragAndDropController: documentDropProvider,
+			showCollapseAll: true, 
 		}));
         this.registerCommands();
 	}
