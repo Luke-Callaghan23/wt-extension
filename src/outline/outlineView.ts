@@ -65,7 +65,6 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 		// Then update the root node of the outline view
 		if (updates.length > 0) {
 			for (const update of updates) {
-				console.log("HERROOOOO")
 				this._onDidChangeTreeData.fire(update);
 			}
 		}

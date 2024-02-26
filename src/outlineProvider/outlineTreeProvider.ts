@@ -253,10 +253,8 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 			const allEffectedContainers = Object.entries(effectedContainersUriMap)
 				.map(([ _, container ]) => container);
-
-			console.log(allEffectedContainers)
-
-			// this.refresh(false, allEffectedContainers);
+			console.log(allEffectedContainers);
+			this.refresh(false, allEffectedContainers);
 		}
     }
 	
