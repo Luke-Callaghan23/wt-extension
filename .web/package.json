@@ -80,9 +80,9 @@
 					"when": "wt.valid"
 				}
 			],
-			"worldBible": [
+			"workBible": [
 				{
-					"id": "wt.worldBible.tree",
+					"id": "wt.workBible.tree",
 					"name": "World Bible",
 					"icon": "media/dep.svg",
 					"contextualTitle": "World Bible"
