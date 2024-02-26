@@ -134,4 +134,14 @@ export function registerCommands (this: OutlineView) {
         await vscode.commands.executeCommand('wt.outline.copyItems');
         await vscode.commands.executeCommand('wt.outline.pasteItems', 'duplicated');
     });
+
+    vscode.commands.registerCommand('wt.outline.copyPath', (resource: OutlineNode) => {
+        console.log(resource.data.ids.uri.fsPath);
+        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath);
+    });
+
+    vscode.commands.registerCommand('wt.outline.copyRelativePath', (resource: OutlineNode) => {
+        console.log(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, ''));
+        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, ''));
+    });
 }

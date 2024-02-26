@@ -193,6 +193,22 @@
 				"title": "Writing Tool: Duplicate Outline Tree Items"
 			},
 			{
+				"command": "wt.outline.copyPath",
+				"title": "Writing Tool: Copy Path"
+			},
+			{
+				"command": "wt.outline.copyRelativePath",
+				"title": "Writing Tool: Copy Relative Path"
+			},
+			{
+				"command": "wt.todo.copyPath",
+				"title": "Writing Tool: Copy Path"
+			},
+			{
+				"command": "wt.todo.copyRelativePath",
+				"title": "Writing Tool: Copy Relative Path"
+			},
+			{
 				"command": "wt.import.fileExplorer.refresh",
 				"title": "Writing Tool: Refresh Import File Explorer",
 				"icon": "$(refresh)"
@@ -736,6 +752,16 @@
 					"command": "wt.outline.duplicateItems",
 					"when": "view == wt.outline",
 					"group": "5_cutcopypaste@3"
+				},
+				{
+					"command": "wt.outline.copyPath",
+					"when": "view == wt.outline || view == wt.todo",
+					"group": "copy_path@7"
+				},
+				{
+					"command": "wt.outline.copyRelativePath",
+					"when": "view == wt.outline || view == wt.todo",
+					"group": "copy_path@7"
 				},
 				{
 					"command": "wt.wordWatcher.deleteWord",
