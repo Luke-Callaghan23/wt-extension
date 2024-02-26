@@ -331,7 +331,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
     const start = selection.isReversed ? selection.start : selection.end;
     const anchor = selection.anchor;
 
-    const punctuation = /[\.\?\!\n]/;
+    const punctuation = /[\.\?\!\n\r]/;
     const punctuationNoWhitespace = /[\.\?\!]/;
 
     
@@ -464,6 +464,13 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         return { char: backwardChar, dist: backwardDist };
     };
 
+    let skip = false;
+    if (initial !== startOffset) {
+        const initialPosition = document.positionAt(initial);
+        const startPosition = document.positionAt(startOffset);
+        skip = initialPosition.line !== startPosition.line;
+    }
+
 
     // Main iteration:
     // Traverse the document text -- forward or backward -- until we find punctuation or a special
@@ -473,8 +480,9 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
     // if (initialColumn === relevantColumnBound) finalColumn = relevantColumnBound;
     let iterOffset = initial;
     while (
+        !skip && (
         (jt === 'forward' && iterOffset !== 0) || 
-        (jt === 'backward' && iterOffset !== docText.length)
+        (jt === 'backward' && iterOffset !== docText.length))
     ) {
         const iterationCharacter = docText[iterOffset];
         
@@ -495,6 +503,11 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
             //      iterating
             const after = getNextNonPunctuationNonWhitespaceCharacter(docText, iterOffset);
             if (/[A-Z]/.test(after.char) && after.dist !== 1) {
+                break;
+            }
+
+            // None of any of the above applies if we're talking about a new line
+            if (iterationCharacter === '\r' || iterationCharacter === '\n') {
                 break;
             }
         }
