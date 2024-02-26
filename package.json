@@ -44,7 +44,7 @@
 			"panel": [
 				{
 					"id": "workBible",
-					"title": "Work Bible",
+					"title": "Notes",
 					"icon": "$(bookmark)"
 				}
 			]
