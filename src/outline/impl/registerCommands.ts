@@ -47,11 +47,15 @@ export function registerCommands (this: OutlineView) {
     vscode.commands.registerCommand("wt.outline.collectChapterUris", () => {
         const root: RootNode = this.tree.data as RootNode;
         const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
-        return chaptersContainer.contents.map(c => {
+        const chapterData = chaptersContainer.contents.map(c => {
             const title = c.data.ids.display;
             const uri = c.getUri().fsPath.split(extension.rootPath.fsPath)[1];
-            return [uri, title];
+            return { uri, title, ordering: c.data.ids.ordering };
         });
+
+        chapterData.sort((a, b) => a.ordering - b.ordering);
+
+        return chapterData.map(({ uri, title }) => [ uri, title ])
     });
 
     vscode.commands.registerCommand('wt.outline.help', () => {
@@ -136,12 +140,10 @@ export function registerCommands (this: OutlineView) {
     });
 
     vscode.commands.registerCommand('wt.outline.copyPath', (resource: OutlineNode) => {
-        console.log(resource.data.ids.uri.fsPath);
         vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath);
     });
 
     vscode.commands.registerCommand('wt.outline.copyRelativePath', (resource: OutlineNode) => {
-        console.log(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, ''));
         vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, ''));
     });
 }
