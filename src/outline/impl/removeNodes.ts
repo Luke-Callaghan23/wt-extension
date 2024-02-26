@@ -42,6 +42,7 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
 
     const newLogs: RecycleLog[] = [];
 
+    const containers: OutlineNode[] = [];
     for (const target of uniqueRoots) {
         const timestamp = Date.now();
 
@@ -74,6 +75,8 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             const fragmentParentUri = target.data.ids.parentUri;
             const fragmentParent: OutlineNode = await this._getTreeElementByUri(fragmentParentUri);
             if (!fragmentParent) continue;
+
+            containers.push(fragmentParent);
 
             // Find the index of the target fragment
             const fragmentParentTextNodes = (fragmentParent.data as ChapterNode | SnipNode).textData;
@@ -111,6 +114,8 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             const removedNodeParentUri = target.data.ids.parentUri;
             const removedNodeParent: OutlineNode = await this._getTreeElementByUri(removedNodeParentUri);
             if (!removedNodeParent) continue;
+
+            containers.push(removedNodeParent);
 
             // Find the index of the target fragment
             const nodeParentContents = (removedNodeParent.data as ContainerNode).contents;
@@ -173,6 +178,8 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             //      two cases above, here we don't actually delete the container, we just clear the contents of the
             //      targeted container itself
             (target.data as ContainerNode).contents = [];
+
+            containers.push(target);
         }
         else if (target.data.ids.type === 'root') {
             throw new Error('Not possible');
@@ -206,5 +213,5 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
         }
     }
     // Refresh the whole tree as it's hard to determine what the deepest root node is
-    this.refresh(false);
+    this.refresh(false, containers);
 }

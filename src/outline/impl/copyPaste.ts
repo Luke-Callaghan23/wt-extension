@@ -749,7 +749,7 @@ export async function paste (
 
     // Then save the updated config
     await writeDotConfig(destinationConfigUri, destinationConfig);
-    this.refresh(false);
+    this.refresh(false, [ destination ]);
 
     // Simulate as if each of the pasted documents have been opened by calling the FileAccessManage
     allFragmentUris.flat().forEach(uri => {

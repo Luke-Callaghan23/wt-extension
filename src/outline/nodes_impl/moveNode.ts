@@ -51,7 +51,7 @@ export async function moveNode (
     
     const thisAllowedMoves = allowedMoves[moverType];
     if (!thisAllowedMoves.find(allowed => allowed === newParentType)) {
-        return { moveOffset: -1, createdDestination: null };
+        return { moveOffset: -1, effectedContainers: [], createdDestination: null };
     }
 
     if (moverType === 'container') {
@@ -72,14 +72,26 @@ export async function moveNode (
         //      will cause skipping of some nodes otherwise
         const snips = [ ...moverContent ];
         
+        const effectedContainersUriMap: {
+			[index: string]: TreeNode,
+		} = {};
+
         // Move each snip one by one
         let acc = 0;
         for (const snip of snips) {
-            let { moveOffset, createdDestination } = await snip.moveNode(containerTarget, provider, 0, null);
-            if (moveOffset === -1) return { moveOffset: -1, createdDestination: null };
+            let { moveOffset, createdDestination, effectedContainers } = await snip.moveNode(containerTarget, provider, 0, null);
+            if (moveOffset === -1) return { moveOffset: -1, effectedContainers: [], createdDestination: null };
             acc += moveOffset;
+
+            for (const container of effectedContainers) {
+                effectedContainersUriMap[container.getUri().fsPath] = container;
+            }
         }
-        return { moveOffset: acc, createdDestination: null };
+
+        
+        const allEffectedContainers = Object.entries(effectedContainersUriMap)
+            .map(([ _, container ]) => container);
+        return { moveOffset: acc, createdDestination: null, effectedContainers: allEffectedContainers };
     }
 
     // If the mover is not a container, then we're only moving a single item:
@@ -132,8 +144,9 @@ export async function moveNode (
                 const snipUri = await outlineView.newSnip(newParentOutline, {
                     defaultName: `Created Snip`,
                     skipFragment: true,
+                    preventRefresh: true,
                 });
-                if (!snipUri) return { moveOffset: -1, createdDestination: null };
+                if (!snipUri) return { moveOffset: -1, effectedContainers: [], createdDestination: null };
 
                 // Get the snip node itself from the outline view 
                 const snipNode = await outlineView._getTreeElementByUri(snipUri);
@@ -143,7 +156,7 @@ export async function moveNode (
                 newOverride = snipNode;
                 destinationContainer = snipNode;
             }
-            else return { moveOffset: -1, createdDestination: null };
+            else return { moveOffset: -1, effectedContainers: [], createdDestination: null };
         }
         else {
             throw new Error('Not possible.');
@@ -153,7 +166,7 @@ export async function moveNode (
         destinationContainer = ((provider.tree as OutlineNode).data as RootNode).chapters;
     }
     else {
-        return { moveOffset: -1, createdDestination: null };
+        return { moveOffset: -1, effectedContainers: [], createdDestination: null };
     }
 
     // If the container of the destination is the same as the container of the mover, then we're 
@@ -164,12 +177,16 @@ export async function moveNode (
     }
     else {
         try {
-            const swapOffset = await handleContainerSwap(this, provider, destinationContainer);
-            return { moveOffset: swapOffset, createdDestination: newOverride || null }
+            const swapResult = await handleContainerSwap(this, provider, destinationContainer);
+            return { 
+                moveOffset: swapResult.moveOffset, 
+                createdDestination: newOverride || null,
+                effectedContainers: swapResult.effectedContainers 
+            };
         }
         catch (e) {
             vscode.window.showErrorMessage(`Error: unable to move fragment file: ${e}`);
-            return { moveOffset: 0, createdDestination: null };
+            return { moveOffset: 0, createdDestination: null, effectedContainers: [] };
         }
     }
 }
@@ -183,7 +200,7 @@ async function handleInternalContainerReorder (node: OutlineNode, destinationCon
     //      as there is no moving actually occurring)
     const containerDotConfigUri = vscodeUris.Utils.joinPath(destinationContainer.getUri(), `.config`);
     const containerConfig = await readDotConfig(containerDotConfigUri);
-    if (!containerConfig) return { moveOffset: -1, createdDestination: null };
+    if (!containerConfig) return { moveOffset: -1, effectedContainers: [], createdDestination: null };
 
     type FileInfo = {
         filename: string,
@@ -285,7 +302,7 @@ async function handleInternalContainerReorder (node: OutlineNode, destinationCon
         moving.data.ids.ordering = config.ordering;
     });
 
-    return { moveOffset: off, createdDestination: null };
+    return { moveOffset: off, createdDestination: null, effectedContainers: [ destinationContainer ] };
 }
 
 
@@ -297,7 +314,7 @@ async function handleContainerSwap (
     node: OutlineNode,
     provider: OutlineTreeProvider<TreeNode>,
     destinationContainer: OutlineNode, 
-): Promise<number> {
+): Promise<MoveNodeResult> {
     // Old path of the node we will be moving
     const moverOriginalUri = node.getUri();
     const moverOriginalOpenState = provider.getOpenedStatusOfNode(moverOriginalUri);
@@ -322,7 +339,7 @@ async function handleContainerSwap (
     let movedFragmentNumber = 1000000;
     {
         const destinationDotConfig = await readDotConfig(destinationDotConfigUri);
-        if (!destinationDotConfig) return 0;
+        if (!destinationDotConfig) return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
     
         // Find the record in the new .config file with the highest ordering
         const latestFragmentNumber = getLatestOrdering(destinationDotConfig);
@@ -330,7 +347,7 @@ async function handleContainerSwap (
     
         const movedRecordTitle = await node.shiftTrailingNodesDown(provider as OutlineTreeProvider<OutlineNode>);
         if (movedRecordTitle === '') {
-            return 0;
+            return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
         }
     
         // Add the record for the moved fragment to the new .config file and write to disk
@@ -384,11 +401,11 @@ async function handleContainerSwap (
     // Get the index of the mover in the parent's contents
     const moverUri = node.getUri().toString();
     const oldParentIndex = oldParentContents.findIndex(node => node.getUri().toString() === moverUri);
-    if (oldParentIndex === -1) return -1;
+    if (oldParentIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
 
     // Remove this from parent
     oldParentContents.splice(oldParentIndex, 1);
 
     await Promise.all(awaitables);
-    return 0;
+    return { moveOffset: 0, createdDestination: null, effectedContainers: [ destinationContainer, oldParentNode ] };
 }

@@ -8,6 +8,7 @@ import { ResourceType } from './fsNodes';
 
 export type MoveNodeResult = {
 	moveOffset: number,
+	effectedContainers: TreeNode[],
 	createdDestination: TreeNode | null
 }
 
@@ -99,7 +100,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
 	
-	abstract refresh(reload: boolean): Promise<void>;
+	abstract refresh(reload: boolean, updates: TreeNode[]): Promise<void>;
 
 	public setOpenedStatusNoUpdate (uri: vscode.Uri, opened: boolean) {
 		const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '');
@@ -224,6 +225,10 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 		let overrideDestination: TreeNode | null = null;
 
+		const effectedContainersUriMap: {
+			[index: string]: TreeNode,
+		} = {};
+
 		// Move all the valid nodes into the target
 		if (filteredParents.length > 0) {
 			// Offset tells how many nodes have moved downwards in the same container so far
@@ -233,15 +238,25 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			let offset = 0;
 			for (const mover of filteredParents) {
 				const res: MoveNodeResult = await mover.moveNode(targ, this, offset, overrideDestination);
-				const { moveOffset, createdDestination } = res;
+				const { moveOffset, createdDestination, effectedContainers } = res;
 				if (moveOffset === -1) break;
 				offset += moveOffset;
 
 				if (createdDestination) {
 					overrideDestination = createdDestination;
 				}
+
+				for (const container of effectedContainers) {
+					effectedContainersUriMap[container.getUri().fsPath] = container;
+				}
 			}
-			this.refresh(false);
+
+			const allEffectedContainers = Object.entries(effectedContainersUriMap)
+				.map(([ _, container ]) => container);
+
+			console.log(allEffectedContainers)
+
+			// this.refresh(false, allEffectedContainers);
 		}
     }
 	

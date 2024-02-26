@@ -166,7 +166,7 @@ export async function newChapter (
 
     if (!options?.preventRefresh) {
         vscode.window.showInformationMessage(`Successfully created new chapter with name 'New Chapter' (file name: ${chapterFileName})`);
-        this.refresh(false);
+        this.refresh(false, [ chaptersContainer ]);
     }
 
     await Promise.all(awaitables);
@@ -407,7 +407,7 @@ export async function newSnip (
     }
 
     if (!options?.preventRefresh) {
-        this.refresh(false);
+        this.refresh(false, [ parentNode ]);
         vscode.window.showInformationMessage('Successfully created new snip');
     }
 
@@ -421,9 +421,6 @@ export async function newFragment (
     resource: OutlineNode | undefined, 
     options?: CreateOptions
 ): Promise<vscode.Uri | null> {
-
-
-    console.log(this.view.selection);
 
     // If the root is the selected node or if there is no selected resource in the
     //      view, it's too ambiguous to decide the destination, instead default to 
@@ -525,7 +522,7 @@ export async function newFragment (
 
     if (!options?.preventRefresh) {
         vscode.window.showTextDocument(fragmentUri);
-        this.refresh(false);
+        this.refresh(false, [ parentNode ]);
         vscode.window.showInformationMessage('Successfully created new fragment');
     }
     return fragmentNode.getUri();

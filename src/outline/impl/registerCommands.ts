@@ -12,7 +12,7 @@ export function registerCommands (this: OutlineView) {
     });
     vscode.commands.registerCommand('wt.outline.refresh', 
         // Reload command has ambiguous changes and should include a full reload from disk
-        (resource: OutlineNode) => this.refresh(true)
+        (resource: OutlineNode) => this.refresh(true, [])
     );
     vscode.commands.registerCommand('wt.outline.renameFile', () => {
         if (this.view.selection.length > 1) return;
