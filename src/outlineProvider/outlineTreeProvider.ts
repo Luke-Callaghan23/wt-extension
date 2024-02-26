@@ -6,6 +6,11 @@ import * as console from '../vsconsole';
 import { v4 as uuidv4 } from 'uuid';
 import { ResourceType } from './fsNodes';
 
+export type MoveNodeResult = {
+	moveOffset: number,
+	createdDestination?: TreeNode
+}
+
 export abstract class TreeNode {
 	abstract getParentUri(): vscode.Uri;
 	abstract getTooltip(): string | vscode.MarkdownString;
@@ -14,7 +19,12 @@ export abstract class TreeNode {
 	abstract getChildren(filter: boolean): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
 	abstract getDroppableUris(): vscode.Uri[];
-	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>, moveOffset: number): Promise<number>;
+	abstract moveNode(
+		newParent: TreeNode, 
+		provider: OutlineTreeProvider<TreeNode>, 
+		moveOffset: number,
+		overrideDestination: TreeNode | null
+	): Promise<MoveNodeResult>;
 }
 
 
@@ -212,6 +222,8 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
         const uniqueRoots = await this._getLocalRoots(movedItems);
 		const filteredParents = uniqueRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString());
 
+		let overrideDestination: TreeNode | null = null;
+
 		// Move all the valid nodes into the target
 		if (filteredParents.length > 0) {
 			// Offset tells how many nodes have moved downwards in the same container so far
@@ -220,11 +232,18 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			//		lets it adapt to those changes
 			let offset = 0;
 			for (const mover of filteredParents) {
-				offset += await mover.moveNode(targ, this, offset);
+				const { moveOffset, createdDestination } = await mover.moveNode(targ, this, offset, overrideDestination);
+				if (moveOffset === -1) break;
+				offset += moveOffset;
+
+				if (createdDestination) {
+					overrideDestination = createdDestination;
+				}
 			}
 			this.refresh(false);
 		}
     }
+	
     public async handleDrag(source: T[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
 		treeDataTransfer.set('application/vnd.code.tree.outline', new vscode.DataTransferItem(source));
 

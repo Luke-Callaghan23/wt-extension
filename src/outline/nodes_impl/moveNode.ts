@@ -1,8 +1,11 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from "../../help";
-import { OutlineTreeProvider, TreeNode } from "../../outlineProvider/outlineTreeProvider";
+import { MoveNodeResult, OutlineTreeProvider, TreeNode } from "../../outlineProvider/outlineTreeProvider";
 import { ChapterNode, ContainerNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../node";
+import { OutlineView } from '../outlineView';
+import * as extension from './../../extension';
+import { Workspace } from '../../workspace/workspaceClass';
 
 // Map of a resource type to all resource types that the key can be moved into
 const allowedMoves: { [index: string]: ResourceType[] } = {
@@ -27,7 +30,8 @@ const allowedMoves: { [index: string]: ResourceType[] } = {
     'fragment': [
         'chapter',
         'snip',
-        'fragment'
+        'fragment',
+        'container'
     ],
 };
 
@@ -35,8 +39,9 @@ export async function moveNode (
     this: OutlineNode,
     newParent: TreeNode, 
     provider: OutlineTreeProvider<TreeNode>,
-    moveOffset: number = 0
-): Promise<number> {
+    moveOffset: number,
+    overrideDestination: TreeNode | null
+): Promise<MoveNodeResult> {
     const newParentNode = newParent as OutlineNode;
     const newParentType = newParentNode.data.ids.type;
     const newParentUri = newParentNode.data.ids.uri;
@@ -46,7 +51,7 @@ export async function moveNode (
     
     const thisAllowedMoves = allowedMoves[moverType];
     if (!thisAllowedMoves.find(allowed => allowed === newParentType)) {
-        return -1;
+        return { moveOffset: -1 };
     }
 
     if (moverType === 'container') {
@@ -70,14 +75,16 @@ export async function moveNode (
         // Move each snip one by one
         let acc = 0;
         for (const snip of snips) {
-            let result = await snip.moveNode(containerTarget, provider);
-            if (result === -1) return -1;
-            acc += result;
+            let { moveOffset, createdDestination } = await snip.moveNode(containerTarget, provider, 0, null);
+            if (moveOffset === -1) return { moveOffset: -1 };
+            acc += moveOffset;
         }
-        return acc;
+        return { moveOffset: acc };
     }
 
     // If the mover is not a container, then we're only moving a single item:
+
+    let newOverride: OutlineNode | undefined;
 
     let destinationContainer: OutlineNode;
     if (moverType === 'snip') {
@@ -107,6 +114,37 @@ export async function moveNode (
         else if (newParentType === 'fragment') {
             destinationContainer = (await newParentNode.getContainerParent(provider, 'snip'));
         }
+        else if (newParentType === 'container') {
+            const newParentOutline = newParent as OutlineNode;
+            const outlineView = provider as OutlineView;
+
+            if (overrideDestination) {
+                // If a previous call to this function resulted in a an override destination
+                //      container, then use that container as the overrided destination
+                destinationContainer = overrideDestination as OutlineNode;
+            }
+            else if (
+                newParentOutline.data.ids.parentTypeId === 'chapter' 
+                || outlineView.workspace.workSnipsFolder.fsPath === newParentOutline.data.ids.uri.fsPath
+            ) {
+                // If this is a chapter snip container or the work snip container, then
+                //      create a new snip for the fragments to move to
+                const snipUri = await outlineView.newSnip(newParentOutline, {
+                    defaultName: `Created Snip`,
+                    skipFragment: true,
+                });
+                if (!snipUri) return { moveOffset: -1 };
+
+                // Get the snip node itself from the outline view 
+                const snipNode = await outlineView._getTreeElementByUri(snipUri);
+
+                // Use that snip node as both the override for all potential future
+                //      fragment moves and as the destination node
+                newOverride = snipNode;
+                destinationContainer = snipNode;
+            }
+            else return { moveOffset: -1 };
+        }
         else {
             throw new Error('Not possible.');
         }
@@ -115,7 +153,7 @@ export async function moveNode (
         destinationContainer = ((provider.tree as OutlineNode).data as RootNode).chapters;
     }
     else {
-        return -1;
+        return { moveOffset: -1 };
     }
 
     // If the container of the destination is the same as the container of the mover, then we're 
@@ -126,25 +164,26 @@ export async function moveNode (
     }
     else {
         try {
-            return await handleContainerSwap(this, provider, destinationContainer);
+            const swapOffset = await handleContainerSwap(this, provider, destinationContainer);
+            return { moveOffset: swapOffset, createdDestination: newOverride }
         }
         catch (e) {
             vscode.window.showErrorMessage(`Error: unable to move fragment file: ${e}`);
-            return 0;
+            return { moveOffset: 0 };
         }
     }
 }
 
 // Handles the case when a node is moved (dragged and dropped) within its own container
 // In this case, we need to shift around the ordering of the node's parent's config file
-async function handleInternalContainerReorder (node: OutlineNode, destinationContainer: OutlineNode, newParentNode: OutlineNode, moveOffset: number): Promise<number> {
+async function handleInternalContainerReorder (node: OutlineNode, destinationContainer: OutlineNode, newParentNode: OutlineNode, moveOffset: number): Promise<MoveNodeResult> {
     // Get the .config for the container -- this contains the ordering values for both the mover
     //      and the destination item
     // (Destination item is just the item that the mover was dropped onto -- not actually destination,
     //      as there is no moving actually occurring)
     const containerDotConfigUri = vscodeUris.Utils.joinPath(destinationContainer.getUri(), `.config`);
     const containerConfig = await readDotConfig(containerDotConfigUri);
-    if (!containerConfig) return -1;
+    if (!containerConfig) return { moveOffset: -1 };
 
     type FileInfo = {
         filename: string,
@@ -246,7 +285,7 @@ async function handleInternalContainerReorder (node: OutlineNode, destinationCon
         moving.data.ids.ordering = config.ordering;
     });
 
-    return off;
+    return { moveOffset: off };
 }
 
 

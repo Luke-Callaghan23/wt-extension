@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import * as console from '../vsconsole';
-import { OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
+import { MoveNodeResult, OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
 import * as fsNodes from '../outlineProvider/fsNodes';
 import { Validation, TODO, TODOsView } from './TODOsView';
 import * as extension from '../extension';
@@ -40,9 +40,14 @@ export class TODONode extends TreeNode {
         return `${this.data.ids.type} | '${this.data.ids.display}'`;
     }
     
-    async moveNode (newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>): Promise<number> {
+    async moveNode (
+		newParent: TreeNode, 
+		provider: OutlineTreeProvider<TreeNode>, 
+		moveOffset: number,
+		overrideDestination: TreeNode | null
+	): Promise<MoveNodeResult> {
         vscode.window.showErrorMessage('Error: cannot move files within the TODO tree, please try again in the outline tree');
-        return -1;
+        return { moveOffset: -1 };
     }
 
     getUri (): vscode.Uri {

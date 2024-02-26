@@ -106,7 +106,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 
     constructor(
         protected context: vscode.ExtensionContext, 
-		protected workspace: Workspace
+		public workspace: Workspace
     ) {
         super(context, 'wt.outline');
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
