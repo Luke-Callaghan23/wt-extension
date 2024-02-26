@@ -44,7 +44,7 @@
 			"panel": [
 				{
 					"id": "workBible",
-					"title": "Work Bible",
+					"title": "Notes",
 					"icon": "$(bookmark)"
 				}
 			]
@@ -85,7 +85,7 @@
 					"id": "wt.workBible.tree",
 					"name": "World Bible",
 					"icon": "media/dep.svg",
-					"contextualTitle": "World Bible"
+					"contextualTitle": "Notes"
 				}
 			]
 		},

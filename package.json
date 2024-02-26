@@ -105,9 +105,9 @@
 			"workBible": [
 				{
 					"id": "wt.workBible.tree",
-					"name": "Work Bible",
+					"name": "Notes",
 					"icon": "media/dep.svg",
-					"contextualTitle": "Work Bible"
+					"contextualTitle": "Notes"
 				}
 			]
 		},
