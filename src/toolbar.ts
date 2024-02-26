@@ -612,6 +612,8 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
     const nextLine = new vscode.Position(line + 1, 0);
     const nextLinePosition = document.offsetAt(nextLine);
     let eolPosition; 
+    
+    const eolLen = document.eol === vscode.EndOfLine.LF ? 1 : vscode.EndOfLine.CRLF;
 
     // Special case for when the cursor is at the end of the document
     // Because of how vscode handles `new vscode.Position` when the line number
@@ -621,7 +623,6 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
         eolPosition = startOffset;
     }
     else {
-        const eolLen = document.eol === vscode.EndOfLine.LF ? 1 : vscode.EndOfLine.CRLF;
         eolPosition = nextLinePosition - eolLen;
     }
 
@@ -629,7 +630,7 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
     // Again because of complications on `new vscode.Position`, when travelling to
     //      the end of the document, the cursor will be set to `docText.length - 1`
     //      mistakingly
-    if (eolPosition === docText.length - 1 && !/\s/.test(docText[eolPosition])) {
+    if (eolPosition === docText.length - eolLen && !/\s/.test(docText[eolPosition])) {
         eolPosition = docText.length;
     }
     
