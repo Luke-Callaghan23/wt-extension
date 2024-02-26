@@ -8,7 +8,7 @@ import { ResourceType } from './fsNodes';
 
 export type MoveNodeResult = {
 	moveOffset: number,
-	createdDestination?: TreeNode
+	createdDestination: TreeNode | null
 }
 
 export abstract class TreeNode {
@@ -232,7 +232,8 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			//		lets it adapt to those changes
 			let offset = 0;
 			for (const mover of filteredParents) {
-				const { moveOffset, createdDestination } = await mover.moveNode(targ, this, offset, overrideDestination);
+				const res: MoveNodeResult = await mover.moveNode(targ, this, offset, overrideDestination);
+				const { moveOffset, createdDestination } = res;
 				if (moveOffset === -1) break;
 				offset += moveOffset;
 

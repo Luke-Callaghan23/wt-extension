@@ -47,7 +47,7 @@ export class TODONode extends TreeNode {
 		overrideDestination: TreeNode | null
 	): Promise<MoveNodeResult> {
         vscode.window.showErrorMessage('Error: cannot move files within the TODO tree, please try again in the outline tree');
-        return { moveOffset: -1 };
+        return { moveOffset: -1, createdDestination: null };
     }
 
     getUri (): vscode.Uri {

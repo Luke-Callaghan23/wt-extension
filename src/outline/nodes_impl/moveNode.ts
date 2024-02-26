@@ -51,7 +51,7 @@ export async function moveNode (
     
     const thisAllowedMoves = allowedMoves[moverType];
     if (!thisAllowedMoves.find(allowed => allowed === newParentType)) {
-        return { moveOffset: -1 };
+        return { moveOffset: -1, createdDestination: null };
     }
 
     if (moverType === 'container') {
@@ -76,10 +76,10 @@ export async function moveNode (
         let acc = 0;
         for (const snip of snips) {
             let { moveOffset, createdDestination } = await snip.moveNode(containerTarget, provider, 0, null);
-            if (moveOffset === -1) return { moveOffset: -1 };
+            if (moveOffset === -1) return { moveOffset: -1, createdDestination: null };
             acc += moveOffset;
         }
-        return { moveOffset: acc };
+        return { moveOffset: acc, createdDestination: null };
     }
 
     // If the mover is not a container, then we're only moving a single item:
@@ -133,7 +133,7 @@ export async function moveNode (
                     defaultName: `Created Snip`,
                     skipFragment: true,
                 });
-                if (!snipUri) return { moveOffset: -1 };
+                if (!snipUri) return { moveOffset: -1, createdDestination: null };
 
                 // Get the snip node itself from the outline view 
                 const snipNode = await outlineView._getTreeElementByUri(snipUri);
@@ -143,7 +143,7 @@ export async function moveNode (
                 newOverride = snipNode;
                 destinationContainer = snipNode;
             }
-            else return { moveOffset: -1 };
+            else return { moveOffset: -1, createdDestination: null };
         }
         else {
             throw new Error('Not possible.');
@@ -153,7 +153,7 @@ export async function moveNode (
         destinationContainer = ((provider.tree as OutlineNode).data as RootNode).chapters;
     }
     else {
-        return { moveOffset: -1 };
+        return { moveOffset: -1, createdDestination: null };
     }
 
     // If the container of the destination is the same as the container of the mover, then we're 
@@ -165,11 +165,11 @@ export async function moveNode (
     else {
         try {
             const swapOffset = await handleContainerSwap(this, provider, destinationContainer);
-            return { moveOffset: swapOffset, createdDestination: newOverride }
+            return { moveOffset: swapOffset, createdDestination: newOverride || null }
         }
         catch (e) {
             vscode.window.showErrorMessage(`Error: unable to move fragment file: ${e}`);
-            return { moveOffset: 0 };
+            return { moveOffset: 0, createdDestination: null };
         }
     }
 }
@@ -183,7 +183,7 @@ async function handleInternalContainerReorder (node: OutlineNode, destinationCon
     //      as there is no moving actually occurring)
     const containerDotConfigUri = vscodeUris.Utils.joinPath(destinationContainer.getUri(), `.config`);
     const containerConfig = await readDotConfig(containerDotConfigUri);
-    if (!containerConfig) return { moveOffset: -1 };
+    if (!containerConfig) return { moveOffset: -1, createdDestination: null };
 
     type FileInfo = {
         filename: string,
@@ -285,7 +285,7 @@ async function handleInternalContainerReorder (node: OutlineNode, destinationCon
         moving.data.ids.ordering = config.ordering;
     });
 
-    return { moveOffset: off };
+    return { moveOffset: off, createdDestination: null };
 }
 
 
