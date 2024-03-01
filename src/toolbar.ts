@@ -8,99 +8,88 @@ import { isSpace } from 'markdown-it/lib/common/utils';
 
 
 // Function for surrounding selected text with a specified string
-function surroundSelectionWith (start: string, end?: string) {
+async function surroundSelectionWith (start: string, end?: string) {
 
-    end = end || start;
-
+    
     // Get the active text editor
     const editor = vscode.window.activeTextEditor;
-
+    
     if (!editor) return;
-
+    
+    const newSelections = [ ...editor.selections ]
+    
     const document = editor.document;
-    const selection = editor.selection;
+    for (let selIndex = 0; selIndex < editor.selections.length; selIndex++) {
+        const selection = editor.selections[selIndex];
+        end = end || start;
 
-    // Get the selected text within the selection
-    const selected = document.getText(selection);
-
-    // Check if the string immediately before the selection is the same as the surround string
-    let beforeSelection: vscode.Selection | undefined = undefined;
-    {
-        if (selected.startsWith(start)) {
-            const newEnd = new vscode.Position(selection.start.line, selection.start.character + start.length);
-            beforeSelection = new vscode.Selection(selection.start, newEnd);
-        }
-        else {
-            if (selection.start.character >= start.length) {
-                const newStart = new vscode.Position(selection.start.line, selection.start.character - start.length);
-                beforeSelection = new vscode.Selection(newStart, selection.start);
-                const beforeText = document.getText(beforeSelection);
-                if (beforeText !== start) beforeSelection = undefined;
+        // Get the selected text within the selection
+        const selected = document.getText(selection);
+    
+        // Check if the string immediately before the selection is the same as the surround string
+        let beforeSelection: vscode.Selection | undefined = undefined;
+        {
+            if (selected.startsWith(start)) {
+                const newEnd = new vscode.Position(selection.start.line, selection.start.character + start.length);
+                beforeSelection = new vscode.Selection(selection.start, newEnd);
+            }
+            else {
+                if (selection.start.character >= start.length) {
+                    const newStart = new vscode.Position(selection.start.line, selection.start.character - start.length);
+                    beforeSelection = new vscode.Selection(newStart, selection.start);
+                    const beforeText = document.getText(beforeSelection);
+                    if (beforeText !== start) beforeSelection = undefined;
+                }
             }
         }
-    }
-
-    // Check if the string immediately after the selection is the same as the surround string
-    let afterSelection: vscode.Selection | undefined = undefined;
-    {
-        if (selected.endsWith(end)) {
-            const newStart = new vscode.Position(selection.end.line, selection.end.character - end.length);
-            afterSelection = new vscode.Selection(newStart, selection.end);
+    
+        // Check if the string immediately after the selection is the same as the surround string
+        let afterSelection: vscode.Selection | undefined = undefined;
+        {
+            if (selected.endsWith(end)) {
+                const newStart = new vscode.Position(selection.end.line, selection.end.character - end.length);
+                afterSelection = new vscode.Selection(newStart, selection.end);
+            }
+            else {
+                const newEnd = new vscode.Position(selection.end.line, selection.end.character + end.length);
+                afterSelection = new vscode.Selection(selection.end, newEnd);
+                const afterText = document.getText(afterSelection);
+                if (afterText !== start) afterSelection = undefined;
+            }
+        }
+    
+        if (afterSelection && !beforeSelection && selection.isEmpty) {
+            // If only the substring after the selection is the surround string, then we're going to want
+            //      to move the cursor outside of the the surround string
+            // Simply shift the current editor's selection
+            const currentOffset = editor.document.offsetAt(selection.end);
+            const afterSurroundString = currentOffset + end.length;
+            const afterSurroundPosition = editor.document.positionAt(afterSurroundString);
+            const ns = [ ...editor.selections ];
+            ns[selIndex] = new vscode.Selection(afterSurroundPosition, afterSurroundPosition);
+            editor.selections = ns;
+        }
+        else if (beforeSelection && afterSelection) {
+            const before = beforeSelection as vscode.Selection;
+            const after = afterSelection as vscode.Selection;
+            // If both the before and after the selection are already equal to the surround string, then
+            //      remove those strings
+            await editor.edit((editBuilder: vscode.TextEditorEdit) => {
+                editBuilder.delete(before);
+                editBuilder.delete(after);
+            });
         }
         else {
-            const newEnd = new vscode.Position(selection.end.line, selection.end.character + end.length);
-            afterSelection = new vscode.Selection(selection.end, newEnd);
-            const afterText = document.getText(afterSelection);
-            if (afterText !== start) afterSelection = undefined;
+            // If before and after the selection is not already the surround string, add the surround string
+        
+            // Surround the selected text with the surround string
+            const surrounded = `${start}${selected}${end}`;
+        
+            // Replace selected text with the surrounded text
+            await editor.edit((editBuilder: vscode.TextEditorEdit) => {
+                editBuilder.replace(selection, surrounded);
+            });
         }
-    }
-
-    if (afterSelection && !beforeSelection && selection.isEmpty) {
-        // If only the substring after the selection is the surround string, then we're going to want
-        //      to move the cursor outside of the the surround string
-        // Simply shift the current editor's selection
-        const currentOffset = editor.document.offsetAt(selection.end);
-        const afterSurroundString = currentOffset + end.length;
-        const afterSurroundPosition = editor.document.positionAt(afterSurroundString);
-        editor.selection = new vscode.Selection(afterSurroundPosition, afterSurroundPosition);
-    }
-    else if (beforeSelection && afterSelection) {
-        const before = beforeSelection as vscode.Selection;
-        const after = afterSelection as vscode.Selection;
-        // If both the before and after the selection are already equal to the surround string, then
-        //      remove those strings
-        editor.edit((editBuilder: vscode.TextEditorEdit) => {
-            editBuilder.delete(before);
-            editBuilder.delete(after);
-        });
-    }
-    else {
-        // If before and after the selection is not already the surround string, add the surround string
-    
-        // Surround the selected text with the surround string
-        const surrounded = `${start}${selected}${end}`;
-    
-        // Replace selected text with the surrounded text
-        editor.edit((editBuilder: vscode.TextEditorEdit) => {
-            editBuilder.replace(selection, surrounded);
-        }).then(() => {
-            if (!selection.isEmpty) return;
-            // If the selection is empty, then move the cursor into the middle of the surround strings
-            //      that were added
-            // After the edits, the current position of the cursor is at the end of the surround string
-            const curEditor = vscode.window.activeTextEditor;
-            if (!curEditor) return;
-            const end = curEditor.selection.end;
-            const startLength = start.length;
-
-            // The new position is the same as the current position, minus the amount of characters in the 
-            //      surround string
-            const newPosition = new vscode.Position(end.line, end.character - startLength);
-
-            // New selection is the desired position of the cursor (provided to the constructor twice, to
-            //      get an empty selection)
-            curEditor.selection = new vscode.Selection(newPosition, newPosition);
-        });
     }
 }
 
@@ -479,6 +468,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
             // CASE: the current character matches a special fragment stopping character
             if (fragmentStop.test(iterationCharacter)) {
                 let stop = true;
+                // Special case to not stop at '-' when the dash is one half of an em dash
                 if (iterationCharacter === '-') {
                     if (docText[iterOffset + direction] === '-') {
                         iterOffset += direction;
@@ -489,6 +479,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
                     }
                 }
 
+                // Special case to not stop at single quote when it's used as an apostrophe
                 if (iterationCharacter === "'") {
                     const reg = /[a-zA-Z]/;
                     if (reg.test(docText[iterOffset + 1]) && reg.test(docText[iterOffset - 1])) {
