@@ -375,31 +375,21 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         if (jt === 'forward' && initial !== 0) {
             let current = initial - 1;
             while (
-                (/\s/.test(docText[current]) || punctuation.test(docText[current]) )
+                (/\s/.test(docText[current]) || punctuation.test(docText[current]) || fragmentStop.test(docText[current]))
                 && current !== 0
             ) {
                 current--;
-    
-                // Special case: stop immediately at a '"' character -- special rules implemented
-                //      to stop at dialogue tags
-                if (fragmentStop.test(docText[current])) break;
             }
             initial = current;
         }
         else if (jt === 'backward') {
     
             const isEol = docText[initial] === '\n';
-    
-            
             let current = initial;
-            const a = docText[current];
             while (
-                (/\s/.test(docText[current]) || punctuation.test(docText[current]) )
+                (/\s/.test(docText[current]) || punctuation.test(docText[current]) || fragmentStop.test(docText[current]))
             ) {
                 current++;
-    
-                // Special case: stop immediately at a fragment stop character
-                if (!isEol && fragmentStop.test(docText[current])) break;
             }
             initial = current;
         }
@@ -411,39 +401,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
                 initial++;
             }
             initial++;
-        }  
-    
-        // More special forward cases:
-        if (jt === 'forward') {
-            // '"' stopping character: don't continue
-            // Made it to 0 already: don't continue
-            if (fragmentStop.test(docText[initial]) || initial === 0) {
-                let stop = true;
-                if (docText[initial] === '-') {
-                    if (docText[initial - 1] === '-') {
-                        initial--;
-                    }
-                    else {
-                        // Only a single '-' means we don't actually want to stop at that character
-                        stop = false;
-                    }
-                }
-    
-                if (stop) {
-                    const position = document.positionAt(initial);
-                    // Set the new selection of the editor
-                    const select = new vscode.Selection (
-                        // If shift is held, use the start position of the previous selection as the active point
-                        //      of the new selection
-                        shiftHeld ? anchor : position,
-                        position, 
-                    );
-                    newSelections.push(select);
-                    continue;
-                }
-            }
         }
-    
     
         // Get the next non-whitespace and non-punctuation character following an offset
         const getNextNonPunctuationNonWhitespaceCharacter = (text: string, offset: number): {
