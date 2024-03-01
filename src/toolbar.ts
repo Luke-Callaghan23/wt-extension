@@ -489,7 +489,12 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
                     }
                 }
 
-
+                if (iterationCharacter === "'") {
+                    const reg = /[a-zA-Z]/;
+                    if (reg.test(docText[iterOffset + 1]) && reg.test(docText[iterOffset - 1])) {
+                        stop = false;
+                    }
+                }
 
                 if (stop) {
                     if (jt === 'forward') {
