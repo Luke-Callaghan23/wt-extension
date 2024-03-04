@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
-import { HoverPosition, capitalize, getHoverText, getHoveredWord } from '../common';
+import { Capitalization, HoverPosition, capitalize, getHoverText, getHoveredWord, getTextCapitalization, transformToCapitalization } from '../common';
 import { SynonymError, SynonymSearchResult, Synonyms, query, queryWordHippo } from '../querySynonym';
 import { HoverProvider } from './hoverProvider';
 
@@ -109,7 +109,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         if (this.cache[wordText]) {
             const result = this.cache[wordText];
             if (result.type === 'error') {
-                return getSuggestedWords(result, hoverRange, wordText);
+                return getMisspellCorrections(result, hoverRange, wordText);
             }
             response = result;
         }
@@ -123,7 +123,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             const res = await q(hoverPosition.text);
             if (res.type === 'error') {
                 this.cache[wordText] = res;
-                return getSuggestedWords(res, hoverRange, wordText);
+                return getMisspellCorrections(res, hoverRange, wordText);
             }
 
             // If there was no error querying for synonyms of the selected word, then store the response from
@@ -279,6 +279,8 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         defIndexStr: string
     ): vscode.CompletionItem[] {
         
+        const wordCapitalization: Capitalization = getTextCapitalization(word);
+
         const synonyms = this.cache[word];
         if (!synonyms || synonyms.type === 'error') return [];
 
@@ -297,6 +299,8 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             // Clear that portion of the synonym by splitting on the first opening
             //      parenthesis taking the first item from the array
             const insertText = syn.split('(')[0].trim();
+            const insertTextWithCapitalization = transformToCapitalization(insertText, wordCapitalization);
+            const displayTextWithCapitalization = transformToCapitalization(syn, wordCapitalization);
 
             // For removing duplicates -- check if in the inserts map
             if (inserts[insertText] === 1) {
@@ -307,9 +311,9 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             const indexStr = ("" + index).padStart(maxDigits, '0')
 
             return <vscode.CompletionItem> {
-                label: `${syn}`,
+                label: displayTextWithCapitalization,
                 filterText: word,
-                insertText: insertText,
+                insertText: insertTextWithCapitalization,
                 detail: `[${def.definitions[0]}]`,
                 range: hoverRange,
                 kind: vscode.CompletionItemKind.Event,
@@ -468,7 +472,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     }
 }
 
-const getSuggestedWords = (res: SynonymError, hoverRange: vscode.Range, wordText: string) => {
+const getMisspellCorrections = (res: SynonymError, hoverRange: vscode.Range, wordText: string) => {
     if (!res.suggestions) return [];
     const maxDigits = numDigits(res.suggestions.length);
     return res.suggestions?.map((suggest, index) => {

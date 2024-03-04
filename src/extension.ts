@@ -8,7 +8,7 @@ import { TODOsView } from './TODO/TODOsView';
 import { WordWatcher } from './wordWatcher/wordWatcher';
 import { ExportForm } from './export/exportFormView';
 import { SynonymViewProvider } from './synonymsWebview/synonymsView';
-import { Toolbar } from './toolbar';
+import { Toolbar } from './editor/toolbar';
 import { importWorkspace } from './workspace/importExport/importWorkspace';
 
 import { loadWorkspace, createWorkspace } from './workspace/workspace';
@@ -29,12 +29,13 @@ import { WHViewPorvider as WHViewProvider } from './whWebview/whWebview';
 import { CoderModer } from './codeMode/codeMode';
 import { WorldNotes } from './worldNotes/worldNotes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
+import { WorkBible } from './workBible/workBible';
 import { wtToHtml } from './export/wtToHtml';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
 export let rootPath: vscode.Uri;
-export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n"\']|$)';
+export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n"\'^_*~]|$)';
 export const wordSeparatorRegex = new RegExp(wordSeparator.split('|')[1], 'g');
 export const sentenceSeparator: RegExp = /[.?!]/g;
 export const paragraphSeparator: RegExp = /\n\n/g;
@@ -62,16 +63,18 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 
 		new CoderModer(context);
-		const worldNotes = new WorldNotes(workspace, context);
+		// const worldNotes = new WorldNotes(workspace, context);
+		const workBible = new WorkBible(workspace, context);
 
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);
 
 		const timedViews = new TimedView(context, [
-			['wt.worldNotes.tree', worldNotes],
+			// ['wt.worldNotes.tree', worldNotes],
+			['wt.workBible.tree', workBible],
 			['wt.todo', todo],
 			['wt.wordWatcher', wordWatcher],
-			['wt.proximity', proximity],
+			// ['wt.proximity', proximity],
 			['wt.spellcheck', spellcheck],
 			['wt.very', veryIntellisense],  
 			['wt.colors', colorIntellisense],

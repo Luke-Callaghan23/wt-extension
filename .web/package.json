@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.69",
+	"version": "0.0.78",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -40,6 +40,13 @@
 					"title": "Writing Tool",
 					"icon": "$(bookmark)"
 				}
+			],
+			"panel": [
+				{
+					"id": "workBible",
+					"title": "Notes",
+					"icon": "$(bookmark)"
+				}
 			]
 		},
 		"views": {
@@ -71,6 +78,14 @@
 					"icon": "media/dep.svg",
 					"contextualTitle": "Synonyms",
 					"when": "wt.valid"
+				}
+			],
+			"workBible": [
+				{
+					"id": "wt.workBible.tree",
+					"name": "World Bible",
+					"icon": "media/dep.svg",
+					"contextualTitle": "Notes"
 				}
 			]
 		},
@@ -269,12 +284,12 @@
 				"enablement": "wt.colors.enabled"
 			},
 			{
-				"command": "wt.worldNotes.enable",
+				"command": "wt.workBible.enable",
 				"title": "Writing Tool: Enable Automatic World Notes Querying",
 				"enablement": "!wt.todo.enabled"
 			},
 			{
-				"command": "wt.worldNotes.disable",
+				"command": "wt.workBible.disable",
 				"title": "Writing Tool: Disable Automatic World Notes Querying",
 				"enablement": "wt.todo.enabled"
 			},
@@ -373,11 +388,6 @@
 				"command": "wt.editor.underline",
 				"title": "Writing Tool: Underline Selection",
 				"icon": "$(layout-statusbar)"
-			},
-			{
-				"command": "wt.editor.header",
-				"title": "Writing Tool: Header",
-				"icon": "$(text-size)"
 			},
 			{
 				"command": "wt.editor.emdash",
@@ -479,33 +489,47 @@
 			},
 			{
 				"title": "Writing Tool: Add Note",
-				"command": "wt.worldNotes.addNote",
+				"command": "wt.workBible.addNote",
 				"icon": "$(add)"
 			},
 			{
 				"title": "Writing Tool: Remove Note",
-				"command": "wt.worldNotes.removeNote",
+				"command": "wt.workBible.removeNote",
 				"icon": "$(remove)"
 			},
 			{
 				"title": "Writing Tool: Add Alias",
-				"command": "wt.worldNotes.addAlias",
+				"command": "wt.workBible.addAlias",
 				"icon": "$(add)"
 			},
 			{
 				"title": "Writing Tool: Remove Alias",
-				"command": "wt.worldNotes.removeAlias",
+				"command": "wt.workBible.removeAlias",
 				"icon": "$(remove)"
 			},
 			{
-				"title": "Writing Tool: Add Description",
-				"command": "wt.worldNotes.addDescription",
+				"title": "Writing Tool: Add Sub Note",
+				"command": "wt.workBible.addSubNote",
 				"icon": "$(add)"
 			},
 			{
-				"title": "Writing Tool: Remove Description",
-				"command": "wt.worldNotes.removeDescription",
+				"title": "Writing Tool: Remove Sub Note",
+				"command": "wt.workBible.removeSubNote",
 				"icon": "$(remove)"
+			},
+			{
+				"title": "Writing Tool: Add Appearance",
+				"command": "wt.workBible.addAppearance",
+				"icon": "$(add)"
+			},
+			{
+				"title": "Writing Tool: Search For Note",
+				"command": "wt.workBible.search"
+			},
+			{
+				"title": "Writing Tool: Open Note in editor",
+				"command": "wt.workBible.editNote",
+				"icon": "$(edit)"
 			},
 			{
 				"title": "Writing Tool: Display Options",
@@ -521,6 +545,18 @@
 				"title": "Writing Tool: Reset Timer",
 				"command": "wt.statusBarTimer.resetTimer",
 				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
+				"title": "Writing Tool: Comment sentence",
+				"command": "wt.editor.todo.commentSentence"
+			},
+			{
+				"title": "Writing Tool: Comment fragment",
+				"command": "wt.editor.todo.commentFragment"
+			},
+			{
+				"title": "Writing Tool: Comment paragraph",
+				"command": "wt.editor.todo.commentParagraph"
 			}
 		],
 		"menus": {
@@ -606,8 +642,8 @@
 					"group": "navigation@3"
 				},
 				{
-					"command": "wt.worldNotes.addNote",
-					"when": "view == wt.worldNotes.tree",
+					"command": "wt.workBible.addNote",
+					"when": "view == wt.workBible.tree",
 					"group": "navigation"
 				}
 			],
@@ -685,98 +721,108 @@
 					"group": "inline"
 				},
 				{
-					"command": "wt.worldNotes.addNote",
-					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"command": "wt.workBible.addNote",
+					"when": "view == wt.workBible.tree && viewItem == note",
 					"group": "inline@1"
 				},
 				{
-					"command": "wt.worldNotes.removeNote",
-					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"command": "wt.workBible.removeNote",
+					"when": "view == wt.workBible.tree && viewItem == note",
 					"group": "inline@2"
 				},
 				{
-					"command": "wt.worldNotes.addDescription",
-					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"command": "wt.workBible.addSubNote",
+					"when": "view == wt.workBible.tree && (viewItem == description || viewItem == appearance)",
 					"group": "inline@1"
 				},
 				{
-					"command": "wt.worldNotes.removeDescription",
-					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"command": "wt.workBible.removeSubNote",
+					"when": "view == wt.workBible.tree && (viewItem == description || viewItem == appearance)",
 					"group": "inline@2"
 				},
 				{
-					"command": "wt.worldNotes.addAlias",
-					"when": "view == wt.worldNotes.tree && viewItem == note"
+					"command": "wt.workBible.addAppearance",
+					"when": "view == wt.workBible.tree && (viewItem == appearanceContainer)",
+					"group": "inline@1"
 				},
 				{
-					"command": "wt.worldNotes.removeAlias",
-					"when": "view == wt.worldNotes.tree && viewItem == note"
+					"command": "wt.workBible.addAlias",
+					"when": "view == wt.workBible.tree && viewItem == note"
 				},
 				{
-					"command": "wt.worldNotes.addNote",
-					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"command": "wt.workBible.removeAlias",
+					"when": "view == wt.workBible.tree && viewItem == note"
+				},
+				{
+					"command": "wt.workBible.addNote",
+					"when": "view == wt.workBible.tree && viewItem == note",
 					"group": "update@1"
 				},
 				{
-					"command": "wt.worldNotes.removeNote",
-					"when": "view == wt.worldNotes.tree && viewItem == note",
+					"command": "wt.workBible.removeNote",
+					"when": "view == wt.workBible.tree && viewItem == note",
 					"group": "update@2"
 				},
 				{
-					"command": "wt.worldNotes.addDescription",
-					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"command": "wt.workBible.addSubNote",
+					"when": "view == wt.workBible.tree && (viewItem == description || viewItem === appearance)",
 					"group": "update@1"
 				},
 				{
-					"command": "wt.worldNotes.removeDescription",
-					"when": "view == wt.worldNotes.tree && viewItem == description",
+					"command": "wt.workBible.removeSubNote",
+					"when": "view == wt.workBible.tree && (viewItem == description || viewItem === appearance)",
 					"group": "update@2"
+				},
+				{
+					"command": "wt.workBible.search",
+					"when": "view == wt.workBible.tree && viewItem == note",
+					"group": "search@1"
+				},
+				{
+					"command": "wt.workBible.editNote",
+					"when": "view == wt.workBible.tree",
+					"group": "inline@3"
 				}
 			],
 			"editor/title": [
 				{
 					"command": "wt.editor.save",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@1"
 				},
 				{
 					"command": "wt.editor.saveAll",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@2"
 				},
 				{
 					"command": "wt.synonyms.searchWord",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@3"
 				},
 				{
 					"command": "wt.editor.italisize",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@3"
 				},
 				{
 					"command": "wt.editor.bold",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@5"
 				},
 				{
 					"command": "wt.editor.strikethrough",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@6"
 				},
 				{
 					"command": "wt.editor.underline",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@7"
 				},
 				{
-					"command": "wt.editor.header",
-					"when": "editorLangId == wt",
-					"group": "navigation@8"
-				},
-				{
 					"command": "wt.editor.remove",
-					"when": "editorLangId == wt",
+					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@9"
 				}
 			]
@@ -815,22 +861,22 @@
 			{
 				"command": "wt.synonyms.searchWord",
 				"key": "ctrl+alt+f",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.save",
 				"key": "ctrl+alt+s",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.saveAll",
 				"key": "ctrl+alt+shift+s",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.italisize",
 				"key": "ctrl+alt+i",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.commasize",
@@ -839,122 +885,117 @@
 			{
 				"command": "wt.editor.bold",
 				"key": "ctrl+alt+b",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.strikethrough",
 				"key": "ctrl+alt+d",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.underline",
 				"key": "ctrl+alt+u",
-				"when": "editorAreaVisible && editorLangId == wt"
-			},
-			{
-				"command": "wt.editor.header",
-				"key": "ctrl+alt+h",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.emdash",
 				"key": "ctrl+alt+-",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.emdashes",
 				"key": "ctrl+alt+shift+-",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.word.forward",
 				"key": "ctrl+left",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.word.backward",
 				"key": "ctrl+right",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward",
 				"key": "alt+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.sentence.backward",
 				"key": "alt+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.fragment.forward",
 				"key": "ctrl+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.fragment.backward",
 				"key": "ctrl+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.forward",
 				"key": "ctrl+alt+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.backward",
 				"key": "ctrl+alt+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.word.forward.shift",
 				"key": "ctrl+shift+left",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.word.backward.shift",
 				"key": "ctrl+shift+right",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward.shift",
 				"key": "alt+shift+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.sentence.backward.shift",
 				"key": "alt+shift+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.fragment.forward.shift",
 				"key": "ctrl+shift+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.fragment.backward.shift",
 				"key": "ctrl+shift+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.forward.shift",
 				"key": "ctrl+alt+shift+[",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.backward.shift",
 				"key": "ctrl+alt+shift+]",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.delete.forward",
 				"key": "ctrl+backspace",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.editor.delete.backward",
 				"key": "ctrl+delete",
-				"when": "editorAreaVisible && editorLangId == wt"
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
 				"command": "wt.intellisense.synonyms.prevDefinition",
@@ -975,6 +1016,21 @@
 				"command": "wt.intellisense.synonyms.nextSelection",
 				"key": "down",
 				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.todo.commentSentence",
+				"key": "ctrl+shift+/",
+				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
+				"command": "wt.editor.todo.commentFragment",
+				"key": "alt+shift+/",
+				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
+				"command": "wt.editor.todo.commentParagraph",
+				"key": "ctrl+alt+shift+/",
+				"when": "editorLangId == wt || editorLandId == wtNote"
 			}
 		],
 		"languages": [
@@ -986,6 +1042,18 @@
 				"aliases": [
 					"writingTool",
 					"fragment",
+					"markdown",
+					"Markdown"
+				],
+				"configuration": "./language-configuration.json"
+			},
+			{
+				"id": "wtNote",
+				"extensions": [
+					".wtnote"
+				],
+				"aliases": [
+					"writingToolNotes",
 					"markdown",
 					"Markdown"
 				],
@@ -1091,6 +1159,28 @@
 					}
 				]
 			}
+		],
+		"grammars": [
+			{
+				"language": "wtNote",
+				"scopeName": "source.wtNote",
+				"path": "./syntaxes/wtNote.tmLanguage.json",
+				"injectTo": ["wtNote"]
+			},
+			{
+				"language": "wt",
+				"scopeName": "source.wt",
+				"path": "./syntaxes/wt.tmLanguage.json",
+				"injectTo": ["wt"]
+			}
+		],
+		"themes": [
+            {
+				"id": "wtNoteTheme",
+                "label": "WT Note",
+                "uiTheme": "vs-dark",
+                "path": "./themes/wtNoteTheme.json"
+            }
 		]
 	},
 	"scripts": {

@@ -48,7 +48,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
         return initializeOutline(init);
     }
 
-	async refresh(reload: boolean): Promise<void> {
+	async refresh(reload: boolean, updates: OutlineNode[]): Promise<void> {
 
 		// If the reload option is set to true, the caller wants us to reload the outline tree
 		//		completely from disk
@@ -63,7 +63,14 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 		vscode.commands.executeCommand('wt.todo.updateTree', this.tree);
 
 		// Then update the root node of the outline view
-		this._onDidChangeTreeData.fire(undefined);
+		if (updates.length > 0) {
+			for (const update of updates) {
+				this._onDidChangeTreeData.fire(update);
+			}
+		}
+		else {
+			this._onDidChangeTreeData.fire(undefined);
+		}
 	}
 
     // Overriding the parent getTreeItem method to add FS API to it
@@ -106,7 +113,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 
     constructor(
         protected context: vscode.ExtensionContext, 
-		protected workspace: Workspace
+		public workspace: Workspace
     ) {
         super(context, 'wt.outline');
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();

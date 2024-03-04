@@ -6,6 +6,12 @@ import * as console from '../vsconsole';
 import { v4 as uuidv4 } from 'uuid';
 import { ResourceType } from './fsNodes';
 
+export type MoveNodeResult = {
+	moveOffset: number,
+	effectedContainers: TreeNode[],
+	createdDestination: TreeNode | null
+}
+
 export abstract class TreeNode {
 	abstract getParentUri(): vscode.Uri;
 	abstract getTooltip(): string | vscode.MarkdownString;
@@ -14,7 +20,12 @@ export abstract class TreeNode {
 	abstract getChildren(filter: boolean): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
 	abstract getDroppableUris(): vscode.Uri[];
-	abstract moveNode(newParent: TreeNode, provider: OutlineTreeProvider<TreeNode>, moveOffset: number): Promise<number>;
+	abstract moveNode(
+		newParent: TreeNode, 
+		provider: OutlineTreeProvider<TreeNode>, 
+		moveOffset: number,
+		overrideDestination: TreeNode | null
+	): Promise<MoveNodeResult>;
 }
 
 
@@ -89,7 +100,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
 	
-	abstract refresh(reload: boolean): Promise<void>;
+	abstract refresh(reload: boolean, updates: TreeNode[]): Promise<void>;
 
 	public setOpenedStatusNoUpdate (uri: vscode.Uri, opened: boolean) {
 		const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '');
@@ -212,6 +223,12 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
         const uniqueRoots = await this._getLocalRoots(movedItems);
 		const filteredParents = uniqueRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString());
 
+		let overrideDestination: TreeNode | null = null;
+
+		const effectedContainersUriMap: {
+			[index: string]: TreeNode,
+		} = {};
+
 		// Move all the valid nodes into the target
 		if (filteredParents.length > 0) {
 			// Offset tells how many nodes have moved downwards in the same container so far
@@ -220,11 +237,27 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			//		lets it adapt to those changes
 			let offset = 0;
 			for (const mover of filteredParents) {
-				offset += await mover.moveNode(targ, this, offset);
+				const res: MoveNodeResult = await mover.moveNode(targ, this, offset, overrideDestination);
+				const { moveOffset, createdDestination, effectedContainers } = res;
+				if (moveOffset === -1) break;
+				offset += moveOffset;
+
+				if (createdDestination) {
+					overrideDestination = createdDestination;
+				}
+
+				for (const container of effectedContainers) {
+					effectedContainersUriMap[container.getUri().fsPath] = container;
+				}
 			}
-			this.refresh(false);
+
+			const allEffectedContainers = Object.entries(effectedContainersUriMap)
+				.map(([ _, container ]) => container);
+			console.log(allEffectedContainers);
+			this.refresh(false, allEffectedContainers);
 		}
     }
+	
     public async handleDrag(source: T[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
 		treeDataTransfer.set('application/vnd.code.tree.outline', new vscode.DataTransferItem(source));
 

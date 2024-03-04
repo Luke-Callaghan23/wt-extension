@@ -1,19 +1,17 @@
 import * as vscode from 'vscode';
-import { Note, NoteMatch, WorldNotes } from './worldNotes';
+import { Note, NoteMatch, WorkBible } from './workBible';
 
 const decorationsOptions: vscode.DecorationRenderOptions = {
-    color: '#890cf7',
-    textDecoration: 'underline',
+    color: '#9f66d1',
     fontStyle: 'oblique',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
 };
 export const decorations = vscode.window.createTextEditorDecorationType(decorationsOptions);
 
-export async function update (this: WorldNotes, editor: vscode.TextEditor, _commentedRanges: vscode.Range[]): Promise<void> {
-    // Don't use commented ranges in this timed view, as I think world notes should still be specially commented in
-
+export async function update (this: WorkBible, editor: vscode.TextEditor): Promise<void> {
     if (!this.nounsRegex) return;
     let match: RegExpExecArray | null;
+
     
     const decorationLocations: vscode.DecorationOptions[] = [];
 
@@ -52,7 +50,7 @@ export async function update (this: WorldNotes, editor: vscode.TextEditor, _comm
                         ? `#### (*${aliasesString}*)\n`
                         : '';
 
-                    const descriptions = note.descriptions
+                    const descriptions = note.description
                         .map(desc => `- ${desc}`)
                         .join('\n');
 
@@ -96,6 +94,6 @@ export async function update (this: WorldNotes, editor: vscode.TextEditor, _comm
     editor.setDecorations(decorations, decorationLocations);
 }
 
-export async function disable (this: WorldNotes): Promise<void> {
+export async function disable (this: WorkBible): Promise<void> {
     throw new Error('Method not implemented.');
 }

@@ -64,7 +64,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
         return initializeOutline<TODONode>(init);
     }
 
-	async refresh(reload: boolean): Promise<void> {
+	async refresh(reload: boolean, updates: TODONode[]): Promise<void> {
 		if (reload) {
 			this.tree = await this.initializeTree();
 		}

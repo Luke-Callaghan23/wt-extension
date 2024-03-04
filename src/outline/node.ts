@@ -50,8 +50,9 @@ export class OutlineNode extends TreeNode {
     getParentUri(): vscode.Uri {
         return this.data.ids.parentUri;
     }
+
     getTooltip (): string | vscode.MarkdownString {
-        return `${this.data.ids.type} | actual name: ${this.getUri()}`;
+        return `${this.data.ids.type} | '${this.data.ids.display}'`;
     }
     
     hasChildren (): boolean {

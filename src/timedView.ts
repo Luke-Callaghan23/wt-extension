@@ -4,7 +4,7 @@ import * as console from './vsconsole';
 
 export interface Timed {
     enabled: boolean;
-    update(editor: vscode.TextEditor): Promise<void>;
+    update(editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void>;
     disable?(): Promise<void>;
 }
 
@@ -54,15 +54,33 @@ export class TimedView implements Packageable {
         this.registerCommands();
     }
 
-    private doUpdates (editor: vscode.TextEditor) {
+    private static commentRegex = /(?<comment>\[.*\])+/g;
+    public static findCommentedRanges (editor: vscode.TextEditor): vscode.Range[] {
+        const text = editor.document.getText();
+        const commentedRanges: vscode.Range[] = [];
+        let m;
+        while ((m = TimedView.commentRegex.exec(text)) !== null) {
+            const match: RegExpExecArray = m;
+            commentedRanges.push(new vscode.Range(
+                editor.document.positionAt(match.index),
+                editor.document.positionAt(match.index + match[0].length - 1)
+            ))
+        }
+        return commentedRanges;
+    }
+
+    private doUpdates (editor: vscode.TextEditor, uncommentedRanges: vscode.Range[]) {
         // Only do updates on .wt files
-        if (!editor.document.fileName.endsWith('.wt')) return;
+        if (
+            !editor.document.fileName.toLocaleLowerCase().endsWith('.wt') && 
+            !editor.document.fileName.toLocaleLowerCase().endsWith('.wtnote')
+        ) return;
         // Iterate over all timed views and call their update functions if they're enabled
         this.timedViews.forEach(([ id, timed ]) => {
             console.log(`UPDATE: ${id} (${timed.enabled ? 'enabled' : 'disabled'})`);
             // If the view's timer function is not enabled, then skip
             if (!timed.enabled) return;
-            timed.update(editor);
+            timed.update(editor, uncommentedRanges);
         })
     }
     
@@ -70,6 +88,7 @@ export class TimedView implements Packageable {
 	private triggerUpdates(throttle: boolean = false) {
         if (!this.activeEditor) return;
         const editor: vscode.TextEditor = this.activeEditor;
+        const commentedRanges = TimedView.findCommentedRanges(editor);
 
         // Clear timeout if it exists
         // This is the 'throttling' part of the function
@@ -83,10 +102,10 @@ export class TimedView implements Packageable {
 
         // If this call is throttled, use a timeout to call the update function
         if (throttle) {
-            this.timeout = setTimeout(() => this.doUpdates(editor), 500);
+            this.timeout = setTimeout(() => this.doUpdates(editor, commentedRanges), 500);
         } 
         else {
-            this.doUpdates(editor);
+            this.doUpdates(editor, commentedRanges);
         }
 	}
 
@@ -98,7 +117,8 @@ export class TimedView implements Packageable {
                 timed.enabled = true;
                 // Draw decorations
                 if (this.activeEditor) {
-                    timed.update(this.activeEditor);
+                    const commentedRanges = TimedView.findCommentedRanges(this.activeEditor);
+                    timed.update(this.activeEditor, commentedRanges);
                 }
             });
     

@@ -1,0 +1,30 @@
+{
+	// Theme Color reference.
+	// https://code.visualstudio.com/docs/getstarted/theme-color-reference
+	"$schema": "vscode://schemas/color-theme",
+	"name": "WT NOTE",
+	"type": "dark",
+	"colors": {},
+	// Token Colors are heavily inspired by several themes
+	// Including but not limited to Material Palenight, Cobalt
+	// theme's syntax and several custom setup via Dev scope ext.
+	"tokenColors": [
+		{
+			"name": "Line separator",
+			"scope": "keyword.separatorLine",
+			"settings": {
+                "fontStyle": "italic",
+				"foreground": "#666561"
+			}
+		},
+		{
+			"name": "Comments",
+			"scope": "comment.line.number-sign.wt",
+			"settings": {
+				"foreground": "#6A9955",
+				"fontStyle": "bold"
+			}
+		}
+
+	]
+}

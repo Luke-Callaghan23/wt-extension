@@ -4,9 +4,9 @@ import { Timed } from '../../timedView';
 import { Workspace } from '../../workspace/workspaceClass';
 import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
-import * as console from './../../vsconsole';
 import { WordRange } from '../../intellisense/common';
 import { WorldNotes } from '../../worldNotes/worldNotes';
+import { WorkBible } from '../../workBible/workBible';
 
 
 export class Spellcheck implements Timed {
@@ -19,8 +19,8 @@ export class Spellcheck implements Timed {
     });
 
     lastUpdate: WordRange[];
-    async update (editor: vscode.TextEditor): Promise<void> {
-        const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/g;
+    async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
+        const stops = /[\^\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/g;
 
         const document = editor.document;
         if (!document) return;
@@ -41,6 +41,14 @@ export class Spellcheck implements Timed {
                 const start = document.positionAt(startOff);
                 const end = document.positionAt(endOff);
                 if (Math.abs(startOff - endOff) <= 1) return;
+
+                // Do not add the word if it is inside of commented ranges
+                const isCommented = commentedRanges.find(cr => {
+                    if (cr.contains(start)) {
+                        return cr;
+                    }
+                });
+                if (isCommented !== undefined) return;
                 
                 const wordRange = new vscode.Range(start, end);
     
@@ -70,11 +78,12 @@ export class Spellcheck implements Timed {
             // Create red underline decorations for each word that does not
             //      exist in the dictionary or personal dictionary
             for (const { text, range } of words) {
-                if (dictionary[text]) continue;
-                if (this.personalDictionary.search(text)) continue;
+                if (/\d+/.test(text)) continue;                                                         // do not make red if the word is made up entirely of numbers
+                if (dictionary[text]) continue;                                                         // do not make red if the dictionary contains this word
+                if (this.personalDictionary.search(text)) continue;                                     // do not make red if the personal dictionary contains this word
 
                 // Do not add red decorations to words that have been matched by world notes
-                const worldNotes: WorldNotes = WorldNotes.singleton;
+                const worldNotes: WorkBible = WorkBible.singleton;
                 if (worldNotes) {
                     const matchedNotes = worldNotes.matchedNotes;
                     if (

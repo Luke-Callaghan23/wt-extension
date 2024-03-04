@@ -25,7 +25,7 @@ export function registerCommands(this: TODOsView) {
         });
         // Refresh command involves ambiguous changes to TODO tree structure
         //      so should reload the tree fully from disk
-        this.refresh(true);
+        this.refresh(true, []);
     });
 
     vscode.commands.registerCommand('wt.todo.help', () => {
@@ -91,6 +91,6 @@ export function registerCommands(this: TODOsView) {
         (this.tree.data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
         (this.tree.data as RootNode<TODONode>).snips = convertSnips(outlineWorkSnips);
         Object.keys(TODOsView.todo).forEach(key => delete TODOsView.todo[key]);
-        this.refresh(false);
+        this.refresh(false, []);
     });
 }

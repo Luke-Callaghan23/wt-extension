@@ -5,7 +5,7 @@ import * as console from './vsconsole';
 import { OutlineView } from './outline/outlineView';
 import { TODOsView } from './TODO/TODOsView';
 import { WordWatcher } from './wordWatcher/wordWatcher';
-import { Toolbar } from './toolbar';
+import { Toolbar } from './editor/toolbar';
 
 import { SynonymViewProvider } from './synonymsWebview/synonymsView';
 import { Workspace } from './workspace/workspaceClass';
@@ -63,7 +63,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.worldNotes.tree', worldNotes],
 			['wt.todo', todo],
 			['wt.wordWatcher', wordWatcher],
-			['wt.proximity', proximity],
+			// ['wt.proximity', proximity],
 			['wt.spellcheck', spellcheck],
 			['wt.very', veryIntellisense],
 			['wt.colors', colorIntellisense],

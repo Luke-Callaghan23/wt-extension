@@ -1,0 +1,13 @@
+{
+    "scopeName": "source.wtNote",
+    "patterns": [{ "include": "#expression" }],
+    "repository": {
+        "expression": {
+            "patterns": [{ "include": "#separatorLine" }]
+        },
+        "separatorLine": {
+            "match": ".*-- ALSO, DON'T DELETE THIS LINE!",
+            "name": "keyword.separatorLine"
+        }
+    }
+}

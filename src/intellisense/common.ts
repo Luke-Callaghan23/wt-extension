@@ -7,6 +7,35 @@ export type HoverPosition = {
     text: string;
 };
 
+export type Capitalization = 'firstLetter' | 'allCaps' | 'noCapFrFrOnGod';
+export function getTextCapitalization (text: string): Capitalization {
+    let cap: Capitalization = 'noCapFrFrOnGod';
+    let capCount = 0;
+    for (let index = 0; index < text.length; index++) {
+        const char = text[index];
+        if (/[A-Z]/.test(char)) {
+            if (index === 0) {
+                cap = 'firstLetter';
+            }
+            capCount += 1;
+        }
+    }
+
+    if (capCount === text.length) {
+        cap = 'allCaps';
+    }
+    return cap;
+}
+
+export function transformToCapitalization (input: string, capitalization: Capitalization): string {
+    switch (capitalization) {
+        case 'allCaps': return input.toUpperCase();
+        case 'firstLetter': return capitalize(input.toLocaleLowerCase());
+        case 'noCapFrFrOnGod': return input.toLocaleLowerCase();
+    }
+}
+
+
 export function getHoveredWord (document: vscode.TextDocument, position: vscode.Position): HoverPosition | null {
     const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/;
 

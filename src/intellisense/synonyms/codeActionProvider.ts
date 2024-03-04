@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
-import { capitalize, getHoveredWord } from '../common';
+import { Capitalization, capitalize, getHoveredWord, getTextCapitalization, transformToCapitalization } from '../common';
 import { query } from '../querySynonym';
 import { dictionary } from './../spellcheck/dictionary';
 import { PersonalDictionary } from './../spellcheck/personalDictionary';
@@ -37,14 +37,16 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
         const response = await query(hoverPosition.text);
         if (response.type !== 'error') return [];
 
+        const capitalization = getTextCapitalization(hoverPosition.text);
+
         // If it's not in any of those, then use the suggested words
         //      from the API response as suggestions for replacements
         const suggestions = response.suggestions?.map(suggest => {
+            const replaceText = transformToCapitalization(suggest, capitalization);
             const edit = new vscode.WorkspaceEdit();
-            edit.replace(document.uri, hoverRange, suggest);
+            edit.replace(document.uri, hoverRange, replaceText);
             return <vscode.CodeAction> {
-                title: `Replace with: '${capitalize(suggest)}'`,
-                // edit: new vscode.TextEdit(hoverRange, suggest),
+                title: `Replace with: '${replaceText}'`,
                 edit: edit,
                 kind: vscode.CodeActionKind.QuickFix,
             }

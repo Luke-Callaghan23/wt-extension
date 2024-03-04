@@ -12,7 +12,7 @@ export function registerCommands (this: OutlineView) {
     });
     vscode.commands.registerCommand('wt.outline.refresh', 
         // Reload command has ambiguous changes and should include a full reload from disk
-        (resource: OutlineNode) => this.refresh(true)
+        (resource: OutlineNode) => this.refresh(true, [])
     );
     vscode.commands.registerCommand('wt.outline.renameFile', () => {
         if (this.view.selection.length > 1) return;
@@ -47,11 +47,15 @@ export function registerCommands (this: OutlineView) {
     vscode.commands.registerCommand("wt.outline.collectChapterUris", () => {
         const root: RootNode = this.tree.data as RootNode;
         const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
-        return chaptersContainer.contents.map(c => {
+        const chapterData = chaptersContainer.contents.map(c => {
             const title = c.data.ids.display;
             const uri = c.getUri().fsPath.split(extension.rootPath.fsPath)[1];
-            return [uri, title];
+            return { uri, title, ordering: c.data.ids.ordering };
         });
+
+        chapterData.sort((a, b) => a.ordering - b.ordering);
+
+        return chapterData.map(({ uri, title }) => [ uri, title ])
     });
 
     vscode.commands.registerCommand('wt.outline.help', () => {
@@ -133,5 +137,13 @@ export function registerCommands (this: OutlineView) {
     vscode.commands.registerCommand('wt.outline.duplicateItems', async () => {
         await vscode.commands.executeCommand('wt.outline.copyItems');
         await vscode.commands.executeCommand('wt.outline.pasteItems', 'duplicated');
+    });
+
+    vscode.commands.registerCommand('wt.outline.copyPath', (resource: OutlineNode) => {
+        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath);
+    });
+
+    vscode.commands.registerCommand('wt.outline.copyRelativePath', (resource: OutlineNode) => {
+        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, ''));
     });
 }
