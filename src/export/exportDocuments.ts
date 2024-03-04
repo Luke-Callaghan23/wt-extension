@@ -16,12 +16,12 @@ const HTMLToDOCX = require('html-to-docx');
 import { Workspace } from '../workspace/workspaceClass';
 import { OutlineView } from '../outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../outline/node';
-import * as pdf from 'html-pdf';
+import { wtToHtml } from './wtToHtml';
 
 // Data provided by the export form webview
 export type ExportDocumentInfo = {
     fileName: string,
-    ext: 'pdf' | 'md' | 'txt' | 'docx' | 'html',
+    ext: 'md' | 'txt' | 'docx' | 'html',
     separateChapters: boolean,
     combineFragmentsOn: string | null,
 };
@@ -155,7 +155,7 @@ async function doProcessMd (
         const cleanedChapters: CleanedChapterInfo[] = finalData.map(chapterInfo => {
             const title = chapterInfo.title;
             const markdown = chapterInfo.markdown;
-            const markdownWithChapterHeader = `#${chapterInfo.title}\n\n~~\n\n${markdown}`;
+            const markdownWithChapterHeader = `#${chapterInfo.title}\n\n~~~\n\n${markdown}`;
 
             // Replace all illegal characters in the chapter title with the very legal character '-'
             const cleanedTitle = title.replaceAll(workspace.illegalCharacters.join(''), '-');
@@ -184,7 +184,7 @@ async function doProcessMd (
             // Chapter title (as heading), double newline, chapter contents, double newline
             // Give enough space between chapter titles and content, as well as enough space between
             //      different chapters themselves
-            return `${acc}#${chapterInfo.title}\n\n~~\n\n${chapterInfo.markdown}\n\n\n\n\n\n\n\n`;
+            return `${acc}#${chapterInfo.title}\n\n~~~\n\n${chapterInfo.markdown}\n\n\n\n\n\n\n\n`;
         }, '');
 
         return <SingleFile>{
@@ -197,80 +197,28 @@ async function doProcessMd (
 }
 
 async function doProcessHtml (processedMd: ProcessedMd): Promise<ProcessedHtml> {
-
-    // Create the showdown converter with options that seem appropriate for formatting
-    //      stylized text without (many) extra frills
-    const showdownConverter = new showdown.Converter({
-        ellipsis: true,
-        openLinksInNewWindow: true,
-        strikethrough: true,
-        underline: true,
-        tables: true,
-        emoji: true,
-        simplifiedAutoLink: true,
-        completeHTMLDocument: true,
-        tasklists: true,
-        simpleLineBreaks: true,
-        headerLevelStart: 3,
-    });
-
     if (processedMd.type === 'single') {
         // Process the single markdown file into an html string
         const singleMd = processedMd as SingleFile;
         // Convert the single md string to a single html string and return the new SingleFile struct
-        const convertedHtml = showdownConverter.makeHtml(singleMd.fullData as string);
-
-        // Add page break before all of the chapter headers
-        const withPageBreaks = convertedHtml.replaceAll('<h3 ', '<div class="page-break" style="page-break-after: always;"></div><h3 ');
-
-        // Except for the first
-        const removedFirstPageBreak = withPageBreaks.replace('<div class="page-break" style="page-break-after: always;"></div>', '');
-
-        // Add font size (for potential pdf conversions)
-        const withFontSize = removedFirstPageBreak.replace('<html>', `
-        <html>
-        <style>
-        p {
-            font-size: 10px;
-        }
-        h3 {
-            font-size: 15px;
-        }
-        </style>
-        `);
-
+        const convertedHtml = wtToHtml(singleMd.fullData.toString(), true);
         return <SingleFile>{
             type: 'single',
             fileName: singleMd.fileName,
-            fullData: withFontSize,
+            fullData: convertedHtml,
             exportUri: singleMd.exportUri
         } as SingleFile;
     }
     else {
-
-        showdownConverter.setOption('headerLevelStart', 2);
-
         // Process all html files into separate html strings
         const multipleMd = processedMd as MultipleFiles;
 
         // Convert all md chapters to html chapters
         const convertedChapters = multipleMd.cleanedChapterInfo.map(cleaned => {
-            const convertedHtml = showdownConverter.makeHtml(cleaned.data as string);
-            // Add font size (for potential pdf conversions)
-            const withFontSize = convertedHtml.replace('<html>', `
-            <html>
-            <style>
-            p {
-                font-size: 10px;
-            }
-            h3 {
-                font-size: 15px;
-            }
-            </style>
-            `);
+            const convertedHtml = wtToHtml(cleaned.data.toString(), false);
             return {
                 cleanedTitle: cleaned.cleanedTitle,
-                data: withFontSize
+                data: convertedHtml
             } as CleanedChapterInfo;
         });
 
@@ -279,86 +227,6 @@ async function doProcessHtml (processedMd: ProcessedMd): Promise<ProcessedHtml> 
             type: "multiple",
             cleanedChapterInfo: convertedChapters,
             exportUri: multipleMd.exportUri
-        } as MultipleFiles;
-    }
-}
-
-async function doProcessPdf (processedHtml: ProcessedHtml): Promise<ProcessedPdf> {
-    if (processedHtml.type === 'single') {
-        const singleHtml = processedHtml.fullData as string;
-        
-        // const buffer = 
-        const buffer = await new Promise((resolve: (value: Buffer) => void, reject) => {
-            pdf.create(singleHtml, { 
-                orientation: 'portrait',
-                type: 'pdf',
-                border: {
-                    top: '0.5in',
-                    bottom: '0.5in',
-                    left: '0.5in',
-                    right: '0.5in',
-                },
-                format: 'A4',
-            }).toBuffer((err, buffer) => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-                resolve(buffer);
-            });
-        });
-
-        // Return the single converted pdf
-        return <SingleFile>{
-            type: 'single',
-            exportUri: processedHtml.exportUri,
-            fileName: processedHtml.fileName,
-            fullData: buffer
-        };
-    }
-    else {
-        const multipleHtml = processedHtml.cleanedChapterInfo;
-        const pdfBuffers = await Promise.all(
-            // Map the html chapters to an array of promises that return jsPDF instances
-            multipleHtml.map(chapterData => {
-                const html = chapterData.data as string;
-                // Create a promise from the callback-based html conversion function
-                return new Promise((resolve: (value: Buffer) => void, reject) => {
-                    pdf.create(html, { 
-                        orientation: 'portrait',
-                        type: 'pdf',
-                        border: {
-                            top: '0.5in',
-                            bottom: '0.5in',
-                            left: '0.5in',
-                            right: '0.5in',
-                        },
-                        format: 'A4',
-                    }).toBuffer((err, buffer) => {
-                        if (err) {
-                            reject(err);
-                            return;
-                        }
-                        resolve(buffer);
-                    });
-                });
-            })
-        );
-
-        // Pair all the pdf buffers with their associated metadata
-        const convertedChapters = multipleHtml.map((chapterData, index) => {
-            const pdf = pdfBuffers[index];
-            return {
-                cleanedTitle: chapterData.cleanedTitle,
-                data: pdf,
-            } as CleanedChapterInfo;
-        });
-
-        // Return all converted pdfs and the output folder path
-        return <MultipleFiles>{
-            type: 'multiple',
-            cleanedChapterInfo: convertedChapters,
-            exportUri: processedHtml.exportUri,
         } as MultipleFiles;
     }
 }
@@ -470,13 +338,6 @@ async function exportDocx (processed: ProcessedMd) {
     await exportGeneric(convertedDocx, 'docx');
 }
 
-// Export docx converts the markdown to html, then html to docx, then generically exports it
-async function exportPdf (processed: ProcessedMd) {
-    const convertedHtml = await doProcessHtml(processed);
-    const convertedPdf = await doProcessPdf(convertedHtml);
-    await exportGeneric(convertedPdf, 'pdf');
-}
-
 export async function handleDocumentExport (
     this: ExportForm, 
     workspace: Workspace, 
@@ -523,7 +384,6 @@ export async function handleDocumentExport (
         case 'txt': exportFunction = exportTxt; break;
         case 'docx': exportFunction = exportDocx; break;
         case 'html': exportFunction = exportHtml; break;
-        case 'pdf': exportFunction = exportPdf; break;
     }
     await exportFunction(success);
     vscode.window.showInformationMessage(`Successfully exported files into '${fileUri.fsPath}'`);

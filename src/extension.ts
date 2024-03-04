@@ -101,12 +101,6 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		// This is used to store temporary data for a session and should not last between sessions
 		const tmpFolderPath = vscode.Uri.joinPath(rootPath, 'tmp');
 		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
-
-		console.log([wtToHtml('Hello monkey'), 'SEPERATOR'].join('\n\n'));
-		console.log([wtToHtml('*Hello monkey*'), 'SEPERATOR'].join('\n\n'));
-		console.log([wtToHtml('*#Hello monkey*#'), 'SEPERATOR'].join('\n\n'));
-		console.log([wtToHtml('*#_Hello ~monkey*_~#'), 'SEPERATOR'].join('\n\n'));
-		console.log([wtToHtml('*#_Hello ~monkey\n*_~#'), 'SEPERATOR'].join('\n\n'));
 	}
 	catch (e) {
 		handleLoadFailure(e);

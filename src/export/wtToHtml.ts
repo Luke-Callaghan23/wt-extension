@@ -1,10 +1,11 @@
-type Tags = 'paragraph' | 'emphasis' | 'bold' | 'underline' | 'strikethrough';
+type Tags = 'paragraph' | 'emphasis' | 'bold' | 'underline' | 'strikethrough' | 'header';
 const conversionsTable: { [index: string]: Tags } = {
     '\n': 'paragraph',
     '*': 'emphasis',
-    '#': 'bold',
+    '^': 'bold',
     '_': 'underline',
     '~': 'strikethrough',
+    '#': 'header',
 };
 
 type TagStackItem = {
@@ -21,10 +22,11 @@ const getTagText = (tag: Tags, kind: 'opening' | 'closing') => {
         case 'paragraph': return `<${closeChar}p>`;
         case 'strikethrough': return `<${closeChar}del>`;
         case 'underline': return `<${closeChar}u>`;
+        case 'header': return `<${closeChar}h3>`;
     }
 }
 
-export const wtToHtml = (wt: string): string => {
+export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
     // Initialize the stack of html tags with an opening paragraph tag
     //      which starts at the 0th index of wt text
     const stack: TagStackItem[] = [{
@@ -32,6 +34,8 @@ export const wtToHtml = (wt: string): string => {
         tag: 'paragraph',
         text: '',
     }];
+
+    let headerOpened: boolean = false;
 
     // Initialize array of strings that will be joined for html with the 
     //      opening paragraph tag described above
@@ -60,6 +64,9 @@ export const wtToHtml = (wt: string): string => {
         }
 
         const tag = conversionsTable[char];
+        if (tag === 'header') {
+            headerOpened = true;
+        }
 
         // Iterate backwards over the stack to see whether:
         //      (A) there exists an unclosed opening tag which this current tag will close
@@ -105,13 +112,17 @@ export const wtToHtml = (wt: string): string => {
                     text: '',
                     tag: 'paragraph'
                 });
-
                 html.push(getTagText('paragraph', 'opening'));
             }
 
             // Re-open all tags besides the one that is being closed
             // This time in the same order that they were originally opened in
             closed.slice(1).forEach(open => {
+                // DO NOT REOPEN header tags, as they should only apply to the line
+                //      they're opened on
+                if (open.tag === 'header') return;
+
+                // Push all other tags to stack and html
                 stack.push({
                     openingTagIdx: idx + 1,
                     tag: open.tag,
@@ -157,5 +168,24 @@ export const wtToHtml = (wt: string): string => {
         const closeTagText = getTagText(tag, 'closing');
         html.push(text, closeTagText);
     });
-    return html.filter(txt => txt.length > 0).join('\n');
+    
+    const filteredBlanks = html.filter(txt => txt.length > 0).join('').replaceAll('\\n', '');
+    
+    // Add page break before all of the chapter headers
+    const withPageBreaks = pageBreaks 
+        ? filteredBlanks.replaceAll('<h3', '<div class="page-break" style="page-break-after: always;"></div><h3')
+        : filteredBlanks;
+
+    // Except for the first
+    const removedFirstPageBreak = withPageBreaks.replace('<div class="page-break" style="page-break-after: always;"></div>', '');
+
+    const fullHtml = `<html><style>
+        p {
+            font-size: 10px;
+        }
+        h3 {
+            font-size: 15px;
+        }
+        </style>${removedFirstPageBreak}</html>`
+    return fullHtml;
 }

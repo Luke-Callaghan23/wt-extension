@@ -147,8 +147,7 @@ export class ExportForm {
 							name="select-ext-type" 
 							class="select select-ext-type"
 						>
-							<vscode-option selected value="pdf">.pdf</vscode-option>
-							<vscode-option  value="md">.md</vscode-option>
+							<vscode-option selected value="md">.md</vscode-option>
 							<vscode-option  value="txt">.txt</vscode-option>
 							<vscode-option  value="docx">.docx</vscode-option>
 							<vscode-option  value="html">.html</vscode-option>
