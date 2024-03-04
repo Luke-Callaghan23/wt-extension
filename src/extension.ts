@@ -8,7 +8,7 @@ import { TODOsView } from './TODO/TODOsView';
 import { WordWatcher } from './wordWatcher/wordWatcher';
 import { ExportForm } from './export/exportFormView';
 import { SynonymViewProvider } from './synonymsWebview/synonymsView';
-import { Toolbar } from './toolbar';
+import { Toolbar } from './editor/toolbar';
 import { importWorkspace } from './workspace/importExport/importWorkspace';
 
 import { loadWorkspace, createWorkspace } from './workspace/workspace';

@@ -5,7 +5,7 @@ import * as console from './vsconsole';
 import { OutlineView } from './outline/outlineView';
 import { TODOsView } from './TODO/TODOsView';
 import { WordWatcher } from './wordWatcher/wordWatcher';
-import { Toolbar } from './toolbar';
+import { Toolbar } from './editor/toolbar';
 
 import { SynonymViewProvider } from './synonymsWebview/synonymsView';
 import { Workspace } from './workspace/workspaceClass';

@@ -1,229 +1,9 @@
-/* eslint-disable curly */
 import * as vscode from 'vscode';
-import { gitCommit, gitiniter } from './gitTransactions';
-import * as console from './vsconsole';
-import * as extension from './extension';
-import { Workspace } from './workspace/workspaceClass';
-import { isSpace } from 'markdown-it/lib/common/utils';
 
 
-// Function for surrounding selected text with a specified string
-async function surroundSelectionWith (start: string, end?: string) {
+export type JumpType = 'forward' | 'backward'
 
-    
-    // Get the active text editor
-    const editor = vscode.window.activeTextEditor;
-    
-    if (!editor) return;
-    
-    const newSelections = [ ...editor.selections ]
-    
-    const document = editor.document;
-    for (let selIndex = 0; selIndex < editor.selections.length; selIndex++) {
-        const selection = editor.selections[selIndex];
-        end = end || start;
-
-        // Get the selected text within the selection
-        const selected = document.getText(selection);
-    
-        // Check if the string immediately before the selection is the same as the surround string
-        let beforeSelection: vscode.Selection | undefined = undefined;
-        {
-            if (selected.startsWith(start)) {
-                const newEnd = new vscode.Position(selection.start.line, selection.start.character + start.length);
-                beforeSelection = new vscode.Selection(selection.start, newEnd);
-            }
-            else {
-                if (selection.start.character >= start.length) {
-                    const newStart = new vscode.Position(selection.start.line, selection.start.character - start.length);
-                    beforeSelection = new vscode.Selection(newStart, selection.start);
-                    const beforeText = document.getText(beforeSelection);
-                    if (beforeText !== start) beforeSelection = undefined;
-                }
-            }
-        }
-    
-        // Check if the string immediately after the selection is the same as the surround string
-        let afterSelection: vscode.Selection | undefined = undefined;
-        {
-            if (selected.endsWith(end)) {
-                const newStart = new vscode.Position(selection.end.line, selection.end.character - end.length);
-                afterSelection = new vscode.Selection(newStart, selection.end);
-            }
-            else {
-                const newEnd = new vscode.Position(selection.end.line, selection.end.character + end.length);
-                afterSelection = new vscode.Selection(selection.end, newEnd);
-                const afterText = document.getText(afterSelection);
-                if (afterText !== start) afterSelection = undefined;
-            }
-        }
-    
-        if (afterSelection && !beforeSelection && selection.isEmpty) {
-            // If only the substring after the selection is the surround string, then we're going to want
-            //      to move the cursor outside of the the surround string
-            // Simply shift the current editor's selection
-            const currentOffset = editor.document.offsetAt(selection.end);
-            const afterSurroundString = currentOffset + end.length;
-            const afterSurroundPosition = editor.document.positionAt(afterSurroundString);
-            const ns = [ ...editor.selections ];
-            ns[selIndex] = new vscode.Selection(afterSurroundPosition, afterSurroundPosition);
-            editor.selections = ns;
-        }
-        else if (beforeSelection && afterSelection) {
-            const before = beforeSelection as vscode.Selection;
-            const after = afterSelection as vscode.Selection;
-            // If both the before and after the selection are already equal to the surround string, then
-            //      remove those strings
-            await editor.edit((editBuilder: vscode.TextEditorEdit) => {
-                editBuilder.delete(before);
-                editBuilder.delete(after);
-            });
-        }
-        else {
-            // If before and after the selection is not already the surround string, add the surround string
-        
-            // Surround the selected text with the surround string
-            const surrounded = `${start}${selected}${end}`;
-        
-            // Replace selected text with the surrounded text
-            await editor.edit((editBuilder: vscode.TextEditorEdit) => {
-                editBuilder.replace(selection, surrounded);
-            });
-        }
-    }
-}
-
-export function italisize () {
-    return surroundSelectionWith('*');
-}
-
-export function bold () {
-    return surroundSelectionWith('^');
-}
-
-export function strikethrough () {
-    return surroundSelectionWith('~');
-}
-
-export function underline () {
-    return surroundSelectionWith('_');
-}
-
-export function commasize () {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
-    const document = editor.document;
-    if (!document) return;
-
-    const text = document.getText();
-
-    let startPos: vscode.Position = editor.selection.start;
-    let startStr = ', ';
-
-    let endPos: vscode.Position = editor.selection.end;
-    let endStr = ', ';
-
-    const startOffset = document.offsetAt(editor.selection.start);
-    if (text[startOffset - 1] === ' ') {
-        const prev = document.positionAt(startOffset - 1);
-        startPos = prev;
-        startStr = ',';
-    }
-    const endOffset = document.offsetAt(editor.selection.end);
-    if (text[endOffset] === ' ') {
-        endStr = ',';
-    }
-    editor.selection = new vscode.Selection(startPos, endPos);
-    return surroundSelectionWith(startStr, endStr);
-}
-
-export function remove () {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
-    return editor.edit((editBuilder: vscode.TextEditorEdit) => {
-        editBuilder.replace(editor.selection, '');
-    });
-}
-
-
-export function header () {
-    // Since we defined comments in the the language configuration json
-    //      as a hash '#', simply calling the default toggle comment command
-    //      from vscode will toggle the heading
-    return vscode.commands.executeCommand('editor.action.commentLine');
-}
-
-
-export async function save () {
-    await Workspace.packageContextItems();
-    vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
-    return gitCommit();
-}
-
-export async function saveAll () {
-    await Workspace.packageContextItems();
-    vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
-    return gitCommit();
-}
-
-type JumpType = 'forward' | 'backward'
-
-async function emDash () {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
-    return editor.edit((editBuilder: vscode.TextEditorEdit) => {
-        let replace = ' -- ';
-
-        // If the cursor is on a whitespace character, then insert only '-- ' instead of ' -- '
-        const document = editor.document;
-        if (editor.selection.isEmpty && document) {
-            const offset = document.offsetAt(editor.selection.start);
-            if (document.getText()[offset - 1] === ' ') {
-                replace = '-- ';
-            }
-        }
-        
-        editBuilder.replace(editor.selection, replace);
-    });
-}
-
-async function emDashes () {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
-    const document = editor.document;
-    if (!document) return;
-
-    // Move the cursor backwards if the cursor is on a whitespace character
-    const offset = document.offsetAt(editor.selection.start);
-    if (editor.selection.isEmpty && document.getText()[offset - 1] === ' ') {
-        const prev = document.positionAt(offset - 1);
-        editor.selection = new vscode.Selection(prev, prev);
-    }
-    return surroundSelectionWith(' -- ');
-}
-
-async function deleteSelection (jt: JumpType): Promise<boolean> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return false;
-
-    // Perform the delete on a specified selection
-    const doDelete = async (selection: vscode.Selection): Promise<boolean> => {
-        return editor.edit((editBuilder: vscode.TextEditorEdit) => editBuilder.replace(selection, ''));
-    }
-
-    // If selection is not empty, just delete the already selected area 
-    const selection = editor.selection;
-    if (!selection.isEmpty) {
-        return doDelete(selection);
-    }
-
-    // If there is no selection, then use jumpWord to get select the area to delete
-    const deleteSelection: vscode.Selection | null = await jumpWord(jt, true);
-    if (deleteSelection === null) return false;
-    return doDelete(deleteSelection);
-}
-
-async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Selection | null> {
+export async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Selection | null> {
     const direction = jt === 'forward' ? -1 : 1;
 
     const editor = vscode.window.activeTextEditor;
@@ -310,7 +90,31 @@ async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Sele
     return newSelections[0];
 }
 
-async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boolean): Promise<vscode.Selection | null> {
+export const punctuationStopsReg = /[\.\?\!\n\r]/;
+export const punctuationNoWhitespace = /[\.\?\!]/;
+export const fragmentStopReg = /[\-",;\*#~_()\[\]\{\}:/\\]/;
+
+export type JumpSentenceOptions = {
+    punctuationStops: RegExp,
+    fragmentStops?: RegExp
+}
+
+export const defaultJumpSentenceOptions = {
+    punctuationStops: punctuationStopsReg,
+    fragmentStops: undefined
+};
+
+export const defaultJumpFragmentOptions = {
+    punctuationStops: punctuationStopsReg,
+    fragmentStops: fragmentStopReg
+}
+
+export async function jumpSentence (
+    jt: JumpType, 
+    shiftHeld: boolean, 
+    options: JumpSentenceOptions = defaultJumpSentenceOptions
+
+): Promise<vscode.Selection | null> {
     const direction = jt === 'forward' ? -1 : 1;
     
     const editor = vscode.window.activeTextEditor;
@@ -326,14 +130,11 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
 
         const start = selection.isReversed ? selection.start : selection.end;
         const anchor = selection.anchor;
-    
-        const punctuation = /[\.\?\!\n\r]/;
-        const punctuationNoWhitespace = /[\.\?\!]/;
-    
-        
-        const fragmentStop = jumpFragment 
-            ? /[\-",;\*#~_()\[\]\{\}:/\\]/                    // If fragment jumps are activated, use all stopping characters as pause for fragments
-            : /^[]/;                                      // Otherwise, use a regex that the internet told me would never, ever (tm) match anything
+
+        // If fragment jumps are activated, use all stopping characters as pause for fragments
+        // Otherwise, use a regex that the internet told me would never, ever (tm) match anything
+        const fragmentStop = options.fragmentStops || /^[]/;
+        const punctuationStops = options.punctuationStops;
         
         const startOffset = document.offsetAt(start);
     
@@ -364,7 +165,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
         if (jt === 'forward' && initial !== 0) {
             let current = initial - 1;
             while (
-                (/\s/.test(docText[current]) || punctuation.test(docText[current]) || fragmentStop.test(docText[current]))
+                (/\s/.test(docText[current]) || punctuationStops.test(docText[current]) || fragmentStop.test(docText[current]))
                 && current !== 0
             ) {
                 current--;
@@ -376,7 +177,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
             const isEol = docText[initial] === '\n';
             let current = initial;
             while (
-                (/\s/.test(docText[current]) || punctuation.test(docText[current]) || fragmentStop.test(docText[current]))
+                (/\s/.test(docText[current]) || punctuationStops.test(docText[current]) || fragmentStop.test(docText[current]))
             ) {
                 current++;
             }
@@ -404,7 +205,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
             do {
                 backwardChar = text[backwardOff];
                 if ((
-                    !punctuation.test(backwardChar) 
+                    !punctuationStops.test(backwardChar) 
                     && !/\s/.test(backwardChar)
                     && !/["\-,;\*#~_()\[\]\{\}]/.test(backwardChar)
                 ) || backwardChar === undefined) {
@@ -440,9 +241,9 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
             const iterationCharacter = docText[iterOffset];
             
             // CASE: the current character matches a punction
-            if (punctuation.test(iterationCharacter)) {
+            if (punctuationStops.test(iterationCharacter)) {
                 // Fragment jumps always pause at any punctuation
-                if (jumpFragment) {
+                if (options.fragmentStops) {
                     break;
                 }
                 // Sentence jumps sometimes do not pause at punctuation because of the existence of mid-sentece punctuation
@@ -522,7 +323,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
             let current = iterOffset;
             while (
                 /\s/.test(docText[current]) || 
-                punctuation.test(docText[current]) || 
+                punctuationStops.test(docText[current]) || 
                 fragmentStop.test(docText[current])
             ) {
                 current++;
@@ -568,7 +369,7 @@ async function jumpSentence (jt: JumpType, shiftHeld: boolean, jumpFragment: boo
     return newSelections[0];
 }
 
-async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Selection | null> {
+export async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Selection | null> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return null;
 
@@ -673,41 +474,4 @@ async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise<vscode
     editor.selections = newSelections;
     vscode.window.activeTextEditor?.revealRange(newSelections[0]);
     return newSelections[0];
-}
-
-export class Toolbar {
-    static registerCommands() {
-        vscode.commands.registerCommand('wt.editor.remove', remove);
-        vscode.commands.registerCommand('wt.editor.save', save);
-        vscode.commands.registerCommand('wt.editor.saveAll', saveAll);
-        vscode.commands.registerCommand('wt.editor.italisize', italisize);
-        vscode.commands.registerCommand('wt.editor.bold', bold);
-        vscode.commands.registerCommand('wt.editor.strikethrough', strikethrough);
-        vscode.commands.registerCommand('wt.editor.commasize', commasize);
-        vscode.commands.registerCommand('wt.editor.underline', underline);
-        vscode.commands.registerCommand('wt.editor.header', header);
-        vscode.commands.registerCommand('wt.editor.emdash', emDash);
-        vscode.commands.registerCommand('wt.editor.emdashes', emDashes);
-
-        vscode.commands.registerCommand('wt.editor.delete.forward', () => deleteSelection('forward'));
-        vscode.commands.registerCommand('wt.editor.delete.backward', () => deleteSelection('backward'));
-
-        // Jump commands
-        vscode.commands.registerCommand('wt.editor.jump.word.forward', () => jumpWord('forward'));
-        vscode.commands.registerCommand('wt.editor.jump.word.backward', () => jumpWord('backward'));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.forward', () => jumpSentence('forward', false, false));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.backward', () => jumpSentence('backward', false, false));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.forward', () => jumpSentence('forward', false, true));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.backward', () => jumpSentence('backward', false, true));
-        vscode.commands.registerCommand('wt.editor.jump.paragraph.forward', () => jumpParagraph('forward'));
-        vscode.commands.registerCommand('wt.editor.jump.paragraph.backward', () => jumpParagraph('backward'));
-        vscode.commands.registerCommand('wt.editor.jump.word.forward.shift', () => jumpWord('forward', true));
-        vscode.commands.registerCommand('wt.editor.jump.word.backward.shift', () => jumpWord('backward', true));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.forward.shift', () => jumpSentence('forward', true, false));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.backward.shift', () => jumpSentence('backward', true, false));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.forward.shift', () => jumpSentence('forward', true, true));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.backward.shift', () => jumpSentence('backward', true, true));
-        vscode.commands.registerCommand('wt.editor.jump.paragraph.forward.shift', () => jumpParagraph('forward', true));
-        vscode.commands.registerCommand('wt.editor.jump.paragraph.backward.shift', () => jumpParagraph('backward', true));
-    }
 }

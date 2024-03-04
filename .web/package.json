@@ -390,11 +390,6 @@
 				"icon": "$(layout-statusbar)"
 			},
 			{
-				"command": "wt.editor.header",
-				"title": "Writing Tool: Header",
-				"icon": "$(text-size)"
-			},
-			{
 				"command": "wt.editor.emdash",
 				"title": "Writing Tool: Em Dash",
 				"icon": "$(remove)"
@@ -550,6 +545,18 @@
 				"title": "Writing Tool: Reset Timer",
 				"command": "wt.statusBarTimer.resetTimer",
 				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
+				"title": "Writing Tool: Comment sentence",
+				"command": "wt.editor.todo.commentSentence"
+			},
+			{
+				"title": "Writing Tool: Comment fragment",
+				"command": "wt.editor.todo.commentFragment"
+			},
+			{
+				"title": "Writing Tool: Comment paragraph",
+				"command": "wt.editor.todo.commentParagraph"
 			}
 		],
 		"menus": {
@@ -814,11 +821,6 @@
 					"group": "navigation@7"
 				},
 				{
-					"command": "wt.editor.header",
-					"when": "editorLangId == wt || editorLangId == wtNote",
-					"group": "navigation@8"
-				},
-				{
 					"command": "wt.editor.remove",
 					"when": "editorLangId == wt || editorLangId == wtNote",
 					"group": "navigation@9"
@@ -893,11 +895,6 @@
 			{
 				"command": "wt.editor.underline",
 				"key": "ctrl+alt+u",
-				"when": "editorLangId == wt || editorLangId == wtNote"
-			},
-			{
-				"command": "wt.editor.header",
-				"key": "ctrl+alt+h",
 				"when": "editorLangId == wt || editorLangId == wtNote"
 			},
 			{
@@ -1019,6 +1016,21 @@
 				"command": "wt.intellisense.synonyms.nextSelection",
 				"key": "down",
 				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && editorLangId == wt"
+			},
+			{
+				"command": "wt.editor.todo.commentSentence",
+				"key": "ctrl+shift+/",
+				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
+				"command": "wt.editor.todo.commentFragment",
+				"key": "alt+shift+/",
+				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
+				"command": "wt.editor.todo.commentParagraph",
+				"key": "ctrl+alt+shift+/",
+				"when": "editorLangId == wt || editorLandId == wtNote"
 			}
 		],
 		"languages": [
