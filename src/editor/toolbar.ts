@@ -8,6 +8,7 @@ import { isSpace } from 'markdown-it/lib/common/utils';
 import { JumpType, defaultJumpFragmentOptions, fragmentStopReg, jumpParagraph, jumpSentence, jumpWord, punctuationStopsReg } from './jumps';
 import { bold, commasize, emDash, emDashes, italisize, strikethrough, underline } from './surroundSelection';
 import { commentFragment, commentParagraph, commentSentence } from './comment';
+import { highlightExpand, highlightFragment, highlightParagraph, highlightSentence } from './highlights';
 
 
 export function remove () {
@@ -71,6 +72,11 @@ export class Toolbar {
         vscode.commands.registerCommand("wt.editor.todo.commentSentence", commentSentence);
         vscode.commands.registerCommand("wt.editor.todo.commentFragment", commentFragment);
         vscode.commands.registerCommand("wt.editor.todo.commentParagraph", commentParagraph);
+
+        vscode.commands.registerCommand("wt.editor.highlightSentence", highlightSentence);
+        vscode.commands.registerCommand("wt.editor.highlightFragment", highlightFragment);
+        vscode.commands.registerCommand("wt.editor.highlightParagraph", highlightParagraph);
+        vscode.commands.registerCommand("wt.editor.highlightExpand", highlightExpand);
 
         vscode.commands.registerCommand('wt.editor.delete.forward', () => deleteSelection('forward'));
         vscode.commands.registerCommand('wt.editor.delete.backward', () => deleteSelection('backward'));
