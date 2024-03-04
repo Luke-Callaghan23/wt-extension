@@ -77,6 +77,25 @@ export async function surroundSelectionWith (start: string, end?: string) {
             await editor.edit((editBuilder: vscode.TextEditorEdit) => {
                 editBuilder.replace(selection, surrounded);
             });
+
+            if (!selection.isEmpty) continue;
+
+            // If the selection is empty, then move the cursor into the middle of the surround strings
+            //      that were added
+            // After the edits, the current position of the cursor is at the end of the surround string
+            const endPos = selection.end;
+            const endSequenceLength = end.length;
+
+            // The new position is the same as the current position, minus the amount of characters in the 
+            //      surround string
+            const newPosition = new vscode.Position(endPos.line, endPos.character + endSequenceLength);
+
+            // New selection is the desired position of the cursor (provided to the constructor twice, to
+            //      get an empty selection)
+            const replaceSelection = new vscode.Selection(newPosition, newPosition);
+            const sels = [ ...editor.selections ];
+            sels[selIndex] = replaceSelection;
+            editor.selections = sels;
         }
     }
 }
@@ -128,20 +147,22 @@ export function commasize () {
 export async function emDash () {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
-    return editor.edit((editBuilder: vscode.TextEditorEdit) => {
-        let replace = ' -- ';
-
-        // If the cursor is on a whitespace character, then insert only '-- ' instead of ' -- '
-        const document = editor.document;
-        if (editor.selection.isEmpty && document) {
-            const offset = document.offsetAt(editor.selection.start);
-            if (document.getText()[offset - 1] === ' ') {
-                replace = '-- ';
+    for (const selection of editor.selections) {
+        await editor.edit((editBuilder: vscode.TextEditorEdit) => {
+            let replace = ' -- ';
+            
+            // If the cursor is on a whitespace character, then insert only '-- ' instead of ' -- '
+            const document = editor.document;
+            if (selection.isEmpty && document) {
+                const offset = document.offsetAt(selection.start);
+                if (document.getText()[offset - 1] === ' ') {
+                    replace = '-- ';
+                }
             }
-        }
-        
-        editBuilder.replace(editor.selection, replace);
-    });
+            
+            editBuilder.replace(selection, replace);
+        });
+    }
 }
 
 export async function emDashes () {
@@ -151,10 +172,15 @@ export async function emDashes () {
     if (!document) return;
 
     // Move the cursor backwards if the cursor is on a whitespace character
-    const offset = document.offsetAt(editor.selection.start);
-    if (editor.selection.isEmpty && document.getText()[offset - 1] === ' ') {
-        const prev = document.positionAt(offset - 1);
-        editor.selection = new vscode.Selection(prev, prev);
+    const newSelections = [ ...editor.selections ];
+    for (let selIndex = 0; selIndex < newSelections.length; selIndex++) {
+        const selection = newSelections[selIndex];
+        const offset = document.offsetAt(selection.start);
+        if (selection.isEmpty && document.getText()[offset - 1] === ' ') {
+            const prev = document.positionAt(offset - 1);
+            newSelections[selIndex] = new vscode.Selection(prev, prev);
+        }
     }
+    editor.selections = newSelections;
     return surroundSelectionWith(' -- ');
 }
