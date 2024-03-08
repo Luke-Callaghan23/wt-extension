@@ -23,6 +23,17 @@ export const defaultJumpFragmentOptions = {
     fragmentStops: fragmentStopReg
 }
 
+const titles = [
+    'Mr.',
+    'Mrs.',
+    'Ms.',
+    'St.',
+    'Mx.',
+    'Fr.',
+    'Sr.',
+    'Esq.',
+];
+
 export async function jumpSentence (
     jt: JumpType, 
     shiftHeld: boolean, 
@@ -187,10 +198,24 @@ export function jumpSentenceSingleSelection (
             // If the following character is a capital letter BUT it came right after the stopped punctuation
             //      then assume that the reason for the pause was because of an acronym "C.H.O.A.M." and continue
             //      iterating
+
+            
             const after = getNextNonPunctuationNonWhitespaceCharacter(docText, iterOffset);
-            if (/[A-Z]/.test(after.char) && after.dist !== 1) {
-                break;
+            const miscConditions = /[A-Z]/.test(after.char) && after.dist !== 1;
+
+            let isTitle = false;
+            if (iterationCharacter === '.') {
+                const prev = docText[iterOffset - 1];
+                const prevPrev = docText[iterOffset - 2];
+                const prevPrevPrev = docText[iterOffset - 3];
+
+                const titleMaybe = prevPrevPrev + prevPrev + prev + iterationCharacter;
+                for (const title of titles) {
+                    isTitle = isTitle || titleMaybe.endsWith(title);
+                }
             }
+
+            if (miscConditions && !isTitle) break;
 
             // None of any of the above applies if we're talking about a new line
             if (iterationCharacter === '\r' || iterationCharacter === '\n') {
