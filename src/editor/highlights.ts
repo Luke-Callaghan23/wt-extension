@@ -2,30 +2,30 @@ import * as vscode from 'vscode';
 import { defaultJumpFragmentOptions, fragmentStopReg, jumpParagraph, jumpParagraphSingleSelection, jumpSentence, jumpSentenceSingleSelection, jumpWord, jumpWordSingleSelection, punctuationStopsReg } from './jumps';
 
 export async function highlightWord () {
-    await jumpWord('forward', false);                           // Jump forward
-    await jumpWord('backward', true);                           // Jump backward holding shift
+    await jumpWord('backward', false);                           // Jump backward
+    await jumpWord('forward', true);                           // Jump forward holding shift
 }
 
 export async function highlightSentence (sentenceJumpReg: RegExp = punctuationStopsReg) {
-    await jumpSentence('forward', false, {
+    await jumpSentence('backward', false, {
         punctuationStops: sentenceJumpReg
-    });                      // Jump forward
-    await jumpSentence('backward', true, {
+    });                      // Jump backward
+    await jumpSentence('forward', true, {
         punctuationStops: sentenceJumpReg
-    });                      // Jump backward holding shift
+    });                      // Jump forward holding shift
 }
 
 export async function highlightParagraph () {
-    await jumpParagraph('forward', false);                      // Jump forward
-    await jumpParagraph('backward', true);                      // Jump backward holding shift
+    await jumpParagraph('backward', false);                      // Jump backward
+    await jumpParagraph('forward', true);                      // Jump forward holding shift
 }
 
 export async function highlightFragment (fragmentJumpReg: RegExp = fragmentStopReg) {
-    await jumpSentence('forward', false, { 
+    await jumpSentence('backward', false, { 
         punctuationStops: punctuationStopsReg,
         fragmentStops: fragmentJumpReg
     });                 
-    await jumpSentence('backward', true, { 
+    await jumpSentence('forward', true, { 
         punctuationStops: punctuationStopsReg,
         fragmentStops: fragmentJumpReg
     });                 
@@ -38,8 +38,8 @@ export function highlightWordSingleSelection (
     document: vscode.TextDocument, 
     docText: string
 ): vscode.Selection {
-    const initial = jumpWordSingleSelection('forward', false, selection, document, docText);
-    return jumpWordSingleSelection('backward', true, initial, document, docText);
+    const initial = jumpWordSingleSelection('backward', false, selection, document, docText);
+    return jumpWordSingleSelection('forward', true, initial, document, docText);
 }
 
 export function highlightSentenceSingleSelection (
@@ -48,10 +48,10 @@ export function highlightSentenceSingleSelection (
     document: vscode.TextDocument, 
     docText: string
 ): vscode.Selection {
-    const initial = jumpSentenceSingleSelection('forward', false, {
+    const initial = jumpSentenceSingleSelection('backward', false, {
         punctuationStops: sentenceJumpReg
     }, selection, document, docText);
-    return jumpSentenceSingleSelection('backward', true, {
+    return jumpSentenceSingleSelection('forward', true, {
         punctuationStops: sentenceJumpReg
     }, initial, document, docText);
 }
@@ -61,8 +61,8 @@ export function highlightParagraphSingleSelection (
     document: vscode.TextDocument, 
     docText: string
 ): vscode.Selection {
-    const initial = jumpParagraphSingleSelection('forward', false, selection, document, docText);
-    return jumpParagraphSingleSelection('backward', true, initial, document, docText);
+    const initial = jumpParagraphSingleSelection('backward', false, selection, document, docText);
+    return jumpParagraphSingleSelection('forward', true, initial, document, docText);
 }
 
 export function highlightFragmentSingleSelection (
@@ -71,11 +71,11 @@ export function highlightFragmentSingleSelection (
     document: vscode.TextDocument, 
     docText: string
 ): vscode.Selection {
-    const initial = jumpSentenceSingleSelection('forward', false, { 
+    const initial = jumpSentenceSingleSelection('backward', false, { 
         punctuationStops: punctuationStopsReg,
         fragmentStops: fragmentJumpReg
     }, selection, document, docText);
-    return jumpSentenceSingleSelection('backward', true, { 
+    return jumpSentenceSingleSelection('forward', true, { 
         punctuationStops: punctuationStopsReg,
         fragmentStops: fragmentJumpReg
     }, initial, document, docText);
