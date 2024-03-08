@@ -1,7 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as console from './vsconsole';
+// import * as console from './vsconsole';
 import { ImportFileSystemView } from './import/importFileSystemView';
 import { OutlineView } from './outline/outlineView';
 import { TODOsView } from './TODO/TODOsView';
