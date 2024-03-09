@@ -100,7 +100,7 @@ export class WordCount {
         }
 
         const promises: Promise<DisplayInfo>[] = [];
-        const root: RootNode = outlineView.tree.data as RootNode;
+        const root: RootNode = outlineView.rootNodes[0].data as RootNode;
         
         // Create promises to collect display data for all existing chapters
         const chapters: ContainerNode = root.chapters.data as ContainerNode;

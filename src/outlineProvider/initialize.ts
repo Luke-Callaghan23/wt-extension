@@ -146,6 +146,7 @@ type ChapterParams<T extends TreeNode> = {
     fileName: string,
     chaptersContainerUri: vscode.Uri,
     init: InitializeNode<T>,
+    dontFail?: boolean
 };
 
 export async function initializeChapter <T extends TreeNode> ({
@@ -154,6 +155,7 @@ export async function initializeChapter <T extends TreeNode> ({
     fileName,
     chaptersContainerUri,
     init,
+    dontFail
 }: ChapterParams<T>): Promise<ChapterNode<T>> {
     
     const chapterFolderUri = vscodeUris.Utils.joinPath(chaptersContainerUri, fileName);
@@ -166,9 +168,11 @@ export async function initializeChapter <T extends TreeNode> ({
         chapterFolderEntries = await vscode.workspace.fs.readDirectory(chapterFolderUri);
     }
     catch (e) {
-        vscode.commands.executeCommand('setContext', 'wt.valid', false);
-        // When we fail to read the chapter folder, fail out
-        vscode.window.showErrorMessage(`Error: could not read chapter folder at path '${chapterFolderUri.fsPath}': ${e}`);
+        if (dontFail === undefined || dontFail === false) {
+            vscode.commands.executeCommand('setContext', 'wt.valid', false);
+            // When we fail to read the chapter folder, fail out
+            vscode.window.showErrorMessage(`Error: could not read chapter folder at path '${chapterFolderUri.fsPath}': ${e}`);
+        }
         throw e;
     }
 
@@ -270,6 +274,7 @@ type SnipParams<T extends TreeNode> = {
     parentTypeId: ResourceType,
     parentUri: vscode.Uri,
     init: InitializeNode<T>,
+    dontFail?: boolean
 };
 
 export async function initializeSnip<T extends TreeNode> ({
@@ -279,6 +284,7 @@ export async function initializeSnip<T extends TreeNode> ({
     parentTypeId,
     parentUri,
     init,
+    dontFail
 }: SnipParams<T>): Promise<SnipNode<T>> {
 
     const snipFolderUri = vscodeUris.Utils.joinPath(parentUri, fileName);
@@ -291,9 +297,11 @@ export async function initializeSnip<T extends TreeNode> ({
         snipFolderEntries = await vscode.workspace.fs.readDirectory(snipFolderUri);
     }
     catch (e) {
-        vscode.commands.executeCommand('setContext', 'wt.valid', false);
-        // When we fail to read the snip folder, fail out
-        vscode.window.showErrorMessage(`Error: could not read sni[] folder at path '${snipFolderUri.fsPath}': ${e}`);
+        if (dontFail === undefined || dontFail === false) {
+            vscode.commands.executeCommand('setContext', 'wt.valid', false);
+            // When we fail to read the snip folder, fail out
+            vscode.window.showErrorMessage(`Error: could not read sni[] folder at path '${snipFolderUri.fsPath}': ${e}`);
+        }
         throw e;
     }
 

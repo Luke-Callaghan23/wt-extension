@@ -45,7 +45,7 @@ export function registerCommands (this: OutlineView) {
     vscode.commands.registerCommand("wt.outline.removeResource", (resource) => this.removeResource(resource));
 
     vscode.commands.registerCommand("wt.outline.collectChapterUris", () => {
-        const root: RootNode = this.tree.data as RootNode;
+        const root: RootNode = this.rootNodes[0].data as RootNode;
         const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
         const chapterData = chaptersContainer.contents.map(c => {
             const title = c.data.ids.display;
@@ -82,7 +82,7 @@ export function registerCommands (this: OutlineView) {
 
         // Find all copied items that still exist in the tree in the same location
         const copies: (OutlineNode | undefined | null)[] = await Promise.all(copied.nodes.map(copy => {
-            return this._getTreeElementByUri(copy.data.ids.uri) as Promise<OutlineNode | null | undefined>;
+            return this.getTreeElementByUri(copy.data.ids.uri) as Promise<OutlineNode | null | undefined>;
         }));
         const validCopiedNodes = copies.filter(copy => copy) as OutlineNode[];
 
@@ -100,7 +100,7 @@ export function registerCommands (this: OutlineView) {
         // If there is no selected detination for the paste in the outline
         //      view, then default to using the tree as the paste destination
         let selected = this.view.selection;
-        if (selected.length === 0) selected = [ this.tree ];
+        if (selected.length === 0) selected = [ ...this.rootNodes ];
 
         const pasteLog: { [index: string]: 1 } = {};
 

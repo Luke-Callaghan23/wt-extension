@@ -186,7 +186,7 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
     if (!dotConfig) return;
 
     
-    const parentNode = (await this._getTreeElementByUri(resource.data.ids.parentUri)) as OutlineNode;
+    const parentNode = (await this.getTreeElementByUri(resource.data.ids.parentUri)) as OutlineNode;
 
     // Find the unordered list from the parent node based on the mover type
     let unordered: OutlineNode[];
@@ -256,7 +256,7 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
     // Write the re formated .config file
     await writeDotConfig(dotConfigUri, reformated);
     await this.refresh(false, [ parentNode ]);
-    this.view.reveal((this.tree.data as RootNode).chapters, { focus: false, select: true });
+    this.view.reveal((this.rootNodes[0].data as RootNode).chapters, { focus: false, select: true });
 }
 
 export async function moveDown (this: OutlineView, resource: any) {
@@ -289,7 +289,7 @@ export async function moveDown (this: OutlineView, resource: any) {
     const dotConfig = await readDotConfig(dotConfigUri);
     if (!dotConfig) return;
 
-    const parentNode = (await this._getTreeElementByUri(resource.data.ids.parentUri)) as OutlineNode;
+    const parentNode = (await this.getTreeElementByUri(resource.data.ids.parentUri)) as OutlineNode;
 
     // Find the unordered list from the parent node based on the mover type
     let unordered: OutlineNode[];
@@ -359,5 +359,5 @@ export async function moveDown (this: OutlineView, resource: any) {
     // Write the re formated .config file
     await writeDotConfig(dotConfigUri, reformated);
     await this.refresh(false, [ parentNode ]);
-    this.view.reveal((this.tree.data as RootNode).chapters, { focus: true, select: true });
+    this.view.reveal((this.rootNodes[0].data as RootNode).chapters, { focus: true, select: true });
 }

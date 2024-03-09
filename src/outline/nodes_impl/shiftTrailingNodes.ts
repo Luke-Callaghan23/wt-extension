@@ -3,11 +3,12 @@ import * as vscodeUris from 'vscode-uri';
 import { OutlineTreeProvider } from "../../outlineProvider/outlineTreeProvider";
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "../node";
 import { readDotConfig, writeDotConfig } from '../../help';
+import { HasGetUri, UriBasedView } from '../../outlineProvider/UriBasedView';
 
 // Shifts all the nodes that 
-export async function shiftTrailingNodesDown (
+export async function shiftTrailingNodesDown<T extends HasGetUri> (
     this: OutlineNode,
-    view: OutlineTreeProvider<OutlineNode>
+    view: UriBasedView<T>
 ): Promise<string> {
 
     // Read the .config file of this node from disk
@@ -34,7 +35,7 @@ export async function shiftTrailingNodesDown (
 
     // Shift any node that comes after this one down by one inside of the internal 
     //      outline view tree structure
-    const parentContainer: OutlineNode | null | undefined = await view._getTreeElementByUri(this.data.ids.parentUri);
+    const parentContainer: OutlineNode | null | undefined = await view.getTreeElementByUri(this.data.ids.parentUri);
     if (parentContainer) {
         // Find the content array in which this node resides
         let content: OutlineNode[];

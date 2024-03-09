@@ -198,11 +198,10 @@ export function jumpSentenceSingleSelection (
             // If the following character is a capital letter BUT it came right after the stopped punctuation
             //      then assume that the reason for the pause was because of an acronym "C.H.O.A.M." and continue
             //      iterating
-
-            
             const after = getNextNonPunctuationNonWhitespaceCharacter(docText, iterOffset);
             const miscConditions = /[A-Z]/.test(after.char) && after.dist !== 1;
 
+            // Also do not pause on titles
             let isTitle = false;
             if (iterationCharacter === '.') {
                 const prev = docText[iterOffset - 1];
@@ -211,6 +210,11 @@ export function jumpSentenceSingleSelection (
 
                 const titleMaybe = prevPrevPrev + prevPrev + prev + iterationCharacter;
                 for (const title of titles) {
+                    // TODO: if some insane person did something like:
+                    //      'First sentence, weirdWordThatEndsInMr.  Next sentence.'
+                    //      it wouldn't pause.
+                    // TODO: such a rare case, I'm not even really going to consider
+                    //      it
                     isTitle = isTitle || titleMaybe.endsWith(title);
                 }
             }

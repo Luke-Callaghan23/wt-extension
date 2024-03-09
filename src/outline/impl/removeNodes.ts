@@ -5,6 +5,7 @@ import * as extension from '../../extension';
 import * as console from '../../vsconsole';
 import { Buff } from "../../Buffer/bufferSource";
 import { writeDotConfig } from "../../help";
+import { RecycleLog } from "../../recyclingBin/recyclingBinView";
 
 
 
@@ -24,21 +25,13 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
     }
 
     // Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
-    const uniqueRoots = await this._getLocalRoots(targets);
+    const uniqueRoots = await this.getLocalRoots(targets);
     const s = uniqueRoots.length > 1 ? 's' : '';
 
     const result = await vscode.window.showInformationMessage(`Are you sure you want to delete ${uniqueRoots.length} resource${s}?`, { modal: true }, "Yes", "No");
     if (result === 'No' || result === undefined) {
         return;
     }
-
-    type RecycleLog = {
-        oldUri: string,
-        recycleBinName: string,
-        deleteTimestamp: number,
-        resourceType: ResourceType,
-        title?: string,					// only used when the deleted item was a fragment
-    };
 
     const newLogs: RecycleLog[] = [];
 
@@ -73,7 +66,7 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
 
             // Finally, remove the fragment from the parent's text node container
             const fragmentParentUri = target.data.ids.parentUri;
-            const fragmentParent: OutlineNode = await this._getTreeElementByUri(fragmentParentUri);
+            const fragmentParent: OutlineNode = await this.getTreeElementByUri(fragmentParentUri);
             if (!fragmentParent) continue;
 
             containers.push(fragmentParent);
@@ -106,13 +99,14 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
                 oldUri: removedNodeAbsPath.fsPath,
                 deleteTimestamp: timestamp,
                 resourceType: target.data.ids.type,
-                recycleBinName: recycleBinName
+                recycleBinName: recycleBinName,
+                title: target.data.ids.display
             };
             newLogs.push(logItem);
 
             // Finally, remove the chapter or snip from the parent container
             const removedNodeParentUri = target.data.ids.parentUri;
-            const removedNodeParent: OutlineNode = await this._getTreeElementByUri(removedNodeParentUri);
+            const removedNodeParent: OutlineNode = await this.getTreeElementByUri(removedNodeParentUri);
             if (!removedNodeParent) continue;
 
             containers.push(removedNodeParent);
@@ -169,7 +163,8 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
                     oldUri: removedNodeUri.fsPath,
                     deleteTimestamp: timestamp,
                     resourceType: target.data.ids.type,
-                    recycleBinName: recycleBinName
+                    recycleBinName: recycleBinName,
+                    title: target.data.ids.display
                 };
                 newLogs.push(logItem);
             }

@@ -100,6 +100,12 @@
 					"icon": "media/dep.svg",
 					"contextualTitle": "Export",
 					"when": "wt.valid"
+				},
+				{
+					"id": "wt.recyclingBin",
+					"name": "Recycling Bin",
+					"contextualTitle": "Recycling Bin",
+					"when": "wt.valid"
 				}
 			],
 			"workBible": [
@@ -199,6 +205,14 @@
 			{
 				"command": "wt.outline.copyRelativePath",
 				"title": "Writing Tool: Copy Relative Path"
+			},
+			{
+				"command": "wt.recyclingBin.renameFile",
+				"title": "Writing Tool: Rename Recycled Resource"
+			},
+			{
+				"command": "wt.recyclingBin.permanentlyDelete",
+				"title": "Writing Tool: Pemanently Delete Resource"
 			},
 			{
 				"command": "wt.todo.copyPath",
@@ -787,6 +801,14 @@
 					"group": "copy_path@7"
 				},
 				{
+					"command": "wt.recyclingBin.renameFile",
+					"when": "view == wt.recyclingBin"
+				},
+				{
+					"command": "wt.recyclingBin.permanentlyDelete",
+					"when": "view == wt.recyclingBin"
+				},
+				{
 					"command": "wt.wordWatcher.deleteWord",
 					"when": "view == wt.wordWatcher && (viewItem == watchedWord_disabled || viewItem == watchedWord_enabled)"
 				},
@@ -932,6 +954,16 @@
 			]
 		},
 		"keybindings": [
+			{
+				"command": "wt.recyclingBin.renameFile",
+				"key": "f2",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.recyclingBin"
+			},
+			{
+				"command": "wt.recyclingBin.permanentlyDelete",
+				"key": "delete",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.recyclingBin"
+			},
 			{
 				"command": "wt.outline.renameFile",
 				"key": "f2",

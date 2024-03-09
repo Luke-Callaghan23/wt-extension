@@ -30,6 +30,7 @@ import { CoderModer } from './codeMode/codeMode';
 import { WorldNotes } from './worldNotes/worldNotes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { WorkBible } from './workBible/workBible';
+import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -52,7 +53,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		await todo.init();
 		const wordWatcher = new WordWatcher(context, workspace);			// wt.wordWatcher
 		const proximity = new Proximity(context, workspace);
-		const textStyles = new TextStyles(context, workspace);			
+		const textStyles = new TextStyles(context, workspace);	
+		const recycleBin = new RecyclingBinView(context, workspace);		
 
 		const personalDictionary = new PersonalDictionary(context, workspace);
 		const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, true);

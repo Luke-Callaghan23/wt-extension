@@ -102,12 +102,12 @@ export async function moveNode (
     if (moverType === 'snip') {
         // Use the root's .snips container
         if (newParentType === 'root') {
-            const root: RootNode = (provider.tree as OutlineNode).data as RootNode;
+            const root: RootNode = (provider.rootNodes[0] as OutlineNode).data as RootNode;
             destinationContainer = (root.snips as OutlineNode);
         }
         // Use the chapter's .snips container
         else if (newParentType === 'chapter') {
-            const chapterNode: ChapterNode = (await provider._getTreeElementByUri(newParentUri)).data;
+            const chapterNode: ChapterNode = (await provider.getTreeElementByUri(newParentUri)).data;
             destinationContainer = chapterNode.snips;
         }
         // Traverse upwards until we find the nearest 'root' or 'chapter' node that we can move the snip into
@@ -121,7 +121,7 @@ export async function moveNode (
     }
     else if (moverType === 'fragment') {
         if (newParentType === 'chapter' || newParentType === 'snip') {
-            destinationContainer = (await provider._getTreeElementByUri(newParentUri));
+            destinationContainer = (await provider.getTreeElementByUri(newParentUri));
         }
         else if (newParentType === 'fragment') {
             destinationContainer = (await newParentNode.getContainerParent(provider, 'snip'));
@@ -149,7 +149,7 @@ export async function moveNode (
                 if (!snipUri) return { moveOffset: -1, effectedContainers: [], createdDestination: null };
 
                 // Get the snip node itself from the outline view 
-                const snipNode = await outlineView._getTreeElementByUri(snipUri);
+                const snipNode = await outlineView.getTreeElementByUri(snipUri);
 
                 // Use that snip node as both the override for all potential future
                 //      fragment moves and as the destination node
@@ -163,7 +163,7 @@ export async function moveNode (
         }
     }  
     else if (moverType === 'chapter') {
-        destinationContainer = ((provider.tree as OutlineNode).data as RootNode).chapters;
+        destinationContainer = ((provider.rootNodes[0] as OutlineNode).data as RootNode).chapters;
     }
     else {
         return { moveOffset: -1, effectedContainers: [], createdDestination: null };
@@ -365,7 +365,7 @@ async function handleContainerSwap (
 
     // Store old parental information before update
     const oldParentUri = node.data.ids.parentUri;
-    const oldParentNode: OutlineNode = await provider._getTreeElementByUri(oldParentUri);
+    const oldParentNode: OutlineNode = await provider.getTreeElementByUri(oldParentUri);
     let oldParentContents: OutlineNode[];
 
     // Alter the internal data of the moving node to reflect its new ordering and parent

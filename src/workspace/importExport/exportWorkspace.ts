@@ -112,7 +112,7 @@ export async function handleWorkspaceExport (
     workspace: Workspace,
     outlineView: OutlineView
 ) {
-    const root: RootNode = outlineView.tree.data as RootNode;
+    const root: RootNode = outlineView.rootNodes[0].data as RootNode;
     const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
     const snipsContainer: ContainerNode = root.snips.data as ContainerNode;
 

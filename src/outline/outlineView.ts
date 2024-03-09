@@ -53,14 +53,14 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 		// If the reload option is set to true, the caller wants us to reload the outline tree
 		//		completely from disk
 		if (reload) {
-			this.tree = await this.initializeTree();
+			this.rootNodes = [await this.initializeTree()];
 		}
 
 		// Because of all the various edits that the outline view does on the internal structure 
 		//		and because we want to avoid uneeded reading of the disk file structure, we
 		//		send over the outline node to the todo view whenever their is updates
 		//		to the outline view tree
-		vscode.commands.executeCommand('wt.todo.updateTree', this.tree);
+		vscode.commands.executeCommand('wt.todo.updateTree', this.rootNodes);
 
 		// Then update the root node of the outline view
 		if (updates.length > 0) {

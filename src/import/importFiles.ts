@@ -490,13 +490,13 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
     const output = snipInfo.output;
     if (output.dest === 'snip') {
         // dest = 'snip' -> inserted snips are work snips
-        parentNode = (outlineView.tree.data as RootNode).snips;
+        parentNode = (outlineView.rootNodes[0].data as RootNode).snips;
     }
     else if (output.dest === 'chapter') {
         // dest = 'chapter' -> inserted snips are inserted into the specified chapter
         // Find the chapter by its uri and use that as the parent node
         const chapterUri = vscode.Uri.joinPath(extension.rootPath, output.outputChapter);
-        const chapterNode: OutlineNode | null = await outlineView._getTreeElementByUri(chapterUri);
+        const chapterNode: OutlineNode | null = await outlineView.getTreeElementByUri(chapterUri);
         if (!chapterNode) return;
         parentNode = chapterNode;
     }
