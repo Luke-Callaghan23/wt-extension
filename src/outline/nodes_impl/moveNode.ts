@@ -8,7 +8,7 @@ import * as extension from './../../extension';
 import { Workspace } from '../../workspace/workspaceClass';
 
 // Map of a resource type to all resource types that the key can be moved into
-const allowedMoves: { [index: string]: ResourceType[] } = {
+export const allowedMoves: { [index: string]: ResourceType[] } = {
     'snip': [
         'chapter',
         'fragment',
@@ -17,7 +17,8 @@ const allowedMoves: { [index: string]: ResourceType[] } = {
         'snip'
     ],
     'chapter': [
-        'chapter'
+        'chapter',
+        'container'
     ],
     'root': [],
     'container': [
@@ -395,6 +396,10 @@ async function handleContainerSwap (
         // Fragments reside in `ChapterNode`s or `SnipNode`s, in a `textData` array
         (destinationContainer.data as ChapterNode | SnipNode).textData.push(node);
         oldParentContents = (oldParentNode.data as SnipNode | ChapterNode).textData;
+    }
+    else if (node.data.ids.type === 'chapter') {
+        (((provider.rootNodes[0] as OutlineNode).data as RootNode).chapters.data as ContainerNode).contents.push(node);
+        oldParentContents = (((provider.rootNodes[0] as OutlineNode).data as RootNode).chapters.data as ContainerNode).contents;
     }
     else throw new Error(`Not possible`);
 

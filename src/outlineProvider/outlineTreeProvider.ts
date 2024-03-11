@@ -6,6 +6,8 @@ import * as console from '../vsconsole';
 import { v4 as uuidv4 } from 'uuid';
 import { ResourceType } from './fsNodes';
 import { UriBasedView } from './UriBasedView';
+import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
+import { OutlineNode } from '../outline/node';
 
 export type MoveNodeResult = {
 	moveOffset: number,
@@ -41,7 +43,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	abstract initializeTree (): Promise<T>;
 
 
-	dropMimeTypes = ['application/vnd.code.tree.outline', 'text/uri-list'];
+	dropMimeTypes = ['application/vnd.code.tree.outline', 'application/vnd.code.tree.recycling', 'text/uri-list'];
 	dragMimeTypes = ['text/uri-list'];
 	constructor (
 		protected context: vscode.ExtensionContext, 
@@ -154,15 +156,6 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
     public async handleDrop(target: T | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
 		const targ = target || this.rootNodes[0];
 		if (!targ) throw 'unreachable';
-        const transferItem = dataTransfer.get('application/vnd.code.tree.outline');
-		if (!transferItem) {
-			return;
-		}
-		const movedItems: T[] = transferItem.value;
-
-		// Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
-        const uniqueRoots = await this.getLocalRoots(movedItems);
-		const filteredParents = uniqueRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString());
 
 		let overrideDestination: TreeNode | null = null;
 
@@ -170,33 +163,87 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			[index: string]: TreeNode,
 		} = {};
 
-		// Move all the valid nodes into the target
-		if (filteredParents.length > 0) {
-			// Offset tells how many nodes have moved downwards in the same container so far
-			// In the case where multiple nodes are moving downwards at once, it lets
-			//		.moveNode know how many nodes have already moved down, and 
-			//		lets it adapt to those changes
-			let offset = 0;
-			for (const mover of filteredParents) {
-				const res: MoveNodeResult = await mover.moveNode(targ, this, offset, overrideDestination);
-				const { moveOffset, createdDestination, effectedContainers } = res;
-				if (moveOffset === -1) break;
-				offset += moveOffset;
+        const transferOutlineItem = dataTransfer.get('application/vnd.code.tree.outline');
+		if (transferOutlineItem) {
+			const movedOutlineItems: T[] = transferOutlineItem.value;
 
-				if (createdDestination) {
-					overrideDestination = createdDestination;
-				}
+			// Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
+			const uniqueRoots = await this.getLocalRoots(movedOutlineItems);
+			const filteredOutlineParents = uniqueRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString());
 
-				for (const container of effectedContainers) {
-					effectedContainersUriMap[container.getUri().fsPath] = container;
+
+			// Move all the valid nodes into the target
+			if (filteredOutlineParents.length > 0) {
+				// Offset tells how many nodes have moved downwards in the same container so far
+				// In the case where multiple nodes are moving downwards at once, it lets
+				//		.moveNode know how many nodes have already moved down, and 
+				//		lets it adapt to those changes
+				let offset = 0;
+				for (const mover of filteredOutlineParents) {
+					const res: MoveNodeResult = await mover.moveNode(targ, this, offset, overrideDestination);
+					const { moveOffset, createdDestination, effectedContainers } = res;
+					if (moveOffset === -1) break;
+					offset += moveOffset;
+
+					if (createdDestination) {
+						overrideDestination = createdDestination;
+					}
+
+					for (const container of effectedContainers) {
+						effectedContainersUriMap[container.getUri().fsPath] = container;
+					}
 				}
 			}
-
-			const allEffectedContainers = Object.entries(effectedContainersUriMap)
-				.map(([ _, container ]) => container);
-			console.log(allEffectedContainers);
-			this.refresh(false, allEffectedContainers);
 		}
+
+		const recyclingTransferItem = dataTransfer.get('application/vnd.code.tree.recycling');
+		if (recyclingTransferItem) {
+
+			const recyclingView: RecyclingBinView = await vscode.commands.executeCommand('wt.recyclingBin.getRecyclingBinView');
+			const movedItemsJSON: OutlineNode[] = JSON.parse(recyclingTransferItem.value);
+			const movedRecyclingItemsRaw: OutlineNode[] = await Promise.all(
+				movedItemsJSON.map(mij => {
+					const uri = vscode.Uri.file(mij.data.ids.uri.fsPath);
+					return recyclingView.getTreeElementByUri(uri);
+				})
+			);
+
+			// Filter out the dummy node in the recycling tree
+			const movedRecyclingItems = movedRecyclingItemsRaw.filter(ri => {
+				return !(ri.data.ids.type === 'fragment' && ri.data.ids.parentTypeId === 'root');
+			})
+
+			// Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
+			const uniqueRecyclingRoots = await recyclingView.getLocalRoots(movedRecyclingItems);
+			const filteredRecyclingParents = uniqueRecyclingRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString());
+			
+			overrideDestination = null;
+	
+			// Move all the valid nodes into the target
+			if (filteredRecyclingParents.length > 0) {
+				for (const mover of filteredRecyclingParents) {
+					const res: MoveNodeResult = await mover.recoverNode(targ, recyclingView, this, overrideDestination);
+					const { moveOffset, createdDestination, effectedContainers } = res;
+					if (moveOffset === -1) break;
+	
+					if (createdDestination) {
+						overrideDestination = createdDestination;
+					}
+	
+					for (const container of effectedContainers) {
+						if (container === null) continue;
+						effectedContainersUriMap[container.getUri().fsPath] = container;
+					}
+				}
+			}
+			recyclingView.refresh(false, []);
+		}
+		
+		const allEffectedContainers = Object.entries(effectedContainersUriMap)
+			.map(([ _, container ]) => container);
+		console.log(allEffectedContainers);
+		this.refresh(false, allEffectedContainers);
+		
     }
 	
     public async handleDrag(source: T[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {

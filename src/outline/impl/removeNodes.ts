@@ -7,23 +7,16 @@ import { Buff } from "../../Buffer/bufferSource";
 import { writeDotConfig } from "../../help";
 import { RecycleLog } from "../../recyclingBin/recyclingBinView";
 
-
+export function getUsableDeleteFileName (type: ResourceType, wt?: boolean) {
+    const useWt = wt !== undefined && wt === true;
+    const wtStr = useWt ? '.wt' : '';
+    const timestamp = Date.now();
+    return `deleted-${type}-${timestamp}-${parseInt(Math.random() * 10000 + '')}${wtStr}`
+}
 
 // There's one thing you need to know: deleting doesn't exist
 // Instead of deleting, I'm just going to move things to the recycling bin in the workspace itself
-export async function removeResource (this: OutlineView, resource: OutlineNode | undefined) {
-    let targets: OutlineNode[];
-    if (resource) {
-        targets = [resource];
-    }
-    else {
-        targets = [...this.view.selection];
-    }
-
-    if (targets.length === 0) {
-        return;
-    }
-
+export async function removeResource (this: OutlineView, targets: OutlineNode[]) {
     // Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
     const uniqueRoots = await this.getLocalRoots(targets);
     const s = uniqueRoots.length > 1 ? 's' : '';
@@ -46,7 +39,7 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
 
             // And delete the fragment from the file system
             const removedFragmentUri = target.getUri();
-            const recycleBinName = `deleted-${target.data.ids.type}-${timestamp}-${Math.random()}`;
+            const recycleBinName = getUsableDeleteFileName(target.data.ids.type, true);
             try {
                 const newLocationUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
                 await vscode.workspace.fs.rename(removedFragmentUri, newLocationUri);
@@ -82,11 +75,11 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
         }
         else if (target.data.ids.type === 'chapter' || target.data.ids.type === 'snip') {
             // Shift all the chapters or snips that come after this one up in the order
-            target.shiftTrailingNodesDown(this);
+            await target.shiftTrailingNodesDown(this);
 
             // Delete the chapter or snip from the file system
             const removedNodeAbsPath = target.getUri();
-            const recycleBinName = `deleted-${target.data.ids.type}-${timestamp}-${Math.random()}`;
+            const recycleBinName = getUsableDeleteFileName(target.data.ids.type);
             try {
                 const moveToPath = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
                 await vscode.workspace.fs.rename(removedNodeAbsPath, moveToPath);
@@ -147,7 +140,7 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             writeDotConfig(deletedUri, {});
 
             for (const name of clearedEntries) {
-                const recycleBinName = `deleted-${target.data.ids.type}-${timestamp}-${Math.random()}`;
+                const recycleBinName = getUsableDeleteFileName(target.data.ids.type);
                 const recyclingUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
                 const removedNodeUri = vscode.Uri.joinPath(clearedContainerUri, name);
 
@@ -180,33 +173,35 @@ export async function removeResource (this: OutlineView, resource: OutlineNode |
             throw new Error('Not possible');
         }
 
-        // Read the current recycling log
-        const recyclingLogUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/.log`);
+    }
+    
+    // Read the current recycling log
+    const recyclingLogUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/.log`);
 
-        let recyclingLog: RecycleLog[];
-        try {
-            const recyclingLogJSON = extension.decoder.decode(await vscode.workspace.fs.readFile(recyclingLogUri));
-            if (recyclingLogJSON === '') {
-                recyclingLog = [];
-            }
-            else {
-                recyclingLog = JSON.parse(recyclingLogJSON);
-            }
-        }
-        catch(e) {
+    let recyclingLog: RecycleLog[];
+    try {
+        const recyclingLogJSON = extension.decoder.decode(await vscode.workspace.fs.readFile(recyclingLogUri));
+        if (recyclingLogJSON === '') {
             recyclingLog = [];
         }
-
-        const updatedLog = recyclingLog.concat(newLogs);
-        const updatedLogJSON = JSON.stringify(updatedLog);
-
-        try {
-            await vscode.workspace.fs.writeFile(recyclingLogUri, Buff.from(updatedLogJSON, 'utf-8'));
+        else {
+            recyclingLog = JSON.parse(recyclingLogJSON);
         }
-        catch (e) {
-            vscode.window.showErrorMessage(`Error editing recycling bin log: ${e}`);
-        }
+    }
+    catch(e) {
+        recyclingLog = [];
+    }
+
+    const updatedLog = recyclingLog.concat(newLogs);
+    const updatedLogJSON = JSON.stringify(updatedLog);
+
+    try {
+        await vscode.workspace.fs.writeFile(recyclingLogUri, Buff.from(updatedLogJSON, 'utf-8'));
+    }
+    catch (e) {
+        vscode.window.showErrorMessage(`Error editing recycling bin log: ${e}`);
     }
     // Refresh the whole tree as it's hard to determine what the deepest root node is
     this.refresh(false, containers);
+    vscode.commands.executeCommand("wt.recyclingBin.refresh");
 }

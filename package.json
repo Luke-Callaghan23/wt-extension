@@ -215,6 +215,11 @@
 				"title": "Writing Tool: Pemanently Delete Resource"
 			},
 			{
+				"command": "wt.recyclingBin.deleteAll",
+				"title": "Writing Tool: Delete All",
+				"icon": "$(circle-slash)"
+			},
+			{
 				"command": "wt.todo.copyPath",
 				"title": "Writing Tool: Copy Path"
 			},
@@ -691,6 +696,11 @@
 					"group": "navigation@5"
 				},
 				{
+					"command": "wt.recyclingBin.deleteAll",
+					"when": "wt.valid && view == wt.recyclingBin",
+					"group": "navigation@2"
+				},
+				{
 					"command": "wt.synonyms.help",
 					"when": "wt.valid && view == wt.synonyms",
 					"group": "navigation"
@@ -806,6 +816,10 @@
 				},
 				{
 					"command": "wt.recyclingBin.permanentlyDelete",
+					"when": "view == wt.recyclingBin"
+				},
+				{
+					"command": "wt.recyclingBin.deleteAll",
 					"when": "view == wt.recyclingBin"
 				},
 				{

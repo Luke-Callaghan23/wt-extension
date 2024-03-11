@@ -11,6 +11,7 @@ import { moveNode as _moveNode } from './nodes_impl/moveNode';
 import { getChildren as _getChildren } from './nodes_impl/getChildren';
 import { shiftTrailingNodesDown as _shiftTrailingNodesDown } from './nodes_impl/shiftTrailingNodes';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
+import { recoverNode } from './impl/recoverNode';
 
 export const usedIds: { [index: string]: boolean } = {};
 
@@ -34,6 +35,7 @@ export class OutlineNode extends TreeNode {
         return _moveNode.bind(this)(newParent, provider, moveOffset, overrideDestination);
     }
 
+    recoverNode = recoverNode;
     async getChildren (filter: boolean): Promise<OutlineNode[]> {
         return _getChildren.bind(this)(filter);
     }
