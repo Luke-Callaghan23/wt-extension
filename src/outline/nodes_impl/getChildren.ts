@@ -1,4 +1,4 @@
-import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from "../node";
+import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from "./outlineNode";
 import * as console from "./../../vsconsole";
 
 export async function getChildren (this: OutlineNode, filter: boolean): Promise<OutlineNode[]> {

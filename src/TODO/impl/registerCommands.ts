@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { TODO, TODOsView } from '../TODOsView';
 import { initializeOutline } from '../../outlineProvider/initialize';
 import { TODONode } from '../node';
-import { OutlineNode } from '../../outline/node';
+import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode } from '../../outlineProvider/fsNodes';
 
 export function registerCommands(this: TODOsView) {
@@ -90,9 +90,14 @@ export function registerCommands(this: TODOsView) {
 
         // Convert the outline's Outline nodes into TODO nodes and swap out the TODO tree's data
         //		with those converted nodes
-        (this.rootNodes[0].data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
-        (this.rootNodes[0].data as RootNode<TODONode>).snips = convertSnips(outlineWorkSnips);
-        Object.keys(TODOsView.todo).forEach(key => delete TODOsView.todo[key]);
-        this.refresh(false, []);
+        if (this.rootNodes[0].data) {
+            (this.rootNodes[0].data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
+            (this.rootNodes[0].data as RootNode<TODONode>).snips = convertSnips(outlineWorkSnips);
+            Object.keys(TODOsView.todo).forEach(key => delete TODOsView.todo[key]);
+            this.refresh(false, []);
+        }
+        else {
+            console.log('hello')
+        }
     });
 }

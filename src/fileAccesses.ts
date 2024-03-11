@@ -1,6 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from './outline/node';
+import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from './outline/nodes_impl/outlineNode';
 import { OutlineView } from './outline/outlineView';
 import * as console from './vsconsole';
 import * as extension from './extension';

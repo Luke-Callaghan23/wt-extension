@@ -12,6 +12,7 @@ import { convertToTODOData } from './nodes_impl/convertFragmentNode';
 import { getChildren } from './nodes_impl/getChildren';
 import { getTODOCounts } from './nodes_impl/getTODOCounts';
 import { MoveNodeResult } from '../outline/nodes_impl/handleMovement/common';
+import { UriBasedView } from '../outlineProvider/UriBasedView';
 
 export type ChapterNode = fsNodes.ChapterNode<TODONode>;
 export type ContainerNode = fsNodes.ContainerNode<TODONode>;
@@ -41,12 +42,15 @@ export class TODONode extends TreeNode {
         return `${this.data.ids.type} | '${this.data.ids.display}'`;
     }
     
-    async moveNode (
-		newParent: TreeNode, 
-		provider: OutlineTreeProvider<TreeNode>, 
-		moveOffset: number,
-		overrideDestination: TreeNode | null
-	): Promise<MoveNodeResult> {
+    async generalMoveNode (
+        this: TODONode,
+        _operation: 'move' | 'recover',
+        _newParent: TreeNode, 
+        _recycleView: UriBasedView<TODONode>,
+        _outlineView: OutlineTreeProvider<TreeNode>,
+        _moveOffset: number,
+        _overrideDestination: TreeNode | null
+    ): Promise<MoveNodeResult> {
         vscode.window.showErrorMessage('Error: cannot move files within the TODO tree, please try again in the outline tree');
         return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
     }

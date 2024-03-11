@@ -220,6 +220,11 @@
 				"icon": "$(circle-slash)"
 			},
 			{
+				"command": "wt.recyclingBin.refresh",
+				"title": "Writing Tool: Refresh Recycling Bin View",
+				"icon": "$(refresh)"
+			},
+			{
 				"command": "wt.todo.copyPath",
 				"title": "Writing Tool: Copy Path"
 			},
@@ -699,6 +704,11 @@
 					"command": "wt.recyclingBin.deleteAll",
 					"when": "wt.valid && view == wt.recyclingBin",
 					"group": "navigation@2"
+				},
+				{
+					"command": "wt.recyclingBin.refresh",
+					"when": "wt.valid && view == wt.recyclingBin",
+					"group": "navigation@1"
 				},
 				{
 					"command": "wt.synonyms.help",

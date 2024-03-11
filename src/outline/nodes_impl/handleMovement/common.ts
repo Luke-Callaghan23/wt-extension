@@ -1,5 +1,5 @@
 import { TreeNode } from "../../../outlineProvider/outlineTreeProvider";
-import { ResourceType } from "../../node";
+import { OutlineNode, ResourceType } from "../outlineNode";
 
 // Map of a resource type to all resource types that the key can be moved into
 export const allowedMoves: { [index: string]: ResourceType[] } = {
@@ -32,6 +32,6 @@ export const allowedMoves: { [index: string]: ResourceType[] } = {
 
 export type MoveNodeResult = {
     moveOffset: number,
-    effectedContainers: TreeNode[],
-    createdDestination: TreeNode | null
+    effectedContainers: OutlineNode[],
+    createdDestination: OutlineNode | null
 }

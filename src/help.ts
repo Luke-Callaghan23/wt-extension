@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as extension from './extension';
 import { Buff } from './Buffer/bufferSource';
 import { TreeNode } from './outlineProvider/outlineTreeProvider';
-import { OutlineNode } from './outline/node';
+import { OutlineNode } from './outline/nodes_impl/outlineNode';
 
 export type PromptOptions = {
     placeholder: string,

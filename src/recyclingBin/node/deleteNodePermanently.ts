@@ -1,7 +1,7 @@
 import * as extension from '../../extension';
 import * as vscode from 'vscode';
 import { RecycleLog, RecyclingBinView } from "../recyclingBinView";
-import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from '../../outline/node';
+import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { Buff } from '../../Buffer/bufferSource';
 import { writeDotConfig } from '../../help';
 

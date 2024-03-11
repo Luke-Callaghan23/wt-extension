@@ -2,11 +2,16 @@ import * as vscode from 'vscode';
 // Handles the case when a node is moved (dragged and dropped) within its own container
 
 import { ConfigFileInfo, readDotConfig, writeDotConfig } from "../../../help";
-import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "../../node";
+import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "../outlineNode";
 import { MoveNodeResult } from './common';
 
 // In this case, we need to shift around the ordering of the node's parent's config file
-export async function handleInternalContainerReorder (node: OutlineNode, destinationContainer: OutlineNode, newParentNode: OutlineNode, moveOffset: number): Promise<MoveNodeResult> {
+export async function handleInternalContainerReorder (
+    node: OutlineNode, 
+    destinationContainer: OutlineNode, 
+    newParentNode: OutlineNode, 
+    moveOffset: number
+): Promise<MoveNodeResult> {
     // Get the .config for the container -- this contains the ordering values for both the mover
     //      and the destination item
     // (Destination item is just the item that the mover was dropped onto -- not actually destination,

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineTreeProvider";
-import { ChapterNode, OutlineNode, ResourceType, RootNode } from "../../node";
+import { ChapterNode, OutlineNode, ResourceType, RootNode } from "../outlineNode";
 import { OutlineView } from "../../outlineView";
 
 export type DestinationResult = {

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from "../../../help";
 import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineTreeProvider";
-import { ChapterNode, ContainerNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../../node";
+import { ChapterNode, ContainerNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../outlineNode";
 import { OutlineView } from '../../outlineView';
 import * as extension from '../../../extension';
 import { Workspace } from '../../../workspace/workspaceClass';

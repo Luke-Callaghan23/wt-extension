@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineTreeProvider";
-import { ContainerNode, OutlineNode, ResourceType } from "../../node";
+import { ContainerNode, OutlineNode, ResourceType } from "../outlineNode";
 import { MoveNodeResult } from "./common";
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
 
@@ -32,7 +32,7 @@ export async function handleContainerSourceMove (
     const snips = [ ...moverContent ];
     
     const effectedContainersUriMap: {
-        [index: string]: TreeNode,
+        [index: string]: OutlineNode,
     } = {};
 
     // Move each snip one by one

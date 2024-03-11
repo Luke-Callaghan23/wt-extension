@@ -5,7 +5,7 @@ import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from
 import * as console from '../../vsconsole';
 import * as extension from '../../extension';
 import { RecyclingBinView } from '../recyclingBinView';
-import { OutlineNode } from '../../outline/node';
+import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 
 export async function renameResource (this: RecyclingBinView) {
 

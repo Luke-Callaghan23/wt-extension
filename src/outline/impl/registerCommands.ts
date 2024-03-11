@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
-import { ContainerNode, OutlineNode, RootNode } from '../node';
+import { ContainerNode, OutlineNode, RootNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import { CopiedSelection } from './copyPaste';
 

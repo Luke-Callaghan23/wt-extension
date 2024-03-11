@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { deleteNodePermanently } from './node/deleteNodePermanently';
 import { renameResource } from './node/renameNode';
-import { OutlineNode } from '../outline/node';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../outline/outlineView';
 
 export type RecycleLog = {
@@ -160,7 +160,7 @@ implements vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropControlle
 			else {
 				collapseState = vscode.TreeItemCollapsibleState.Expanded;
 			}
-            collapseState = vscode.TreeItemCollapsibleState.Expanded;
+            // collapseState = vscode.TreeItemCollapsibleState.Expanded;
 		}
 		else {
 			// If the element has no children, then don't give it any collapse-ability
@@ -214,7 +214,6 @@ implements vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropControlle
 	readonly onDidChangeTreeData: vscode.Event<OutlineNode | undefined> = this._onDidChangeTreeData.event;
 	
 	async refresh(reload: boolean, updates: OutlineNode[]): Promise<void> {
-
 		// If the reload option is set to true, the caller wants us to reload the outline tree
 		//		completely from disk
 		if (reload) {
@@ -222,12 +221,6 @@ implements vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropControlle
             if (result === null) return;
             this.rootNodes = result;
 		}
-
-		// Because of all the various edits that the outline view does on the internal structure 
-		//		and because we want to avoid uneeded reading of the disk file structure, we
-		//		send over the outline node to the todo view whenever their is updates
-		//		to the outline view tree
-		vscode.commands.executeCommand('wt.todo.updateTree', this.rootNodes);
 
 		// Then update the root node of the outline view
 		if (updates.length > 0) {

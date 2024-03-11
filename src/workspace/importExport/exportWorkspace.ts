@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as extension from './../../extension';
 import * as console from '../../vsconsole';
 import { Workspace } from '../workspaceClass';
-import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../outline/node';
+import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../../outline/outlineView';
 import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport as WorkspaceRecord } from './types';
 import { Buff } from '../../Buffer/bufferSource';

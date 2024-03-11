@@ -1,4 +1,4 @@
-import { ChapterNode, ContainerNode, OutlineNode, ResourceType, SnipNode } from "../node";
+import { ChapterNode, ContainerNode, OutlineNode, ResourceType, SnipNode } from "../nodes_impl/outlineNode";
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
 import * as extension from '../../extension';
@@ -172,7 +172,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
         else if (target.data.ids.type === 'root') {
             throw new Error('Not possible');
         }
-
+        await new Promise(resolve => setTimeout(resolve, 10));
     }
     
     // Read the current recycling log

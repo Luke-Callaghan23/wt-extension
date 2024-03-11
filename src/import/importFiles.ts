@@ -7,7 +7,7 @@ import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
 import * as console from '../vsconsole';
 import { ImportForm } from './importFormView';
-import { OutlineNode, RootNode } from '../outline/node';
+import { OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
 import * as showdown from 'showdown';
 import * as mammoth from 'mammoth';
 const pdf2html = require('pdf2html');

@@ -2,10 +2,10 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, ConfigFileInfoExpanded, readDotConfig, writeDotConfig } from "../../help";
-import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "../node";
+import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "../nodes_impl/outlineNode";
 import { OutlineView } from "../outlineView";
 import * as extension from '../../extension';
-import { RootNode } from '../node';
+import { RootNode } from '../nodes_impl/outlineNode';
 import * as console from '../../vsconsole';
 
 
