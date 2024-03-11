@@ -62,12 +62,18 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 		//		to the outline view tree
 		vscode.commands.executeCommand('wt.todo.updateTree', this.rootNodes);
 
-		// Then update the root node of the outline view
+		// If there are specific nodes to update from the callee, then fire tree data updates
+		//		on those one at a time
 		if (updates.length > 0) {
+			// No clue why this is necessary but when doing multiple updates sometimes the second/third/fifth update 
+			//		kills the children created by earlier updates (gruesome, ik)
+			// Reversing the updates seems to fix this for some reason
+			updates.reverse();
 			for (const update of updates) {
 				this._onDidChangeTreeData.fire(update);
 			}
 		}
+		// No specific updates specified by the callee -> refresh the whole tree
 		else {
 			this._onDidChangeTreeData.fire(undefined);
 		}

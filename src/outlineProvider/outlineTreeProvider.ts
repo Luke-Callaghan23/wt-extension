@@ -8,12 +8,7 @@ import { ResourceType } from './fsNodes';
 import { UriBasedView } from './UriBasedView';
 import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/node';
-
-export type MoveNodeResult = {
-	moveOffset: number,
-	effectedContainers: TreeNode[],
-	createdDestination: TreeNode | null
-}
+import { MoveNodeResult } from '../outline/nodes_impl/handleMovement/common';
 
 export abstract class TreeNode {
 	abstract getParentUri(): vscode.Uri;
@@ -180,7 +175,8 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 				//		lets it adapt to those changes
 				let offset = 0;
 				for (const mover of filteredOutlineParents) {
-					const res: MoveNodeResult = await mover.moveNode(targ, this, offset, overrideDestination);
+					const moverOutline = mover as any as OutlineNode;
+					const res: MoveNodeResult = await moverOutline.generalMoveNode('move', targ, this as any as UriBasedView<OutlineNode>, this, offset, overrideDestination);
 					const { moveOffset, createdDestination, effectedContainers } = res;
 					if (moveOffset === -1) break;
 					offset += moveOffset;
@@ -222,7 +218,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			// Move all the valid nodes into the target
 			if (filteredRecyclingParents.length > 0) {
 				for (const mover of filteredRecyclingParents) {
-					const res: MoveNodeResult = await mover.recoverNode(targ, recyclingView, this, overrideDestination);
+					const res: MoveNodeResult = await mover.generalMoveNode('recover', targ, recyclingView, this, 0, overrideDestination);
 					const { moveOffset, createdDestination, effectedContainers } = res;
 					if (moveOffset === -1) break;
 	

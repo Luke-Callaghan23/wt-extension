@@ -42,8 +42,10 @@ export function registerCommands(this: TODOsView) {
     //		to just emit changes from there over to here and then reflect the changes on this end
     //		rather than trying to make sure the two trees are always in sync with each other
     // `updated` is always the root node of the outline tree
-    vscode.commands.registerCommand('wt.todo.updateTree', (updated: OutlineNode) => {
+    vscode.commands.registerCommand('wt.todo.updateTree', (arr: OutlineNode[]) => {
+        const updated = arr[0];
         this.rootNodes[0].data.ids = { ...updated.data.ids };
+            
         const outlineRoot = updated.data as RootNode<OutlineNode>;
         const outlineChapters = outlineRoot.chapters;
         const outlineWorkSnips = outlineRoot.snips;

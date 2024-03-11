@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import * as console from '../vsconsole';
-import { MoveNodeResult, OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
+import { OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
 import * as fsNodes from '../outlineProvider/fsNodes';
 import { Validation, TODO, TODOsView } from './TODOsView';
 import * as extension from '../extension';
@@ -11,6 +11,7 @@ import { scanFragment } from './impl/scanFragment';
 import { convertToTODOData } from './nodes_impl/convertFragmentNode';
 import { getChildren } from './nodes_impl/getChildren';
 import { getTODOCounts } from './nodes_impl/getTODOCounts';
+import { MoveNodeResult } from '../outline/nodes_impl/handleMovement/common';
 
 export type ChapterNode = fsNodes.ChapterNode<TODONode>;
 export type ContainerNode = fsNodes.ContainerNode<TODONode>;
