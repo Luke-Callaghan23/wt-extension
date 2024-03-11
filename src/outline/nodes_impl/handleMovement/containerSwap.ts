@@ -94,6 +94,7 @@ export async function handleContainerSwap (
     let oldParentContents: OutlineNode[] | undefined;
 
     // Alter the internal data of the moving node to reflect its new ordering and parent
+    node.data.ids.fileName = newFileName;
     node.data.ids.parentUri = destinationContainer.data.ids.uri;
     node.data.ids.parentTypeId = destinationContainer.data.ids.type;
     node.data.ids.uri = moverDestinationUri;
