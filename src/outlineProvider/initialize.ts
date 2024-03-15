@@ -9,7 +9,7 @@ import * as extension from '../extension';
 
 export type InitializeNode<T extends TreeNode> = (data: NodeTypes<T>) => T;
 
-export async function initializeOutline<T extends TreeNode>(init: InitializeNode<T>): Promise<T> {
+export async function initializeOutline<T extends TreeNode>(init: InitializeNode<T>, dontFail?: boolean): Promise<T> {
 
     const dataFolderUri = vscode.Uri.joinPath(extension.rootPath, `data`);
     const chaptersContainerUri = vscode.Uri.joinPath(dataFolderUri, `chapters`);
@@ -68,7 +68,8 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
             relativePath: `data/chapters`, 
             fileName: name, 
             chaptersContainerUri: chaptersContainerUri,
-            init
+            init,
+            dontFail: dontFail
         })));
     }
 
@@ -102,7 +103,8 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
                 fileName: name, 
                 parentTypeId: 'root', 
                 parentUri: workSnipsContainerUri,
-                init
+                init,
+                dontFail: dontFail
             }))
         );
     }

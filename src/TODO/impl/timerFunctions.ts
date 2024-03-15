@@ -12,7 +12,7 @@ export async function update (
     const editedFragmentUri: vscode.Uri = document.uri;
     const editedFragmentNode: TODONode | null = await this.getTreeElementByUri(editedFragmentUri, undefined, false);
     if (!editedFragmentNode) {
-        this.rootNodes = [await initializeOutline((e) => new TODONode(e))];
+        this.rootNodes = [await initializeOutline((e) => new TODONode(e), true)];
         this.refresh(false, []);
         return;
     }
