@@ -5,13 +5,9 @@ import { ConfigFileInfo } from '../help';
 import { getUsableFileName } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
-import * as console from '../vsconsole';
 import { ImportForm } from './importFormView';
 import { OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
-import * as showdown from 'showdown';
 import * as mammoth from 'mammoth';
-const pdf2html = require('pdf2html');
-// const TurndownService = require('turndown');
 const TurndownService = require('turndown');
 
 // REMOVE SQUARE BRACKETS [ AND ] FROM ESCAPE CHARACTERS
@@ -40,7 +36,7 @@ import { Buff } from '../Buffer/bufferSource';
 
 export type DocInfo = {
     skip: boolean,
-    ext: 'wt' | 'txt' | 'md' | 'html' | 'pdf' | 'docx',
+    ext: 'wt' | 'txt' | 'md' | 'html' | 'docx',
     outputType: 'snip' | 'chapter',
     outputIntoChapter: boolean,
     outputSnipPath: '/data/snips/',
@@ -269,31 +265,6 @@ async function readAndSplitHtml (split: SplitInfo, fileRelativePath: string): Pr
     const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
     const fileContent: string = (await vscode.workspace.fs.readFile(fileUri)).toString();
     return doHtmlSplits(split, fileContent);
-}
-
-async function readAndSplitPdf (split: SplitInfo, fileRelativePath: string): Promise<DocSplit | null> {
-    let html: string;
-    try {
-        const fullFilePath = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
-        html = await pdf2html.html(fullFilePath);
-    }
-    catch (e) {
-        vscode.window.showErrorMessage(`Error ocurred when parsing html from source pdf '${fileRelativePath}': ${e}`);
-        throw e;
-    }
-
-    // Remove junk from produced html
-    html = html.split('</head>')[1].replace('<body><div class=\"page\"><p/>', '').replaceAll('<div class=\"page\">', '').replaceAll('</div>', '').replace('</body></html>', '');
-    
-    // Tell the user about the faults of this pdf to html converter
-    const response = await vscode.window.showInformationMessage(`Imperfect import of PDFs`, {
-        modal: true,
-        detail: 'Sorry, as of right now, importing PDF files is imperfect.  Italics and bolding and other text effects will be completely lost.  If you wish to keep these, please use an online converter to turn your pdf files into docx or html or some other supported file type if you need these text effects to be preserved!'
-    }, 'Continue with imperfect import');
-    if (response !== 'Continue with imperfect import') return null;
-    
-    // Do splits on the html
-    return doHtmlSplits(split, html);
 }
 
 async function readAndSplitDocx (split: SplitInfo, fileRelativePath: string): Promise<DocSplit | null> {
@@ -589,7 +560,6 @@ async function importDoc (doc: DocInfo, fileRelativePath: string) {
         case 'md': splitFunc = readAndSplitMd; break;
         case 'txt': splitFunc = readAndSplitTxt; break;
         case 'docx': splitFunc = readAndSplitDocx; break;
-        case 'pdf': splitFunc = readAndSplitPdf; break;
         case 'html': splitFunc = readAndSplitHtml; break;
     }
     // Read and split the document

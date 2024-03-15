@@ -147,9 +147,9 @@ export class ExportForm {
 							name="select-ext-type" 
 							class="select select-ext-type"
 						>
-							<vscode-option selected value="md">.md</vscode-option>
+							<vscode-option selected value="docx">.docx</vscode-option>
+							<vscode-option  value="md">.md</vscode-option>
 							<vscode-option  value="txt">.txt</vscode-option>
-							<vscode-option  value="docx">.docx</vscode-option>
 							<vscode-option  value="html">.html</vscode-option>
 						</vscode-single-select>
 						<div class="spacer"></div>
@@ -170,6 +170,15 @@ export class ExportForm {
 							class="checkbox"
 						></vscode-checkbox>
 						<div class="spacer"></div>
+						<vscode-label for="checkbox-title-chapters" class="label">Include chapter tags?</vscode-label>
+						<vscode-checkbox 
+							label="Indicates that you want the titles of your chapters in the output prefixed with 'Chapter {chapter_number}: '"
+							id="checkbox-title-chapters" 
+							name="title-chapters" 
+							class="checkbox"
+						></vscode-checkbox>
+						<div class="spacer"></div>
+						<div id="logue-options"></div>
 						<vscode-label class="label">Export:</vscode-label>
 						<vscode-button id="export-button">Export Your Work</vscode-button>
 					</vscode-form-container>

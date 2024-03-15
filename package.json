@@ -1435,22 +1435,26 @@
 				"language": "wtNote",
 				"scopeName": "source.wtNote",
 				"path": "./syntaxes/wtNote.tmLanguage.json",
-				"injectTo": ["wtNote"]
+				"injectTo": [
+					"wtNote"
+				]
 			},
 			{
 				"language": "wt",
 				"scopeName": "source.wt",
 				"path": "./syntaxes/wt.tmLanguage.json",
-				"injectTo": ["wt"]
+				"injectTo": [
+					"wt"
+				]
 			}
 		],
 		"themes": [
-            {
+			{
 				"id": "wtNoteTheme",
-                "label": "WT Note",
-                "uiTheme": "vs-dark",
-                "path": "./themes/wtNoteTheme.json"
-            }
+				"label": "WT Note",
+				"uiTheme": "vs-dark",
+				"path": "./themes/wtNoteTheme.json"
+			}
 		]
 	},
 	"scripts": {
@@ -1460,11 +1464,8 @@
 		"lint": "eslint \"src/**/*.ts\""
 	},
 	"devDependencies": {
-		"@types/html-pdf": "^3.0.0",
-		"@types/html-pdf-node": "^1.0.0",
 		"@types/jsdom": "^21.1.0",
 		"@types/node": "^16.11.7",
-		"@types/showdown": "^2.0.0",
 		"@types/turndown": "^5.0.4",
 		"@types/uuid": "^9.0.0",
 		"@types/vscode": "^1.73.0",
@@ -1478,15 +1479,12 @@
 		"@types/markdown-it": "^12.2.3",
 		"@vscode/codicons": "^0.0.32",
 		"file-type": "^18.5.0",
-		"html-pdf": "^3.0.1",
 		"html-to-docx": "^1.6.5",
 		"istextorbinary": "^6.0.0",
 		"jsdom": "^21.1.0",
 		"mammoth": "^1.5.1",
 		"node-fetch": "^3.3.1",
 		"node-fetch-commonjs": "^3.2.4",
-		"pdf2html": "^3.1.0",
-		"showdown": "^2.1.0",
 		"turndown": "^7.1.2",
 		"uuid": "^9.0.0",
 		"vscode-uri": "^3.0.7"

@@ -60,6 +60,39 @@
         }
     });
 
+    console.log('awdawdwdw');
+
+    const logueOptions = document.getElementById('logue-options');
+    const titleChapters = document.getElementById('checkbox-title-chapters');
+    console.log(titleChapters);
+    console.log(logueOptions);
+    titleChapters.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (event.target.checked) {
+            logueOptions.innerHTML = `
+                <vscode-label for="checkbox-skip-first" class="label">Skip chapter tag for first chapter</vscode-label>
+                <vscode-checkbox 
+                    label="Indicates that you want to skip adding a chapter tag for the first chapter (useful for prologues)"
+                    id="checkbox-skip-first" 
+                    name="skip-first" 
+                    class="checkbox"
+                ></vscode-checkbox>
+                <div class="spacer"></div>
+                <vscode-label for="checkbox-skip-last" class="label">Skip chapter tag for last chapter</vscode-label>
+                <vscode-checkbox 
+                    label="Indicates that you want to skip adding a chapter tag for the last chapter (useful for epilogues)"
+                    id="checkbox-skip-last" 
+                    name="skip-last" 
+                    class="checkbox"
+                ></vscode-checkbox>
+                <div class="spacer"></div>
+            `;
+        }
+        else {
+            logueOptions.innerHTML = ``;
+        }
+    })
+
 
     const form = document.getElementById('log-settings-form');
     submit.addEventListener('click', (event) => {
@@ -75,7 +108,10 @@
             // When the checkbox is not checked, the array is empty: []
             // When the checkbox is checked, the array has one empty string element in it: [""]
             separateChapters: fd['separate-chapter'].length > 0,
-            combineFragmentsOn: fd['combine-fragments-on'] === '' ? null : fd['combine-fragments-on']
+            titleChapters: fd['title-chapters'].length > 0,
+            combineFragmentsOn: fd['combine-fragments-on'] === '' ? null : fd['combine-fragments-on'],
+            skipChapterTitleFirst: fd["skip-first"]?.length > 0, 
+            skipChapterTitleLast: fd["skip-last" ]?.length > 0,
         };
 
         // Post the submission to the export webview

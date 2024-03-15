@@ -18,7 +18,7 @@ const getTagText = (tag: Tags, kind: 'opening' | 'closing') => {
     const closeChar = kind === 'closing' ? '/' : '';
     switch (tag) {
         case 'bold': return `<${closeChar}b>`;
-        case 'emphasis': return `<${closeChar}em>`;
+        case 'emphasis': return `<${closeChar}i>`;
         case 'paragraph': return `<${closeChar}p>`;
         case 'strikethrough': return `<${closeChar}del>`;
         case 'underline': return `<${closeChar}u>`;
@@ -27,6 +27,8 @@ const getTagText = (tag: Tags, kind: 'opening' | 'closing') => {
 }
 
 export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
+    wt = wt.replaceAll("\r", '');
+
     // Initialize the stack of html tags with an opening paragraph tag
     //      which starts at the 0th index of wt text
     const stack: TagStackItem[] = [{
@@ -173,7 +175,10 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
     
     // Add page break before all of the chapter headers
     const withPageBreaks = pageBreaks 
-        ? filteredBlanks.replaceAll('<h3', '<div class="page-break" style="page-break-after: always;"></div><h3')
+        ? filteredBlanks
+            .replaceAll('<p><h3', '<h3')
+            .replaceAll('h3></p>', 'h3>')
+            .replaceAll('<h3', '<div class="page-break" style="page-break-after: always;"></div><h3')
         : filteredBlanks;
 
     // Except for the first

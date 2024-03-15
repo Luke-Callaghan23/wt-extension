@@ -8,7 +8,6 @@
     
     
     const importFileTypes = [
-        'pdf',
         'wt',
         'txt',
         'docx',

@@ -4,9 +4,6 @@ import * as extension from '../extension';
 import { ExportForm } from './exportFormView';
 import { Buff } from '../Buffer/bufferSource';
 
-// Converts md to html
-import * as showdown from 'showdown';
-
 // Converts html to docx
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const HTMLToDOCX = require('html-to-docx');
@@ -16,7 +13,6 @@ import { Workspace } from '../workspace/workspaceClass';
 import { OutlineView } from '../outline/outlineView';
 import { wtToHtml } from './wtToHtml';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
-import * as pdf from 'html-pdf';
 
 // Data provided by the export form webview
 export type ExportDocumentInfo = {
@@ -24,6 +20,9 @@ export type ExportDocumentInfo = {
     ext: 'md' | 'txt' | 'docx' | 'html',
     separateChapters: boolean,
     combineFragmentsOn: string | null,
+    titleChapters: boolean,
+    skipChapterTitleFirst: boolean,
+    skipChapterTitleLast: boolean,
 };
 
 type ChapterInfo = {
@@ -139,6 +138,7 @@ async function doProcessMd (
     }
     const finalData = chaptersData as ChapterInfo[];
 
+    const off = ex.skipChapterTitleFirst ? 0 : 1;
     if (ex.separateChapters) {
         // CASE: exports the markdown chapters into separate files
         // Use the specified file name from the export form to create a folder that will contain all exported chapters
@@ -152,10 +152,27 @@ async function doProcessMd (
         }
 
         // Then, clean all the chapter names so that they can be used as file names
-        const cleanedChapters: CleanedChapterInfo[] = finalData.map(chapterInfo => {
+        const cleanedChapters: CleanedChapterInfo[] = finalData.map((chapterInfo, index) => {
             const title = chapterInfo.title;
             const markdown = chapterInfo.markdown;
-            const markdownWithChapterHeader = `#${chapterInfo.title}\n\n~~~\n\n${markdown}`;
+
+            // Determine the chapter prefix based in the values of `titleChapters`, `skipChapterTitleFirst`, and `skipChapterTitleLast`
+            let chapterPrefix = '';
+            let documentChapterPrefix = '';
+            if (ex.titleChapters) {
+                documentChapterPrefix = `chapter_${index+off}_`;
+                chapterPrefix = `Chapter ${index+off}: `;
+                if (index === 0 && ex.skipChapterTitleFirst) {
+                    chapterPrefix = '';
+                    documentChapterPrefix = ``;
+                }
+                if (index === finalData.length - 1 && ex.skipChapterTitleLast) {
+                    chapterPrefix = '';
+                    documentChapterPrefix = ``;
+                }
+            }
+
+            const markdownWithChapterHeader = `#${chapterPrefix}${chapterInfo.title}\n\n${markdown}`;
 
             // Replace all illegal characters in the chapter title with the very legal character '-'
             const cleanedTitle = title.replaceAll(workspace.illegalCharacters.join(''), '-');
@@ -163,9 +180,14 @@ async function doProcessMd (
                 vscode.window.showWarningMessage(`Chapter titled '${title}' contained illegal characters for file name, using file name '${cleanedTitle}' instead.`);
             }
 
+            // Include index of the chapter in the final file name
+            //      This is so that the user cannot lose track of the original ordering of output files
+            // Also include chapter title prefix from above
+            const finalFileName = `${index}__${documentChapterPrefix}${cleanedTitle}`;
+
             // Return the cleaned title, and markdown
             return {
-                cleanedTitle,
+                cleanedTitle: finalFileName,
                 data: markdownWithChapterHeader
             };
         });
@@ -180,11 +202,24 @@ async function doProcessMd (
     else {
         // CASE: exports everything into a single file
         // Combine all the chapters, using chapter names as glue
-        const fullFileMarkdown = finalData.reduce((acc, chapterInfo) => {
+        const fullFileMarkdown = finalData.reduce((acc, chapterInfo, index) => {
+
+            // Determine the chapter prefix based in the values of `titleChapters`, `skipChapterTitleFirst`, and `skipChapterTitleLast`
+            let chapterPrefix = '';
+            if (ex.titleChapters) {
+                chapterPrefix = `Chapter ${index+off}: `;
+                if (index === 0 && ex.skipChapterTitleFirst) {
+                    chapterPrefix = '';
+                }
+                if (index === finalData.length - 1 && ex.skipChapterTitleLast) {
+                    chapterPrefix = '';
+                }
+            }
+
             // Chapter title (as heading), double newline, chapter contents, double newline
             // Give enough space between chapter titles and content, as well as enough space between
             //      different chapters themselves
-            return `${acc}#${chapterInfo.title}\n\n~~~\n\n${chapterInfo.markdown}\n\n\n\n\n\n\n\n`;
+            return `${acc}#${chapterPrefix}${chapterInfo.title}\n\n${chapterInfo.markdown}\n`;
         }, '');
 
         return <SingleFile>{
@@ -234,7 +269,6 @@ async function doProcessHtml (processedMd: ProcessedMd): Promise<ProcessedHtml> 
 async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDocx> {
     if (processedHtml.type === 'single') {
         const singleHtml = processedHtml.fullData;
-        console.log(singleHtml)
         const docx: Buffer = await HTMLToDOCX(singleHtml, '<p></p>', {
             margins: {
                 top: 1080,
@@ -300,11 +334,25 @@ async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDo
 
 
 async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | ProcessedDocx | ProcessedPdf, ext: string) {
+
+    const exportData = async (data: string | Buffer, destination: vscode.Uri) => {
+        if (typeof data === 'string') {
+            const result = extension.encoder.encode(data.toString());
+            return vscode.workspace.fs.writeFile(destination, result);
+        }
+        else {
+            const result = data;
+            return vscode.workspace.fs.writeFile(destination, result);
+        }
+    };
+
     if (fullyProcessed.type === 'single') {
         // Write the single file to the export folder
         const destinationFolderUri = fullyProcessed.exportUri;
         const destinationUri = vscode.Uri.joinPath(destinationFolderUri, `${fullyProcessed.fileName}.${ext}`);
-        await vscode.workspace.fs.writeFile(destinationUri, extension.encoder.encode(fullyProcessed.fullData.toString()));
+        const tmp2 = fullyProcessed.fullData;
+        //@ts-ignore
+        await exportData(tmp2, destinationUri)
     }
     else {
         const destinationFolderUri = fullyProcessed.exportUri;
@@ -313,7 +361,7 @@ async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | Proc
             const chapterFileName = chapter.cleanedTitle;
             const chapterData = chapter.data;
             const fullChapterUri = vscode.Uri.joinPath(destinationFolderUri, `${chapterFileName}.${ext}`);
-            return vscode.workspace.fs.writeFile(fullChapterUri, extension.encoder.encode(chapterData.toString()));
+            return exportData(chapterData, fullChapterUri);
         }));
     }
 }
@@ -353,18 +401,22 @@ export async function handleDocumentExport (
     const day = now.getDate();
     const month = now.getMonth();
     const year = now.getFullYear();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-    const second = now.getSeconds();
 
     // Formate the date in as a string with a format that the fs will allow
-    const dateString = `${month}_${day}_${year}-${hour}_${minute}_${second}`;
+    const dateString = `${month}_${day}_${year}`;
 
     // Create the export folder
-    const filename = `export (${dateString})`;
-    const fileUri = vscode.Uri.joinPath(workspace.exportFolder, filename);
+    const dirname = `export (${dateString})`;
+    const dirUri = vscode.Uri.joinPath(workspace.exportFolder, dirname);
+
+    let dirExists = true;
+    try { await vscode.workspace.fs.stat(dirUri) }
+    catch (err: any) {
+        dirExists = false;
+    }
+
     try {
-        await vscode.workspace.fs.createDirectory(fileUri);
+        await vscode.workspace.fs.createDirectory(dirUri);
     }
     catch (e) {
         vscode.window.showErrorMessage(`ERROR an error occurred while creating the export directory: ${e}`);
@@ -372,7 +424,7 @@ export async function handleDocumentExport (
     }
 
     // Process all the markdown in this work
-    const processed: Processed = await doProcessMd(workspace, exportInfo, fileUri, outline);
+    const processed: Processed = await doProcessMd(workspace, exportInfo, dirUri, outline);
     if (!processed) {
         return;
     }
@@ -387,5 +439,5 @@ export async function handleDocumentExport (
         case 'html': exportFunction = exportHtml; break;
     }
     await exportFunction(success);
-    vscode.window.showInformationMessage(`Successfully exported files into '${fileUri.fsPath}'`);
+    vscode.window.showInformationMessage(`Successfully exported files into '${dirUri.fsPath}'`);
 }
