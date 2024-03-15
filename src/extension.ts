@@ -27,10 +27,8 @@ import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
 import { WHViewPorvider as WHViewProvider } from './whWebview/whWebview';
 import { CoderModer } from './codeMode/codeMode';
-import { WorldNotes } from './worldNotes/worldNotes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { WorkBible } from './workBible/workBible';
-import { wtToHtml } from './export/wtToHtml';
 import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 
 export const decoder = new TextDecoder();
