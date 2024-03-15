@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../node';
+import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 import { FileAccessManager } from '../../fileAccesses';
 import * as vscodeUris from 'vscode-uri';
@@ -196,7 +196,7 @@ export async function paste (
                 // In all cases where the copied content is the chapter container or a chapter node,
                 //      then the destination container should be the chapter container
                 return {
-                    destination: (this.tree.data as RootNode).chapters,
+                    destination: (this.rootNodes[0].data as RootNode).chapters,
                     pastables: pastables || (copied.nodes[0].data as ContainerNode).contents,
                     pasteType: 'chapter'
                 };
@@ -204,7 +204,7 @@ export async function paste (
             case 'snip':
                 pastables = copied.nodes;
             case 'chapterSnipsContainer': case 'workSnipsContainer': {
-                const fallback = (this.tree.data as RootNode).snips;
+                const fallback = (this.rootNodes[0].data as RootNode).snips;
                 
                 // Get "final" pastables -- a collection of all paste items
                 // If there are already pastables (if the copy type is snip(s)), use that
@@ -226,7 +226,7 @@ export async function paste (
                     case 'snip': 
                         // Pasting into a snip
                         const destinationSnipParentUri = destination.data.ids.parentUri;
-                        const destinationSnipParent: OutlineNode | undefined | null = await this._getTreeElementByUri(destinationSnipParentUri);
+                        const destinationSnipParent: OutlineNode | undefined | null = await this.getTreeElementByUri(destinationSnipParentUri);
                         if (!destinationSnipParent) {
                             // If we can't find the parent container in the outline view, default to the 
                             //      work snips container
@@ -253,7 +253,7 @@ export async function paste (
                                 // Fallback is either the snips container of the first chapter in the chapters container, or (if there are no chapters)
                                 //      then use the original fallback, the work snips container
                                 let fallbackChapter: OutlineNode;
-                                const chaptersContainer = (this.tree.data as RootNode).chapters.data as ContainerNode;
+                                const chaptersContainer = (this.rootNodes[0].data as RootNode).chapters.data as ContainerNode;
                                 if (chaptersContainer.contents.length === 0) {
                                     fallbackChapter = fallback;
                                 }
@@ -271,7 +271,7 @@ export async function paste (
                                         pasteType: 'snip'
                                     };
                                 }
-                                const lastChapter: OutlineNode | undefined | null = await this._getTreeElementByUri(lastChapterUri);
+                                const lastChapter: OutlineNode | undefined | null = await this.getTreeElementByUri(lastChapterUri);
                                 if (!lastChapter) {
                                     return {
                                         destination: fallbackChapter,
@@ -315,7 +315,7 @@ export async function paste (
                         };
                     case 'fragment': {
                         const fragmentContainerUri  = destination.data.ids.parentUri;
-                        const fragmentContainer: OutlineNode | undefined | null = await this._getTreeElementByUri(fragmentContainerUri);
+                        const fragmentContainer: OutlineNode | undefined | null = await this.getTreeElementByUri(fragmentContainerUri);
                         if (!fragmentContainer) {
                             return {
                                 destination: fallback,
@@ -336,7 +336,7 @@ export async function paste (
                         else if (fragmentContainer.data.ids.type === 'snip') {
                             // If the parent is another snip, then use the container of that snip
                             const snipContainerUri = fragmentContainer.data.ids.parentUri;
-                            const snipContainer: OutlineNode | undefined | null = await this._getTreeElementByUri(snipContainerUri);
+                            const snipContainer: OutlineNode | undefined | null = await this.getTreeElementByUri(snipContainerUri);
                             if (!snipContainer) {
                                 return {
                                     destination: fallback,
@@ -358,7 +358,7 @@ export async function paste (
                 // The fallback for the fallback fragment container should be the parent of the first copied fragmnet
                 //      this is worst case scenario and should really never happen -- hopefully
                 const fallbackFallbackUri = copied.nodes[0].data.ids.parentUri;
-                const fallbackFallback: OutlineNode | undefined | null = await this._getTreeElementByUri(fallbackFallbackUri);
+                const fallbackFallback: OutlineNode | undefined | null = await this.getTreeElementByUri(fallbackFallbackUri);
                 if (!fallbackFallback) {
                     throw 'Paste destination must have a parent -- this really, really shouldn\'t happen';
                 }
@@ -366,10 +366,10 @@ export async function paste (
                 // Gets the container of a fragment by uri -- fragment container is always a chapter or a snip
                 const getContainerForFragment = async (uri: vscode.Uri | undefined): Promise<OutlineNode | null> => {
                     if (!uri) return null;
-                    const fragmentNode: OutlineNode | undefined | null = await this._getTreeElementByUri(uri);
+                    const fragmentNode: OutlineNode | undefined | null = await this.getTreeElementByUri(uri);
                     if (!fragmentNode || fragmentNode.data.ids.type !== 'fragment') return null;
                     const fragmentContainerUri = fragmentNode.data.ids.parentUri;
-                    const fragmentContainer: OutlineNode | undefined | null = await this._getTreeElementByUri(fragmentContainerUri);
+                    const fragmentContainer: OutlineNode | undefined | null = await this.getTreeElementByUri(fragmentContainerUri);
                     if (!fragmentContainer) return null;
                     return fragmentContainer.data.ids.type === 'chapter' || fragmentContainer.data.ids.type === 'snip'
                         ? fragmentContainer : null;
@@ -378,7 +378,7 @@ export async function paste (
                 // Gets a fragment container (a chapter or snip node) from its uri
                 const getFragmentContainer = async (uri: vscode.Uri | undefined): Promise<OutlineNode | null> => {
                     if (!uri) return null;
-                    const node: OutlineNode | undefined | null = await this._getTreeElementByUri(uri);
+                    const node: OutlineNode | undefined | null = await this.getTreeElementByUri(uri);
                     if (!node) return null;
                     return node.data.ids.type === 'chapter' || node.data.ids.type === 'snip'
                         ? node : null;

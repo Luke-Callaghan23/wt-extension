@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as extension from './../../extension';
 import * as console from '../../vsconsole';
 import { Workspace } from '../workspaceClass';
-import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../outline/node';
+import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../../outline/outlineView';
 import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport as WorkspaceRecord } from './types';
 import { Buff } from '../../Buffer/bufferSource';
@@ -112,7 +112,7 @@ export async function handleWorkspaceExport (
     workspace: Workspace,
     outlineView: OutlineView
 ) {
-    const root: RootNode = outlineView.tree.data as RootNode;
+    const root: RootNode = outlineView.rootNodes[0].data as RootNode;
     const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
     const snipsContainer: ContainerNode = root.snips.data as ContainerNode;
 

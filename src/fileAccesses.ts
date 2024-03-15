@@ -1,6 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from './outline/node';
+import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from './outline/nodes_impl/outlineNode';
 import { OutlineView } from './outline/outlineView';
 import * as console from './vsconsole';
 import * as extension from './extension';
@@ -34,7 +34,7 @@ export class FileAccessManager implements Packageable {
 
         // Mark the last opened document for each parental node as the document which was just opened
         let currentUri: vscode.Uri | undefined = openedUri;
-        let currentNode : OutlineNode | null = await outlineView._getTreeElementByUri(openedUri);
+        let currentNode : OutlineNode | null = await outlineView.getTreeElementByUri(openedUri);
         while (currentUri && currentNode) {
             // Mark latest accessed chapter or snip if the current node is a chapter or snip
             if (currentNode.data.ids.type === 'chapter') {
@@ -53,7 +53,7 @@ export class FileAccessManager implements Packageable {
             
             // Traverse upwards
             currentUri = currentNode.data.ids.parentUri;
-            currentNode = await outlineView._getTreeElementByUri(currentUri);
+            currentNode = await outlineView.getTreeElementByUri(currentUri);
         }
 
         // Also update the latest file access
@@ -108,7 +108,7 @@ export class FileAccessManager implements Packageable {
             
             // If the uri cannot be found inside of the outline view's structure,
             //      then skip the uri
-            const node: OutlineNode | undefined | null = await outlineView._getTreeElementByUri(tabUri);
+            const node: OutlineNode | undefined | null = await outlineView.getTreeElementByUri(tabUri);
             if (!node) continue;
 
             // Otherwise, the uri is validated

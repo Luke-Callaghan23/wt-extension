@@ -10,9 +10,9 @@ export async function update (
     const document = editor.document;
     
     const editedFragmentUri: vscode.Uri = document.uri;
-    const editedFragmentNode: TODONode | null = await this._getTreeElementByUri(editedFragmentUri, undefined, false);
+    const editedFragmentNode: TODONode | null = await this.getTreeElementByUri(editedFragmentUri, undefined, false);
     if (!editedFragmentNode) {
-        this.tree = await initializeOutline((e) => new TODONode(e));
+        this.rootNodes = [await initializeOutline((e) => new TODONode(e), true)];
         this.refresh(false, []);
         return;
     }
@@ -33,7 +33,7 @@ export async function update (
 
         // Traverse upwards
         const parentUri: vscode.Uri = currentNode.data.ids.parentUri;
-        currentNode = await this._getTreeElementByUri(parentUri);
+        currentNode = await this.getTreeElementByUri(parentUri);
         currentUri = currentNode?.getUri();
     }
 

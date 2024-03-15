@@ -1,15 +1,17 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import * as console from '../vsconsole';
-import { OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
-import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../help';
-import { OutlineView } from './outlineView';
-import * as fsNodes from '../outlineProvider/fsNodes';
-import * as extension from '../extension';
-import { moveNode } from './nodes_impl/moveNode';
-import { getChildren } from './nodes_impl/getChildren';
-import { shiftTrailingNodesDown } from './nodes_impl/shiftTrailingNodes';
+import * as console from '../../vsconsole';
+import { OutlineTreeProvider, TreeNode } from '../../outlineProvider/outlineTreeProvider';
+import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../help';
+import { OutlineView } from '../outlineView';
+import * as fsNodes from '../../outlineProvider/fsNodes';
+import * as extension from '../../extension';
+import { getChildren } from './getChildren';
+import { shiftTrailingNodesDown } from './shiftTrailingNodes';
+import { UriBasedView } from '../../outlineProvider/UriBasedView';
+import { generalMoveNode } from './handleMovement/generalMoveNode';
+import { updateChildrenToReflectNewUri } from './updateChildrenToReflectNewUri';
 
 export const usedIds: { [index: string]: boolean } = {};
 
@@ -24,7 +26,8 @@ export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentNode | Conta
 
 export class OutlineNode extends TreeNode {
 
-    moveNode = moveNode;
+    updateChildrenToReflectNewUri = updateChildrenToReflectNewUri;
+    generalMoveNode = generalMoveNode;
     getChildren = getChildren;
     shiftTrailingNodesDown = shiftTrailingNodesDown;
 
@@ -36,7 +39,7 @@ export class OutlineNode extends TreeNode {
         let foundParent: OutlineNode;
         let parentUri = this.data.ids.parentUri;
         while (true) {
-            foundParent = await provider._getTreeElementByUri(parentUri);
+            foundParent = await provider.getTreeElementByUri(parentUri);
             if (foundParent.data.ids.type === secondary || foundParent.data.ids.type === 'chapter') {
                 break;
             }

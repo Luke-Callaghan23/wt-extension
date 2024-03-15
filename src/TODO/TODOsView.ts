@@ -7,7 +7,7 @@ import { TODOData, TODONode } from './node';
 import { OutlineTreeProvider } from '../outlineProvider/outlineTreeProvider';
 import { InitializeNode, initializeOutline } from '../outlineProvider/initialize';
 import { Timed } from '../timedView';
-import { OutlineNode } from '../outline/node';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { ChapterNode, ContainerNode, FragmentNode, NodeTypes, RootNode, SnipNode } from '../outlineProvider/fsNodes';
 import { update } from './impl/timerFunctions';
 import { disable } from '../wordWatcher/timer';
@@ -66,9 +66,9 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 
 	async refresh(reload: boolean, updates: TODONode[]): Promise<void> {
 		if (reload) {
-			this.tree = await this.initializeTree();
+			this.rootNodes = [await this.initializeTree()];
 		}
-		await this.tree.getTODOCounts();
+		await this.rootNodes[0].getTODOCounts();
 		return this._onDidChangeTreeData.fire(undefined);
 	}
 

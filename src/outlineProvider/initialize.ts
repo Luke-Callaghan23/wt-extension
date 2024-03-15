@@ -9,7 +9,7 @@ import * as extension from '../extension';
 
 export type InitializeNode<T extends TreeNode> = (data: NodeTypes<T>) => T;
 
-export async function initializeOutline<T extends TreeNode>(init: InitializeNode<T>): Promise<T> {
+export async function initializeOutline<T extends TreeNode>(init: InitializeNode<T>, dontFail?: boolean): Promise<T> {
 
     const dataFolderUri = vscode.Uri.joinPath(extension.rootPath, `data`);
     const chaptersContainerUri = vscode.Uri.joinPath(dataFolderUri, `chapters`);
@@ -68,7 +68,8 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
             relativePath: `data/chapters`, 
             fileName: name, 
             chaptersContainerUri: chaptersContainerUri,
-            init
+            init,
+            dontFail: dontFail
         })));
     }
 
@@ -102,7 +103,8 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
                 fileName: name, 
                 parentTypeId: 'root', 
                 parentUri: workSnipsContainerUri,
-                init
+                init,
+                dontFail: dontFail
             }))
         );
     }
@@ -146,6 +148,7 @@ type ChapterParams<T extends TreeNode> = {
     fileName: string,
     chaptersContainerUri: vscode.Uri,
     init: InitializeNode<T>,
+    dontFail?: boolean
 };
 
 export async function initializeChapter <T extends TreeNode> ({
@@ -154,6 +157,7 @@ export async function initializeChapter <T extends TreeNode> ({
     fileName,
     chaptersContainerUri,
     init,
+    dontFail
 }: ChapterParams<T>): Promise<ChapterNode<T>> {
     
     const chapterFolderUri = vscodeUris.Utils.joinPath(chaptersContainerUri, fileName);
@@ -166,9 +170,11 @@ export async function initializeChapter <T extends TreeNode> ({
         chapterFolderEntries = await vscode.workspace.fs.readDirectory(chapterFolderUri);
     }
     catch (e) {
-        vscode.commands.executeCommand('setContext', 'wt.valid', false);
-        // When we fail to read the chapter folder, fail out
-        vscode.window.showErrorMessage(`Error: could not read chapter folder at path '${chapterFolderUri.fsPath}': ${e}`);
+        if (dontFail === undefined || dontFail === false) {
+            vscode.commands.executeCommand('setContext', 'wt.valid', false);
+            // When we fail to read the chapter folder, fail out
+            vscode.window.showErrorMessage(`Error: could not read chapter folder at path '${chapterFolderUri.fsPath}': ${e}`);
+        }
         throw e;
     }
 
@@ -270,6 +276,7 @@ type SnipParams<T extends TreeNode> = {
     parentTypeId: ResourceType,
     parentUri: vscode.Uri,
     init: InitializeNode<T>,
+    dontFail?: boolean
 };
 
 export async function initializeSnip<T extends TreeNode> ({
@@ -279,6 +286,7 @@ export async function initializeSnip<T extends TreeNode> ({
     parentTypeId,
     parentUri,
     init,
+    dontFail
 }: SnipParams<T>): Promise<SnipNode<T>> {
 
     const snipFolderUri = vscodeUris.Utils.joinPath(parentUri, fileName);
@@ -291,9 +299,11 @@ export async function initializeSnip<T extends TreeNode> ({
         snipFolderEntries = await vscode.workspace.fs.readDirectory(snipFolderUri);
     }
     catch (e) {
-        vscode.commands.executeCommand('setContext', 'wt.valid', false);
-        // When we fail to read the snip folder, fail out
-        vscode.window.showErrorMessage(`Error: could not read sni[] folder at path '${snipFolderUri.fsPath}': ${e}`);
+        if (dontFail === undefined || dontFail === false) {
+            vscode.commands.executeCommand('setContext', 'wt.valid', false);
+            // When we fail to read the snip folder, fail out
+            vscode.window.showErrorMessage(`Error: could not read snip folder at path '${snipFolderUri.fsPath}': ${e}`);
+        }
         throw e;
     }
 

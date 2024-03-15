@@ -15,8 +15,9 @@ const HTMLToDOCX = require('html-to-docx');
 // Converts html to pdf
 import { Workspace } from '../workspace/workspaceClass';
 import { OutlineView } from '../outline/outlineView';
-import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../outline/node';
 import { wtToHtml } from './wtToHtml';
+import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
+import * as pdf from 'html-pdf';
 
 // Data provided by the export form webview
 export type ExportDocumentInfo = {
@@ -120,7 +121,7 @@ async function doProcessMd (
     const exportFileType: string = ex.ext;
 
     // Read all fragments from all chapters
-    const root: RootNode = outline.tree.data as RootNode;
+    const root: RootNode = outline.rootNodes[0].data as RootNode;
     const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
     const chaptersNodes: OutlineNode[] = chaptersContainer.contents;
 

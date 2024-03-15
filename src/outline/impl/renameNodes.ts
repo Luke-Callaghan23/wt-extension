@@ -4,7 +4,7 @@ import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../help';
 import * as console from '../../vsconsole';
 import { OutlineView } from '../outlineView';
-import { OutlineNode } from '../node';
+import { OutlineNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
 
 export async function renameResource (this: OutlineView) {

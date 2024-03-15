@@ -3,7 +3,7 @@ import * as console from '../vsconsole';
 import * as extension from './../extension';
 import { OutlineView } from '../outline/outlineView';
 import * as vscodeUri from 'vscode-uri';
-import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../outline/node';
+import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
 import { v4 as uuidv4 } from 'uuid';
 
 export class WordCount {
@@ -100,7 +100,7 @@ export class WordCount {
         }
 
         const promises: Promise<DisplayInfo>[] = [];
-        const root: RootNode = outlineView.tree.data as RootNode;
+        const root: RootNode = outlineView.rootNodes[0].data as RootNode;
         
         // Create promises to collect display data for all existing chapters
         const chapters: ContainerNode = root.chapters.data as ContainerNode;

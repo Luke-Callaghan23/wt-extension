@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
-import { OutlineNode } from '../node';
+import { OutlineNode } from '../nodes_impl/outlineNode';
 
 
 // Is called whenever there is a change in the active document in vscode
@@ -10,9 +10,14 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
     if (!editor) return;
     if (!editor.document) return;
 
+
     // Get the node item
     const uri = editor.document.uri;
-    const node = await this._getTreeElementByUri(uri);
+    if (uri.toString().includes('recycling')) {
+        return;
+    }
+
+    const node = await this.getTreeElementByUri(uri);
     if (!node) return;
 
     // Reveal and focus the node

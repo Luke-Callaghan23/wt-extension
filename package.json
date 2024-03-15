@@ -2,7 +2,7 @@
 	"name": "wtaniwe",
 	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
 	"description": "Writing Tool, An Integrated Writing Environment",
-	"version": "0.0.78",
+	"version": "0.0.80",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -99,6 +99,12 @@
 					"name": "Export",
 					"icon": "media/dep.svg",
 					"contextualTitle": "Export",
+					"when": "wt.valid"
+				},
+				{
+					"id": "wt.recyclingBin",
+					"name": "Recycling Bin",
+					"contextualTitle": "Recycling Bin",
 					"when": "wt.valid"
 				}
 			],
@@ -199,6 +205,24 @@
 			{
 				"command": "wt.outline.copyRelativePath",
 				"title": "Writing Tool: Copy Relative Path"
+			},
+			{
+				"command": "wt.recyclingBin.renameFile",
+				"title": "Writing Tool: Rename Recycled Resource"
+			},
+			{
+				"command": "wt.recyclingBin.permanentlyDelete",
+				"title": "Writing Tool: Pemanently Delete Resource"
+			},
+			{
+				"command": "wt.recyclingBin.deleteAll",
+				"title": "Writing Tool: Delete All",
+				"icon": "$(circle-slash)"
+			},
+			{
+				"command": "wt.recyclingBin.refresh",
+				"title": "Writing Tool: Refresh Recycling Bin View",
+				"icon": "$(refresh)"
 			},
 			{
 				"command": "wt.todo.copyPath",
@@ -631,6 +655,22 @@
 			{
 				"title": "Writing Tool: Comment paragraph",
 				"command": "wt.editor.todo.commentParagraph"
+			},
+			{
+				"title": "Writing Tool: Highlight sentence",
+				"command": "wt.editor.highlightSentence"
+			},
+			{
+				"title": "Writing Tool: Highlight fragment",
+				"command": "wt.editor.highlightFragment"
+			},
+			{
+				"title": "Writing Tool: Highlight paragraph",
+				"command": "wt.editor.highlightParagraph"
+			},
+			{
+				"title": "Writing Tool: Expand Highlight",
+				"command": "wt.editor.highlightExpand"
 			}
 		],
 		"menus": {
@@ -659,6 +699,16 @@
 					"command": "wt.outline.help",
 					"when": "wt.valid && view == wt.outline",
 					"group": "navigation@5"
+				},
+				{
+					"command": "wt.recyclingBin.deleteAll",
+					"when": "wt.valid && view == wt.recyclingBin",
+					"group": "navigation@2"
+				},
+				{
+					"command": "wt.recyclingBin.refresh",
+					"when": "wt.valid && view == wt.recyclingBin",
+					"group": "navigation@1"
 				},
 				{
 					"command": "wt.synonyms.help",
@@ -769,6 +819,18 @@
 					"command": "wt.outline.copyRelativePath",
 					"when": "view == wt.outline || view == wt.todo",
 					"group": "copy_path@7"
+				},
+				{
+					"command": "wt.recyclingBin.renameFile",
+					"when": "view == wt.recyclingBin"
+				},
+				{
+					"command": "wt.recyclingBin.permanentlyDelete",
+					"when": "view == wt.recyclingBin"
+				},
+				{
+					"command": "wt.recyclingBin.deleteAll",
+					"when": "view == wt.recyclingBin"
 				},
 				{
 					"command": "wt.wordWatcher.deleteWord",
@@ -916,6 +978,16 @@
 			]
 		},
 		"keybindings": [
+			{
+				"command": "wt.recyclingBin.renameFile",
+				"key": "f2",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.recyclingBin"
+			},
+			{
+				"command": "wt.recyclingBin.permanentlyDelete",
+				"key": "delete",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.recyclingBin"
+			},
 			{
 				"command": "wt.outline.renameFile",
 				"key": "f2",
@@ -1129,6 +1201,26 @@
 			{
 				"command": "wt.editor.todo.commentParagraph",
 				"key": "ctrl+alt+shift+/",
+				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
+				"command": "wt.editor.highlightSentence",
+				"key": "ctrl+shift+h",
+				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
+				"command": "wt.editor.highlightFragment",
+				"key": "alt+shift+h",
+				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
+				"command": "wt.editor.highlightParagraph",
+				"key": "ctrl+alt+shift+h",
+				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
+				"command": "wt.editor.highlightExpand",
+				"key": "ctrl+alt+h",
 				"when": "editorLangId == wt || editorLandId == wtNote"
 			}
 		],

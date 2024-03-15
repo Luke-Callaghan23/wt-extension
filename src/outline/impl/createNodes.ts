@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig } from '../../help';
-import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentNode } from '../node';
+import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 // import * as console from '../../vsconsole';
 import * as extension from '../../extension';
@@ -24,7 +24,7 @@ type CreateOptions = {
 
 export async function newChapter (
     this: OutlineView, 
-    _resource: OutlineNode | undefined, 
+    resource: OutlineNode | undefined, 
     options?: CreateOptions
 ): Promise<vscode.Uri | null> {
     // Creating a new chapter is simple as new chapters are the "highest" level in the node structure
@@ -33,7 +33,7 @@ export async function newChapter (
     
     // Path and file name for new chapter
     
-    const chaptersContainer = (this.tree.data as RootNode).chapters;
+    const chaptersContainer = (this.rootNodes[0].data as RootNode).chapters;
     const chaptersContainerUri = chaptersContainer.getUri();
 
     const chaptersContainerDotConfigUri = vscodeUris.Utils.joinPath(chaptersContainerUri, '.config');
@@ -192,7 +192,7 @@ export async function newSnip (
         // If the selected resource is `undefined`, then search for the the container
         //      of the latest accessed fragment
         // Using the work snips container as a fallback
-        const fallback = (this.tree.data as RootNode).snips;
+        const fallback = (this.rootNodes[0].data as RootNode).snips;
 
         // Get the closest snip container to the latest accessed snip:
         const latestAccessedFragment = FileAccessManager.lastAccessedFragment;
@@ -201,14 +201,14 @@ export async function newSnip (
         }
         else {
             // Case: there is a latest accessed fragment
-            const fragmentNode: OutlineNode | undefined | null = await this._getTreeElementByUri(latestAccessedFragment);
+            const fragmentNode: OutlineNode | undefined | null = await this.getTreeElementByUri(latestAccessedFragment);
             if (!fragmentNode) {
                 parentNode = fallback;
             }
             else {
                 // Case: fragment has a corresponding node in the outline view
                 const fragmentContainerUri = fragmentNode.data.ids.parentUri;
-                const fragmentContainer: OutlineNode | undefined | null = await this._getTreeElementByUri(fragmentContainerUri);
+                const fragmentContainer: OutlineNode | undefined | null = await this.getTreeElementByUri(fragmentContainerUri);
                 if (!fragmentContainer) {
                     parentNode = fallback;
                 }
@@ -223,7 +223,7 @@ export async function newSnip (
                 //      the parent container of that snip as the destination
                 else if (fragmentContainer.data.ids.type === 'snip') {
                     const snipsContainerUri = fragmentContainer.data.ids.parentUri;
-                    const snipsContainer: OutlineNode | undefined | null = await this._getTreeElementByUri(snipsContainerUri);
+                    const snipsContainer: OutlineNode | undefined | null = await this.getTreeElementByUri(snipsContainerUri);
                     if (!snipsContainer) {
                         parentNode = fallback;
                     }
@@ -252,7 +252,7 @@ export async function newSnip (
                         // If the parent type is root, we still don't know if the selected item is a chapter container
                         //		or the work snips
                         // Need to check the ids of each of these containers against the id of the resource
-                        const rootNode: OutlineNode = await this._getTreeElementByUri(resource.data.ids.parentUri);
+                        const rootNode: OutlineNode = await this.getTreeElementByUri(resource.data.ids.parentUri);
                         const root: RootNode = rootNode.data as RootNode;
 
                         // Check the id of the chapters container and the work snips container of the root node against
@@ -433,7 +433,7 @@ export async function newFragment (
         }
         
         // If there is a last accessed fragment, use that
-        resource = await this._getTreeElementByUri(lastAccessedFragmentUri);
+        resource = await this.getTreeElementByUri(lastAccessedFragmentUri);
         if (!resource) {
             vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
             return null;
@@ -446,12 +446,12 @@ export async function newFragment (
     if (resource.data.ids.type === 'fragment') {
         // If the selected resource is a fragment itself, then look at the parent node of that fragment
         parentUri = resource.data.ids.parentUri;
-        parentNode = await this._getTreeElementByUri(parentUri);
+        parentNode = await this.getTreeElementByUri(parentUri);
     }
     else if (resource.data.ids.type === 'container') {
         // Get the last fragment of the selected container that was accessed
         const lastAccessedFragmentInContainerUri = FileAccessManager.lastAccessedFragmentForUri(resource.data.ids.uri);
-        resource = await this._getTreeElementByUri(lastAccessedFragmentInContainerUri);
+        resource = await this.getTreeElementByUri(lastAccessedFragmentInContainerUri);
         if (!resource) {
             // Since a container is a something that holds other folder nodes, you cannot add a fragment direcly to a container
             vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
@@ -460,7 +460,7 @@ export async function newFragment (
 
         // Get the parent of that last accessed fragment to use as the house of the new fragment
         parentUri = resource.data.ids.parentUri;
-        parentNode = await this._getTreeElementByUri(parentUri);
+        parentNode = await this.getTreeElementByUri(parentUri);
 
     }
     else {
