@@ -1,7 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as extension from '../extension';
-import * as console from '../vsconsole';
 import { ExportForm } from './exportFormView';
 import { Buff } from '../Buffer/bufferSource';
 
@@ -235,6 +234,7 @@ async function doProcessHtml (processedMd: ProcessedMd): Promise<ProcessedHtml> 
 async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDocx> {
     if (processedHtml.type === 'single') {
         const singleHtml = processedHtml.fullData;
+        console.log(singleHtml)
         const docx: Buffer = await HTMLToDOCX(singleHtml, '<p></p>', {
             margins: {
                 top: 1080,

@@ -186,6 +186,6 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
         h3 {
             font-size: 15px;
         }
-        </style>${removedFirstPageBreak}</html>`
+        </style><body>${removedFirstPageBreak}</body></html>`
     return fullHtml;
 }
