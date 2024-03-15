@@ -78,6 +78,12 @@
 					"icon": "media/dep.svg",
 					"contextualTitle": "Synonyms",
 					"when": "wt.valid"
+				},
+				{
+					"id": "wt.recyclingBin",
+					"name": "Recycling Bin",
+					"contextualTitle": "Recycling Bin",
+					"when": "wt.valid"
 				}
 			],
 			"workBible": [
@@ -169,6 +175,24 @@
 			{
 				"command": "wt.outline.duplicateItems",
 				"title": "Writing Tool: Duplicate Outline Tree Items"
+			},
+			{
+				"command": "wt.recyclingBin.renameFile",
+				"title": "Writing Tool: Rename Recycled Resource"
+			},
+			{
+				"command": "wt.recyclingBin.permanentlyDelete",
+				"title": "Writing Tool: Pemanently Delete Resource"
+			},
+			{
+				"command": "wt.recyclingBin.deleteAll",
+				"title": "Writing Tool: Delete All",
+				"icon": "$(circle-slash)"
+			},
+			{
+				"command": "wt.recyclingBin.refresh",
+				"title": "Writing Tool: Refresh Recycling Bin View",
+				"icon": "$(refresh)"
 			},
 			{
 				"command": "wt.import.fileExplorer.refresh",
@@ -603,6 +627,16 @@
 					"group": "navigation@5"
 				},
 				{
+					"command": "wt.recyclingBin.deleteAll",
+					"when": "wt.valid && view == wt.recyclingBin",
+					"group": "navigation@2"
+				},
+				{
+					"command": "wt.recyclingBin.refresh",
+					"when": "wt.valid && view == wt.recyclingBin",
+					"group": "navigation@1"
+				},
+				{
 					"command": "wt.synonyms.help",
 					"when": "wt.valid && view == wt.synonyms",
 					"group": "navigation"
@@ -701,6 +735,18 @@
 					"command": "wt.outline.duplicateItems",
 					"when": "view == wt.outline",
 					"group": "5_cutcopypaste@3"
+				},
+				{
+					"command": "wt.recyclingBin.renameFile",
+					"when": "view == wt.recyclingBin"
+				},
+				{
+					"command": "wt.recyclingBin.permanentlyDelete",
+					"when": "view == wt.recyclingBin"
+				},
+				{
+					"command": "wt.recyclingBin.deleteAll",
+					"when": "view == wt.recyclingBin"
 				},
 				{
 					"command": "wt.wordWatcher.deleteWord",
@@ -844,6 +890,16 @@
 			]
 		},
 		"keybindings": [
+			{
+				"command": "wt.recyclingBin.renameFile",
+				"key": "f2",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.recyclingBin"
+			},
+			{
+				"command": "wt.recyclingBin.permanentlyDelete",
+				"key": "delete",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.recyclingBin"
+			},
 			{
 				"command": "wt.outline.renameFile",
 				"key": "f2",
