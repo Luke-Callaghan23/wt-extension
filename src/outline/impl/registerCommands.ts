@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
-import { ContainerNode, OutlineNode, RootNode } from '../node';
+import { ContainerNode, OutlineNode, RootNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import { CopiedSelection } from './copyPaste';
 
@@ -42,7 +42,20 @@ export function registerCommands (this: OutlineView) {
     vscode.commands.registerCommand("wt.outline.moveUp", (resource) => this.moveUp(resource));
     vscode.commands.registerCommand("wt.outline.moveDown", (resource) => this.moveDown(resource));
     
-    vscode.commands.registerCommand("wt.outline.removeResource", (resource) => this.removeResource(resource));
+    vscode.commands.registerCommand("wt.outline.removeResource", (resource) => {
+        let targets: OutlineNode[];
+        if (resource) {
+            targets = [resource];
+        }
+        else {
+            targets = [...this.view.selection];
+        }
+    
+        if (targets.length === 0) {
+            return;
+        }
+        this.removeResource(targets);
+    });
 
     vscode.commands.registerCommand("wt.outline.collectChapterUris", () => {
         const root: RootNode = this.rootNodes[0].data as RootNode;

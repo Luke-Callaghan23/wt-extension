@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { TODO, TODOsView } from '../TODOsView';
 import { initializeOutline } from '../../outlineProvider/initialize';
 import { TODONode } from '../node';
-import { OutlineNode } from '../../outline/node';
+import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode } from '../../outlineProvider/fsNodes';
 
 export function registerCommands(this: TODOsView) {
@@ -42,8 +42,10 @@ export function registerCommands(this: TODOsView) {
     //		to just emit changes from there over to here and then reflect the changes on this end
     //		rather than trying to make sure the two trees are always in sync with each other
     // `updated` is always the root node of the outline tree
-    vscode.commands.registerCommand('wt.todo.updateTree', (updated: OutlineNode) => {
+    vscode.commands.registerCommand('wt.todo.updateTree', (arr: OutlineNode[]) => {
+        const updated = arr[0];
         this.rootNodes[0].data.ids = { ...updated.data.ids };
+            
         const outlineRoot = updated.data as RootNode<OutlineNode>;
         const outlineChapters = outlineRoot.chapters;
         const outlineWorkSnips = outlineRoot.snips;
@@ -88,9 +90,14 @@ export function registerCommands(this: TODOsView) {
 
         // Convert the outline's Outline nodes into TODO nodes and swap out the TODO tree's data
         //		with those converted nodes
-        (this.rootNodes[0].data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
-        (this.rootNodes[0].data as RootNode<TODONode>).snips = convertSnips(outlineWorkSnips);
-        Object.keys(TODOsView.todo).forEach(key => delete TODOsView.todo[key]);
-        this.refresh(false, []);
+        if (this.rootNodes[0].data) {
+            (this.rootNodes[0].data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
+            (this.rootNodes[0].data as RootNode<TODONode>).snips = convertSnips(outlineWorkSnips);
+            Object.keys(TODOsView.todo).forEach(key => delete TODOsView.todo[key]);
+            this.refresh(false, []);
+        }
+        else {
+            console.log('hello')
+        }
     });
 }

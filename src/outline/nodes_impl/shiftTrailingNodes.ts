@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { OutlineTreeProvider } from "../../outlineProvider/outlineTreeProvider";
-import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "../node";
+import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "./outlineNode";
 import { readDotConfig, writeDotConfig } from '../../help';
 import { HasGetUri, UriBasedView } from '../../outlineProvider/UriBasedView';
 
@@ -31,7 +31,7 @@ export async function shiftTrailingNodesDown<T extends HasGetUri> (
     // Save the changes of the config file to disk
     const movedTitle = oldDotConfig[this.data.ids.fileName].title;
     delete oldDotConfig[this.data.ids.fileName];
-    const writePromise = writeDotConfig(parentDotConfig, oldDotConfig);
+    await writeDotConfig(parentDotConfig, oldDotConfig);
 
     // Shift any node that comes after this one down by one inside of the internal 
     //      outline view tree structure
@@ -58,6 +58,5 @@ export async function shiftTrailingNodesDown<T extends HasGetUri> (
     }
 
     // Make sure the save finishes and then return the title of the moved content
-    await writePromise;
     return movedTitle;
 }

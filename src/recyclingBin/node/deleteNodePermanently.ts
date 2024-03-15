@@ -1,30 +1,23 @@
 import * as extension from '../../extension';
 import * as vscode from 'vscode';
-import { RecyclingBinNode } from "./recyclingBinNode";
 import { RecycleLog, RecyclingBinView } from "../recyclingBinView";
-import { ChapterNode, ContainerNode, SnipNode } from '../../outline/node';
+import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { Buff } from '../../Buffer/bufferSource';
 import { writeDotConfig } from '../../help';
 
-export async function removeResource (this: RecyclingBinView, resource: RecyclingBinNode | undefined) {
-    let targets: RecyclingBinNode[];
-    if (resource) {
-        targets = [resource];
-    }
-    else {
-        targets = [...this.view.selection];
-    }   
-
+export async function deleteNodePermanently (this: RecyclingBinView, targets: OutlineNode[]) {
+    // Do not delete the dummy node
+    targets = targets.filter(ur => {
+        return !(ur.data.ids.type === 'fragment' && ur.data.ids.parentTypeId === 'root');
+    });
+    
     if (targets.length === 0) {
         return;
     }
 
     // Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
-    // const uniqueRoots = await this.getLocalRoots(targets);
-    const fileNames = this.rootNodes.map(rn => rn.data.ids.fileName);
-    const uniqueRoots = targets.filter(targ => {
-        return fileNames.includes(targ.data.ids.fileName);
-    });
+    const uniqueRootsRaw = await this.getLocalRoots(targets);
+    const uniqueRoots = uniqueRootsRaw
     const s = uniqueRoots.length > 1 ? 's' : '';
 
     const result = await vscode.window.showInformationMessage(`Are you sure you want to delete ${uniqueRoots.length} resource${s}?`, { modal: true }, "Yes", "No");
@@ -32,9 +25,11 @@ export async function removeResource (this: RecyclingBinView, resource: Recyclin
         return;
     }
 
+    const rootNodeIndecesToDelete: number[] = [];
+    const logNodeNodeFileNamesToDelete: string[] = [];
     
     let updateRoot = false;
-    const containers: RecyclingBinNode[] = [];
+    const containers: OutlineNode[] = [];
     for (const target of uniqueRoots) {
         
         // Delete the chapter or snip from the file system
@@ -55,16 +50,18 @@ export async function removeResource (this: RecyclingBinView, resource: Recyclin
                 return li.data.ids.fileName === target.data.ids.fileName;
             });
             if (removeViewIndex === -1) continue;
-            this.rootNodes.splice(removeViewIndex, 1);
+            rootNodeIndecesToDelete.push(removeViewIndex);
+            logNodeNodeFileNamesToDelete.push(target.data.ids.fileName);
+            // this.rootNodes.splice(removeViewIndex, 1);
 
+            // const log = await RecyclingBinView.readRecycleLog();
+            // if (!log) continue;
+            // const removeLogIndex = log.findIndex(li => li.recycleBinName === target.data.ids.fileName);
+            // if (removeLogIndex === -1) continue;
+            // log.splice(removeLogIndex, 1);
 
-            const log = await RecyclingBinView.readRecycleLog();
-            if (!log) continue;
-            const removeLogIndex = log.findIndex(li => li.recycleBinName === target.data.ids.fileName);
-            if (removeLogIndex === -1) continue;
-            log.splice(removeLogIndex, 1);
+            // RecyclingBinView.writeRecycleLog(log);
 
-            RecyclingBinView.writeRecycleLog(log);
             updateRoot = true;
         }
         else if (target.data.ids.type === 'fragment') {
@@ -81,7 +78,7 @@ export async function removeResource (this: RecyclingBinView, resource: Recyclin
 
             // Finally, remove the fragment from the parent's text node container
             const fragmentParentUri = target.data.ids.parentUri;
-            const fragmentParent: RecyclingBinNode = await this.getTreeElementByUri(fragmentParentUri);
+            const fragmentParent: OutlineNode = await this.getTreeElementByUri(fragmentParentUri);
             if (!fragmentParent) continue;
 
             containers.push(fragmentParent);
@@ -109,7 +106,7 @@ export async function removeResource (this: RecyclingBinView, resource: Recyclin
 
             // Finally, remove the chapter or snip from the parent container
             const removedNodeParentUri = target.data.ids.parentUri;
-            const removedNodeParent: RecyclingBinNode = await this.getTreeElementByUri(removedNodeParentUri);
+            const removedNodeParent: OutlineNode = await this.getTreeElementByUri(removedNodeParentUri);
             if (!removedNodeParent) continue;
 
             containers.push(removedNodeParent);
@@ -172,6 +169,20 @@ export async function removeResource (this: RecyclingBinView, resource: Recyclin
         }
 
     }
+
+
+    this.rootNodes = this.rootNodes.filter((rn, index) => {
+        return !rootNodeIndecesToDelete.includes(index);
+    });
+
+    const log = await RecyclingBinView.readRecycleLog();
+    if (!log) return;
+    
+    const newLog = log.filter((li) => {
+        return !logNodeNodeFileNamesToDelete.includes(li.recycleBinName);
+    });
+    await RecyclingBinView.writeRecycleLog(newLog);
+
     // Refresh the whole tree as it's hard to determine what the deepest root node is
     this.refresh(false, updateRoot ? [] : containers);
 }

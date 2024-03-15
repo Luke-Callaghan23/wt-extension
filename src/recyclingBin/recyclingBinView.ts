@@ -1,19 +1,17 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as vscodeUris from 'vscode-uri'
 import { Workspace } from '../workspace/workspaceClass';
-import * as console from '../vsconsole';
 import * as extension from './../extension';
-import { OutlineView } from '../outline/outlineView';
 import { InitializeNode, initializeChapter, initializeFragment, initializeOutline, initializeSnip } from '../outlineProvider/initialize';
-import { OutlineNode, ResourceType } from '../outline/node';
-import { NodeTypes } from '../outlineProvider/fsNodes';
-import { RecyclingBinNode } from './node/recyclingBinNode';
+// import { OutlineNode, ResourceType } from '../outline/node';
+import { NodeTypes, ResourceType } from '../outlineProvider/fsNodes';
 import { ConfigFileInfo } from '../help';
 import { v4 as uuidv4 } from 'uuid';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
-import { removeResource } from './node/removeNode';
+import { deleteNodePermanently } from './node/deleteNodePermanently';
 import { renameResource } from './node/renameNode';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { OutlineView } from '../outline/outlineView';
 
 export type RecycleLog = {
     oldUri: string,
@@ -25,8 +23,8 @@ export type RecycleLog = {
 
 
 export class RecyclingBinView 
-extends UriBasedView<RecyclingBinNode>
-implements vscode.TreeDataProvider<RecyclingBinNode> {
+extends UriBasedView<OutlineNode>
+implements vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropController<OutlineNode> {
 
 	// tree data provider
 	//#region
@@ -58,18 +56,18 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
     }
 
 
-    removeResource = removeResource;
+    deleteNodePermanently = deleteNodePermanently;
     renameResource = renameResource;
 
 
 
-    rootNodes: RecyclingBinNode[] = [];
-	async initializeTree(): Promise<RecyclingBinNode[] | null> {
-		const init: InitializeNode<RecyclingBinNode> = (data: NodeTypes<RecyclingBinNode>) => new RecyclingBinNode(data);
+    rootNodes: OutlineNode[] = [];
+	async initializeTree(): Promise<OutlineNode[] | null> {
+		const init: InitializeNode<OutlineNode> = (data: NodeTypes<OutlineNode>) => new OutlineNode(data);
 
         const log = await RecyclingBinView.readRecycleLog();
         if (!log) return null;
-        const nodes: RecyclingBinNode[] = [];
+        const nodes: OutlineNode[] = [];
 
         // Order trash items by their delete date descending
         const orderedLog = log.reverse();
@@ -77,7 +75,7 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
         
         for (let nodeIdx = 0; nodeIdx < orderedLog.length; nodeIdx++) {
             const logItem = orderedLog[nodeIdx];
-            let node: RecyclingBinNode;
+            let node: OutlineNode;
 
             const dotConfig: { [index: string]: ConfigFileInfo } = {
                 [logItem.recycleBinName]: {
@@ -90,7 +88,7 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
             //      the same initialization function that the TODO tree and outline tree both use
             try {
                 if (logItem.resourceType === 'chapter') {
-                    node = new RecyclingBinNode(await initializeChapter({
+                    node = new OutlineNode(await initializeChapter({
                         parentDotConfig: dotConfig,
                         chaptersContainerUri: RecyclingBinView.recyclingUri,
                         fileName: logItem.recycleBinName,
@@ -100,7 +98,7 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
                     }));
                 }
                 else if (logItem.resourceType === 'snip') {
-                    node = new RecyclingBinNode(await initializeSnip({
+                    node = new OutlineNode(await initializeSnip({
                         parentDotConfig: dotConfig,
                         init: init,
                         parentTypeId: 'container',
@@ -111,7 +109,7 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
                     }));
                 }
                 else if (logItem.resourceType === 'fragment') {
-                    node = new RecyclingBinNode(await initializeFragment({
+                    node = new OutlineNode(await initializeFragment({
                         parentDotConfig: dotConfig,
                         fileName: logItem.recycleBinName,
                         parentTypeId: 'container',
@@ -127,15 +125,27 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
         return nodes;
     }
 
-	async getChildren (element?: RecyclingBinNode): Promise<RecyclingBinNode[]> {
+	async getChildren (element?: OutlineNode): Promise<OutlineNode[]> {
         // Root for the tree view is the root-level RecyclingBin nodes created in the `initialize` function
         if (!element) {
-            return this.rootNodes;
+            return [new OutlineNode({
+                ids: {
+                    display: 'Drag and Drop Outline Items Here',
+                    fileName: '',
+                    ordering: -1,
+                    parentTypeId: 'root',
+                    parentUri: RecyclingBinView.recyclingUri,
+                    relativePath: '',
+                    type: 'fragment',
+                    uri: RecyclingBinView.recyclingUri
+                },
+                md: ''
+            }), ...this.rootNodes];
         }
 		return element.getChildren(true);
 	}
 
-	async getTreeItem (element: RecyclingBinNode): Promise<vscode.TreeItem> {
+	async getTreeItem (element: OutlineNode): Promise<vscode.TreeItem> {
         const label = element.getDisplayString();
 
 		let collapseState: vscode.TreeItemCollapsibleState;
@@ -150,7 +160,7 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
 			else {
 				collapseState = vscode.TreeItemCollapsibleState.Expanded;
 			}
-            collapseState = vscode.TreeItemCollapsibleState.Expanded;
+            // collapseState = vscode.TreeItemCollapsibleState.Expanded;
 		}
 		else {
 			// If the element has no children, then don't give it any collapse-ability
@@ -200,11 +210,10 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
 	// Refresh the tree data information
 
 	private allDocs: vscode.Uri[] = [];
-	private _onDidChangeTreeData: vscode.EventEmitter<RecyclingBinNode | undefined> = new vscode.EventEmitter<RecyclingBinNode | undefined>();
-	readonly onDidChangeTreeData: vscode.Event<RecyclingBinNode | undefined> = this._onDidChangeTreeData.event;
+	private _onDidChangeTreeData: vscode.EventEmitter<OutlineNode | undefined> = new vscode.EventEmitter<OutlineNode | undefined>();
+	readonly onDidChangeTreeData: vscode.Event<OutlineNode | undefined> = this._onDidChangeTreeData.event;
 	
 	async refresh(reload: boolean, updates: OutlineNode[]): Promise<void> {
-
 		// If the reload option is set to true, the caller wants us to reload the outline tree
 		//		completely from disk
 		if (reload) {
@@ -212,12 +221,6 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
             if (result === null) return;
             this.rootNodes = result;
 		}
-
-		// Because of all the various edits that the outline view does on the internal structure 
-		//		and because we want to avoid uneeded reading of the disk file structure, we
-		//		send over the outline node to the todo view whenever their is updates
-		//		to the outline view tree
-		vscode.commands.executeCommand('wt.todo.updateTree', this.rootNodes);
 
 		// Then update the root node of the outline view
 		if (updates.length > 0) {
@@ -232,20 +235,34 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
 	//#endregion
 
 	registerCommands() {
-        vscode.commands.registerCommand("wt.recyclingBin.permanentlyDelete", (resource) => this.removeResource(resource));
+        vscode.commands.registerCommand("wt.recyclingBin.permanentlyDelete", (resource) => {
+            let targets: OutlineNode[];
+            if (resource) {
+                targets = [resource];
+            }
+            else {
+                targets = [...this.view.selection];
+            }
+            this.deleteNodePermanently(targets);
+        });
         vscode.commands.registerCommand('wt.recyclingBin.renameFile', () => {
             if (this.view.selection.length > 1) return;
             this.renameResource();
         });    
+        vscode.commands.registerCommand("wt.recyclingBin.refresh", () => this.refresh(true, []));
+        vscode.commands.registerCommand('wt.recyclingBin.getRecyclingBinView', () => this);
+        vscode.commands.registerCommand('wt.recyclingBin.deleteAll', () => {
+            this.deleteNodePermanently(this.rootNodes);
+        })
 	}
 
-    protected view: vscode.TreeView<RecyclingBinNode>;
+    protected view: vscode.TreeView<OutlineNode>;
 	constructor(
         private context: vscode.ExtensionContext,
         private workspace: Workspace,
     ) {
         super();
-        this.view = {} as vscode.TreeView<RecyclingBinNode>;
+        this.view = {} as vscode.TreeView<OutlineNode>;
         RecyclingBinView.recyclingUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         (async () => {
             const rootNodes = await this.initializeTree();
@@ -256,6 +273,7 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
                 treeDataProvider: this,
                 showCollapseAll: true, 
                 canSelectMany: true,
+                dragAndDropController: this,
             });
             context.subscriptions.push();
             this.registerCommands();
@@ -264,4 +282,49 @@ implements vscode.TreeDataProvider<RecyclingBinNode> {
             this.initUriExpansion('wt.recyclingBin', this.view, this.context);
         })()
 	}
+
+
+    dropMimeTypes = ['application/vnd.code.tree.outline', 'text/uri-list'];
+    dragMimeTypes = ['text/uri-list'];
+
+    async handleDrop (target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
+        const targ = target || this.rootNodes[0];
+        if (!targ) throw 'unreachable';
+        
+        const outlineTransferItem = dataTransfer.get('application/vnd.code.tree.outline');
+        if (!outlineTransferItem) return;
+        
+        const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
+        const movedItemsJSON: OutlineNode[] = JSON.parse(outlineTransferItem.value);
+        const movedItems: OutlineNode[] = await Promise.all(
+            movedItemsJSON.map(mij => {
+                const uri = vscode.Uri.file(mij.data.ids.uri.fsPath);
+                return outlineView.getTreeElementByUri(uri);
+            })
+        );
+
+        // Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
+        const uniqueRoots = await outlineView.getLocalRoots(movedItems);
+        const filteredParents = uniqueRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString());
+        await outlineView.removeResource(filteredParents);
+    }
+
+    async handleDrag (source: readonly OutlineNode[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
+        dataTransfer.set('application/vnd.code.tree.recycling', new vscode.DataTransferItem(source));
+        
+        const uris: vscode.Uri[] = source.map(src => src.getDroppableUris()).flat();
+        const uriStrings = uris.map(uri => uri.toString());
+        
+        // Combine all collected uris into a single string
+        const sourceUriList = uriStrings.join('\r\n');
+        dataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
+    }
+
+    async getParent (element: OutlineNode): Promise<OutlineNode> {
+        if (element.data.ids.relativePath === '') {
+            return element;
+        }
+        const parentUri = element.getParentUri();
+        return this.getTreeElementByUri(parentUri);
+    }
 }

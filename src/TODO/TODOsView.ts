@@ -7,7 +7,7 @@ import { TODOData, TODONode } from './node';
 import { OutlineTreeProvider } from '../outlineProvider/outlineTreeProvider';
 import { InitializeNode, initializeOutline } from '../outlineProvider/initialize';
 import { Timed } from '../timedView';
-import { OutlineNode } from '../outline/node';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { ChapterNode, ContainerNode, FragmentNode, NodeTypes, RootNode, SnipNode } from '../outlineProvider/fsNodes';
 import { update } from './impl/timerFunctions';
 import { disable } from '../wordWatcher/timer';

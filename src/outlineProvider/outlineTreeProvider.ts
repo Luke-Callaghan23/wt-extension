@@ -6,12 +6,9 @@ import * as console from '../vsconsole';
 import { v4 as uuidv4 } from 'uuid';
 import { ResourceType } from './fsNodes';
 import { UriBasedView } from './UriBasedView';
-
-export type MoveNodeResult = {
-	moveOffset: number,
-	effectedContainers: TreeNode[],
-	createdDestination: TreeNode | null
-}
+import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { MoveNodeResult } from '../outline/nodes_impl/handleMovement/common';
 
 export abstract class TreeNode {
 	abstract getParentUri(): vscode.Uri;
@@ -21,9 +18,12 @@ export abstract class TreeNode {
 	abstract getChildren(filter: boolean): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
 	abstract getDroppableUris(): vscode.Uri[];
-	abstract moveNode(
+	abstract generalMoveNode (
+		this: TreeNode,
+		operation: 'move' | 'recover',
 		newParent: TreeNode, 
-		provider: OutlineTreeProvider<TreeNode>, 
+		recycleView: UriBasedView<TreeNode>,
+		outlineView: OutlineTreeProvider<TreeNode>,
 		moveOffset: number,
 		overrideDestination: TreeNode | null
 	): Promise<MoveNodeResult>;
@@ -40,9 +40,6 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	// Builds the initial tree
 	abstract initializeTree (): Promise<T>;
 
-
-	dropMimeTypes = ['application/vnd.code.tree.outline', 'text/uri-list'];
-	dragMimeTypes = ['text/uri-list'];
 	constructor (
 		protected context: vscode.ExtensionContext, 
 		private viewName: string,
@@ -50,6 +47,16 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		super();
 		this.view = {} as vscode.TreeView<T>;
 		this.uriToVisibility = {};
+	}
+
+
+	dropMimeTypes: string[] = [];
+	dragMimeTypes: string[] = [];
+	handleDrag?(source: readonly T[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): void | Thenable<void> {
+		throw new Error('Method not implemented.');
+	}
+	handleDrop?(target: T | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): void | Thenable<void> {
+		throw new Error('Method not implemented.');
 	}
 
 	abstract init(): Promise<void>;
@@ -149,65 +156,6 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			collapsibleState: collapseState,
 			resourceUri: treeElement.getUri(),
 		};
-	}
-
-    public async handleDrop(target: T | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-		const targ = target || this.rootNodes[0];
-		if (!targ) throw 'unreachable';
-        const transferItem = dataTransfer.get('application/vnd.code.tree.outline');
-		if (!transferItem) {
-			return;
-		}
-		const movedItems: T[] = transferItem.value;
-
-		// Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
-        const uniqueRoots = await this.getLocalRoots(movedItems);
-		const filteredParents = uniqueRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString());
-
-		let overrideDestination: TreeNode | null = null;
-
-		const effectedContainersUriMap: {
-			[index: string]: TreeNode,
-		} = {};
-
-		// Move all the valid nodes into the target
-		if (filteredParents.length > 0) {
-			// Offset tells how many nodes have moved downwards in the same container so far
-			// In the case where multiple nodes are moving downwards at once, it lets
-			//		.moveNode know how many nodes have already moved down, and 
-			//		lets it adapt to those changes
-			let offset = 0;
-			for (const mover of filteredParents) {
-				const res: MoveNodeResult = await mover.moveNode(targ, this, offset, overrideDestination);
-				const { moveOffset, createdDestination, effectedContainers } = res;
-				if (moveOffset === -1) break;
-				offset += moveOffset;
-
-				if (createdDestination) {
-					overrideDestination = createdDestination;
-				}
-
-				for (const container of effectedContainers) {
-					effectedContainersUriMap[container.getUri().fsPath] = container;
-				}
-			}
-
-			const allEffectedContainers = Object.entries(effectedContainersUriMap)
-				.map(([ _, container ]) => container);
-			console.log(allEffectedContainers);
-			this.refresh(false, allEffectedContainers);
-		}
-    }
-	
-    public async handleDrag(source: T[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-		treeDataTransfer.set('application/vnd.code.tree.outline', new vscode.DataTransferItem(source));
-
-		const uris: vscode.Uri[] = source.map(src => src.getDroppableUris()).flat();
-		const uriStrings = uris.map(uri => uri.toString());
-		
-		// Combine all collected uris into a single string
-		const sourceUriList = uriStrings.join('\r\n');
-		treeDataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
 	}
 }
 

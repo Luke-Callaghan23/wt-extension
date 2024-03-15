@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
-import { OutlineNode } from '../node';
+import { OutlineNode } from '../nodes_impl/outlineNode';
 
 
 // Is called whenever there is a change in the active document in vscode

@@ -5,15 +5,20 @@ import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from
 import * as console from '../../vsconsole';
 import * as extension from '../../extension';
 import { RecyclingBinView } from '../recyclingBinView';
-import { RecyclingBinNode } from './recyclingBinNode';
+import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 
 export async function renameResource (this: RecyclingBinView) {
 
-    const resource: RecyclingBinNode = this.view.selection[0];
+    const resource: OutlineNode = this.view.selection[0];
     const relativePath = resource.data.ids.relativePath;
     const fileName = resource.data.ids.fileName;
     const displayName = resource.data.ids.display;
     const type = resource.data.ids.type;
+
+    // Do not rename the dummy node
+    if (type === 'fragment' && resource.data.ids.parentTypeId === 'root') {
+        return;
+    }
 
     const fullPath = vscode.Uri.joinPath(extension.rootPath, relativePath, fileName);
     const originalName = displayName;

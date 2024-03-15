@@ -1,16 +1,17 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import * as console from '../vsconsole';
-import { MoveNodeResult, OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
-import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../help';
-import { OutlineView } from './outlineView';
-import * as fsNodes from '../outlineProvider/fsNodes';
-import * as extension from '../extension';
-import { moveNode as _moveNode } from './nodes_impl/moveNode';
-import { getChildren as _getChildren } from './nodes_impl/getChildren';
-import { shiftTrailingNodesDown as _shiftTrailingNodesDown } from './nodes_impl/shiftTrailingNodes';
-import { UriBasedView } from '../outlineProvider/UriBasedView';
+import * as console from '../../vsconsole';
+import { OutlineTreeProvider, TreeNode } from '../../outlineProvider/outlineTreeProvider';
+import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../help';
+import { OutlineView } from '../outlineView';
+import * as fsNodes from '../../outlineProvider/fsNodes';
+import * as extension from '../../extension';
+import { getChildren } from './getChildren';
+import { shiftTrailingNodesDown } from './shiftTrailingNodes';
+import { UriBasedView } from '../../outlineProvider/UriBasedView';
+import { generalMoveNode } from './handleMovement/generalMoveNode';
+import { updateChildrenToReflectNewUri } from './updateChildrenToReflectNewUri';
 
 export const usedIds: { [index: string]: boolean } = {};
 
@@ -25,23 +26,10 @@ export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentNode | Conta
 
 export class OutlineNode extends TreeNode {
 
-    async moveNode (
-        newParent: TreeNode, 
-        provider: OutlineTreeProvider<TreeNode>,
-        moveOffset: number,
-        overrideDestination: TreeNode | null
-    ): Promise<MoveNodeResult> {
-        return _moveNode.bind(this)(newParent, provider, moveOffset, overrideDestination);
-    }
-
-    async getChildren (filter: boolean): Promise<OutlineNode[]> {
-        return _getChildren.bind(this)(filter);
-    }
-
-
-    async shiftTrailingNodesDown (view: UriBasedView<TreeNode>): Promise<string> {
-        return _shiftTrailingNodesDown.bind(this)(view);
-    }
+    updateChildrenToReflectNewUri = updateChildrenToReflectNewUri;
+    generalMoveNode = generalMoveNode;
+    getChildren = getChildren;
+    shiftTrailingNodesDown = shiftTrailingNodesDown;
 
     // Assumes this is a 'snip' or a 'fragment'
     // Traverses up the parent tree until a 'chapter' or 'root' element is found

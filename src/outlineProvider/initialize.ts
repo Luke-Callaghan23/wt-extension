@@ -9,7 +9,7 @@ import * as extension from '../extension';
 
 export type InitializeNode<T extends TreeNode> = (data: NodeTypes<T>) => T;
 
-export async function initializeOutline<T extends TreeNode>(init: InitializeNode<T>): Promise<T> {
+export async function initializeOutline<T extends TreeNode>(init: InitializeNode<T>, dontFail?: boolean): Promise<T> {
 
     const dataFolderUri = vscode.Uri.joinPath(extension.rootPath, `data`);
     const chaptersContainerUri = vscode.Uri.joinPath(dataFolderUri, `chapters`);
@@ -68,7 +68,8 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
             relativePath: `data/chapters`, 
             fileName: name, 
             chaptersContainerUri: chaptersContainerUri,
-            init
+            init,
+            dontFail: dontFail
         })));
     }
 
@@ -102,7 +103,8 @@ export async function initializeOutline<T extends TreeNode>(init: InitializeNode
                 fileName: name, 
                 parentTypeId: 'root', 
                 parentUri: workSnipsContainerUri,
-                init
+                init,
+                dontFail: dontFail
             }))
         );
     }
@@ -300,7 +302,7 @@ export async function initializeSnip<T extends TreeNode> ({
         if (dontFail === undefined || dontFail === false) {
             vscode.commands.executeCommand('setContext', 'wt.valid', false);
             // When we fail to read the snip folder, fail out
-            vscode.window.showErrorMessage(`Error: could not read sni[] folder at path '${snipFolderUri.fsPath}': ${e}`);
+            vscode.window.showErrorMessage(`Error: could not read snip folder at path '${snipFolderUri.fsPath}': ${e}`);
         }
         throw e;
     }

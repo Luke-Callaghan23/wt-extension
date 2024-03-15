@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../node';
+import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 import { FileAccessManager } from '../../fileAccesses';
 import * as vscodeUris from 'vscode-uri';
