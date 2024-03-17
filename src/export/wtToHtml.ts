@@ -1,3 +1,5 @@
+import * as he from 'he';
+
 type Tags = 'paragraph' | 'emphasis' | 'bold' | 'underline' | 'strikethrough' | 'header';
 const conversionsTable: { [index: string]: Tags } = {
     '\n': 'paragraph',
@@ -171,7 +173,15 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
         html.push(text, closeTagText);
     });
     
-    const filteredBlanks = html.filter(txt => txt.length > 0).join('').replaceAll('\\n', '');
+    // Empty spaces should be replaces with '&#8203;' (zero-width space) because
+    //      of a bug in the html to docx npm package where a <i> section right
+    //      after a <b> tag (or any two tags right next to each other) cancel 
+    //      each other out
+    const noEmptySpace = html.map(txt => txt === ''
+        ? '&#8203;'
+        : txt
+    );
+    const filteredBlanks = noEmptySpace.filter(txt => txt.length > 0).join('').replaceAll('\\n', '');
     
     // Add page break before all of the chapter headers
     const withPageBreaks = pageBreaks 
@@ -184,6 +194,10 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
     // Except for the first
     const removedFirstPageBreak = withPageBreaks.replace('<div class="page-break" style="page-break-after: always;"></div>', '');
 
+    const finalHtml = he.encode(removedFirstPageBreak, {
+        allowUnsafeSymbols: true,
+    });
+
     const fullHtml = `<html><style>
         p {
             font-size: 10px;
@@ -191,6 +205,6 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
         h3 {
             font-size: 15px;
         }
-        </style><body>${removedFirstPageBreak}</body></html>`
+        </style><body>${finalHtml}</body></html>`
     return fullHtml;
 }
