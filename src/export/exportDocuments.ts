@@ -35,11 +35,6 @@ type ChapterInfo = {
     markdown: string
 };
 
-// TOTEST: initially when I tested exports, I simply tested whether the exporting worked
-// TOTEST: but I never tested how the exporting worked with stylizing of the text
-// TOTEST: essentially, just make sure that italics, bolds, and headings get successfully converted
-// TOTEST:      during the export process
-
 // Because it's pretty hard to handle a newline being a fragment separator, we swap this string, which I find to be unlikely to occur in 
 //      any real text out for the actual fragment glue, then, once operations on the text is all finished, we swap this string
 //      back out for the newline that the user expects
