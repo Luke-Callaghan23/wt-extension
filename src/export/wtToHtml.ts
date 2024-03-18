@@ -234,6 +234,14 @@ export const wtToHtml = (wt: string, options: {
     const noFirstPageBreak = withPageBreaks.replace(`${pageBreakText}`, '');
     const styleH3 = noFirstPageBreak.replaceAll(/<h3>/g, "<h3 style=\"font-size: 30px;\">");
     const clearNewlines = styleH3.replaceAll(/<p>((&#8203;)|\s|&nbsp;)*<\/p>/g, "");
+
+    // See comment above `defaultFragmentSeparator` for more details
+    // As we can see above there is a ton of maneuvering of whitespace around fragment separators and a lot of editing required
+    //      to do the edits
+    // Allowing newline separators would have increased complexity to a whole new level so instead, we use a long string that
+    //      will likely never occur in a user's normal text as the separator to do all of the existing string manipulation
+    //      required above
+    // Then swap out that default separator now
     const swapDefaultSeparatorForEmptyLineSeparator = clearNewlines.replaceAll(defaultFragmentSeparator, '');
     
     let finalHtml;

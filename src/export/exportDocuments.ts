@@ -40,8 +40,12 @@ type ChapterInfo = {
 // TOTEST: essentially, just make sure that italics, bolds, and headings get successfully converted
 // TOTEST:      during the export process
 
-// Stitches the markdown data of all .wt fragments in chapter into a single markdown string
+// Because it's pretty hard to handle a newline being a fragment separator, we swap this string, which I find to be unlikely to occur in 
+//      any real text out for the actual fragment glue, then, once operations on the text is all finished, we swap this string
+//      back out for the newline that the user expects
 export const defaultFragmentSeparator = '!!!!!!!!!!REPLACETHISWITHANEWLINELATER!!!!!!!!!!';
+
+// Stitches the markdown data of all .wt fragments in chapter into a single markdown string
 async function stitchFragments (node: ChapterNode, ex: ExportDocumentInfo): Promise<ChapterInfo | null> {
 
     const fragmentsData: string[] = [];
@@ -224,6 +228,22 @@ async function doProcessMd (
             };
         });
 
+        // If this is the final resulting output (the data will not later be processed into one of the more complicated formats) then we need
+        //      do some final processing of the text
+        // Namely: remove the default separator inserted above
+        if (ex.ext === 'md' || ex.ext === 'txt') {
+            cleanedChapters.forEach(cc => {
+                let text: string;
+                if (typeof cc.data === 'string') {
+                    text = cc.data;
+                }
+                else {
+                    text = cc.data.toString();
+                }
+                cc.data = text.replaceAll(defaultFragmentSeparator, '\n');
+            })
+        }
+
         // Return the multiple files
         return <MultipleFiles>{
             type: 'multiple',
@@ -234,7 +254,7 @@ async function doProcessMd (
     else {
         // CASE: exports everything into a single file
         // Combine all the chapters, using chapter names as glue
-        const fullFileMarkdown = finalData.reduce((acc, chapterInfo, index) => {
+        let fullFileMarkdown = finalData.reduce((acc, chapterInfo, index) => {
 
             // Determine the chapter prefix based in the values of `titleChapters`, `skipChapterTitleFirst`, and `skipChapterTitleLast`
             let chapterPrefix = '';
@@ -255,6 +275,16 @@ async function doProcessMd (
             //      different chapters themselves
             return `${acc}#${chapterPrefix}${chapterInfo.title}\n\n${wt}\n`;
         }, '');
+
+        
+        // If this is the final resulting output (the data will not later be processed into one of the more complicated formats) then we need
+        //      do some final processing of the text
+        // Namely: remove the default separator inserted above
+        // And: add space between the chapter title and the previous
+        if (ex.ext === 'md' || ex.ext === 'txt') {
+            fullFileMarkdown = fullFileMarkdown.replaceAll(defaultFragmentSeparator, '\n');
+            fullFileMarkdown = fullFileMarkdown.replaceAll("\n#", "\n\n\n#");
+        }
 
         return <SingleFile>{
             type: 'single',
