@@ -30,6 +30,13 @@ const getTagText = (tag: Tags, kind: 'opening' | 'closing') => {
 
 export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
     wt = wt.replaceAll("\r", '');
+    
+    // Encode html characters to html entities
+    // This lets users put text such as "<" and ">" in their work without the html breaking down entirely
+    wt = he.encode(wt, {
+        allowUnsafeSymbols: true,
+    });
+
 
     // Initialize the stack of html tags with an opening paragraph tag
     //      which starts at the 0th index of wt text
@@ -212,11 +219,7 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
         : emDashed;
 
     // Except for the first
-    const removedFirstPageBreak = withPageBreaks.replace('<div class="page-break" style="page-break-after: always;"></div>', '');
-
-    const finalHtml = he.encode(removedFirstPageBreak, {
-        allowUnsafeSymbols: true,
-    });
+    const finalHtml = withPageBreaks.replace('<div class="page-break" style="page-break-after: always;"></div>', '');
 
     const fullHtml = `<html><style>
         p {
