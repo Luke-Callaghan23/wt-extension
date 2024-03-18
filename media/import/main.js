@@ -42,7 +42,7 @@
                 shouldSplitFragments: false,
                 outerSplitRegex: '\\[{3,}([^\\]]*)\\]{3,}',
                 shouldSplitSnips: false,
-                fragmentSplitRegex: '~{3,}',
+                fragmentSplitRegex: '~{3,}([^~]*)~{3,}',
             };
             if (chapterUris.length !== 0) {
                 allDocInfo[fullPath].outputChapterName = `${name} (Imported)`;
