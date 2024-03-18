@@ -10,6 +10,10 @@ import { OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
 import * as mammoth from 'mammoth';
 const TurndownService = require('turndown');
 
+const libreofficeConvert = require('libreoffice-convert');
+const util = require('util');
+libreofficeConvert.convertAsync = util.promisify(libreofficeConvert.convert);
+
 // REMOVE SQUARE BRACKETS [ AND ] FROM ESCAPE CHARACTERS
 TurndownService.prototype.escape = function (string: string) {
     return [
@@ -36,7 +40,7 @@ import { Buff } from '../Buffer/bufferSource';
 
 export type DocInfo = {
     skip: boolean,
-    ext: 'wt' | 'txt' | 'md' | 'html' | 'docx',
+    ext: 'wt' | 'txt' | 'html' | 'docx' | 'odt',
     outputType: 'snip' | 'chapter',
     outputIntoChapter: boolean,
     outputSnipPath: '/data/snips/',
@@ -192,7 +196,7 @@ function replaceCommonUnicode (content: string): string {
     }, content)
 }
 
-async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
+async function readAndSplitWt (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
     // Get the full file path and read the content of that file
     const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
     const fileContent = (await vscode.workspace.fs.readFile(fileUri)).toString();
@@ -208,8 +212,7 @@ async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Prom
     }
     return splits;
 }
-const readAndSplitWt = readAndSplitMd;
-const readAndSplitTxt = readAndSplitMd;
+const readAndSplitTxt = readAndSplitWt;
 
 async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<DocSplit | null> {
     // Create a converter for turning the provided html into md
@@ -294,6 +297,22 @@ async function readAndSplitDocx (split: SplitInfo, fileRelativePath: string): Pr
     }
 
     // Then do splits on the html
+    return doHtmlSplits(split, html);
+}
+
+async function readAndSplitOdt (split: SplitInfo, fileRelativePath: string): Promise<DocSplit | null> {
+    let html: string;
+    try {
+        const fullFilePath = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+        const odtArr = await vscode.workspace.fs.readFile(fullFilePath);
+        const odtBuf = Buffer.from(odtArr);
+        const result: Buffer = await libreofficeConvert.convertAsync(odtBuf, "html", "");
+        html = result.toString();
+    }
+    catch (e) {
+        vscode.window.showErrorMessage(`Error ocurred when parsing html from source odt '${fileRelativePath}': ${e}`);
+        throw e;
+    }
     return doHtmlSplits(split, html);
 }
 
@@ -557,10 +576,10 @@ async function importDoc (doc: DocInfo, fileRelativePath: string) {
     let splitFunc: (split: SplitInfo, fileRelativePath: string) => Promise<DocSplit | null>;
     switch (doc.ext) {
         case 'wt': splitFunc = readAndSplitWt; break;
-        case 'md': splitFunc = readAndSplitMd; break;
         case 'txt': splitFunc = readAndSplitTxt; break;
         case 'docx': splitFunc = readAndSplitDocx; break;
         case 'html': splitFunc = readAndSplitHtml; break;
+        case 'odt': splitFunc = readAndSplitOdt; break;
     }
     // Read and split the document
     const docSplit = await splitFunc(splitInfo, fileRelativePath);

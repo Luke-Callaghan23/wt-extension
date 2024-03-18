@@ -42,20 +42,20 @@ export class Workspace {
 
     // List of allowed import file types
     public importFileTypes: string[] = [
-        'pdf',
         'wt',
         'txt',
         'docx',
-        'html'
+        'html',
+        'odt'
     ];
 
     // List of allowed export file types
     public exportFileTypes: string[] = [
-        'pdf',
         'wt',
         'txt',
         'docx',
-        'html'
+        'html',
+        'odt'
     ];
 
     // List of non-allowed characters in exported file names

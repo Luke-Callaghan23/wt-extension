@@ -127,11 +127,11 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 			filters: {
 				// eslint-disable-next-line @typescript-eslint/naming-convention
 				'Text': [
-					'pdf',
 					'wt',
 					'txt',
 					'docx',
-					'html'
+					'html',
+					'odt'
 				]
 			}
 		});

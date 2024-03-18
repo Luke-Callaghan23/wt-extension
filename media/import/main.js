@@ -11,7 +11,8 @@
         'wt',
         'txt',
         'docx',
-        'html'
+        'html',
+        'odt'
     ];
 
     const formContainer = document.getElementById('form-container');
