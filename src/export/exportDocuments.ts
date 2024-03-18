@@ -41,7 +41,8 @@ type ChapterInfo = {
 // TOTEST:      during the export process
 
 // Stitches the markdown data of all .wt fragments in chapter into a single markdown string
-async function stitchFragments (node: ChapterNode, combineString: string | null): Promise<ChapterInfo | null> {
+export const defaultFragmentSeparator = '!!!!!!!!!!REPLACETHISWITHANEWLINELATER!!!!!!!!!!';
+async function stitchFragments (node: ChapterNode, ex: ExportDocumentInfo): Promise<ChapterInfo | null> {
 
     const fragmentsData: string[] = [];
 
@@ -64,7 +65,10 @@ async function stitchFragments (node: ChapterNode, combineString: string | null)
 
     // If there is a combine string, surround it in double newlines
     // Otherwise, just use a double newline
-    const finalCombineString = combineString === null ? '\n\n' : `\n\n${combineString}\n\n`;
+    if (ex.combineFragmentsOn === null || ex.combineFragmentsOn.length === 0) {
+        ex.combineFragmentsOn = defaultFragmentSeparator;
+    }
+    const finalCombineString = `\n\n${ex.combineFragmentsOn}\n\n`;;
 
     // Combine all fragments
 
@@ -134,7 +138,7 @@ async function doProcessMd (
     // Stitch all chapter fragments together
     const chaptersData: (ChapterInfo | null)[] = await Promise.all(chaptersNodes.map(node => {
         const chapter = node.data as ChapterNode;
-        return stitchFragments(chapter, ex.combineFragmentsOn);
+        return stitchFragments(chapter, ex);
     }));
 
     // Make sure that there are no failures in reading any of the fragments

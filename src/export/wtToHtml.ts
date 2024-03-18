@@ -1,4 +1,5 @@
 import * as he from 'he';
+import { defaultFragmentSeparator } from './exportDocuments';
 
 type Tags = 'paragraph' | 'emphasis' | 'bold' | 'underline' | 'strikethrough' | 'header';
 const conversionsTable: { [index: string]: Tags } = {
@@ -233,15 +234,16 @@ export const wtToHtml = (wt: string, options: {
     const noFirstPageBreak = withPageBreaks.replace(`${pageBreakText}`, '');
     const styleH3 = noFirstPageBreak.replaceAll(/<h3>/g, "<h3 style=\"font-size: 30px;\">");
     const clearNewlines = styleH3.replaceAll(/<p>((&#8203;)|\s|&nbsp;)*<\/p>/g, "");
+    const swapDefaultSeparatorForEmptyLineSeparator = clearNewlines.replaceAll(defaultFragmentSeparator, '');
     
     let finalHtml;
     if (options.destinationKind === 'docx') {
-        const addNewNewlinesToLineAfterHeadings = clearNewlines.replaceAll("</h3>", "</h3><p></p>");
+        const addNewNewlinesToLineAfterHeadings = swapDefaultSeparatorForEmptyLineSeparator.replaceAll("</h3>", "</h3><p></p>");
         const styleP = addNewNewlinesToLineAfterHeadings.replaceAll(/<p>/g, "<p style=\"line-height: 1.35; position: relative; top: -.5em; text-align: justify;\">");
         finalHtml = styleP;
     }
     else {
-        const addNewNewlinesToLineAfterHeadings = clearNewlines.replaceAll("</h3>", "</h3><br />");
+        const addNewNewlinesToLineAfterHeadings = swapDefaultSeparatorForEmptyLineSeparator.replaceAll("</h3>", "</h3><br />");
         finalHtml = addNewNewlinesToLineAfterHeadings;
     }
 
