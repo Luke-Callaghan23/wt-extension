@@ -60,12 +60,10 @@
         }
     });
 
-    console.log('awdawdwdw');
-
+    // Handle showing the additional "skip first" or "skip last" options which will display
+    //      when the "title chapters" option is set
     const logueOptions = document.getElementById('logue-options');
     const titleChapters = document.getElementById('checkbox-title-chapters');
-    console.log(titleChapters);
-    console.log(logueOptions);
     titleChapters.addEventListener('click', (event) => {
         event.preventDefault();
         if (event.target.checked) {
@@ -93,6 +91,20 @@
         }
     })
 
+    // Handle showing the odt warning when the value for select-ext-type is 'odt'
+    const odtWarningMessage = document.getElementById("odt-warning");
+    const extTypeBox = document.getElementById("select-ext-type");
+    extTypeBox.addEventListener("click", (e) => {
+        console.log('awdw')
+        if (e.target.value === 'odt') {
+            odtWarningMessage.style.display = '';
+            return;
+        }
+        odtWarningMessage.style.display = 'none';
+    });
+
+    const formContainer = document.getElementById("form-container");
+
 
     const form = document.getElementById('log-settings-form');
     submit.addEventListener('click', (event) => {
@@ -112,7 +124,11 @@
             combineFragmentsOn: fd['combine-fragments-on'] === '' ? null : fd['combine-fragments-on'],
             skipChapterTitleFirst: fd["skip-first"]?.length > 0, 
             skipChapterTitleLast: fd["skip-last" ]?.length > 0,
+            addIndents: fd["add-indents"]?.length > 0,
         };
+
+        // Put spinner back up 
+        formContainer.innerHTML = `<div class="loader"></div>`;
 
         // Post the submission to the export webview
         acquireVsCodeApi().postMessage({ 

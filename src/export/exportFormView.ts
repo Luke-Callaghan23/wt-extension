@@ -148,11 +148,17 @@ export class ExportForm {
 							class="select select-ext-type"
 						>
 							<vscode-option selected value="docx">.docx</vscode-option>
+							<vscode-option  value="odt">.odt</vscode-option>
 							<vscode-option  value="md">.md</vscode-option>
 							<vscode-option  value="txt">.txt</vscode-option>
 							<vscode-option  value="html">.html</vscode-option>
 						</vscode-single-select>
 						<div class="spacer"></div>
+						<div id="odt-warning" style="display: none;">
+							<vscode-label id="error-label" class="label error-label">
+								To export to odt format, you will need libreoffice installed on your machine.  Otherwise we cannot make the conversion from .wt files to .odt.
+							</vscode-label>
+						</div>
 						<vscode-label for="combine-fragments-on" class="label">Fragment Glue:</vscode-label>
 						<vscode-form-helper>
 							<p>Specifies the string that you would like to join that fragments of each chapter with.  This is the string that will be inserted between each fragment of each chapter when the fragments are stitched together.  Default is a newline.</p>
@@ -178,7 +184,16 @@ export class ExportForm {
 							class="checkbox"
 						></vscode-checkbox>
 						<div class="spacer"></div>
-						<div id="logue-options"></div>
+						<div id="logue-options"></div> 
+						<vscode-label for="checkbox-add-indents" class="label">Indent paragraphs?</vscode-label>
+						<vscode-checkbox 
+							label="Indicates that you want all paragraphs to be indented with a tab character in the final output."
+							id="checkbox-add-indents" 
+							name="add-indents" 
+							class="checkbox"
+							checked
+						></vscode-checkbox>
+						<div class="spacer"></div>
 						<vscode-label class="label">Export:</vscode-label>
 						<vscode-button id="export-button">Export Your Work</vscode-button>
 					</vscode-form-container>

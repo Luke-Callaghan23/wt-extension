@@ -8,6 +8,10 @@ import { Buff } from '../Buffer/bufferSource';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const HTMLToDOCX = require('html-to-docx');
 
+const libreofficeConvert = require('libreoffice-convert');
+const util = require('util');
+libreofficeConvert.convertAsync = util.promisify(libreofficeConvert.convert);
+
 // Converts html to pdf
 import { Workspace } from '../workspace/workspaceClass';
 import { OutlineView } from '../outline/outlineView';
@@ -17,12 +21,13 @@ import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../outline/no
 // Data provided by the export form webview
 export type ExportDocumentInfo = {
     fileName: string,
-    ext: 'md' | 'txt' | 'docx' | 'html',
+    ext: 'md' | 'txt' | 'docx' | 'html' | 'odt',
     separateChapters: boolean,
     combineFragmentsOn: string | null,
     titleChapters: boolean,
     skipChapterTitleFirst: boolean,
     skipChapterTitleLast: boolean,
+    addIndents: boolean,
 };
 
 type ChapterInfo = {
@@ -138,6 +143,24 @@ async function doProcessMd (
     }
     const finalData = chaptersData as ChapterInfo[];
 
+    const fragmentGlueSearchRegex = new RegExp(`\n\t${ex.combineFragmentsOn}\s*\n`, 'g');
+    const fragmentGlueFollowingLineRegex = new RegExp(`\n${ex.combineFragmentsOn}\n\t\n\t`, 'g')
+    const processWtText = (text: string): string => {
+        text = text.replaceAll("\r", "");
+        if (!ex.addIndents) {
+            return text;
+        }
+
+        // Indent all newlines
+        const tabs = text.replaceAll("\n", "\n\t");
+        // Un-indent all lines with that are entirely fragment glue
+        const unTabFragmentGlue = tabs.replaceAll(fragmentGlueSearchRegex, `\n${ex.combineFragmentsOn}\n`)
+        // Un-indent every line after fragment glue
+        const unTabFollowingLine = unTabFragmentGlue.replaceAll(fragmentGlueFollowingLineRegex, `\n${ex.combineFragmentsOn}\n\n`);
+        return unTabFollowingLine;
+
+    }
+
     const off = ex.skipChapterTitleFirst ? 0 : 1;
     if (ex.separateChapters) {
         // CASE: exports the markdown chapters into separate files
@@ -151,16 +174,21 @@ async function doProcessMd (
             return null;
         }
 
+        const padCount = (finalData.length - 1).toString().length;
+
         // Then, clean all the chapter names so that they can be used as file names
         const cleanedChapters: CleanedChapterInfo[] = finalData.map((chapterInfo, index) => {
             const title = chapterInfo.title;
-            const markdown = chapterInfo.markdown;
+            const wt = processWtText(chapterInfo.markdown);
+
+            const chNumberString = (index+off).toString().padStart(padCount, '0');
 
             // Determine the chapter prefix based in the values of `titleChapters`, `skipChapterTitleFirst`, and `skipChapterTitleLast`
             let chapterPrefix = '';
             let documentChapterPrefix = '';
             if (ex.titleChapters) {
-                documentChapterPrefix = `chapter_${index+off}_`;
+
+                documentChapterPrefix = `chapter_${chNumberString}_`;
                 chapterPrefix = `Chapter ${index+off}: `;
                 if (index === 0 && ex.skipChapterTitleFirst) {
                     chapterPrefix = '';
@@ -172,7 +200,7 @@ async function doProcessMd (
                 }
             }
 
-            const markdownWithChapterHeader = `#${chapterPrefix}${chapterInfo.title}\n\n${markdown}`;
+            const markdownWithChapterHeader = `#${chapterPrefix}${chapterInfo.title}\n\n${wt}`;
 
             // Replace all illegal characters in the chapter title with the very legal character '-'
             const cleanedTitle = title.replaceAll(workspace.illegalCharacters.join(''), '-');
@@ -183,7 +211,7 @@ async function doProcessMd (
             // Include index of the chapter in the final file name
             //      This is so that the user cannot lose track of the original ordering of output files
             // Also include chapter title prefix from above
-            const finalFileName = `${index}__${documentChapterPrefix}${cleanedTitle}`;
+            const finalFileName = `${chNumberString}__${documentChapterPrefix}${cleanedTitle}`;
 
             // Return the cleaned title, and markdown
             return {
@@ -216,10 +244,12 @@ async function doProcessMd (
                 }
             }
 
+            const wt = processWtText(chapterInfo.markdown);
+            
             // Chapter title (as heading), double newline, chapter contents, double newline
             // Give enough space between chapter titles and content, as well as enough space between
             //      different chapters themselves
-            return `${acc}#${chapterPrefix}${chapterInfo.title}\n\n${chapterInfo.markdown}\n`;
+            return `${acc}#${chapterPrefix}${chapterInfo.title}\n\n${wt}\n`;
         }, '');
 
         return <SingleFile>{
@@ -231,12 +261,15 @@ async function doProcessMd (
     }
 }
 
-async function doProcessHtml (processedMd: ProcessedMd): Promise<ProcessedHtml> {
+async function doProcessHtml (processedMd: ProcessedMd, destinationKind: "html" | "docx" | "odt"): Promise<ProcessedHtml> {
     if (processedMd.type === 'single') {
         // Process the single markdown file into an html string
         const singleMd = processedMd as SingleFile;
         // Convert the single md string to a single html string and return the new SingleFile struct
-        const convertedHtml = wtToHtml(singleMd.fullData.toString(), true);
+        const convertedHtml = wtToHtml(singleMd.fullData.toString(), {
+            pageBreaks: true,
+            destinationKind: destinationKind
+        });
         return <SingleFile>{
             type: 'single',
             fileName: singleMd.fileName,
@@ -250,7 +283,10 @@ async function doProcessHtml (processedMd: ProcessedMd): Promise<ProcessedHtml> 
 
         // Convert all md chapters to html chapters
         const convertedChapters = multipleMd.cleanedChapterInfo.map(cleaned => {
-            const convertedHtml = wtToHtml(cleaned.data.toString(), false);
+            const convertedHtml = wtToHtml(cleaned.data.toString(), {
+                pageBreaks: true,
+                destinationKind: destinationKind
+            });
             return {
                 cleanedTitle: cleaned.cleanedTitle,
                 data: convertedHtml
@@ -282,7 +318,8 @@ async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDo
             footer: true,
             pageNumber: true,
             title: processedHtml.fileName,
-            fontSize: 22,
+            font: "Calibri",
+            fontSize: 29,
             orientation: 'portrait'
         });
         return <SingleFile>{
@@ -313,7 +350,8 @@ async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDo
                 footer: true,
                 pageNumber: true,
                 title: cleaned.cleanedTitle,
-                fontSize: 22,
+                font: "Calibri",
+                fontSize: 29,
                 orientation: 'portrait'
             });
 
@@ -332,36 +370,88 @@ async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDo
     }
 }
 
+async function doProcessOdt (processedHtml: ProcessedHtml): Promise<ProcessedDocx> {
+    if (processedHtml.type === 'single') {
+        const singleHtml = processedHtml.fullData;
+
+        let buf: Buffer;
+        if (typeof singleHtml === 'string') {
+            buf = Buffer.from(singleHtml);
+        }
+        else {
+            buf = singleHtml;
+        }
+        const odt = await libreofficeConvert.convertAsync(buf, "odt", "");
+        return <SingleFile>{
+            type: 'single',
+            exportUri: processedHtml.exportUri,
+            fileName: processedHtml.fileName,
+            fullData: odt
+        };
+    }
+    else {
+        const multipleHtml = processedHtml.cleanedChapterInfo;
+
+        const convertedDocx: CleanedChapterInfo[] = [];
+
+        // Convert all md chapters to html chapters
+        for (const cleaned of multipleHtml) {
+            const cleanedHtml = cleaned.data;
+            let buf: Buffer;
+            if (typeof cleanedHtml === 'string') {
+                buf = Buffer.from(cleanedHtml);
+            }
+            else {
+                buf = cleanedHtml;
+            }
+            const odt = await libreofficeConvert.convertAsync(buf, "odt", "");
+
+            // Push the converted docx and its title to
+            convertedDocx.push({
+                cleanedTitle: cleaned.cleanedTitle,
+                data: odt
+            });
+        }
+
+        return <MultipleFiles>{
+            type: 'multiple',
+            exportUri: processedHtml.exportUri,
+            cleanedChapterInfo: convertedDocx
+        };
+    }
+}
+
 
 async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | ProcessedDocx | ProcessedPdf, ext: string) {
 
-    const exportData = async (data: string | Buffer, destination: vscode.Uri) => {
+    const exportData = async (data: string | Buffer, destination: vscode.Uri, index: number, count: number, title: string) => {
         if (typeof data === 'string') {
             const result = extension.encoder.encode(data.toString());
-            return vscode.workspace.fs.writeFile(destination, result);
+            await vscode.workspace.fs.writeFile(destination, result);
         }
         else {
             const result = data;
-            return vscode.workspace.fs.writeFile(destination, result);
+            await vscode.workspace.fs.writeFile(destination, result);
         }
+        vscode.window.showInformationMessage(`Finished Writing '${title}' [${index + 1} of ${count}]`);
     };
 
     if (fullyProcessed.type === 'single') {
         // Write the single file to the export folder
         const destinationFolderUri = fullyProcessed.exportUri;
         const destinationUri = vscode.Uri.joinPath(destinationFolderUri, `${fullyProcessed.fileName}.${ext}`);
-        const tmp2 = fullyProcessed.fullData;
-        //@ts-ignore
-        await exportData(tmp2, destinationUri)
+        const data = fullyProcessed.fullData;
+        await exportData(data, destinationUri, 0, 1, fullyProcessed.fileName);
     }
     else {
         const destinationFolderUri = fullyProcessed.exportUri;
-        await Promise.all(fullyProcessed.cleanedChapterInfo.map(chapter => {
+        const count = fullyProcessed.cleanedChapterInfo.length;
+        await Promise.all(fullyProcessed.cleanedChapterInfo.map((chapter, index) => {
             // Write the chapter to the disk
             const chapterFileName = chapter.cleanedTitle;
             const chapterData = chapter.data;
             const fullChapterUri = vscode.Uri.joinPath(destinationFolderUri, `${chapterFileName}.${ext}`);
-            return exportData(chapterData, fullChapterUri);
+            return exportData(chapterData, fullChapterUri, index, count, chapterFileName);
         }));
     }
 }
@@ -376,15 +466,22 @@ const exportTxt = async (fullyProcessed: ProcessedMd) => {
 
 // Export html converts the markdown strings into html strings, then generically export it
 async function exportHtml (processed: ProcessedMd) {
-    const convertedHtml = await doProcessHtml(processed);
+    const convertedHtml = await doProcessHtml(processed, 'html');
     await exportGeneric(convertedHtml, 'html');
 }
 
 // Export html converts the markdown to html, then html to docx, then generically exports it
 async function exportDocx (processed: ProcessedMd) {
-    const convertedHtml = await doProcessHtml(processed);
+    const convertedHtml = await doProcessHtml(processed, 'docx');
     const convertedDocx = await doProcessDocx(convertedHtml);
     await exportGeneric(convertedDocx, 'docx');
+}
+
+// Export html converts the markdown to html, then html to docx, then generically exports it
+async function exportOdt (processed: ProcessedMd) {
+    const convertedHtml = await doProcessHtml(processed, 'odt');
+    const convertedOdt = await doProcessOdt(convertedHtml);
+    await exportGeneric(convertedOdt, 'odt');
 }
 
 export async function handleDocumentExport (
@@ -437,6 +534,7 @@ export async function handleDocumentExport (
         case 'txt': exportFunction = exportTxt; break;
         case 'docx': exportFunction = exportDocx; break;
         case 'html': exportFunction = exportHtml; break;
+        case 'odt': exportFunction = exportOdt; break;
     }
     await exportFunction(success);
     vscode.window.showInformationMessage(`Successfully exported files into '${dirUri.fsPath}'`);

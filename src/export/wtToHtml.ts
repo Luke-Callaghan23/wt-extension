@@ -28,7 +28,10 @@ const getTagText = (tag: Tags, kind: 'opening' | 'closing') => {
     }
 }
 
-export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
+export const wtToHtml = (wt: string, options: {
+    pageBreaks: boolean,
+    destinationKind: 'html' | 'docx' | 'odt'
+}): string => {
     wt = wt.replaceAll("\r", '');
     
     // Encode html characters to html entities
@@ -36,6 +39,8 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
     wt = he.encode(wt, {
         allowUnsafeSymbols: true,
     });
+
+    wt = wt.replaceAll("&#x9;", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
 
 
     // Initialize the stack of html tags with an opening paragraph tag
@@ -205,29 +210,62 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
     // Also consume any surrounding space characters
     const emDashed = filteredBlanks.replaceAll(/ *\-\- */g, "&#8212;");
     
+    // Libre office expects the page break tag to be in a <p> tag whereas html to docx converter expects the page break tag to
+    //      be in a <div>
+    const pageBreakText = options.destinationKind === 'odt' || options.destinationKind === 'html'
+        ? `<p style="page-break-after: always"></p><br clear="all" style="page-break-before:always" />`
+        : `<div class="page-break" style="page-break-after: always;"></div>`
+
     // Add page break before all of the chapter headers
-    const withPageBreaks = pageBreaks 
+    const withPageBreaks = options.pageBreaks 
         ? emDashed
             // Because of the way html to docx works, all page-break tags must be on the top level of the document
             //      however, currently, all h3 tags are enclosed by <p> tags 
             // So, first remove the surrounding <p> tags to but the h3 tags at the root level of the body
-            .replaceAll(/<p>((&#8203;)|\s)*<h3/g, '<h3')                                                                            
-            .replaceAll(/h3>((&#8203;)|\s)*<\/p>/g, 'h3>')
+            .replaceAll(/<p>((&#8203;)|\s|&nbsp;)*<h3/g, '<h3')                                                                            
+            .replaceAll(/h3>((&#8203;)|\s|&nbsp;)*<\/p>/g, 'h3>')
             // Once the h3s are at the root level of the body, then we need to replace all instances of the opening h3 tag
             //      to the page-break element followed by that h3 tag
-            .replaceAll(/((&#8203;)|\s)*<h3/g, '<div class="page-break" style="page-break-after: always;"></div><h3')
+            .replaceAll(/((&#8203;)|\s|&nbsp;)*<h3/g, `${pageBreakText}<h3`)
         : emDashed;
 
-    // Except for the first
-    const finalHtml = withPageBreaks.replace('<div class="page-break" style="page-break-after: always;"></div>', '');
+    // Other misc style work
+    const noFirstPageBreak = withPageBreaks.replace(`${pageBreakText}`, '');
+    const styleH3 = noFirstPageBreak.replaceAll(/<h3>/g, "<h3 style=\"font-size: 30px;\">");
+    const clearNewlines = styleH3.replaceAll(/<p>((&#8203;)|\s|&nbsp;)*<\/p>/g, "");
+    
+    let finalHtml;
+    if (options.destinationKind === 'docx') {
+        const addNewNewlinesToLineAfterHeadings = clearNewlines.replaceAll("</h3>", "</h3><p></p>");
+        const styleP = addNewNewlinesToLineAfterHeadings.replaceAll(/<p>/g, "<p style=\"line-height: 1.35; position: relative; top: -.5em; text-align: justify;\">");
+        finalHtml = styleP;
+    }
+    else {
+        const addNewNewlinesToLineAfterHeadings = clearNewlines.replaceAll("</h3>", "</h3><br />");
+        finalHtml = addNewNewlinesToLineAfterHeadings;
+    }
+
 
     const fullHtml = `<html><style>
-        p {
-            font-size: 10px;
+        p { 
+            font-size: 18px; 
+            line-height: 1.35; 
+            position: relative; 
+            top: -.5em; 
+            text-align: justify;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
-        h3 {
-            font-size: 15px;
+
+        h3 { 
+            font-size: 27px;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
-        </style><body>${finalHtml}</body></html>`
+        @page { 
+            margin-left: 0.75in; 
+            margin-right: 0.75in; 
+            margin-top: 0.75in; 
+            margin-bottom: 0.75in; 
+        }
+        </style><body style="text-align: justify;">${finalHtml}</body></html>`
     return fullHtml;
 }
