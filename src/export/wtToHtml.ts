@@ -30,6 +30,13 @@ const getTagText = (tag: Tags, kind: 'opening' | 'closing') => {
 
 export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
     wt = wt.replaceAll("\r", '');
+    
+    // Encode html characters to html entities
+    // This lets users put text such as "<" and ">" in their work without the html breaking down entirely
+    wt = he.encode(wt, {
+        allowUnsafeSymbols: true,
+    });
+
 
     // Initialize the stack of html tags with an opening paragraph tag
     //      which starts at the 0th index of wt text
@@ -53,6 +60,14 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
             //      to the text segment of the current stack item
             stack[stack.length - 1].text += char;
             continue;
+        }
+
+        if (char === '#') {
+            // Only apply headers if they are the first character on the line
+            // Check if the previous character was '\n' or undefined
+            if (!(wt[idx - 1] === '\n' || wt[idx - 1] === undefined)) {
+                continue;
+            }
         }
 
         // Special rule for triplets of tags:
@@ -161,6 +176,7 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
             const openingTagText = getTagText(tag, 'opening');
 
             stack.push(opening);
+            html.push("");
             html.push(openingTagText);
         }
     }
@@ -181,22 +197,29 @@ export const wtToHtml = (wt: string, pageBreaks: boolean = true): string => {
         ? '&#8203;'
         : txt
     );
+
+    // Join and filter newline sequences
     const filteredBlanks = noEmptySpace.filter(txt => txt.length > 0).join('').replaceAll('\\n', '');
+    
+    // Replace all '--' sequences with em dashes
+    // Also consume any surrounding space characters
+    const emDashed = filteredBlanks.replaceAll(/ *\-\- */g, "&#8212;");
     
     // Add page break before all of the chapter headers
     const withPageBreaks = pageBreaks 
-        ? filteredBlanks
-            .replaceAll('<p><h3', '<h3')
-            .replaceAll('h3></p>', 'h3>')
-            .replaceAll('<h3', '<div class="page-break" style="page-break-after: always;"></div><h3')
-        : filteredBlanks;
+        ? emDashed
+            // Because of the way html to docx works, all page-break tags must be on the top level of the document
+            //      however, currently, all h3 tags are enclosed by <p> tags 
+            // So, first remove the surrounding <p> tags to but the h3 tags at the root level of the body
+            .replaceAll(/<p>((&#8203;)|\s)*<h3/g, '<h3')                                                                            
+            .replaceAll(/h3>((&#8203;)|\s)*<\/p>/g, 'h3>')
+            // Once the h3s are at the root level of the body, then we need to replace all instances of the opening h3 tag
+            //      to the page-break element followed by that h3 tag
+            .replaceAll(/((&#8203;)|\s)*<h3/g, '<div class="page-break" style="page-break-after: always;"></div><h3')
+        : emDashed;
 
     // Except for the first
-    const removedFirstPageBreak = withPageBreaks.replace('<div class="page-break" style="page-break-after: always;"></div>', '');
-
-    const finalHtml = he.encode(removedFirstPageBreak, {
-        allowUnsafeSymbols: true,
-    });
+    const finalHtml = withPageBreaks.replace('<div class="page-break" style="page-break-after: always;"></div>', '');
 
     const fullHtml = `<html><style>
         p {
