@@ -3,13 +3,66 @@ import * as vscode from 'vscode';
 import * as extension from './../../extension';
 import * as console from '../../vsconsole';
 import { Workspace } from '../workspaceClass';
-import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
+import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../../outline/outlineView';
-import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport as WorkspaceRecord } from './types';
+import { ChaptersRecord, FragmentRecord, FragmentsExport, SnipsExport, SnipsRecord, WorkspaceExport as WorkspaceRecord } from './types';
 import { Buff } from '../../Buffer/bufferSource';
 
+type FragmentsExportPromise = {
+    title: string,
+    markdownPromise: Thenable<Uint8Array>
+}
 
-async function recordFragmentContainer (node: (ChapterNode | SnipNode)): Promise<FragmentRecord> {
+async function recordSnipData (node: SnipNode): Promise<SnipsExport> {
+    const sortedContent = node.contents.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+
+
+
+    const outputPromises: (FragmentsExportPromise | Thenable<SnipsExport>)[] = [];
+    for (const content of sortedContent) {
+        if (content.data.ids.type === 'snip') {
+            const out = recordSnipData(content.data as SnipNode);
+            outputPromises.push(out);
+        }
+        else if (content.data.ids.type === 'fragment') {
+            const fragment = content.data as FragmentNode;
+            const out: FragmentsExportPromise = {
+                title: fragment.ids.display,
+                markdownPromise: vscode.workspace.fs.readFile(content.getUri())
+            };
+            outputPromises.push(out);
+        }
+    }
+
+
+    // Await all of the promises created above
+    const output: (FragmentsExport | SnipsExport)[] = await Promise.all<FragmentsExport | SnipsExport>(outputPromises.map(op => {
+        return new Promise((resolve, reject) => {
+            if ('title' in  op) {
+                // If 'title' field is in the object we know it's a fragments export promise
+                // Once the file read is finised, decode the markdown content and return a FragmentsExport
+                op.markdownPromise.then(mdArray => {
+                    resolve({
+                        title: op.title,
+                        markdown: extension.decoder.decode(mdArray)
+                    });
+                });
+            }
+            else {
+                // If there is no 'title' field, it's an unresolve SnipsExport
+                // Once the snip finishes resolving, then resolve this promise with that export
+                op.then(resolve);
+            }
+        });
+    }));
+
+    return {
+        title: node.ids.display,
+        contents: output
+    }
+}
+
+async function recordChapterFragmentContainer (node: ChapterNode): Promise<FragmentRecord> {
     // Read and sort fragment data from container
     const fragments = node.textData;
     fragments.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
@@ -39,11 +92,7 @@ async function recordSnipsContainer (container: ContainerNode): Promise<SnipsRec
     const snips: SnipsRecord = [];
     for (const content of container.contents) {
         const snipNode = content.data as SnipNode;
-        const fragementsRecord = await recordFragmentContainer(snipNode);
-        snips.push({
-            title: snipNode.ids.display,
-            fragments: fragementsRecord
-        });
+        snips.push(await recordSnipData(snipNode));
     }
     return snips;
 }
@@ -53,7 +102,7 @@ async function recordChaptersContainer (container: ContainerNode): Promise<Chapt
     const chaptersRecord: ChaptersRecord = [];
     for (const content of container.contents) {
         const chapterNode = content.data as ChapterNode;
-        const fragementsRecord = await recordFragmentContainer(chapterNode);
+        const fragementsRecord = await recordChapterFragmentContainer(chapterNode);
         const snipsRecord = await recordSnipsContainer(chapterNode.snips.data as ContainerNode);
         chaptersRecord.push({
             title: chapterNode.ids.display,

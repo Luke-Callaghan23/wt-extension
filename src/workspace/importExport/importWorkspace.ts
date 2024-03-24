@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as console from './../../vsconsole';
 import { createWorkspace } from './../workspace';
 import { Workspace } from './../workspaceClass';
-import { ChaptersRecord, FragmentRecord, SnipsRecord, WorkspaceExport } from './types';
+import { ChaptersRecord, FragmentRecord, FragmentsExport, SnipsExport, SnipsRecord, WorkspaceExport } from './types';
 import { getUsableFileName } from '../../outline/impl/createNodes';
 import { ConfigFileInfo } from '../../help';
 import * as extension from './../../extension';
@@ -65,7 +65,25 @@ async function initializeSnips (
         configMap[snipFileName] = snipConfig;
 
         // Create the fragments
-        return initializeFragments(snipRecord.fragments, snipFolderUri);
+        const fragments: FragmentsExport[] = [];
+        const snips: SnipsExport[] = [];
+        for (const content of snipRecord.contents) {
+            if ('contents' in content) {
+                snips.push(content);
+            }
+            else if ('markdown' in content) {
+                fragments.push(content);
+            }
+        }
+
+        return new Promise((resolve, reject) => {
+            Promise.all([
+                initializeSnips(snips, snipFolderUri),
+                initializeFragments(fragments, snipFolderUri)
+            ])
+            .then(() => resolve())
+            .catch(err => reject(err));
+        });
     }
 
     // Save the config file in the same location as the snip folders

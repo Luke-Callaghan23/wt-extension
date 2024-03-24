@@ -11,7 +11,7 @@ import { getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help'
 import { RecyclingBinView } from '../../../recyclingBin/recyclingBinView';
 import { getUsableFileName } from '../../impl/createNodes';
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
-import { updateTextFragmentContainer } from '../updateChildrenToReflectNewUri';
+import { updateChapterTextFragments, updateSnipContent } from '../updateChildrenToReflectNewUri';
 
 //      config files for both the destination and the original parent containers
 export async function handleContainerSwap (
@@ -115,7 +115,7 @@ export async function handleContainerSwap (
         // Must also edit the internals of each fragment inside of this snip
         //      in order to reflect this move
         const fragmentRelativePath = `${node.data.ids.relativePath}/${node.data.ids.fileName}`;
-        updateTextFragmentContainer({
+        updateSnipContent({
             node: node.data as SnipNode,
             parentUri: moverDestinationUri,
             relativePath: fragmentRelativePath,
@@ -123,9 +123,26 @@ export async function handleContainerSwap (
     }
     else if (node.data.ids.type === 'fragment') {
         // Fragments reside in `ChapterNode`s or `SnipNode`s, in a `textData` array
-        (destinationContainer.data as ChapterNode | SnipNode).textData.push(node);
+
+        let contents;
+        if (destinationContainer.data.ids.type === 'chapter') {
+            contents = (destinationContainer.data as ChapterNode).textData;
+        }
+        else if (destinationContainer.data.ids.type === 'snip') {
+            contents = (destinationContainer.data as SnipNode).contents;
+        }
+        else throw `unsupported parent type ${destinationContainer.data.ids.type}`;
+
+        contents.push(node);
         if (operation === 'move' || spliceFromContainer) {
-            oldParentContents = (oldParentNode?.data as SnipNode | ChapterNode).textData;
+            
+            if (oldParentNode?.data.ids.type === 'chapter') {
+                oldParentContents = (oldParentNode?.data as ChapterNode).textData;
+            }
+            else if (oldParentNode?.data.ids.type === 'snip') {
+                oldParentContents = (oldParentNode?.data as SnipNode).contents;
+            }
+            else throw `unsupported parent type ${oldParentNode?.data.ids.type}`;
         }
     }
     else if (node.data.ids.type === 'chapter') {

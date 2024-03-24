@@ -73,7 +73,17 @@ export class TODONode extends TreeNode {
             // Chapters and snips drop just the immediate fragment node children
             case 'chapter': case 'snip':
                 const data = this.data as ChapterNode | SnipNode;
-                return data.textData.map(fragment => {
+                
+                if (this.data.ids.type === 'snip') {
+                    const fragments: vscode.Uri[] = [];
+                    (this.data as SnipNode).contents.map(content => {
+                        if (content.data.ids.type === 'fragment') {
+                            fragments.push(content.getUri());
+                        }
+                    });
+                    return fragments;
+                }
+                else (data as ChapterNode).textData.map(fragment => {
                     return fragment.getUri()
                 })
             // Fragments drop themselves

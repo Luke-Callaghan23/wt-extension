@@ -65,7 +65,15 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
             containers.push(fragmentParent);
 
             // Find the index of the target fragment
-            const fragmentParentTextNodes = (fragmentParent.data as ChapterNode | SnipNode).textData;
+            let fragmentParentTextNodes;
+            if (fragmentParent.data.ids.type === 'chapter') {
+                fragmentParentTextNodes = (fragmentParent.data as ChapterNode).textData;
+            }
+            else if (fragmentParent.data.ids.type === 'snip') {
+                fragmentParentTextNodes = (fragmentParent.data as SnipNode).contents;
+            }
+            else throw `unsupported parent type ${fragmentParent.data.ids.type}`;
+            
             const targetFragUriStr = removedFragmentUri.toString();
             const targetFragmentIndex = fragmentParentTextNodes.findIndex(frag => frag.data.ids.uri.toString() === targetFragUriStr);
             if (targetFragmentIndex === -1) continue;

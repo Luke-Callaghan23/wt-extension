@@ -39,7 +39,7 @@ export async function getChildren(
 
         // Filter out any fragments without any TODOs and sort them
         const fragments = []
-        for (const textNode of snip.textData) {
+        for (const textNode of snip.contents) {
             const todos = await textNode.getTODOCounts();
             if (!filter || todos > 0) {
                 fragments.push(textNode);

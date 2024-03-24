@@ -67,7 +67,7 @@ export function registerCommands(this: TODOsView) {
                 contents: (snips.data as ContainerNode<OutlineNode>).contents.map(outlineSnip => {
                     return new TODONode(<SnipNode<TODONode>> {
                         ids: { ...outlineSnip.data.ids },
-                        textData: convertFragments((outlineSnip.data as SnipNode<OutlineNode>).textData)
+                        contents: convertFragments((outlineSnip.data as SnipNode<OutlineNode>).contents)
                     })
                 })
             })

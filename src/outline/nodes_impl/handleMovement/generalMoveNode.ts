@@ -64,7 +64,7 @@ export async function generalMoveNode (
     //      not actually moving the node anywhere, we are just changing the internal ordering
     // This is an entirely separate set of logic than moving to a different container
     if (destinationContainer.getUri().toString() === moverParentUri.toString()) {
-        return await handleInternalContainerReorder(this, destinationContainer, newParentNode, moveOffset);
+        return handleInternalContainerReorder(this, destinationContainer, newParentNode, moveOffset);
     }
 
     try {
@@ -73,10 +73,20 @@ export async function generalMoveNode (
             outlineView, outlineView as any as UriBasedView<OutlineNode>,
             destinationContainer
         );
+
+        // Add the new override's parent to the effected containers if that container exists (and its parent does as well)
+        const effectedContainers = swapResult.effectedContainers;
+        if (newOverride) {
+            const parent: OutlineNode | null = await outlineView.getTreeElementByUri(newOverride.getParentUri());
+            if (parent) {
+                effectedContainers.push(parent);
+            }
+        }
+
         return { 
             moveOffset: swapResult.moveOffset, 
             createdDestination: newOverride || null,
-            effectedContainers: swapResult.effectedContainers 
+            effectedContainers: effectedContainers
         };
     }
     catch (e) {

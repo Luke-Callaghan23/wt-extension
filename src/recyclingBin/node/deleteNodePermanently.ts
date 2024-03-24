@@ -52,15 +52,6 @@ export async function deleteNodePermanently (this: RecyclingBinView, targets: Ou
             if (removeViewIndex === -1) continue;
             rootNodeIndecesToDelete.push(removeViewIndex);
             logNodeNodeFileNamesToDelete.push(target.data.ids.fileName);
-            // this.rootNodes.splice(removeViewIndex, 1);
-
-            // const log = await RecyclingBinView.readRecycleLog();
-            // if (!log) continue;
-            // const removeLogIndex = log.findIndex(li => li.recycleBinName === target.data.ids.fileName);
-            // if (removeLogIndex === -1) continue;
-            // log.splice(removeLogIndex, 1);
-
-            // RecyclingBinView.writeRecycleLog(log);
 
             updateRoot = true;
         }
@@ -84,13 +75,21 @@ export async function deleteNodePermanently (this: RecyclingBinView, targets: Ou
             containers.push(fragmentParent);
 
             // Find the index of the target fragment
-            const fragmentParentTextNodes = (fragmentParent.data as ChapterNode | SnipNode).textData;
+            let fragmentParentContentNodes: OutlineNode[];
+            if (fragmentParent.data.ids.type === 'chapter') {
+                fragmentParentContentNodes = (fragmentParent.data as ChapterNode).textData;
+            }
+            else if (fragmentParent.data.ids.type === 'snip') {
+                fragmentParentContentNodes = (fragmentParent.data as SnipNode).contents;
+            }
+            else throw `Unsupported fragment parent type ${fragmentParent.data.ids.type}`;
+
             const targetFragUriStr = removedNodeAbsPath.toString();
-            const targetFragmentIndex = fragmentParentTextNodes.findIndex(frag => frag.data.ids.uri.toString() === targetFragUriStr);
+            const targetFragmentIndex = fragmentParentContentNodes.findIndex(frag => frag.data.ids.uri.toString() === targetFragUriStr);
             if (targetFragmentIndex === -1) continue;
+            fragmentParentContentNodes.splice(targetFragmentIndex, 1);
 
             // Splice that fragment away
-            fragmentParentTextNodes.splice(targetFragmentIndex, 1);
         }
         else if (target.data.ids.type === 'chapter' || target.data.ids.type === 'snip') {
             target.shiftTrailingNodesDown(this);
@@ -112,7 +111,7 @@ export async function deleteNodePermanently (this: RecyclingBinView, targets: Ou
             containers.push(removedNodeParent);
 
             // Find the index of the target fragment
-            const nodeParentContents = (removedNodeParent.data as ContainerNode).contents;
+            const nodeParentContents = (removedNodeParent.data as ContainerNode | SnipNode).contents;
             const targetNodeUriStr = target.getUri().toString();
             const targetNodeIndex = nodeParentContents.findIndex(node => node.data.ids.uri.toString() === targetNodeUriStr);
             if (targetNodeIndex === -1) continue;

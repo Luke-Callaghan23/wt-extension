@@ -40,9 +40,11 @@ export async function shiftTrailingNodesDown<T extends HasGetUri> (
         // Find the content array in which this node resides
         let content: OutlineNode[];
         switch (parentContainer.data.ids.type) {
-            case 'chapter': case 'snip':
-                content = (parentContainer.data as ChapterNode | SnipNode).textData;
+            case 'chapter':
+                content = (parentContainer.data as ChapterNode).textData;
                 break;
+            case 'snip':
+                content = (parentContainer.data as SnipNode).contents;
             case 'container':
                 content = (parentContainer.data as ContainerNode).contents;
                 break;

@@ -15,13 +15,16 @@ export type ChaptersRecord = {
 }[];
 
 // Ordered array of snip data
-export type SnipsRecord = {
+export type SnipsExport = {
     title: string,
-    fragments: FragmentRecord,
-}[];
+    contents: (FragmentsExport | SnipsExport)[],
+};
+
+export type SnipsRecord = SnipsExport[];
 
 // Ordered array of fragments markdown strings in that container
-export type FragmentRecord = {
+export type FragmentsExport = {
     title: string,
     markdown: string
-}[];
+};
+export type FragmentRecord = FragmentsExport[];

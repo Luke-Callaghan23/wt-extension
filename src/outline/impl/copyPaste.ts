@@ -468,7 +468,14 @@ export async function paste (
         };
 
         // The internal array of fragment content for the destination
-        const destContent = (dest.data as ChapterNode | SnipNode).textData;
+        let destContent;
+        if (dest.data.ids.type === 'chapter') {
+            destContent = (dest.data as ChapterNode).textData;
+        }
+        else if (dest.data.ids.type === 'snip') {
+            destContent = (dest.data as SnipNode).contents;
+        }
+        else throw `unsupported parent type ${dest.data.ids.type}`;
         
         // Create a new object for the copied fragment
         const newFragmentData: FragmentNode = {
@@ -538,14 +545,14 @@ export async function paste (
                 type: 'snip',
                 uri: destinationFullUri
             },
-            textData: []
+            contents: []
         };
         const copiedSnipNode = new OutlineNode(copiedSnipData);
         destContent.push(copiedSnipNode);
 
         // Asynchronously copy all the fragments inside of the source snip into the (newly created) destination
         //      snip
-        const srcFragments = (src.data as SnipNode).textData;
+        const srcFragments = (src.data as SnipNode).contents;
         const fragmentsConfigInfo = await Promise.all(srcFragments.map(fragment => {
             const fragmentOrdering = fragment.data.ids.ordering;
             return pasteFragment(fragment, copiedSnipNode, fragmentOrdering);

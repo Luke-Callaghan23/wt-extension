@@ -194,7 +194,13 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
         unordered = (parentNode.data as ContainerNode).contents;
     }
     else if (resource.data.ids.type === 'fragment') {
-        unordered = (parentNode.data as SnipNode | ChapterNode).textData;
+        if (parentNode.data.ids.type === 'chapter') {
+            unordered = (parentNode.data as ChapterNode).textData;
+        }
+        else if (parentNode.data.ids.type === 'snip') {
+            unordered = (parentNode.data as SnipNode).contents;
+        }
+        else throw `unsupported parent type ${parentNode.data.ids.type}`;
     }
     else if (resource.data.ids.type === 'snip') {
         unordered = (parentNode.data as ContainerNode).contents;
@@ -297,7 +303,13 @@ export async function moveDown (this: OutlineView, resource: any) {
         unordered = (parentNode.data as ContainerNode).contents;
     }
     else if (resource.data.ids.type === 'fragment') {
-        unordered = (parentNode.data as SnipNode | ChapterNode).textData;
+        if (parentNode.data.ids.type === 'chapter') {
+            unordered = (parentNode.data as ChapterNode).textData;
+        }
+        else if (parentNode.data.ids.type === 'snip') {
+            unordered = (parentNode.data as SnipNode).contents;
+        }
+        else throw `unsupported parent type ${parentNode.data.ids.type}`;
     }
     else if (resource.data.ids.type === 'snip') {
         unordered = (parentNode.data as ContainerNode).contents;

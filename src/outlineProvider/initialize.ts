@@ -309,7 +309,11 @@ export async function initializeSnip<T extends TreeNode> ({
 
     // Keep the files that end with .wt
     // These are the text fragments for the snip
+    const innerSnipEntries: [ string, vscode.FileType ][] = [];
     const wtEntries = snipFolderEntries.filter(([ name, fileType ]) => {
+        if (fileType === vscode.FileType.Directory) {
+            innerSnipEntries.push([ name, fileType ]);
+        }
         return fileType === vscode.FileType.File && name.endsWith('.wt');
     });
 
@@ -333,6 +337,33 @@ export async function initializeSnip<T extends TreeNode> ({
 
     const fragmentNodes = fragments.map(frag => init(frag));
 
+
+    // Create all inner snips
+    const snips: SnipNode<T>[] = [];
+    for (const [ name, ] of innerSnipEntries) {
+        const snipName = name;
+        // Insert work snips into a container
+        const snip = await initializeSnip({
+            relativePath: `${relativePath}/${fileName}`,
+            fileName: snipName, 
+            init: init,
+            parentDotConfig: snipFragmentsDotConfig,
+            parentTypeId: 'snip',
+            parentUri: snipFolderUri,
+            dontFail: dontFail
+        });
+        snips.push(snip);
+    }
+
+    if (snips.length > 0) {
+        console.log(snipFragmentsDotConfig)
+
+    }
+
+    const snipNodes = snips.map(snip => init(snip));
+
+
+
     return {
         ids: {
             type: 'snip',
@@ -344,7 +375,7 @@ export async function initializeSnip<T extends TreeNode> ({
             parentTypeId: parentTypeId,
             parentUri: parentUri
         },
-        textData: fragmentNodes as T[]
+        contents: [...fragmentNodes, ...snipNodes] as T[]
     };
 }
 

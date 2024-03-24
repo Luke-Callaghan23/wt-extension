@@ -116,18 +116,18 @@ export async function getTODOCounts (
         }
         case 'snip': {
             const snip: SnipNode = this.data as SnipNode;
-            const fragments: TODONode[] = snip.textData;
+            const contents: TODONode[] = snip.contents;
 
             // (see 'chapter', 'container' cases above)
-            const fragmentsTODOs = (await Promise.all(
-                fragments.map(currentFragment => currentFragment.getTODOCounts())
+            const snipsTODOs = (await Promise.all(
+                contents.map(currentContent => currentContent.getTODOCounts())
             )).reduce(((acc, cur) => acc + cur), 0);
 
             TODOsView.todo[uri.fsPath] = {
                 type: 'count',
-                data: fragmentsTODOs
+                data: snipsTODOs
             };
-            return fragmentsTODOs;
+            return snipsTODOs;
         }
         case 'fragment': {
             const fragmentNode: FragmentNode = this.data as FragmentNode;

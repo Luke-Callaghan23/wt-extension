@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineTreeProvider";
-import { ChapterNode, OutlineNode, ResourceType, RootNode } from "../outlineNode";
+import { ChapterNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../outlineNode";
 import { OutlineView } from "../../outlineView";
 
 export type DestinationResult = {
@@ -32,9 +32,19 @@ export async function determineDestinationContainer (
             destinationContainer = chapterNode.snips;
         }
         // Traverse upwards until we find the nearest 'root' or 'chapter' node that we can move the snip into
-        else if (newParentType === 'snip' || newParentType === 'container' || newParentType === 'fragment') {
-            const parentContainerNode = (await newParentNode.getContainerParent(provider)).data as ChapterNode | RootNode;
-            destinationContainer = parentContainerNode.snips;
+        else if (newParentType === 'container' || newParentType === 'fragment') {
+            const parentContainer = await newParentNode.getContainerParent(provider, ['root', 'snip']);
+            const parentContainerNode = parentContainer.data as ChapterNode | RootNode | SnipNode;
+            if (parentContainerNode.ids.type === 'chapter'  || parentContainer.data.ids.type === 'root') {
+                destinationContainer = (parentContainerNode as ChapterNode | RootNode).snips;
+            }
+            else if (parentContainerNode.ids.type === 'snip') {
+                destinationContainer = parentContainer;
+            }
+            else throw `unreachable`;
+        }
+        else if (newParentType === 'snip') {
+            destinationContainer = newParentNode;
         }
         else {
             throw new Error('Not possible');
@@ -45,7 +55,7 @@ export async function determineDestinationContainer (
             destinationContainer = (await provider.getTreeElementByUri(newParentUri));
         }
         else if (newParentType === 'fragment') {
-            destinationContainer = (await newParentNode.getContainerParent(provider, 'snip'));
+            destinationContainer = (await newParentNode.getContainerParent(provider, ['snip']));
         }
         else if (newParentType === 'container') {
             const newParentOutline = newParent as OutlineNode;

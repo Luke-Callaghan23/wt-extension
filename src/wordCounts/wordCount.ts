@@ -114,7 +114,7 @@ export class WordCount {
         const workSnips: ContainerNode = root.snips.data as ContainerNode;
         for (const workSnipWrapper of workSnips.contents) {
             const snip = workSnipWrapper.data as SnipNode;
-            const fragments: FragmentNode[] = snip.textData.map(fragmentWrapper => fragmentWrapper.data as FragmentNode);
+            const fragments: FragmentNode[] = snip.contents.map(fragmentWrapper => fragmentWrapper.data as FragmentNode);
             promises.push(processContainer('snip', snip.ids.display, snip.ids.uri, fragments));
         }
 

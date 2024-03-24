@@ -18,7 +18,7 @@ export async function getChildren (this: OutlineNode, filter: boolean): Promise<
     else if (data.ids.type === 'snip') {
         // Collect all the text fragements of the snip
         const snip = data as SnipNode;
-        const fragments = [ ...snip.textData ];
+        const fragments = [ ...snip.contents ];
         fragments.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
         return fragments;
     }

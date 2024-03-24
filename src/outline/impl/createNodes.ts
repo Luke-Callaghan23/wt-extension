@@ -179,8 +179,6 @@ export async function newSnip (
     options?: CreateOptions
 ): Promise<vscode.Uri | null> {
     
-    console.log(resource);
-
     // Need to determine where the snip is going to go
     // If the current resource is a snip or a fragment, insert the snip in the nearest chapter/root that parents that fragment
     // If the current resource is a chapter, insert the snip in that chapter
@@ -238,6 +236,10 @@ export async function newSnip (
     else {
         switch (resource.data.ids.type) {
             case 'snip':
+                {
+                    parentNode = resource;
+                    break;
+                }
             case 'fragment':
                 {
                     const chapterOrRoot = (await resource.getContainerParent(this)).data as ChapterNode | RootNode;
@@ -344,7 +346,7 @@ export async function newSnip (
             type: 'snip',
             uri: snipUri
         },
-        textData: []
+        contents: []
     };
 
     // If not skipping the creation of the fragment, then create a blank fragment inside of the 
@@ -380,7 +382,7 @@ export async function newSnip (
         };
 
         // Push this fragment to the parent snip
-        snipNode.textData.push(new OutlineNode(fragmentNode));
+        snipNode.contents.push(new OutlineNode(fragmentNode));
         
         // Write the .config file for the new snips' fragments
         snipDotConfig[fragmentFileName] = {
@@ -502,9 +504,14 @@ export async function newFragment (
         md: ''
     };
 
-    // Add snip node to parent node's snip's content array
+    // Add snip node to parent node's content array
     const fragmentNode = new OutlineNode(fragment);
-    (parentNode.data as ChapterNode | SnipNode).textData.push(fragmentNode);
+    if (parentNode.data.ids.type === 'chapter') {
+        (parentNode.data as ChapterNode).textData.push(fragmentNode);
+    }
+    else if (parentNode.data.ids.type === 'snip') {
+        (parentNode.data as SnipNode).contents.push(fragmentNode);
+    }
 
     parentDotConfig[fileName] = {
         ordering: newFragmentNumber,

@@ -102,7 +102,13 @@ export async function handleInternalContainerReorder (
         unordered = (destinationContainer.data as ContainerNode).contents;
     }
     else if (node.data.ids.type === 'fragment') {
-        unordered = (destinationContainer.data as SnipNode | ChapterNode).textData;
+        if (destinationContainer.data.ids.type === 'snip') {
+            unordered = (destinationContainer.data as SnipNode).contents;
+        }
+        else if (destinationContainer.data.ids.type === 'chapter') {
+            unordered = (destinationContainer.data as ChapterNode).textData;
+        }
+        else throw `unsupported parent type ${destinationContainer.data.ids.type}`;
     }
     else if (node.data.ids.type === 'snip') {
         unordered = (destinationContainer.data as ContainerNode).contents;

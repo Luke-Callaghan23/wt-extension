@@ -33,14 +33,14 @@ export class OutlineNode extends TreeNode {
 
     // Assumes this is a 'snip' or a 'fragment'
     // Traverses up the parent tree until a 'chapter' or 'root' element is found
-	async getContainerParent (provider: OutlineTreeProvider<TreeNode>, secondary: string = 'root'): Promise<OutlineNode> {
+	async getContainerParent (provider: OutlineTreeProvider<TreeNode>, searches: ResourceType[] = ['root']): Promise<OutlineNode> {
 		// Traverse upwards until we find a 'chapter' or 'root' node
         // Both of these node types have a snips container within them that we can then use to store the new node
         let foundParent: OutlineNode;
         let parentUri = this.data.ids.parentUri;
         while (true) {
             foundParent = await provider.getTreeElementByUri(parentUri);
-            if (foundParent.data.ids.type === secondary || foundParent.data.ids.type === 'chapter') {
+            if (searches.includes(foundParent.data.ids.type) || foundParent.data.ids.type === 'chapter') {
                 break;
             }
             parentUri = foundParent.data.ids.parentUri;
@@ -74,13 +74,24 @@ export class OutlineNode extends TreeNode {
             // Root and containers cannot drop any uris
             case 'root': case 'container': return [];
             // Chapters and snips drop just the immediate fragment node children
-            case 'chapter': case 'snip':
-                const data = this.data as ChapterNode | SnipNode;
+            case 'chapter':
+                const data = this.data as ChapterNode;
                 return data.textData
                     .sort((a, b) => a.data.ids.ordering - b.data.ids.ordering)
                     .map(fragment => {
                         return fragment.getUri()
                     });
+            case 'snip':
+                const snip = this.data as SnipNode;
+                return snip.contents
+                    .sort((a, b) => a.data.ids.ordering - b.data.ids.ordering)
+                    .map(content => {
+                        if (content.data.ids.type === 'fragment') {
+                            return content.getUri();
+                        }
+                        return [];
+                    })
+                    .flat();
             // Fragments drop themselves
             case 'fragment':
                 return [ this.getUri() ];

@@ -33,7 +33,7 @@ export type ContainerNode<N extends TreeNode> = {
 
 export type SnipNode<N extends TreeNode> = {
     ids: Ids,
-    textData: N[]
+    contents: N[]
 };
 
 export type RootNode<N extends TreeNode> = {

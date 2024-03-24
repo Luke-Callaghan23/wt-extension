@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
 import { ConfigFileInfo } from '../help';
-import { getUsableFileName } from '../outline/impl/createNodes';
+import { getUsableFileName, newSnip } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
 import { ImportForm } from './importFormView';
@@ -490,6 +490,32 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
         if (!chapterNode) return;
         parentNode = chapterNode;
     }
+
+    // Make a date string for the new snip aggregate
+    const date = new Date();
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based
+    const year = date.getFullYear();
+    const dateStr = `${day}-${month}-${year}`;
+
+    // If this is a multi split, then we want to store all splits in a newly created snip container in the `parentNode` calculated above
+    if (docSplits.type === 'multi') {
+    
+        // Create the new snip
+        const importedSnipSnipUri = await outlineView.newSnip(parentNode, {
+            defaultName: `${snipInfo.outputSnipName} ${dateStr}`,
+            preventRefresh: true,
+            skipFragment: true,
+        });
+        if (importedSnipSnipUri !== null) {
+            // Get the snip from the outline tree and assign it as the destination for imports
+            const snipNodeNode = await outlineView.getTreeElementByUri(importedSnipSnipUri);
+            if (snipNodeNode) {
+                parentNode = snipNodeNode;
+            }
+        }
+    }
+
 
     // Uploads fragments in a content array into specified path
     const fragmentUpload = async (splits: NamedSingleSplit[], snipUri: vscode.Uri) => {
