@@ -487,6 +487,28 @@ async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | Proc
 
 // Exporting a txt file is simply treated the same as exporting an md file, which is the same as a generic export
 const exportMd = async (fullyProcessed: ProcessedMd) => {
+    
+    const processText = (text: string) => {
+        // Replace all "^" with "**"
+        text = text.replaceAll("^", "**");
+    
+        // Replace all "~" with "~~"
+        text = text.replaceAll("~", "~~");
+        text = text.replaceAll("~~~~", "~~");
+
+        return text;
+    }
+
+    if (fullyProcessed.type === 'multiple') {
+        for (const cci of fullyProcessed.cleanedChapterInfo) {
+            const dataStr = cci.data.toString();
+            cci.data = processText(dataStr);
+        }
+    }
+    else {
+        fullyProcessed.fullData = processText(fullyProcessed.fullData.toString())
+    }
+
     await exportGeneric(fullyProcessed, 'md');
 };
 const exportTxt = async (fullyProcessed: ProcessedMd) => {

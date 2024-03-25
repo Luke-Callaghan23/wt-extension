@@ -12,7 +12,8 @@
         'txt',
         'docx',
         'html',
-        'odt'
+        'odt', 
+        'md'
     ];
 
     const formContainer = document.getElementById('form-container');

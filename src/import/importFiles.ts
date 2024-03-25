@@ -40,7 +40,7 @@ import { Buff } from '../Buffer/bufferSource';
 
 export type DocInfo = {
     skip: boolean,
-    ext: 'wt' | 'txt' | 'html' | 'docx' | 'odt',
+    ext: 'wt' | 'txt' | 'html' | 'docx' | 'odt' | 'md',
     outputType: 'snip' | 'chapter',
     outputIntoChapter: boolean,
     outputSnipPath: '/data/snips/',
@@ -89,7 +89,7 @@ type SplitInfo = {
     outerSplitRegex: RegExp | undefined
 };
 
-function splitMd (content: string, split: SplitInfo): DocSplit | undefined {
+function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
 
     const processTitledSplit = (splitter: RegExp, text: string): NamedSingleSplit[] => {
         
@@ -205,13 +205,34 @@ async function readAndSplitWt (split: SplitInfo, fileRelativePath: string): Prom
     const filteredContent = replaceCommonUnicode(fileContent);
 
     // Split the content with the split rules provided in `split`
-    const splits = splitMd(filteredContent, split);
+    const splits = splitWt(filteredContent, split);
     if (!splits) {
         vscode.window.showErrorMessage(`Error ocurred when splitting markdown document`);
         throw new Error(`Error ocurred when splitting markdown document`);
     }
     return splits;
 }
+
+async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
+    // Get the full file path and read the content of that file
+    const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+    const fileContent = (await vscode.workspace.fs.readFile(fileUri)).toString();
+
+    // Replace some common unicode elements in the file with more friendly stuff
+    const filteredContent = replaceCommonUnicode(fileContent);
+
+    let final = filteredContent.replaceAll("**", "^");
+    final = final.replaceAll("~~", "~");
+
+    // Split the content with the split rules provided in `split`
+    const splits = splitWt(final, split);
+    if (!splits) {
+        vscode.window.showErrorMessage(`Error ocurred when splitting markdown document`);
+        throw new Error(`Error ocurred when splitting markdown document`);
+    }
+    return splits;
+}
+
 const readAndSplitTxt = readAndSplitWt;
 
 async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<DocSplit | null> {
@@ -256,7 +277,7 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
     const filteredContent = replaceCommonUnicode(withoutEscapedTildes);
 
     // Split the content with the split rules provided in `split`
-    const splits = splitMd(filteredContent, split);
+    const splits = splitWt(filteredContent, split);
     if (!splits) {
         vscode.window.showErrorMessage(`Error ocurred when splitting markdown document`);
         throw new Error(`Error ocurred when splitting markdown document`);
@@ -606,6 +627,7 @@ async function importDoc (doc: DocInfo, fileRelativePath: string) {
         case 'docx': splitFunc = readAndSplitDocx; break;
         case 'html': splitFunc = readAndSplitHtml; break;
         case 'odt': splitFunc = readAndSplitOdt; break;
+        case 'md': splitFunc = readAndSplitMd; break;
     }
     // Read and split the document
     const docSplit = await splitFunc(splitInfo, fileRelativePath);

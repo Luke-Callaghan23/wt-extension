@@ -46,7 +46,8 @@ export class Workspace {
         'txt',
         'docx',
         'html',
-        'odt'
+        'odt',
+        'md'
     ];
 
     // List of allowed export file types
@@ -55,7 +56,8 @@ export class Workspace {
         'txt',
         'docx',
         'html',
-        'odt'
+        'odt',
+        'md'
     ];
 
     // List of non-allowed characters in exported file names

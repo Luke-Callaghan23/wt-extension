@@ -131,7 +131,8 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 					'txt',
 					'docx',
 					'html',
-					'odt'
+					'odt',
+					'md',
 				]
 			}
 		});
