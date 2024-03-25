@@ -176,6 +176,12 @@
                         </vscode-single-select>
         
                         <div class="spacer"></div>
+						<div id="odt-warning" style="${ docInfo.ext !== 'odt' ? 'display: none;' : ''}">
+							<vscode-label id="error-label" class="label error-label">
+								To import from odt format, you will need libreoffice installed on your machine.  Otherwise we cannot make the conversion from files to .odt to .wt fragments.<br/>
+								Also, ODT files take vastly more time to import than any other kind of document.  You might want to convert the ODT to MS Word and then import that.
+							</vscode-label>
+						</div>
                         
                         <vscode-label for="select-output-type" class="label">Output Type:</vscode-label>
                         <vscode-form-helper>
@@ -404,6 +410,18 @@
             const newDoc = documents[newIndex].fullPath;
             changeDoc(newDoc);
         });
+
+        
+        const odtWarningMessage = document.getElementById("odt-warning");
+        const extTypeBox = document.getElementById("select-ext-type");
+        extTypeBox.addEventListener("click", (e) => {
+            if (e.target.value === 'odt') {
+                odtWarningMessage.style.display = '';
+                return;
+            }
+            odtWarningMessage.style.display = 'none';
+        });
+
 
 
         const submit = document.getElementById('import-button');

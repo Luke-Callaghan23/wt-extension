@@ -156,7 +156,8 @@ export class ExportForm {
 						<div class="spacer"></div>
 						<div id="odt-warning" style="display: none;">
 							<vscode-label id="error-label" class="label error-label">
-								To export to odt format, you will need libreoffice installed on your machine.  Otherwise we cannot make the conversion from .wt files to .odt.
+								To export to odt format, you will need libreoffice installed on your machine.  Otherwise we cannot make the conversion from .wt files to .odt.<br/>
+								Also, ODT files take vastly more time to export than any other kind of document.  You might want to export as MS Word then convert to ODT.
 							</vscode-label>
 						</div>
 						<vscode-label for="combine-fragments-on" class="label">Fragment Glue:</vscode-label>

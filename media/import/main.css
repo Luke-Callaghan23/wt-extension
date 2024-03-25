@@ -53,3 +53,8 @@
 .spacer {
 	margin-top: 10px;
 }
+
+.error-label {
+	font-weight: bold;
+	color: red
+}

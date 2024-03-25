@@ -95,7 +95,6 @@
     const odtWarningMessage = document.getElementById("odt-warning");
     const extTypeBox = document.getElementById("select-ext-type");
     extTypeBox.addEventListener("click", (e) => {
-        console.log('awdw')
         if (e.target.value === 'odt') {
             odtWarningMessage.style.display = '';
             return;
