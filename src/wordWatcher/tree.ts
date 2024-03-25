@@ -84,13 +84,16 @@ export function getTreeItem (this: WordWatcher, element: WordEnrty): vscode.Tree
         const isDisabled = this.disabledWatchedWords.find(disabled => disabled === element.uri);
         let contextValue: string;
         let color: vscode.ThemeColor | undefined;
+        let icon: string;
         if (isDisabled) {
             contextValue = 'watchedWord_disabled';
             color = undefined;
+            icon = 'circle-large-outline'
         }
         else {
             contextValue = 'watchedWord_enabled';
             color = new vscode.ThemeColor('debugConsole.warningForeground');
+            icon = 'pass-filled';
         }
 
         return {
@@ -99,12 +102,12 @@ export function getTreeItem (this: WordWatcher, element: WordEnrty): vscode.Tree
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             resourceUri: vscode.Uri.file(element.uri),
             command: { 
-                command: 'wt.wordWatcher.jumpNextInstanceOf', 
-                title: "Search", 
+                command: 'wt.wordWatcher.toggleWatchedWord', 
+                title: "Toggle Word Enablement", 
                 arguments: [ element.uri ],
             },
             contextValue: contextValue,
-            iconPath: new vscode.ThemeIcon('warning', color)
+            iconPath: new vscode.ThemeIcon(icon, color)
         } as vscode.TreeItem;
     }
     else if (element.type === 'unwatchedWord') {

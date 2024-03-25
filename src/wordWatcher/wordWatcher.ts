@@ -143,6 +143,12 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         vscode.commands.registerCommand('wt.wordWatcher.enableWatchedWord', (resource: WordEnrty) => {
             this.updateWords('delete', resource.uri, 'wt.wordWatcher.disabledWatchedWords')
         });
+        vscode.commands.registerCommand('wt.wordWatcher.toggleWatchedWord', (word: string) => {
+            const operation = this.disabledWatchedWords.includes(word)
+                ? 'delete'
+                : 'add';
+            this.updateWords(operation, word, 'wt.wordWatcher.disabledWatchedWords')
+        });
         vscode.commands.registerCommand('wt.wordWatcher.changeColor', (resource: WordEnrty) => {
             this.changeColor(resource);
         });

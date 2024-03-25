@@ -69,6 +69,11 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
     }
     this.wasUpdated = false;
 
+    // Clear all old decorations first
+    this.allDecorationTypes.forEach(dec => {
+        editor.setDecorations(dec, []);
+    });
+
     const text = editor.document.getText();
     
     // While there are more matches within the text of the document, collect the match selection
