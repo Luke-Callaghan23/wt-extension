@@ -53,7 +53,10 @@ export class WordCount {
     }
 
     private countWordsInText (text: string): number {
-        return text.split(WordCount.nonAlphanumeric).length;
+        return text.split(WordCount.nonAlphanumeric)
+            .filter(str => str.length !== 0)
+            .filter(str => (/\s*/.test(str)))
+            .length;
     }
     
     
