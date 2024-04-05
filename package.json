@@ -22,6 +22,32 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "Speech configuration",
+			"properties": {
+				"wt.speech.voice": {
+					"type": "string",
+					"default": null,
+					"description": "Name of voice used to speak text."
+				},
+				"wt.speech.speed": {
+					"type": "number",
+					"default": 1,
+					"description": "Speech rate speed multiplier."
+				},
+				"wt.speech.substitutions": {
+					"type": "object",
+					"additionalProperties": {
+						"type": "string"
+					},
+					"default": {
+						"_": " "
+					},
+					"description": "A dictionary of characters to replace with other characters before speaking. This can help with characters that text-to-speech reads in an unexpected way."
+				}
+			}
+		},
 		"viewsWelcome": [
 			{
 				"view": "wt.outline",
@@ -671,6 +697,20 @@
 			{
 				"title": "Writing Tool: Expand Highlight",
 				"command": "wt.editor.highlightExpand"
+			},
+			{
+				"command": "wt.speech.speakDocument",
+				"title": "Writing Tool: Speak Document",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "wt.speech.speakSelection",
+				"title": "Writing Tool: Speak Selection",
+				"when": "editorTextFocus && editorHasSelection"
+			},
+			{
+				"command": "wt.speech.stopSpeaking",
+				"title": "Writing Tool: Stop Speaking"
 			}
 		],
 		"menus": {
@@ -1488,7 +1528,7 @@
 		"mammoth": "^1.5.1",
 		"node-fetch": "^3.3.1",
 		"node-fetch-commonjs": "^3.2.4",
-		"say": "^0.16.0",
+		"say": "^0.15.0",
 		"turndown": "^7.1.2",
 		"uuid": "^9.0.0",
 		"vscode-uri": "^3.0.7"

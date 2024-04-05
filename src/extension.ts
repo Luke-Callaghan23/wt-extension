@@ -31,6 +31,7 @@ import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { WorkBible } from './workBible/workBible';
 import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { assignNamesForOpenTabs } from './tabLabels/tabLabels';
+import { activateSpeak } from './speakDebugger/speak';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -104,6 +105,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
 
 		await assignNamesForOpenTabs(outline);
+		await activateSpeak(context);
 	}
 	catch (e) {
 		handleLoadFailure(e);

@@ -1,5 +1,6 @@
 import * as say from 'say';
 import * as vscode from 'vscode';
+import * as console from './../vsconsole';
 
 const getVoice = (): string | undefined =>
     vscode.workspace.getConfiguration('speech').get<string>('voice');
@@ -26,7 +27,9 @@ const cleanText = (text: string): string => {
 const speakText = (text: string) => {
     text = cleanText(text);
     if (text.length > 0) {
-        say.speak(text, getVoice(), getSpeed());
+        say.speak("POOP", undefined, undefined, (err) => {
+            console.log(err);
+        });
     }
 };
 
@@ -44,21 +47,25 @@ const speakDocument = (editor: vscode.TextEditor) => {
 
 
 export function activateSpeak(context: vscode.ExtensionContext) {
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('speech.speakDocument', (editor) => {
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('wt.speech.speakDocument', (editor) => {
         stopSpeaking();
         if (!editor)
             return;
         speakDocument(editor);
     }));
 
-    context.subscriptions.push(vscode.commands.registerTextEditorCommand('speech.speakSelection', (editor) => {
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('wt.speech.speakSelection', (editor) => {
         stopSpeaking();
         if (!editor)
             return;
         speakCurrentSelection(editor);
     }));
 
-    context.subscriptions.push(vscode.commands.registerCommand('speech.stopSpeaking', () => {
+    context.subscriptions.push(vscode.commands.registerCommand('wt.speech.stopSpeaking', () => {
         stopSpeaking();
     }));
+
+    say.getInstalledVoices((inst) => {
+        console.log(inst as any as object)
+    })
 }
