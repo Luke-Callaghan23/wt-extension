@@ -31,7 +31,10 @@ import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { WorkBible } from './workBible/workBible';
 import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { assignNamesForOpenTabs } from './tabLabels/tabLabels';
-import { activateSpeak } from './speakDebugger/speak';
+import { activateSpeak } from './ttsDebugger/tts';
+import { activateMockDebug } from './ttsDebugger/debugger/activateMockDebug';
+import { activateDebug } from './ttsDebugger/debugger/debugExtention';
+import { oldDebugActivate } from './ttsDebugger/src/oldDebugActivate';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -106,6 +109,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 
 		await assignNamesForOpenTabs(outline);
 		await activateSpeak(context);
+		activateDebug(context);
+		// oldDebugActivate(context);
 	}
 	catch (e) {
 		handleLoadFailure(e);

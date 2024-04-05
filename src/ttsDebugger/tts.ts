@@ -1,6 +1,6 @@
 import * as say from 'say';
 import * as vscode from 'vscode';
-import * as console from './../vsconsole';
+import * as console from '../vsconsole';
 
 const getVoice = (): string | undefined =>
     vscode.workspace.getConfiguration('speech').get<string>('voice');
@@ -27,7 +27,7 @@ const cleanText = (text: string): string => {
 const speakText = (text: string) => {
     text = cleanText(text);
     if (text.length > 0) {
-        say.speak("POOP", undefined, undefined, (err) => {
+        say.speak(text, getVoice(), getSpeed(), (err) => {
             console.log(err);
         });
     }
