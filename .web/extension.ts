@@ -24,6 +24,7 @@ import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
 import { WorldNotes } from './worldNotes/worldNotes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
+import { assignNamesForOpenTabs } from './tabLabels/tabLabels';
 
 
 
@@ -86,6 +87,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		// This is used to store temporary data for a session and should not last between sessions
 		const tmpFolderPath = vscode.Uri.joinPath(rootPath, 'tmp');
 		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
+		
+		await assignNamesForOpenTabs(outline);
 	}
 	catch (e) {
 		handleLoadFailure(e);
