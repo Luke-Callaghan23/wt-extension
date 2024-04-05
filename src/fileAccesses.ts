@@ -5,6 +5,7 @@ import { OutlineView } from './outline/outlineView';
 import * as console from './vsconsole';
 import * as extension from './extension';
 import { Packageable } from './packageable';
+import { assignNamesForOpenTabs } from './tabLabels/tabLabels';
 
 export class FileAccessManager implements Packageable {
 
@@ -58,6 +59,8 @@ export class FileAccessManager implements Packageable {
 
         // Also update the latest file access
         FileAccessManager.lastAccessedFragment = openedUri;
+
+        assignNamesForOpenTabs(outlineView);
     }
 
     static lastAccessedFragmentForUri (targetUri: vscode.Uri): vscode.Uri | undefined {

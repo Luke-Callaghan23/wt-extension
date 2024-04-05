@@ -30,6 +30,7 @@ import { CoderModer } from './codeMode/codeMode';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { WorkBible } from './workBible/workBible';
 import { RecyclingBinView } from './recyclingBin/recyclingBinView';
+import { assignNamesForOpenTabs } from './tabLabels/tabLabels';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -101,6 +102,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		// This is used to store temporary data for a session and should not last between sessions
 		const tmpFolderPath = vscode.Uri.joinPath(rootPath, 'tmp');
 		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
+
+		await assignNamesForOpenTabs(outline);
 	}
 	catch (e) {
 		handleLoadFailure(e);
