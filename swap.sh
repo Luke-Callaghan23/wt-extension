@@ -26,6 +26,7 @@ then
     mv src/workspace/importExport .local/importExport
     mv src/gitTransactions.ts .local/gitTransactions.ts
     mv src/workspace/workspaceClass.ts .local/workspaceClass.ts
+    mv src/ttsDebugger .local/ttsDebugger
 
     mv .web/bufferSource.ts src/Buffer/bufferSource.ts
     mv .web/fetchSource.ts src/Fetch/fetchSource.ts
@@ -60,6 +61,14 @@ elif
     test -f .local/importExport/exportWorkspace.ts &&
     test -f .local/importExport/importWorkspace.ts &&
     test -f .local/gitTransactions.ts &&
+    test -f .local/ttsDebugger/debugger/activateMockDebug.ts && 
+    test -f .local/ttsDebugger/debugger/debugAdapter.ts
+    test -f .local/ttsDebugger/debugger/debugExtention.ts
+    test -f .local/ttsDebugger/debugger/mockDebug.ts
+    test -f .local/ttsDebugger/debugger/mockRuntime.ts
+    test -f .local/ttsDebugger/debugger/web-extension.ts
+    test -f .local/ttsDebugger/debugSession.ts
+    test -f .local/ttsDebugger/tts.ts
     test -f .local/workspaceClass.ts;
 then
     mv src/Buffer/bufferSource.ts .web/bufferSource.ts
@@ -73,6 +82,7 @@ then
     mv src/gitTransactions.ts .web/gitTransactions.ts
     mv src/workspace/workspaceClass.ts .web/workspaceClass.ts 
 
+    mv .local/ttsDebugger src/ttsDebugger
     mv .local/bufferSource.ts src/Buffer/bufferSource.ts
     mv .local/fetchSource.ts src/Fetch/fetchSource.ts
     mv .local/extension.ts src/extension.ts
