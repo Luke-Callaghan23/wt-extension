@@ -19,6 +19,7 @@ export const stopSpeaking = () => {
 const cleanText = (text: string): string => {
     text = text.trim();
     for (let [pattern, replacement] of Object.entries(getSubstitutions())) {
+        //@ts-ignore
         text = text.replaceAll(pattern, replacement);
     }
     return text;
@@ -72,8 +73,4 @@ export function activateSpeak(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand('wt.speech.stopSpeaking', () => {
         stopSpeaking();
     }));
-
-    say.getInstalledVoices((inst) => {
-        console.log(inst as any as object)
-    })
 }
