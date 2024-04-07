@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { CoderModer } from './codeMode';
 import { Buff } from '../Buffer/bufferSource';
 import { isText } from 'istextorbinary';
+import { clearNamesForAllTabs } from '../tabLabels/tabLabels';
 
 export async function enter (this: CoderModer): Promise<void> {
 
@@ -32,6 +33,9 @@ export async function enter (this: CoderModer): Promise<void> {
         });
     }
     this.state = 'codeMode';
+    setTimeout(() => {
+        clearNamesForAllTabs();  
+    }, 500);
 }
 
 /*

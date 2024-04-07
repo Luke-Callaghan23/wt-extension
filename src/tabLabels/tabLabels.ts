@@ -31,3 +31,23 @@ export const assignNamesForOpenTabs = async (outline: OutlineView) => {
     }
     return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);
 }
+
+
+export const clearNamesForAllTabs = async () => {
+    const configuration = workspace.getConfiguration();
+    configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
+
+    
+    const oldPatterns: { [index: string]: string } = await configuration.get('workbench.editor.customLabels.patterns') || {};
+    const newPatterns: { [index: string]: string } = {};
+    for (const [ pattern, value ] of Object.entries(oldPatterns)) {
+        if (pattern.endsWith('.wt')) continue;
+        newPatterns[pattern] = value;
+    }
+
+    const finalPatterns: { [index: string]: string } = {};
+    for (const [ name, val ] of  Object.entries(newPatterns)) {
+        finalPatterns[name.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/').substring(1)] = val;
+    }
+    return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);
+}

@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { CoderModer } from './codeMode';
+import { assignNamesForOpenTabs } from '../tabLabels/tabLabels';
+import { OutlineView } from '../outline/outlineView';
 
 export async function exit (this: CoderModer): Promise<void> {
     const editor = vscode.window.activeTextEditor;
@@ -31,6 +33,8 @@ export async function exit (this: CoderModer): Promise<void> {
         })
     })
 
+    const outlineView: OutlineView  = await vscode.commands.executeCommand('wt.outline.getOutline');
+    assignNamesForOpenTabs(outlineView);
 
     this.openedCodeUris = [];
     this.state = 'noCodeMode';
