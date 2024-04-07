@@ -12,7 +12,7 @@ const getSubstitutions = (): { [key: string]: string } =>
     vscode.workspace.getConfiguration('speech').get<{ [key: string]: string }>('substitutions') || {};
 
 
-const stopSpeaking = () => {
+export const stopSpeaking = () => {
     say.stop();
 }
 
@@ -24,13 +24,21 @@ const cleanText = (text: string): string => {
     return text;
 }
 
-const speakText = (text: string) => {
-    text = cleanText(text);
-    if (text.length > 0) {
+export const speakText = async (text: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        text = cleanText(text);
+        if (text.length <= 0) {
+            resolve();
+            return;
+        }
         say.speak(text, getVoice(), getSpeed(), (err) => {
-            console.log(err);
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve();
         });
-    }
+    });
 };
 
 const speakCurrentSelection = (editor: vscode.TextEditor) => {

@@ -3,6 +3,9 @@
  *--------------------------------------------------------*/
 
 import { EventEmitter } from 'events';
+import { speakText } from '../tts';
+import * as console from './../../vsconsole';
+import * as vscode from 'vscode'
 
 export interface FileAccessor {
 	isWindows: boolean;
@@ -102,11 +105,12 @@ export function timeout(ms: number) {
 export class MockRuntime extends EventEmitter {
 
 	// the initial (and one and only) file we are 'debugging'
-	private _sourceFile: string = '';
+	public _sourceFile: string = '';
 	public get sourceFile() {
 		return this._sourceFile;
 	}
 
+	public closed = false;
 	private variables = new Map<string, RuntimeVariable>();
 
 	// the contents (= lines) of the one and only file
@@ -149,23 +153,28 @@ export class MockRuntime extends EventEmitter {
 	/**
 	 * Start executing the given program.
 	 */
-	public async start(program: string, stopOnEntry: boolean, debug: boolean): Promise<void> {
+	public async start(program: string, stopOnEntry: boolean, debug: boolean): Promise<{ start: boolean }> {
 
 		await this.loadSource(this.normalizePathAndCasing(program));
 
 		if (debug) {
 			await this.verifyBreakpoints(this._sourceFile);
 
+			console.log(this.breakPoints)
+
 			if (stopOnEntry) {
 				this.findNextStatement(false, 'stopOnEntry');
+				return { start: this.breakPoints.size === 0 }
 			} 
 			else {
 				// we just start to run until we hit a breakpoint, an exception, or the end of the program
 				this.continue(false);
+				return { start: this.breakPoints.size === 0 }
 			}
 		} 
 		else {
 			this.continue(false);
+			return { start: this.breakPoints.size === 0 }
 		}
 	}
 
@@ -173,14 +182,8 @@ export class MockRuntime extends EventEmitter {
 	 * Continue execution to the end/beginning.
 	 */
 	public async continue(reverse: boolean) {
-
-		while (!this.executeLine(this.currentLine, reverse)) {
-			if (this.updateCurrentLine(reverse)) {
-				break;
-			}
-			if (this.findNextStatement(reverse)) {
-				break;
-			}
+		while (this._currentLine < this.sourceLines.length) {
+			await vscode.commands.executeCommand("workbench.action.debug.stepOver");
 		}
 	}
 
@@ -188,7 +191,7 @@ export class MockRuntime extends EventEmitter {
 	 * Step to the next/previous non empty line.
 	 */
 	public async step(reverse: boolean) {
-		if (!this.executeLine(this.currentLine, reverse)) {
+		if (!(await this.executeLine(this.currentLine, reverse))) {
 			if (!this.updateCurrentLine(reverse)) {
 				this.findNextStatement(reverse, 'stopOnStep');
 			}
@@ -267,6 +270,23 @@ export class MockRuntime extends EventEmitter {
 
 	public clearBreakpoints(path: string): void {
 		this.breakPoints.delete(this.normalizePathAndCasing(path));
+	}
+
+	public stack(startFrame: number, endFrame: number): IRuntimeStackFrame {
+		const line = this.getLine();
+		console.log(line);
+
+		const name = line.length > 23
+			? `${line.substring(0, 20)}...`
+			: line;
+
+		return {
+			index: 0,
+			name: name,
+			file: this._sourceFile,
+			line: this.currentLine,
+			column: 0,
+		};
 	}
 
 	// private methods
@@ -355,19 +375,11 @@ export class MockRuntime extends EventEmitter {
 	 * "execute a line" of the readme markdown.
 	 * Returns true if execution sent out a stopped event and needs to stop.
 	 */
-	private executeLine(ln: number, reverse: boolean): boolean {
-
+	private async executeLine(ln: number, reverse: boolean): Promise<boolean> {
 		const line = this.getLine(ln);
+		if (line === '') return false;
 
-		// if 'log(...)' found in source -> send argument to debug console
-		const reg1 = /(log|prio|out|err)\(([^\)]*)\)/g;
-		let matches1: RegExpExecArray | null;
-		while (matches1 = reg1.exec(line)) {
-			if (matches1.length === 3) {
-				this.sendEvent('output', matches1[1], matches1[2], this._sourceFile, ln, matches1.index);
-			}
-		}
-
+		await speakText(line)
 
 		// nothing interesting found -> continue
 		return false;

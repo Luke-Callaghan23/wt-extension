@@ -626,7 +626,8 @@ export class MockRuntime extends EventEmitter {
 					return true;
 				}
 			}
-		} else {
+		} 
+		else {
 			// if word 'exception' found in source -> throw exception
 			if (line.indexOf('exception') >= 0) {
 				if (this.otherExceptions) {
