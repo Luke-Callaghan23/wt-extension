@@ -3,7 +3,6 @@ import * as console from "./../../vsconsole";
 
 export async function getChildren (this: OutlineNode, filter: boolean): Promise<OutlineNode[]> {
     const data = this.data;
-    console.log(data.ids.display)
     if (data.ids.type === 'chapter') {
         // Collect all text fragments of the chapter node as well as all snips
         const chapter = data as ChapterNode;

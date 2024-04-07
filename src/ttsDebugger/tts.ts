@@ -31,7 +31,7 @@ export const speakText = async (text: string): Promise<void> => {
             resolve();
             return;
         }
-        say.speak(text, getVoice(), getSpeed(), (err) => {
+        say.speak(text, getVoice(), 1.05, (err) => {
             if (err) {
                 reject(err);
                 return;

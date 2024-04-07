@@ -160,7 +160,20 @@ export class MockRuntime extends EventEmitter {
 		if (debug) {
 			await this.verifyBreakpoints(this._sourceFile);
 
-			console.log(this.breakPoints)
+			
+			if (this.breakPoints.size !== 0) {
+				let targets: IRuntimeBreakpoint[] = [];
+				this.breakPoints.forEach((val, key) => {
+					if (key === program.toLocaleLowerCase()) {
+						targets = val;
+					}
+				});
+				targets.sort((a, b) => {
+					return a.line - b.line;
+				});
+				const min = targets[0];
+				this._currentLine = min.line - 1;
+			}
 
 			if (stopOnEntry) {
 				this.findNextStatement(false, 'stopOnEntry');
@@ -181,16 +194,35 @@ export class MockRuntime extends EventEmitter {
 	/**
 	 * Continue execution to the end/beginning.
 	 */
+	private continueHitMap: { [index: number]: boolean } = {};
+	private breakNext = false;
 	public async continue(reverse: boolean) {
-		while (this._currentLine < this.sourceLines.length) {
+		this.continueHitMap = {};
+		while (this._currentLine < this.sourceLines.length || this.breakNext) {
+			console.log(`HIT: ${this.currentLine}`);
+			if (this.continueHitMap[this._currentLine]) {
+				this._currentLine++;
+				continue;
+			}
+			this.continueHitMap[this._currentLine] = true;
+			if (this._currentLine === this.sourceFile.length - 1) {
+				this.breakNext = true;
+			}
 			await vscode.commands.executeCommand("workbench.action.debug.stepOver");
+			if (this.findNextStatement(reverse)) {
+				break;
+			}
 		}
+		this.breakNext = false;
 	}
 
 	/**
 	 * Step to the next/previous non empty line.
 	 */
 	public async step(reverse: boolean) {
+		// await new Promise((resolve) => setTimeout(resolve, 1000));
+
+
 		if (!(await this.executeLine(this.currentLine, reverse))) {
 			if (!this.updateCurrentLine(reverse)) {
 				this.findNextStatement(reverse, 'stopOnStep');
@@ -274,7 +306,7 @@ export class MockRuntime extends EventEmitter {
 
 	public stack(startFrame: number, endFrame: number): IRuntimeStackFrame {
 		const line = this.getLine();
-		console.log(line);
+		console.log(`LINE FOR STACK: ${line}`);
 
 		const name = line.length > 23
 			? `${line.substring(0, 20)}...`
@@ -379,7 +411,7 @@ export class MockRuntime extends EventEmitter {
 		const line = this.getLine(ln);
 		if (line === '') return false;
 
-		await speakText(line)
+		await speakText(line);
 
 		// nothing interesting found -> continue
 		return false;
