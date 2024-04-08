@@ -61,14 +61,14 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const statusBarTimer = new StatusBarTimer(context);
 
 		const timedViews = new TimedView(context, [
-			['wt.worldNotes.tree', worldNotes],
-			['wt.todo', todo],
-			['wt.wordWatcher', wordWatcher],
-			// ['wt.proximity', proximity],
-			['wt.spellcheck', spellcheck],
-			['wt.very', veryIntellisense],
-			['wt.colors', colorIntellisense],
-			['wt.textStyle', textStyles]
+			['wt.worldNotes.tree','worldNotes',  worldNotes],
+			['wt.todo','todo',  todo],
+			['wt.wordWatcher','wordWatcher',  wordWatcher],
+			// ['wt.proximity','proximity',  proximity],
+			['wt.spellcheck','spellcheck',  spellcheck],
+			['wt.very','very',  veryIntellisense],
+			['wt.colors','colors',  colorIntellisense],
+			['wt.textStyle','textStyle',  textStyles]
 		]);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
