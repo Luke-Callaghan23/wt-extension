@@ -19,7 +19,10 @@ export async function enter (this: CoderModer): Promise<void> {
     let idx = 0;
     this.repoUris = this.repoUris.sort(() => 0.5 - Math.random());
     
-    // 
+    // Will store all the promises for opening repo documents
+    const shownDocumentPromises: Thenable<any>[] = [];
+
+    // Iterate over every tab group and open a document from the chosen repo there
     for (const group of vscode.window.tabGroups.all) {
         
         // Select a random uri from this.repoUris to open in this tab group
@@ -28,14 +31,18 @@ export async function enter (this: CoderModer): Promise<void> {
         
         // Open the text docoument in the current view column
         const targetLocation = group.viewColumn;
-        vscode.window.showTextDocument(uri, {
+        const showRepoDocumentPromise = vscode.window.showTextDocument(uri, {
             viewColumn: targetLocation,
         });
+        shownDocumentPromises.push(showRepoDocumentPromise);
     }
+
     this.state = 'codeMode';
-    setTimeout(() => {
-        clearNamesForAllTabs();  
-    }, 500);
+
+    // Once all the document promises have been resolved, we can clear away the names of the .wt documents
+    Promise.all(shownDocumentPromises).then(() => {
+        setTimeout(clearNamesForAllTabs, 0);
+    })
 }
 
 /*

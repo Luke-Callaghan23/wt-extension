@@ -1137,7 +1137,11 @@
 					"markdown",
 					"Markdown"
 				],
-				"configuration": "./language-configuration.json"
+				"configuration": "./language-configuration.json",
+				"icon": {
+					"dark": "./media/icons/edit_darkmode.svg",
+					"light": "./media/icons/edit_lightmode.svg"
+				}
 			},
 			{
 				"id": "wtNote",
@@ -1149,7 +1153,11 @@
 					"markdown",
 					"Markdown"
 				],
-				"configuration": "./language-configuration.json"
+				"configuration": "./language-configuration.json",
+				"icon": {
+					"dark": "./media/icons/edit_darkmode.svg",
+					"light": "./media/icons/edit_lightmode.svg"
+				}
 			}
 		],
 		"walkthroughs": [
