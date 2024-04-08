@@ -81,8 +81,8 @@ export class Proximity implements Timed, Packageable {
             // If the word is valid and doesn't already exist in the word list, then continue adding the words
             this.additionalPatterns.push(reg);
             this.context.workspaceState.update('wt.wordWatcher.additionalPatterns', this.additionalPatterns.map(pat => pat.source));
-            if (vscode.window.activeTextEditor) {
-                this.update(vscode.window.activeTextEditor);
+            for (const editor of vscode.window.visibleTextEditors) {
+                this.update(editor);
             }
             return;
         }
@@ -111,8 +111,8 @@ export class Proximity implements Timed, Packageable {
 
         // Update state
         this.context.workspaceState.update('wt.wordWatcher.additionalPatterns', this.additionalPatterns.map(pat => pat.source));
-        if (vscode.window.activeTextEditor) {
-            this.update(vscode.window.activeTextEditor);
+        for (const editor of vscode.window.visibleTextEditors) {
+            this.update(editor);
         }
     }
 
@@ -302,11 +302,11 @@ export class Proximity implements Timed, Packageable {
 
     async disable? (): Promise<void> {
         // Simply clear all four of the proximity decorators
-        if (!vscode.window.activeTextEditor) return;
-        const editor = vscode.window.activeTextEditor;
-        Proximity.decorators.forEach(decoratorType => {
-            editor.setDecorations(decoratorType, []);
-        });
+        for (const editor of vscode.window.visibleTextEditors) {
+            Proximity.decorators.forEach(decoratorType => {
+                editor.setDecorations(decoratorType, []);
+            });
+        }
     }
 
     enabled: boolean;

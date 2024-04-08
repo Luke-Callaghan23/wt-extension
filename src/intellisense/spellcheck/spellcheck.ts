@@ -109,9 +109,9 @@ export class Spellcheck implements Timed {
     // 
     async disable? (): Promise<void> {
         // Simply clear all four of the proximity decorators
-        if (!vscode.window.activeTextEditor) return;
-        const editor = vscode.window.activeTextEditor;
-        editor.setDecorations(Spellcheck.RedUnderline, []);
+        for (const editor of vscode.window.visibleTextEditors) {
+            editor.setDecorations(Spellcheck.RedUnderline, []);
+        }
     }
 
 

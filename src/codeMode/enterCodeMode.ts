@@ -10,8 +10,6 @@ export async function enter (this: CoderModer): Promise<void> {
     vscode.commands.executeCommand('workbench.action.output.toggleOutput');
     vscode.commands.executeCommand('workbench.view.explorer')
 
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
     if (!this.repoUris) return;
 
     this.openedCodeUris = [];

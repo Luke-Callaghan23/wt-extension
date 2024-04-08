@@ -47,8 +47,8 @@ export function addOrDeleteTargetedWord (
     // Do updates 
     this.wasUpdated = true;
     this.context.workspaceState.update(contextItem, targetArray);
-    if (vscode.window.activeTextEditor) {
-        this.update(vscode.window.activeTextEditor, TimedView.findCommentedRanges(vscode.window.activeTextEditor));
+    for (const editor of vscode.window.visibleTextEditors) {
+        this.update(editor, TimedView.findCommentedRanges(editor));
     }
     this.refresh();
 }

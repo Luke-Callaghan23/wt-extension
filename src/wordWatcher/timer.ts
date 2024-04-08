@@ -174,7 +174,9 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
 
 export async function disable(this: WordWatcher): Promise<void> {
     this.allDecorationTypes.forEach(dec => {
-        vscode.window.activeTextEditor?.setDecorations(dec, []);
+        for (const editor of vscode.window.visibleTextEditors) {
+            editor.setDecorations(dec, []);
+        }
     })
 }
 
@@ -231,11 +233,8 @@ export async function changeColor(this: WordWatcher, word: WordEnrty) {
     const context = convertWordColorsToContextItem(this.wordColors);
     this.context.workspaceState.update('wt.wordWatcher.rgbaColors', context);
 
-
-
-
-    if (vscode.window.activeTextEditor) {
-        this.update(vscode.window.activeTextEditor, TimedView.findCommentedRanges(vscode.window.activeTextEditor));
+    for (const editor of vscode.window.visibleTextEditors) {
+        this.update(editor, TimedView.findCommentedRanges(editor));
     }
 }
 

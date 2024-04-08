@@ -23,8 +23,7 @@
 	"main": "./out/extension.js",
 	"contributes": {
 		"configuration": {
-			"type": "object",
-			"title": "Speech configuration",
+			"title": "Writing Tool Configuration",
 			"properties": {
 				"wt.speech.voice": {
 					"type": "string",
@@ -45,6 +44,41 @@
 						"_": " "
 					},
 					"description": "A dictionary of characters to replace with other characters before speaking. This can help with characters that text-to-speech reads in an unexpected way."
+				},
+				"wt.timedSearches.todo": {
+					"description": "Enable automatic TODO querying",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.wordWatcher": {
+					"description": "Enable automatic querying/highlighting for watched words",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.spellcheck": {
+					"description": "Enable automatic spellcheck",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.very": {
+					"title": "Enable automatic checks for instances of the word 'very'",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.colors": {
+					"description": "Enable automatic checks and highlighting for 'color' words",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.textStyle": {
+					"description": "Enable automatic text styling",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.workBible": {
+					"description": "Enable automatic querying for terms in your notes",
+					"type": "boolean",
+					"default": true
 				}
 			}
 		},
@@ -310,76 +344,6 @@
 				"command": "wt.todo.help",
 				"title": "Writing Tool: TODOs View Help",
 				"icon": "$(question)"
-			},
-			{
-				"command": "wt.todo.enable",
-				"title": "Writing Tool: Enable Automatic TODO Querying",
-				"enablement": "!wt.todo.enabled"
-			},
-			{
-				"command": "wt.todo.disable",
-				"title": "Writing Tool: Disable Automatic TODO Querying (hit the refresh button to query TODOs manually)",
-				"enablement": "wt.todo.enabled"
-			},
-			{
-				"command": "wt.wordWatcher.enable",
-				"title": "Writing Tool: Enable Word Watching",
-				"enablement": "!wt.wordWatcher.enabled"
-			},
-			{
-				"command": "wt.wordWatcher.disable",
-				"title": "Writing Tool: Disable Word Watching (highlights for watched words will not appear)",
-				"enablement": "wt.wordWatcher.enabled"
-			},
-			{
-				"command": "wt.proximity.enable",
-				"title": "Writing Tool: Enable Word Proximity Checks",
-				"enablement": "!wt.proximity.enabled"
-			},
-			{
-				"command": "wt.proximity.disable",
-				"title": "Writing Tool: Disable Word Proximity Checks (removes highlights on duplicate words in close proximity)",
-				"enablement": "wt.proximity.enabled"
-			},
-			{
-				"command": "wt.spellcheck.enable",
-				"title": "Writing Tool: Enable Spellcheck",
-				"enablement": "!wt.spellcheck.enabled"
-			},
-			{
-				"command": "wt.spellcheck.disable",
-				"title": "Writing Tool: Disable Spellcheck",
-				"enablement": "wt.spellcheck.enabled"
-			},
-			{
-				"command": "wt.very.enable",
-				"title": "Writing Tool: Enable Very Checks",
-				"enablement": "!wt.very.enabled"
-			},
-			{
-				"command": "wt.colors.enable",
-				"title": "Writing Tool: Enable Color Checks",
-				"enablement": "!wt.colors.enabled"
-			},
-			{
-				"command": "wt.colors.enable",
-				"title": "Writing Tool: Enable Color Checks",
-				"enablement": "!wt.colors.enabled"
-			},
-			{
-				"command": "wt.colors.disable",
-				"title": "Writing Tool: Disable Color Checks",
-				"enablement": "wt.colors.enabled"
-			},
-			{
-				"command": "wt.workBible.enable",
-				"title": "Writing Tool: Enable Automatic World Notes Querying",
-				"enablement": "!wt.todo.enabled"
-			},
-			{
-				"command": "wt.workBible.disable",
-				"title": "Writing Tool: Disable Automatic World Notes Querying",
-				"enablement": "wt.todo.enabled"
 			},
 			{
 				"command": "wt.proximity.addFilteredWord",
@@ -697,23 +661,299 @@
 			{
 				"title": "Writing Tool: Expand Highlight",
 				"command": "wt.editor.highlightExpand"
-			},
-			{
-				"command": "wt.speech.speakDocument",
-				"title": "Writing Tool: Speak Document",
-				"when": "editorTextFocus"
-			},
-			{
-				"command": "wt.speech.speakSelection",
-				"title": "Writing Tool: Speak Selection",
-				"when": "editorTextFocus && editorHasSelection"
-			},
-			{
-				"command": "wt.speech.stopSpeaking",
-				"title": "Writing Tool: Stop Speaking"
 			}
 		],
 		"menus": {
+			"commandPalette": [
+				{
+					"command": "wt.createWorkspace",
+					"when": "false"
+				},
+				{
+					"command": "wt.workspace.loadContextValues",
+					"when": "false"
+				},
+				{
+					"command": "wt.workspace.generateContextValues",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.moveDown",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.moveUp",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.openFile",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.renameFile",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.removeResource",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.copyItems",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.pasteItems",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.duplicateItems",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.copyPath",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.copyRelativePath",
+					"when": "false"
+				},
+				{
+					"command": "wt.recyclingBin.renameFile",
+					"when": "false"
+				},
+				{
+					"command": "wt.recyclingBin.permanentlyDelete",
+					"when": "false"
+				},
+				{
+					"command": "wt.recyclingBin.deleteAll",
+					"when": "false"
+				},
+				{
+					"command": "wt.todo.copyPath",
+					"when": "false"
+				},
+				{
+					"command": "wt.todo.copyRelativePath",
+					"when": "false"
+				},
+				{
+					"command": "wt.import.fileExplorer.importFile",
+					"when": "false"
+				},
+				{
+					"command": "wt.import.fileExplorer.removeResource",
+					"when": "false"
+				},
+				{
+					"command": "wt.import.fileExplorer.filter",
+					"when": "false"
+				},
+				{
+					"command": "wt.import.fileExplorer.defilter",
+					"when": "false"
+				},
+				{
+					"command": "wt.proximity.addFilteredWord",
+					"when": "false"
+				},
+				{
+					"command": "wt.proximity.removeFilteredWord",
+					"when": "false"
+				},
+				{
+					"command": "wt.wordWatcher.disableWatchedWord",
+					"when": "false"
+				},
+				{
+					"command": "wt.wordWatcher.enableWatchedWord",
+					"when": "false"
+				},
+				{
+					"command": "wt.wordWatcher.deleteWord",
+					"when": "false"
+				},
+				{
+					"command": "wt.wordWatcher.deleteUnwatchedWord",
+					"when": "false"
+				},
+				{
+					"command": "wt.wordWatcher.jumpNextInstanceOf",
+					"when": "false"
+				},
+				{
+					"command": "wt.wordWatcher.changeColor",
+					"when": "false"
+				},
+				{
+					"command": "wt.wordWatcher.changePattern",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.italisize",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.commasize",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.bold",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.strikethrough",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.underline",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.emdash",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.emdashes",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.word.forward",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.word.backward",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.fragment.forward",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.fragment.backward",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.sentence.forward",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.sentence.backward",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.paragraph.forward",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.paragraph.backward",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.word.forward.shift",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.word.backward.shift",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.fragment.forward.shift",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.fragment.backward.shift",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.sentence.forward.shift",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.sentence.backward.shift",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.paragraph.forward.shift",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.jump.paragraph.backward.shift",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.delete.forward",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.delete.backward",
+					"when": "false"
+				},
+				{
+					"command": "wt.workBible.addNote",
+					"when": "false"
+				},
+				{
+					"command": "wt.workBible.removeNote",
+					"when": "false"
+				},
+				{
+					"command": "wt.workBible.addAlias",
+					"when": "false"
+				},
+				{
+					"command": "wt.workBible.removeAlias",
+					"when": "false"
+				},
+				{
+					"command": "wt.workBible.addSubNote",
+					"when": "false"
+				},
+				{
+					"command": "wt.workBible.removeSubNote",
+					"when": "false"
+				},
+				{
+					"command": "wt.workBible.addAppearance",
+					"when": "false"
+				},
+				{
+					"command": "wt.workBible.search",
+					"when": "false"
+				},
+				{
+					"command": "wt.workBible.editNote",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.todo.commentSentence",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.todo.commentFragment",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.todo.commentParagraph",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.highlightSentence",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.highlightFragment",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.highlightParagraph",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.highlightExpand",
+					"when": "fals"
+				}
+			],
 			"view/title": [
 				{
 					"command": "wt.outline.newFragment",

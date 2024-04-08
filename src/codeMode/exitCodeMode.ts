@@ -4,8 +4,6 @@ import { assignNamesForOpenTabs } from '../tabLabels/tabLabels';
 import { OutlineView } from '../outline/outlineView';
 
 export async function exit (this: CoderModer): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
     if (!this.repoUris) return;
 
     for (const group of vscode.window.tabGroups.all) {

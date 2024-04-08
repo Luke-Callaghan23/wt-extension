@@ -115,6 +115,8 @@ export async function disable(this: TextStyles): Promise<void> {
         underlineDecoration,
         strikethroughDecoration,
     ].forEach(dec => {
-        vscode.window.activeTextEditor?.setDecorations(dec, []);
+        for (const editor of vscode.window.visibleTextEditors) {
+            editor.setDecorations(dec, []);
+        }
     })
 }
