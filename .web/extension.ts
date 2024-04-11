@@ -24,7 +24,7 @@ import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
 import { WorldNotes } from './worldNotes/worldNotes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
-import { assignNamesForOpenTabs } from './tabLabels/tabLabels';
+import { TabLabels, assignNamesForOpenTabs } from './tabLabels/tabLabels';
 
 
 
@@ -70,6 +70,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.colors','colors',  colorIntellisense],
 			['wt.textStyle','textStyle',  textStyles]
 		]);
+		
+		const tabLabels = new TabLabels(outline)
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
