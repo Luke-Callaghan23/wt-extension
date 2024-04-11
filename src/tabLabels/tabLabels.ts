@@ -18,18 +18,20 @@ export const assignNamesForOpenTabs = async (outline: OutlineView) => {
             if (!uri.fsPath.endsWith('.wt')) continue;
 
             const node = await outline.getTreeElementByUri(uri);
-            newPatterns[uri.fsPath] = (node as OutlineNode).data.ids.display
+
+            // Remove the extension root path from the pattern
+            let relativePath = uri.fsPath.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/')
+            if (relativePath.startsWith('/')) {
+                relativePath = relativePath.substring(1);
+            }
+
+            newPatterns[relativePath] = (node as OutlineNode).data.ids.display;
         }
     }
 
     const oldPatterns: { [index: string]: string} = await configuration.get('workbench.editor.customLabels.patterns') || {};
     const combinedPatterns = { ...oldPatterns, ...newPatterns };
-
-    const finalPatterns: { [index: string]: string } = {};
-    for (const [ name, val ] of  Object.entries(combinedPatterns)) {
-        finalPatterns[name.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/').substring(1)] = val;
-    }
-    return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);
+    return configuration.update('workbench.editor.customLabels.patterns', combinedPatterns, ConfigurationTarget.Workspace);
 }
 
 
@@ -39,15 +41,11 @@ export const clearNamesForAllTabs = async () => {
 
     
     const oldPatterns: { [index: string]: string } = await configuration.get('workbench.editor.customLabels.patterns') || {};
-    const newPatterns: { [index: string]: string } = {};
+    const filteredPatterns: { [index: string]: string } = {};
     for (const [ pattern, value ] of Object.entries(oldPatterns)) {
         if (pattern.endsWith('.wt')) continue;
-        newPatterns[pattern] = value;
+        filteredPatterns[pattern] = value;
     }
 
-    const finalPatterns: { [index: string]: string } = {};
-    for (const [ name, val ] of  Object.entries(newPatterns)) {
-        finalPatterns[name.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/').substring(1)] = val;
-    }
-    return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);
+    return configuration.update('workbench.editor.customLabels.patterns', filteredPatterns, ConfigurationTarget.Workspace);
 }
