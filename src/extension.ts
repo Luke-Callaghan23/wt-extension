@@ -30,7 +30,7 @@ import { CoderModer } from './codeMode/codeMode';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { WorkBible } from './workBible/workBible';
 import { RecyclingBinView } from './recyclingBin/recyclingBinView';
-import { assignNamesForOpenTabs } from './tabLabels/tabLabels';
+import { TabLabels, assignNamesForOpenTabs } from './tabLabels/tabLabels';
 import { activateSpeak } from './ttsDebugger/tts';
 import { activateMockDebug } from './ttsDebugger/debugger/activateMockDebug';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
@@ -67,6 +67,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 
+
 		new CoderModer(context);
 		// const worldNotes = new WorldNotes(workspace, context);
 		const workBible = new WorkBible(workspace, context);
@@ -85,6 +86,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.colors', 'colors', colorIntellisense],
 			['wt.textStyle', 'textStyle', textStyles],
 		]);
+
+		const tabLabels = new TabLabels(outline);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();

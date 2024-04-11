@@ -179,6 +179,10 @@
 		},
 		"commands": [
 			{
+				"command": "wt.tabLables.rename",
+				"title": "Writing Tool: Rename File"
+			},
+			{
 				"command": "wt.createWorkspace",
 				"title": "Create",
 				"enablement": "!wt.valid"
@@ -1049,6 +1053,11 @@
 					"command": "wt.workBible.addNote",
 					"when": "view == wt.workBible.tree",
 					"group": "navigation"
+				}
+			],
+			"editor/title/context": [
+				{
+					"command": "wt.tabLables.rename"
 				}
 			],
 			"view/item/context": [

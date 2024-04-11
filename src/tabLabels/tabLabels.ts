@@ -5,6 +5,25 @@ import { OutlineView } from '../outline/outlineView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import * as extension from './../extension';
 
+export class TabLabels {
+    constructor (private outlineView: OutlineView) {
+        this.registerCommands();
+    }
+
+    private registerCommands() {
+        vscode.commands.registerCommand("wt.tabLables.rename", async (uri: vscode.Uri) => {
+            const node = await this.outlineView.getTreeElementByUri(uri);
+            if (!node) {
+                vscode.window.showErrorMessage("[ERROR] Could not find selected item within Writing Tool's scope.  Please only use this command on .wt files within this project.");
+                return;
+            }
+
+            const outlineNode = node as OutlineNode;
+            this.outlineView.renameResource(outlineNode);
+        })
+    }
+}
+
 export const assignNamesForOpenTabs = async (outline: OutlineView) => {
     const configuration = workspace.getConfiguration();
     configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
