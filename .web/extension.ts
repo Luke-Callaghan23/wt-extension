@@ -19,12 +19,13 @@ import { SynonymsIntellisense } from './intellisense/intellisense';
 import { Spellcheck } from './intellisense/spellcheck/spellcheck';
 import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
 import { ColorGroups } from './intellisense/colors/colorGroups';
+import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
 import { WorldNotes } from './worldNotes/worldNotes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
-import { TabLabels, assignNamesForOpenTabs } from './tabLabels/tabLabels';
+import { TabLabels } from './tabLabels/tabLabels';
 
 
 
@@ -48,6 +49,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const wordWatcher = new WordWatcher(context, workspace);			// wt.wordWatcher
 		const proximity = new Proximity(context, workspace);
 		const textStyles = new TextStyles(context, workspace);			
+		const recycleBin = new RecyclingBinView(context, workspace);
 
 		const personalDictionary = new PersonalDictionary(context, workspace);
 		const synonymsIntellisense = new SynonymsIntellisense(context, workspace, personalDictionary, false);
@@ -71,7 +73,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.textStyle','textStyle',  textStyles]
 		]);
 		
-		const tabLabels = new TabLabels(outline)
+		const tabLabels = new TabLabels(outline, recycleBin);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
@@ -90,7 +92,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const tmpFolderPath = vscode.Uri.joinPath(rootPath, 'tmp');
 		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
 		
-		await assignNamesForOpenTabs(outline);
+		await TabLabels.assignNamesForOpenTabs();
 	}
 	catch (e) {
 		handleLoadFailure(e);

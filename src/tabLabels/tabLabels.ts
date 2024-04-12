@@ -68,7 +68,21 @@ export class TabLabels {
     
         const oldPatterns: { [index: string]: string} = await configuration.get('workbench.editor.customLabels.patterns') || {};
         const combinedPatterns = { ...oldPatterns, ...newPatterns };
-        return configuration.update('workbench.editor.customLabels.patterns', combinedPatterns, ConfigurationTarget.Workspace);
+
+        const finalPatterns: { [index: string]: string } = {};
+        const set = new Set<string>();
+        Object.entries(combinedPatterns).forEach(([ pattern, label ]) => {
+            let finalLabel = label;
+            let index = 0;
+            while (set.has(finalLabel)) {
+                finalLabel = `${label} [${index}]`
+                index++;
+            }
+            set.add(finalLabel);
+            finalPatterns[pattern] = finalLabel;
+        });
+
+        return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);
     }
     
     
