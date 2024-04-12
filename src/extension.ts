@@ -30,7 +30,7 @@ import { CoderModer } from './codeMode/codeMode';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { WorkBible } from './workBible/workBible';
 import { RecyclingBinView } from './recyclingBin/recyclingBinView';
-import { TabLabels, assignNamesForOpenTabs } from './tabLabels/tabLabels';
+import { TabLabels } from './tabLabels/tabLabels';
 import { activateSpeak } from './ttsDebugger/tts';
 import { activateMockDebug } from './ttsDebugger/debugger/activateMockDebug';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
@@ -87,7 +87,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.textStyle', 'textStyle', textStyles],
 		]);
 
-		const tabLabels = new TabLabels(outline);
+		const tabLabels = new TabLabels(outline, recycleBin);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
@@ -110,7 +110,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const tmpFolderPath = vscode.Uri.joinPath(rootPath, 'tmp');
 		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
 
-		await assignNamesForOpenTabs(outline);
+		await TabLabels.assignNamesForOpenTabs();
 		await activateSpeak(context);
 		activateDebug(context);
 		// oldDebugActivate(context);

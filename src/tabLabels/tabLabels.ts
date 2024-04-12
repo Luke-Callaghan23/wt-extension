@@ -2,69 +2,88 @@ import * as vscode from 'vscode';
 import { ConfigurationTarget, workspace } from 'vscode';
 import * as console from './../vsconsole'
 import { OutlineView } from '../outline/outlineView';
-import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import * as extension from './../extension';
+import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { Ids } from '../outlineProvider/fsNodes';
 
 export class TabLabels {
-    constructor (private outlineView: OutlineView) {
+    private static outlineView: OutlineView;
+    private static recylingBinView: RecyclingBinView;
+
+    constructor (outlineView: OutlineView, recyclingBinView: RecyclingBinView) {
+        TabLabels.outlineView = outlineView;
+        TabLabels.recylingBinView = recyclingBinView;
         this.registerCommands();
     }
 
     private registerCommands() {
-        vscode.commands.registerCommand("wt.tabLables.rename", async (uri: vscode.Uri) => {
-            const node = await this.outlineView.getTreeElementByUri(uri);
+        vscode.commands.registerCommand("wt.tabLabels.rename", async (uri: vscode.Uri) => {
+            const node = await TabLabels.outlineView.getTreeElementByUri(uri);
             if (!node) {
                 vscode.window.showErrorMessage("[ERROR] Could not find selected item within Writing Tool's scope.  Please only use this command on .wt files within this project.");
                 return;
             }
 
             const outlineNode = node as OutlineNode;
-            this.outlineView.renameResource(outlineNode);
+            TabLabels.outlineView.renameResource(outlineNode);
         })
     }
-}
 
-export const assignNamesForOpenTabs = async (outline: OutlineView) => {
-    const configuration = workspace.getConfiguration();
-    configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
-
-    const newPatterns: { [index: string]: string } = {};
-    for (const group of vscode.window.tabGroups.all) {
-        for (const tab of group.tabs) {
-            if (!(tab.input instanceof vscode.TabInputText)) continue;
-
-            const uri = tab.input.uri;
-            if (!uri.fsPath.endsWith('.wt')) continue;
-
-            const node = await outline.getTreeElementByUri(uri);
-
-            // Remove the extension root path from the pattern
-            let relativePath = uri.fsPath.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/')
-            if (relativePath.startsWith('/')) {
-                relativePath = relativePath.substring(1);
-            }
-
-            newPatterns[relativePath] = (node as OutlineNode).data.ids.display;
-        }
-    }
-
-    const oldPatterns: { [index: string]: string} = await configuration.get('workbench.editor.customLabels.patterns') || {};
-    const combinedPatterns = { ...oldPatterns, ...newPatterns };
-    return configuration.update('workbench.editor.customLabels.patterns', combinedPatterns, ConfigurationTarget.Workspace);
-}
-
-
-export const clearNamesForAllTabs = async () => {
-    const configuration = workspace.getConfiguration();
-    configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
-
+    static async assignNamesForOpenTabs () {
+        const configuration = workspace.getConfiguration();
+        configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
     
-    const oldPatterns: { [index: string]: string } = await configuration.get('workbench.editor.customLabels.patterns') || {};
-    const filteredPatterns: { [index: string]: string } = {};
-    for (const [ pattern, value ] of Object.entries(oldPatterns)) {
-        if (pattern.endsWith('.wt')) continue;
-        filteredPatterns[pattern] = value;
-    }
+        const newPatterns: { [index: string]: string } = {};
+        for (const group of vscode.window.tabGroups.all) {
+            for (const tab of group.tabs) {
+                if (!(tab.input instanceof vscode.TabInputText)) continue;
+    
+                const uri = tab.input.uri;
+                if (!uri.fsPath.endsWith('.wt')) continue;
+    
+                let foundInRecycling = false;
 
-    return configuration.update('workbench.editor.customLabels.patterns', filteredPatterns, ConfigurationTarget.Workspace);
+                // First look for the node in the outline view
+                let node: { data: { ids: Ids } } | null = await TabLabels.outlineView.getTreeElementByUri(uri);
+                if (!node) {
+                    // Then look in the recycling bin view
+                    node = await TabLabels.recylingBinView.getTreeElementByUri(uri);
+                    if (!node) continue;
+                    foundInRecycling = true;
+                }
+    
+                // Remove the extension root path from the pattern
+                let relativePath = uri.fsPath.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/')
+                if (relativePath.startsWith('/')) {
+                    relativePath = relativePath.substring(1);
+                }
+    
+                // If the node was found in the recycling bin, mark it as deleted in the label so the user knows
+                newPatterns[relativePath] = foundInRecycling
+                    ? `(deleted) ${node.data.ids.display}`
+                    : node.data.ids.display;
+            }
+        }
+    
+        const oldPatterns: { [index: string]: string} = await configuration.get('workbench.editor.customLabels.patterns') || {};
+        const combinedPatterns = { ...oldPatterns, ...newPatterns };
+        return configuration.update('workbench.editor.customLabels.patterns', combinedPatterns, ConfigurationTarget.Workspace);
+    }
+    
+    
+    static async clearNamesForAllTabs () {
+        const configuration = workspace.getConfiguration();
+        configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
+    
+        
+        const oldPatterns: { [index: string]: string } = await configuration.get('workbench.editor.customLabels.patterns') || {};
+        const filteredPatterns: { [index: string]: string } = {};
+        for (const [ pattern, value ] of Object.entries(oldPatterns)) {
+            if (pattern.endsWith('.wt')) continue;
+            filteredPatterns[pattern] = value;
+        }
+    
+        return configuration.update('workbench.editor.customLabels.patterns', filteredPatterns, ConfigurationTarget.Workspace);
+    }
 }
