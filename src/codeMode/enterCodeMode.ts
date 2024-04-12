@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { CoderModer } from './codeMode';
 import { Buff } from '../Buffer/bufferSource';
 import { isText } from 'istextorbinary';
-import { clearNamesForAllTabs } from '../tabLabels/tabLabels';
+import { TabLabels } from '../tabLabels/tabLabels';
 
 export async function enter (this: CoderModer): Promise<void> {
 
@@ -39,7 +39,7 @@ export async function enter (this: CoderModer): Promise<void> {
 
     // Once all the document promises have been resolved, we can clear away the names of the .wt documents
     Promise.all(shownDocumentPromises).then(() => {
-        setTimeout(clearNamesForAllTabs, 0);
+        setTimeout(TabLabels.clearNamesForAllTabs, 0);
     })
 }
 

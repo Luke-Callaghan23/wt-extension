@@ -5,7 +5,7 @@ import { OutlineView } from './outline/outlineView';
 import * as console from './vsconsole';
 import * as extension from './extension';
 import { Packageable } from './packageable';
-import { assignNamesForOpenTabs } from './tabLabels/tabLabels';
+import { TabLabels } from './tabLabels/tabLabels';
 
 export class FileAccessManager implements Packageable {
 
@@ -60,7 +60,7 @@ export class FileAccessManager implements Packageable {
         // Also update the latest file access
         FileAccessManager.lastAccessedFragment = openedUri;
 
-        assignNamesForOpenTabs(outlineView);
+        TabLabels.assignNamesForOpenTabs();
     }
 
     static lastAccessedFragmentForUri (targetUri: vscode.Uri): vscode.Uri | undefined {
@@ -90,6 +90,14 @@ export class FileAccessManager implements Packageable {
             }
             FileAccessManager.savePosition(editor);
         });
+        // vscode.workspace.onDidOpenTextDocument((doc) => {
+        //     if (doc) {
+        //         FileAccessManager.documentOpened(doc.uri);
+        //     }
+        //     if (vscode.window.activeTextEditor) {
+        //         FileAccessManager.savePosition(vscode.window.activeTextEditor);
+        //     }
+        // })
     }
 
     static async initialize () {
@@ -106,7 +114,7 @@ export class FileAccessManager implements Packageable {
         for (const tab of allOpenedTabs) {
             // If `tab.input` is not formatted as expected, then skip the uri
             // Expected format is `{ uri: vscode.Uri }`
-            const tabUri = (tab.input as { uri?: vscode.Uri }).uri;
+            const tabUri = (tab.input as { uri?: vscode.Uri })?.uri;
             if (!tabUri) continue;
             
             // If the uri cannot be found inside of the outline view's structure,

@@ -6,11 +6,11 @@ import * as console from '../../vsconsole';
 import { OutlineView } from '../outlineView';
 import { OutlineNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
-import { assignNamesForOpenTabs } from '../../tabLabels/tabLabels';
+import { TabLabels } from '../../tabLabels/tabLabels';
 
-export async function renameResource (this: OutlineView) {
+export async function renameResource (this: OutlineView, overrideNode?: OutlineNode) {
 
-    const resource: OutlineNode = this.view.selection[0];
+    const resource: OutlineNode = overrideNode || this.view.selection[0];
     const relativePath = resource.data.ids.relativePath;
     const fileName = resource.data.ids.fileName;
     const displayName = resource.data.ids.display;
@@ -67,5 +67,5 @@ export async function renameResource (this: OutlineView) {
 
     vscode.window.showInformationMessage(`Successfully renamed '${oldName}' to '${newName}'`);
     this.refresh(false, [resource]);
-    assignNamesForOpenTabs(this);
+    TabLabels.assignNamesForOpenTabs();
 }

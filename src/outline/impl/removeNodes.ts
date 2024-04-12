@@ -6,6 +6,7 @@ import * as console from '../../vsconsole';
 import { Buff } from "../../Buffer/bufferSource";
 import { writeDotConfig } from "../../help";
 import { RecycleLog } from "../../recyclingBin/recyclingBinView";
+import { TabLabels } from "../../tabLabels/tabLabels";
 
 export function getUsableDeleteFileName (type: ResourceType, wt?: boolean) {
     const useWt = wt !== undefined && wt === true;
@@ -212,4 +213,9 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
     // Refresh the whole tree as it's hard to determine what the deepest root node is
     this.refresh(false, containers);
     vscode.commands.executeCommand("wt.recyclingBin.refresh");
+
+    setTimeout(() => {
+        // Reassign names in case if any of the opened fragments have just been deleted
+        TabLabels.assignNamesForOpenTabs();
+    }, 1000);  
 }
