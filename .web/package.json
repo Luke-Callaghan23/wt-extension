@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.91",
+	"version": "0.0.92",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -22,6 +22,46 @@
 	],
 	"browser": "./dist/web/extension.js",
 	"contributes": {
+		"configuration": {
+			"title": "Writing Tool Configuration",
+			"properties": {
+				"wt.timedSearches.todo": {
+					"description": "Enable automatic TODO querying",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.wordWatcher": {
+					"description": "Enable automatic querying/highlighting for watched words",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.spellcheck": {
+					"description": "Enable automatic spellcheck",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.very": {
+					"title": "Enable automatic checks for instances of the word 'very'",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.colors": {
+					"description": "Enable automatic checks and highlighting for 'color' words",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.textStyle": {
+					"description": "Enable automatic text styling",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.workBible": {
+					"description": "Enable automatic querying for terms in your notes",
+					"type": "boolean",
+					"default": true
+				}
+			}
+		},
 		"viewsWelcome": [
 			{
 				"view": "wt.outline",
