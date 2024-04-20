@@ -1,4 +1,3 @@
-import * as say from 'say';
 import * as vscode from 'vscode';
 import * as console from '../../vsconsole';
 import { WindowsSpeak, WordMarker } from './windows';
