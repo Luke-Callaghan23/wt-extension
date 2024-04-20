@@ -32,9 +32,7 @@ import { WorkBible } from './workBible/workBible';
 import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { TabLabels } from './tabLabels/tabLabels';
 import { activateSpeak } from './ttsDebugger/tts/tts';
-import { activateMockDebug } from './ttsDebugger/debugger/activateMockDebug';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
-import { oldDebugActivate } from './ttsDebugger/src/oldDebugActivate';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -111,9 +109,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
 
 		await TabLabels.assignNamesForOpenTabs();
-		await activateSpeak(context);
+		activateSpeak(context);
 		activateDebug(context);
-		// oldDebugActivate(context);
 	}
 	catch (e) {
 		handleLoadFailure(e);

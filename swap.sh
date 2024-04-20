@@ -61,11 +61,11 @@ elif
     test -f .local/importExport/exportWorkspace.ts &&
     test -f .local/importExport/importWorkspace.ts &&
     test -f .local/gitTransactions.ts &&
-    test -f .local/ttsDebugger/debugger/activateMockDebug.ts && 
+    test -f .local/ttsDebugger/debugger/activateTTSDebug.ts && 
     test -f .local/ttsDebugger/debugger/debugAdapter.ts
     test -f .local/ttsDebugger/debugger/debugExtention.ts
-    test -f .local/ttsDebugger/debugger/mockDebug.ts
-    test -f .local/ttsDebugger/debugger/mockRuntime.ts
+    test -f .local/ttsDebugger/debugger/ttsDebug.ts
+    test -f .local/ttsDebugger/debugger/ttsRuntime.ts
     test -f .local/ttsDebugger/debugger/web-extension.ts
     test -f .local/ttsDebugger/debugSession.ts
     test -f .local/ttsDebugger/tts.ts

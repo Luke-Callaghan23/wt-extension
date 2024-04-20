@@ -2,12 +2,12 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 /*
- * mockDebug.ts implements the Debug Adapter that "adapts" or translates the Debug Adapter Protocol (DAP) used by the client (e.g. VS Code)
- * into requests and events of the real "execution engine" or "debugger" (here: class MockRuntime).
+ * ttsDebug.ts implements the Debug Adapter that "adapts" or translates the Debug Adapter Protocol (DAP) used by the client (e.g. VS Code)
+ * into requests and events of the real "execution engine" or "debugger" (here: class TtsRuntime).
  * When implementing your own debugger extension for VS Code, most of the work will go into the Debug Adapter.
  * Since the Debug Adapter is independent from VS Code, it can be used in any client (IDE) supporting the Debug Adapter Protocol.
  *
- * The most important class of the Debug Adapter is the MockDebugSession which implements many DAP requests by talking to the MockRuntime.
+ * The most important class of the Debug Adapter is the TtsDebugSession which implements many DAP requests by talking to the TtsRuntime.
  */
 
 import {
@@ -20,19 +20,19 @@ import {
 } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { basename } from 'path-browserify';
-import { MockRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout, IRuntimeVariableType } from './mockRuntime';
+import { TTSRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout, IRuntimeVariableType } from './ttsRuntime';
 
 //@ts-ignore
 import { Subject } from 'await-notify';
 import { stopSpeaking } from '../tts/tts';
-import * as console from './../../vsconsole';
+import * as console from '../../vsconsole';
 import * as vscode from 'vscode';
 import { threadId } from 'worker_threads';
 
 /**
- * This interface describes the mock-debug specific launch attributes
+ * This interface describes the tts-debug specific launch attributes
  * (which are not part of the Debug Adapter Protocol).
- * The schema for these attributes lives in the package.json of the mock-debug extension.
+ * The schema for these attributes lives in the package.json of the tts-debug extension.
  * The interface should always match this schema.
  */
 interface ILaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
@@ -51,13 +51,13 @@ interface ILaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 interface IAttachRequestArguments extends ILaunchRequestArguments { }
 
 
-export class MockDebugSession extends LoggingDebugSession {
+export class TTSDebugSession extends LoggingDebugSession {
 
     // we don't support multiple threads, so we can use a hardcoded ID for the default thread
     private static threadID = 1;
 
-    // a Mock runtime (or debugger)
-    private _runtime: MockRuntime;
+    // a Tts runtime (or debugger)
+    private _runtime: TTSRuntime;
 
     private _variableHandles = new Handles<'locals' | 'globals' | RuntimeVariable>();
 
@@ -80,26 +80,26 @@ export class MockDebugSession extends LoggingDebugSession {
      * We configure the default implementation of a debug adapter here.
      */
     public constructor(fileAccessor: FileAccessor) {
-        super("mock-debug.txt");
+        super("tts-debug.txt");
 
         // this debugger uses zero-based lines and columns
         this.setDebuggerLinesStartAt1(false);
         this.setDebuggerColumnsStartAt1(false);
 
-        this._runtime = new MockRuntime(fileAccessor);
+        this._runtime = new TTSRuntime(fileAccessor);
 
         // setup event handlers
         this._runtime.on('stopOnEntry', () => {
-            this.sendEvent(new StoppedEvent('entry', MockDebugSession.threadID));
+            this.sendEvent(new StoppedEvent('entry', TTSDebugSession.threadID));
         });
         this._runtime.on('stopOnStep', () => {
-            this.sendEvent(new StoppedEvent('step', MockDebugSession.threadID));
+            this.sendEvent(new StoppedEvent('step', TTSDebugSession.threadID));
         });
         this._runtime.on('stopOnBreakpoint', () => {
-            this.sendEvent(new StoppedEvent('breakpoint', MockDebugSession.threadID));
+            this.sendEvent(new StoppedEvent('breakpoint', TTSDebugSession.threadID));
         });
         this._runtime.on('stopOnInstructionBreakpoint', () => {
-            this.sendEvent(new StoppedEvent('instruction breakpoint', MockDebugSession.threadID));
+            this.sendEvent(new StoppedEvent('instruction breakpoint', TTSDebugSession.threadID));
         });
         this._runtime.on('breakpointValidated', (bp: IRuntimeBreakpoint) => {
             this.sendEvent(new BreakpointEvent('changed', { verified: bp.verified, id: bp.id } as DebugProtocol.Breakpoint));
@@ -126,7 +126,7 @@ export class MockDebugSession extends LoggingDebugSession {
             this.sendEvent(e);
         });
         this._runtime.on("stopped", () => {
-            this.sendEvent(new StoppedEvent('breakpoint', MockDebugSession.threadID));
+            this.sendEvent(new StoppedEvent('breakpoint', TTSDebugSession.threadID));
         });
         this._runtime.on('end', () => {
             stopSpeaking();
@@ -368,7 +368,7 @@ export class MockDebugSession extends LoggingDebugSession {
         // runtime supports no threads so just return a default thread.
         response.body = {
             threads: [
-                new Thread(MockDebugSession.threadID, "Speaking"),
+                new Thread(TTSDebugSession.threadID, "Speaking"),
             ]
         };
         this.sendResponse(response);
@@ -408,7 +408,7 @@ export class MockDebugSession extends LoggingDebugSession {
     
 
     private createSource(filePath: string): Source {
-        return new Source(basename(filePath), this.convertDebuggerPathToClient(filePath), undefined, undefined, 'mock-adapter-data');
+        return new Source(basename(filePath), this.convertDebuggerPathToClient(filePath), undefined, undefined, 'tts-adapter-data');
     }
 }
 
