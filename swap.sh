@@ -68,7 +68,9 @@ elif
     test -f .local/ttsDebugger/debugger/ttsRuntime.ts
     test -f .local/ttsDebugger/debugger/web-extension.ts
     test -f .local/ttsDebugger/debugSession.ts
-    test -f .local/ttsDebugger/tts.ts
+    test -f .local/ttsDebugger/tts/tts.ts
+    test -f .local/ttsDebugger/tts/windows.ts
+    test -f .local/ttsDebugger/tts/windowsCommand.ts
     test -f .local/workspaceClass.ts;
 then
     mv src/Buffer/bufferSource.ts .web/bufferSource.ts
