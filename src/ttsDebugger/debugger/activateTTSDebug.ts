@@ -54,13 +54,6 @@ export function activateTTSDebug(context: vscode.ExtensionContext, factory?: vsc
 		})
 	);
 
-	context.subscriptions.push(vscode.commands.registerCommand('extension.tts-debug.getProgramName', config => {
-		return vscode.window.showInputBox({
-			placeHolder: "Please enter the name of a markdown file in the workspace folder",
-			value: "readme.md"
-		});
-	}));
-
 	// register a configuration provider for 'tts' debug type
 	const provider = new TtsConfigurationProvider();
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('tts', provider));
@@ -69,18 +62,6 @@ export function activateTTSDebug(context: vscode.ExtensionContext, factory?: vsc
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('tts', {
 		provideDebugConfigurations(folder: WorkspaceFolder | undefined): ProviderResult<DebugConfiguration[]> {
 			return [
-				{
-					name: "Dynamic Launch",
-					request: "launch",
-					type: "tts",
-					program: "${file}"
-				},
-				{
-					name: "Another Dynamic Launch",
-					request: "launch",
-					type: "tts",
-					program: "${file}"
-				},
 				{
 					name: "Tts Launch",
 					request: "launch",
