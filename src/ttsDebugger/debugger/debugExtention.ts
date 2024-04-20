@@ -33,6 +33,12 @@ const runMode: 'external' | 'server' | 'namedPipeServer' | 'inline' = 'inline';
 
 export function activateDebug(context: vscode.ExtensionContext) {
 
+	
+	const configuration = vscode.workspace.getConfiguration();
+	const setting: { [index: string]: string } = configuration.get('workbench.colorCustomizations') || {};
+	setting["editor.stackFrameHighlightBackground"] = "#ffff8d33";
+	configuration.update('workbench.colorCustomizations', setting, vscode.ConfigurationTarget.Workspace);
+
 	// debug adapters can be run in different ways by using a vscode.DebugAdapterDescriptorFactory:
 	switch (runMode) {
 		case 'server':

@@ -31,7 +31,7 @@ import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { WorkBible } from './workBible/workBible';
 import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { TabLabels } from './tabLabels/tabLabels';
-import { activateSpeak } from './ttsDebugger/tts';
+import { activateSpeak } from './ttsDebugger/tts/tts';
 import { activateMockDebug } from './ttsDebugger/debugger/activateMockDebug';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
 import { oldDebugActivate } from './ttsDebugger/src/oldDebugActivate';

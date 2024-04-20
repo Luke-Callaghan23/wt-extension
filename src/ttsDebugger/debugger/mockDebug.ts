@@ -24,7 +24,7 @@ import { MockRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout
 
 //@ts-ignore
 import { Subject } from 'await-notify';
-import { stopSpeaking } from '../tts';
+import { stopSpeaking } from '../tts/tts';
 import * as console from './../../vsconsole';
 import * as vscode from 'vscode';
 import { threadId } from 'worker_threads';
@@ -124,6 +124,9 @@ export class MockDebugSession extends LoggingDebugSession {
             e.body.line = this.convertDebuggerLineToClient(line);
             e.body.column = this.convertDebuggerColumnToClient(column);
             this.sendEvent(e);
+        });
+        this._runtime.on("stopped", () => {
+            this.sendEvent(new StoppedEvent('breakpoint', MockDebugSession.threadID));
         });
         this._runtime.on('end', () => {
             stopSpeaking();
@@ -336,7 +339,7 @@ export class MockDebugSession extends LoggingDebugSession {
         this._cancelledProgressId = undefined;
     }
 
-    protected cancelRequest(response: DebugProtocol.CancelResponse, args: DebugProtocol.CancelArguments) {
+    protected cancelRequest (response: DebugProtocol.CancelResponse, args: DebugProtocol.CancelArguments) {
         if (args.requestId) {
             this._cancellationTokens.set(args.requestId, true);
         }
@@ -345,7 +348,7 @@ export class MockDebugSession extends LoggingDebugSession {
         }
     }
 
-    protected customRequest(command: string, response: DebugProtocol.Response, args: any) {
+    protected customRequest (command: string, response: DebugProtocol.Response, args: any) {
         if (command === 'toggleFormatting') {
             this._valuesInHex = ! this._valuesInHex;
             if (this._useInvalidatedEvent) {
@@ -358,10 +361,10 @@ export class MockDebugSession extends LoggingDebugSession {
         }
     }
 
-    protected setFunctionBreakPointsRequest(response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request): void {}
-    protected async setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments): Promise<void> {}
-    protected exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments) {}
-    protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
+    protected setFunctionBreakPointsRequest (response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request): void {}
+    protected async setExceptionBreakPointsRequest (response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments): Promise<void> {}
+    protected exceptionInfoRequest (response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments) {}
+    protected threadsRequest (response: DebugProtocol.ThreadsResponse): void {
         // runtime supports no threads so just return a default thread.
         response.body = {
             threads: [
@@ -371,7 +374,8 @@ export class MockDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
 	}
 
-    protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
+    private idx = 0;
+    protected stackTraceRequest (response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
 		const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
 		const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
 		const endFrame = startFrame + maxLevels;
@@ -381,6 +385,16 @@ export class MockDebugSession extends LoggingDebugSession {
 			stk.index, stk.name, 
 			this.createSource(stk.file), this.convertDebuggerLineToClient(stk.line)
 		);
+
+        if (this._runtime.wordMarkerStream && this._runtime.wordMarkerStream.length > 0) {
+            const latest = this._runtime.wordMarkerStream[this._runtime.wordMarkerStream.length - 1];
+            const start = latest.characterPosition;
+            const end = latest.characterPosition + latest.spokenText.length;
+
+            stackFrame.column = start + 1;
+            stackFrame.endColumn = end + 1;
+            stackFrame.name = latest.spokenText;
+        }
 
 		response.body = {
 			stackFrames: [ stackFrame ],

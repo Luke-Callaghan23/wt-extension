@@ -1833,14 +1833,6 @@
 				]
 			}
 		],
-		"themes": [
-			{
-				"id": "wtNoteTheme",
-				"label": "WT Note",
-				"uiTheme": "vs-dark",
-				"path": "./themes/wtNoteTheme.json"
-			}
-		],
 		"debuggers": [
 			{
 				"type": "mock",

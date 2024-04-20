@@ -3,9 +3,10 @@
  *--------------------------------------------------------*/
 
 import { EventEmitter } from 'events';
-import { speakText } from '../tts';
-import * as console from './../../vsconsole';
+import { speakText } from '../tts/tts';
+// import * as console from './../../vsconsole';
 import * as vscode from 'vscode'
+import { WordMarker } from '../tts/windows';
 
 export interface FileAccessor {
 	isWindows: boolean;
@@ -145,6 +146,7 @@ export class MockRuntime extends EventEmitter {
 	private namedException: string | undefined;
 	private otherExceptions = false;
 
+	public wordMarkerStream: WordMarker[] | null = null;
 
 	constructor(private fileAccessor: FileAccessor) {
 		super();
@@ -196,9 +198,9 @@ export class MockRuntime extends EventEmitter {
 	 */
 	private continueHitMap: { [index: number]: boolean } = {};
 	private breakNext = false;
-	public async continue(reverse: boolean) {
+	public async continue (reverse: boolean) {
 		this.continueHitMap = {};
-		while (this._currentLine < this.sourceLines.length || this.breakNext) {
+		while ((this._currentLine < this.sourceLines.length || this.breakNext) && !this.closed) {
 			console.log(`HIT: ${this.currentLine}`);
 			if (this.continueHitMap[this._currentLine]) {
 				this._currentLine++;
@@ -208,21 +210,23 @@ export class MockRuntime extends EventEmitter {
 			if (this._currentLine === this.sourceFile.length - 1) {
 				this.breakNext = true;
 			}
-			await vscode.commands.executeCommand("workbench.action.debug.stepOver");
+			const exec = await this.executeLine(this.currentLine, reverse);
+			if (this.updateCurrentLine(reverse)) {
+				break;
+			}
 			if (this.findNextStatement(reverse)) {
 				break;
 			}
 		}
 		this.breakNext = false;
+		this.closed = false;
 	}
 
 	/**
 	 * Step to the next/previous non empty line.
 	 */
-	public async step(reverse: boolean) {
+	public async step (reverse: boolean) {
 		// await new Promise((resolve) => setTimeout(resolve, 1000));
-
-
 		if (!(await this.executeLine(this.currentLine, reverse))) {
 			if (!this.updateCurrentLine(reverse)) {
 				this.findNextStatement(reverse, 'stopOnStep');
@@ -230,7 +234,7 @@ export class MockRuntime extends EventEmitter {
 		}
 	}
 
-	private updateCurrentLine(reverse: boolean): boolean {
+	private updateCurrentLine (reverse: boolean): boolean {
 		if (reverse) {
 			if (this.currentLine > 0) {
 				this.currentLine--;
@@ -411,7 +415,15 @@ export class MockRuntime extends EventEmitter {
 		const line = this.getLine(ln);
 		if (line === '') return false;
 
-		await speakText(line);
+		this.wordMarkerStream = [];
+		await speakText(line, (wordMarker) => {
+			console.log(wordMarker);
+			this.sendEvent('stopped', {
+				reason: 'breakpoint',
+				threadId: 1
+			});
+			this.wordMarkerStream?.push(wordMarker);
+		});
 
 		// nothing interesting found -> continue
 		return false;

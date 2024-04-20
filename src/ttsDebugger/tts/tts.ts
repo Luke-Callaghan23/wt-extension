@@ -1,16 +1,19 @@
 import * as say from 'say';
 import * as vscode from 'vscode';
-import * as console from '../vsconsole';
+import * as console from '../../vsconsole';
+import { WindowsSpeak, WordMarker } from './windows';
 
-const getVoice = (): string | undefined =>
-    vscode.workspace.getConfiguration('wt.speech').get<string>('voice');
+const windowsSpeak = new WindowsSpeak();
 
-const getSpeed = (): number | undefined =>
-    vscode.workspace.getConfiguration('wt.speech').get<number>('speed');
+const getVoice = (): string | null =>
+    vscode.workspace.getConfiguration('wt.speech').get<string>('voice') || null;
+
+const getSpeed = (): number | null =>
+    vscode.workspace.getConfiguration('wt.speech').get<number>('speed') || null;
 
 
-export const stopSpeaking = () => {
-    say.stop();
+export const stopSpeaking = (): Promise<void> => {
+    return windowsSpeak.stop();
 }
 
 const substitutions: { [index: string]: string} = {
@@ -27,21 +30,12 @@ const cleanText = (text: string): string => {
     return text;
 }
 
-export const speakText = async (text: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        text = cleanText(text);
-        if (text.length <= 0) {
-            resolve();
-            return;
-        }
-        say.speak(text, getVoice(), getSpeed() || 1.05, (err) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            resolve();
-        });
-    });
+export const speakText = async (text: string, onWord?: (wordMarker: WordMarker)=>void): Promise<void> => {
+    text = cleanText(text);
+    if (text.length <= 0) {
+        return;
+    }
+    await windowsSpeak.speak(text, getVoice(), getSpeed() || 1.05, onWord);
 };
 
 const speakCurrentSelection = (editor: vscode.TextEditor) => {
