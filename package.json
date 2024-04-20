@@ -35,16 +35,6 @@
 					"default": 1,
 					"description": "Speech rate speed multiplier."
 				},
-				"wt.speech.substitutions": {
-					"type": "object",
-					"additionalProperties": {
-						"type": "string"
-					},
-					"default": {
-						"_": " "
-					},
-					"description": "A dictionary of characters to replace with other characters before speaking. This can help with characters that text-to-speech reads in an unexpected way."
-				},
 				"wt.timedSearches.todo": {
 					"description": "Enable automatic TODO querying",
 					"type": "boolean",

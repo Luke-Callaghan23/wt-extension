@@ -3,22 +3,24 @@ import * as vscode from 'vscode';
 import * as console from '../vsconsole';
 
 const getVoice = (): string | undefined =>
-    vscode.workspace.getConfiguration('speech').get<string>('voice');
+    vscode.workspace.getConfiguration('wt.speech').get<string>('voice');
 
 const getSpeed = (): number | undefined =>
-    vscode.workspace.getConfiguration('speech').get<number>('speed');
-
-const getSubstitutions = (): { [key: string]: string } =>
-    vscode.workspace.getConfiguration('speech').get<{ [key: string]: string }>('substitutions') || {};
+    vscode.workspace.getConfiguration('wt.speech').get<number>('speed');
 
 
 export const stopSpeaking = () => {
     say.stop();
 }
 
+const substitutions: { [index: string]: string} = {
+    '_': ' ',
+    '--': ' '
+};
+
 const cleanText = (text: string): string => {
     text = text.trim();
-    for (let [pattern, replacement] of Object.entries(getSubstitutions())) {
+    for (let [pattern, replacement] of Object.entries(substitutions)) {
         //@ts-ignore
         text = text.replaceAll(pattern, replacement);
     }
@@ -32,7 +34,7 @@ export const speakText = async (text: string): Promise<void> => {
             resolve();
             return;
         }
-        say.speak(text, getVoice(), 1.05, (err) => {
+        say.speak(text, getVoice(), getSpeed() || 1.05, (err) => {
             if (err) {
                 reject(err);
                 return;
