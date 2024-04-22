@@ -14,6 +14,7 @@ export const allowedMoves: { [index: string]: ResourceType[] } = {
         'chapter',
         'container',
         'snip',
+        'fragment',
     ],
     'root': [],
     'container': [

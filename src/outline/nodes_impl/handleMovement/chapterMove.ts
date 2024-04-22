@@ -34,8 +34,10 @@ export async function chapterMove (
             };
         }
         else if (grandparentTypeId === 'chapter') {
-            destinationParent = (newParent.data as ChapterNode).snips;
-            destinationContents = ((newParent.data as ChapterNode).snips.data as ContainerNode).contents;
+            const newGrandparentUri = newParent.data.ids.parentUri;
+            const newGrandparent: OutlineNode = await outlineView.getTreeElementByUri(newGrandparentUri);
+            destinationParent = (newGrandparent.data as ChapterNode).snips;
+            destinationContents = ((newGrandparent.data as ChapterNode).snips.data as ContainerNode).contents;
         }
         else throw `Unexpected parent-parent type: ${grandparentTypeId}`;
     }
@@ -51,6 +53,19 @@ export async function chapterMove (
     else if (newParentType === 'snip') {
         destinationParent = newParent;
         destinationContents = (newParent.data as SnipNode).contents;
+    }
+    else if (newParentType === 'fragment') {
+        const newGrandparentUri = newParent.data.ids.parentUri;
+        const newGrandparent: OutlineNode = await outlineView.getTreeElementByUri(newGrandparentUri);
+        if (newParent.data.ids.parentTypeId === 'chapter') {
+            destinationParent = (newGrandparent.data as ChapterNode).snips;
+            destinationContents = ((newGrandparent.data as ChapterNode).snips.data as ContainerNode).contents;
+        }
+        else if (newParent.data.ids.parentTypeId === 'snip') {
+            destinationParent = newGrandparent;
+            destinationContents = (newGrandparent.data as SnipNode).contents;
+        }
+        else throw `Unexpected parent parent type: ${newParent.data.ids.parentTypeId}`;
     }
     else throw `Unexpected parent type: ${newParentType}`;
 
