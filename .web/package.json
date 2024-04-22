@@ -137,6 +137,10 @@
 		},
 		"commands": [
 			{
+				"command": "wt.tabLabels.renameActiveTab",
+				"title": "Writing Tool: Rename Active Tab"
+			},
+			{
 				"command": "wt.tabLabels.rename",
 				"title": "Writing Tool: Rename File"
 			},
@@ -645,6 +649,10 @@
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "wt.tabLabels.rename",
+					"when": "false,"
+				},
 				{
 					"command": "wt.createWorkspace",
 					"when": "false"

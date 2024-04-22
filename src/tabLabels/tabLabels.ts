@@ -18,8 +18,14 @@ export class TabLabels {
     }
 
     private registerCommands() {
-        vscode.commands.registerCommand("wt.tabLabels.rename", async (uri: vscode.Uri) => {
-            const node = await TabLabels.outlineView.getTreeElementByUri(uri);
+
+        const renameFromUri = async (uri: vscode.Uri) => {
+            // Look in outline view
+            let node: { data: { ids: Ids } } | null = await TabLabels.outlineView.getTreeElementByUri(uri);
+            // Look in recycling bin view
+            if (!node) node = await TabLabels.recylingBinView.getTreeElementByUri(uri);
+
+            // If not found in either give an error message
             if (!node) {
                 vscode.window.showErrorMessage("[ERROR] Could not find selected item within Writing Tool's scope.  Please only use this command on .wt files within this project.");
                 return;
@@ -27,7 +33,18 @@ export class TabLabels {
 
             const outlineNode = node as OutlineNode;
             TabLabels.outlineView.renameResource(outlineNode);
-        })
+        }
+
+        vscode.commands.registerCommand("wt.tabLabels.rename", async (uri: vscode.Uri) => {            
+            return renameFromUri(uri);
+        });
+        vscode.commands.registerCommand("wt.tabLabels.renameActiveTab", async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) return;
+
+            const uri = editor.document.uri;
+            return renameFromUri(uri);
+        });
     }
 
     static async assignNamesForOpenTabs () {
