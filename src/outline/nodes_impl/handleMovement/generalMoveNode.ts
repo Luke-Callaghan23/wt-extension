@@ -6,12 +6,13 @@ import { ChapterNode, ContainerNode, OutlineNode, ResourceType, RootNode, SnipNo
 import { OutlineView } from '../../outlineView';
 import * as extension from '../../../extension';
 import { Workspace } from '../../../workspace/workspaceClass';
-import { MoveNodeResult, allowedMoves } from './common';
+import { DestinationResult, MoveNodeResult, allowedMoves } from './common';
 import { handleInternalContainerReorder } from './handleInternalReorder';
 import { determineDestinationContainer } from './determineDestinationContainer';
 import { handleContainerSwap } from './containerSwap';
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
-import { handleContainerSourceMove } from './sourceContainerMove';
+import { containerMove } from './containerMove';
+import { chapterMove } from './chapterMove';
 
 
 
@@ -36,12 +37,27 @@ export async function generalMoveNode (
         return { moveOffset: -1, effectedContainers: [], createdDestination: null };
     }
 
+    let chapterDestination: DestinationResult | undefined;
     if (moverType === 'container') {
-        return handleContainerSourceMove(operation, this, recycleView, outlineView, newParent, moveOffset);
+        return containerMove(operation, this, recycleView, outlineView, newParent, moveOffset);
+    }
+    else if (moverType === 'chapter') {
+        const chapterMoveResult = await chapterMove(
+            operation, this, 
+            recycleView, outlineView,
+            newParentType, newParentNode, 
+            moveOffset
+        );
+        if (chapterMoveResult.kind === 'move') {
+            return chapterMoveResult.result;
+        }
+        else {
+            chapterDestination = chapterMoveResult.result;
+        }
     }
     
 
-    const destinationResult = await determineDestinationContainer(
+    const destinationResult = chapterDestination || await determineDestinationContainer(
         moverType, newParentType, 
         outlineView, newParent, 
         newParentNode, newParentUri, 

@@ -2,11 +2,9 @@ import * as vscode from 'vscode';
 import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineTreeProvider";
 import { ChapterNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../outlineNode";
 import { OutlineView } from "../../outlineView";
+import { DestinationResult } from './common';
 
-export type DestinationResult = {
-    destinationContainer: OutlineNode;
-    newOverride: OutlineNode | null;
-}
+
 
 export async function determineDestinationContainer (
     moverType: ResourceType,

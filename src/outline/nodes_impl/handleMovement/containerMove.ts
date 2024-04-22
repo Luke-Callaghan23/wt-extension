@@ -6,7 +6,7 @@ import { UriBasedView } from '../../../outlineProvider/UriBasedView';
 
 
 
-export async function handleContainerSourceMove (
+export async function containerMove (
     operation: 'move' | 'recover',
     node: OutlineNode,
     recycleView: UriBasedView<OutlineNode>,

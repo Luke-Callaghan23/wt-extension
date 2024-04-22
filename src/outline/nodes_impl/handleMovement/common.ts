@@ -12,7 +12,8 @@ export const allowedMoves: { [index: string]: ResourceType[] } = {
     ],
     'chapter': [
         'chapter',
-        'container'
+        'container',
+        'snip',
     ],
     'root': [],
     'container': [
@@ -35,3 +36,16 @@ export type MoveNodeResult = {
     effectedContainers: OutlineNode[],
     createdDestination: OutlineNode | null
 }
+
+export type DestinationResult = {
+    destinationContainer: OutlineNode;
+    newOverride: OutlineNode | null;
+}
+
+export type ChapterMoveResult = {
+    kind: 'move',
+    result: MoveNodeResult
+} | {
+    kind: 'destination',
+    result: DestinationResult
+};

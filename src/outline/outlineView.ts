@@ -240,8 +240,15 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 
 		const allEffectedContainers = Object.entries(effectedContainersUriMap)
 			.map(([ _, container ]) => container);
-		this.refresh(false, allEffectedContainers);
-		
+
+		const anyRoot = !!allEffectedContainers.find(effected => effected.data.ids.type === 'root');
+		if (anyRoot) {
+			this.refresh(true, []);
+		}
+		else {
+			// If any of the effected containers is the root container, then the move node function is telling us to refresh the entire tree
+			this.refresh(false, allEffectedContainers);
+		}
 	}
 	
 	public async handleDrag(source: OutlineNode[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {

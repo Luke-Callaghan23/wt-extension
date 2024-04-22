@@ -1,9 +1,4 @@
 import * as vscode from 'vscode';
-
-// Handles the case when a node is moved (dragged and dropped) into a container which is 
-//      not the same as its original parent
-// In this case we need to shift internal contents of the outline tree as well as the
-
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from "../outlineNode";
 import { OutlineTreeProvider, TreeNode } from '../../../outlineProvider/outlineTreeProvider';
 import { MoveNodeResult } from './common';
@@ -13,6 +8,9 @@ import { getUsableFileName } from '../../impl/createNodes';
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
 import { updateChapterTextFragments, updateSnipContent } from '../updateChildrenToReflectNewUri';
 
+// Handles the case when a node is moved (dragged and dropped) into a container which is 
+//      not the same as its original parent
+// In this case we need to shift internal contents of the outline tree as well as the
 //      config files for both the destination and the original parent containers
 export async function handleContainerSwap (
     operation: 'move' | 'recover',
