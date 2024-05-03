@@ -6,6 +6,7 @@ import * as extension from './../extension';
 import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
+import { CodeModeState } from '../codeMode/codeMode';
 
 export class TabLabels {
     private static outlineView: OutlineView;
@@ -48,6 +49,10 @@ export class TabLabels {
     }
 
     static async assignNamesForOpenTabs () {
+        const codeModeState: CodeModeState = await vscode.commands.executeCommand('wt.codeMode.getMode');
+        if (codeModeState === 'codeMode') return;
+
+
         const configuration = workspace.getConfiguration();
         configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
     

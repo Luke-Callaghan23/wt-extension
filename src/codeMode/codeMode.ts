@@ -6,6 +6,8 @@ import * as console from '../vsconsole';
 import { isText } from 'istextorbinary';
 // import { fileTypeFromBuffer, fileTypeFromStream } from 'file-type';
 import { Buff } from '../Buffer/bufferSource';
+
+export type CodeModeState = 'codeMode' | 'noCodeMode';
 export class CoderModer {
 
     swapModeStatus: vscode.StatusBarItem;
@@ -17,7 +19,7 @@ export class CoderModer {
     enter = enter;
     exit = exit;
 
-    state: 'codeMode' | 'noCodeMode' = 'noCodeMode';
+    state: CodeModeState = 'noCodeMode';
     constructor (private context: vscode.ExtensionContext) {
         this.swapModeStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 10000000);
         this.swapModeStatus.text = this.state === 'codeMode' ? 'Turn Off Code Mode' : 'Turn On Code Mode';
@@ -112,6 +114,8 @@ export class CoderModer {
             this.swapModeStatus.text = this.state === 'codeMode' ? 'Turn Off Code Mode' : 'Turn On Code Mode';
             this.swapModeStatus.show();
         });
+
+        vscode.commands.registerCommand('wt.codeMode.getMode', () => this.state);
     }
 
     private async requestRepoLocation (): Promise<{
