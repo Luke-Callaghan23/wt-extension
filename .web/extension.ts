@@ -92,6 +92,11 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const tmpFolderPath = vscode.Uri.joinPath(rootPath, 'tmp');
 		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
 		
+        // Setting to make writing dialogue easier -- always skip past closing dialogue quotes
+        const configuration = vscode.workspace.getConfiguration();
+        configuration.update("editor.autoClosingOvertype", "always", vscode.ConfigurationTarget.Workspace)
+
+
 		await TabLabels.assignNamesForOpenTabs();
 	}
 	catch (e) {
