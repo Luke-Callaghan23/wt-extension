@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 export type JumpType = 'forward' | 'backward'
 
 
-export const punctuationStopsReg = /[\.\?\!\n\r]/;
+export const punctuationStopsReg = /[\.\?\!\n\r"']/;
 export const punctuationNoWhitespace = /[\.\?\!]/;
 export const fragmentStopReg = /[\-",;\*#~_()\[\]\{\}:/\\]/;
 
@@ -199,7 +199,11 @@ export function jumpSentenceSingleSelection (
             //      then assume that the reason for the pause was because of an acronym "C.H.O.A.M." and continue
             //      iterating
             const after = getNextNonPunctuationNonWhitespaceCharacter(docText, iterOffset);
-            const miscConditions = /[A-Z]/.test(after.char) && after.dist !== 1;
+            const miscConditions = /[A-Z]/.test(after.char) && (
+                after.dist !== 1                    // If the capital letter is immediately after, we normally don't want to stop
+                || iterationCharacter === '"'       // Besides in cases where the iteration character
+                || iterationCharacter === "'"       //      is a single or double quote
+            );
 
             // Also do not pause on titles
             let isTitle = false;
