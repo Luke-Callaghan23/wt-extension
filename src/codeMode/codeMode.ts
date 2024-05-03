@@ -10,6 +10,9 @@ import { Buff } from '../Buffer/bufferSource';
 export type CodeModeState = 'codeMode' | 'noCodeMode';
 export class CoderModer {
 
+    openedExplorer: boolean = false;
+    openedOutput: boolean = false;
+
     swapModeStatus: vscode.StatusBarItem;
 
     repoLocation: vscode.Uri | undefined;

@@ -83,7 +83,7 @@ implements
     protected dontAskDeleteDescription: boolean;
     protected dontAskDeleteAppearance: boolean;
     protected workBibleFolderPath: vscode.Uri;
-    protected view: vscode.TreeView<Note | SubNote | AppearanceContainer>;
+    public view: vscode.TreeView<Note | SubNote | AppearanceContainer>;
     constructor (
         protected workspace: Workspace,
         protected context: vscode.ExtensionContext
@@ -228,6 +228,7 @@ implements
         vscode.commands.registerCommand("wt.workBible.addAppearance", (resource: AppearanceContainer) => { doTheThingAndWrite(() => this.addAppearance(resource)) });
         vscode.commands.registerCommand('wt.workBible.search', (resource: Note) => { this.searchNote(resource) });
         vscode.commands.registerCommand('wt.workBible.editNote', (resource: Note | AppearanceContainer | SubNote) => { this.editNote(resource) });
+        vscode.commands.registerCommand('wt.workBible.getWorkBible', () => this);
     }
 
     getPackageItems(): { [index: string]: any; } {

@@ -3,12 +3,11 @@ import { CoderModer } from './codeMode';
 import { Buff } from '../Buffer/bufferSource';
 import { isText } from 'istextorbinary';
 import { TabLabels } from '../tabLabels/tabLabels';
+import { OutlineView } from '../outline/outlineView';
+import { WorkBible } from '../workBible/workBible';
 
 export async function enter (this: CoderModer): Promise<void> {
 
-    // Open output menu in bottom pane, file explorer in side pane
-    vscode.commands.executeCommand('workbench.action.output.toggleOutput');
-    vscode.commands.executeCommand('workbench.view.explorer')
 
     if (!this.repoUris) return;
 
@@ -34,6 +33,19 @@ export async function enter (this: CoderModer): Promise<void> {
         });
         shownDocumentPromises.push(showRepoDocumentPromise);
     }
+
+    
+    const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
+    const workBibleView: WorkBible = await vscode.commands.executeCommand('wt.workBible.getWorkBible');
+    if (outlineView.view.visible) {
+        vscode.commands.executeCommand('workbench.view.explorer');
+        this.openedExplorer = true;
+    }
+    if (workBibleView.view.visible) {
+        vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+        this.openedOutput = true;
+    }
+    
 
     this.state = 'codeMode';
 

@@ -34,7 +34,7 @@ export abstract class OutlineTreeProvider<T extends TreeNode>
 extends UriBasedView<T>
 implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Packageable {
 
-	protected view: vscode.TreeView<T>;
+	public view: vscode.TreeView<T>;
 
 	// To be implemented by concrete type
 	// Builds the initial tree
