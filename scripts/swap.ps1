@@ -12,6 +12,7 @@ if (
     (Test-Path .web\web\test\suite\index.ts) -and
     (Test-Path .web\tsconfig.json) -and
     (Test-Path .web\gitTransactions.ts) -and
+    (Test-Path .web\tabLabels.ts) -and
     (Test-Path .web\workspaceClass.ts)
 ) {
     New-Item -ItemType Directory -Path ".local" -ErrorAction SilentlyContinue
@@ -28,6 +29,7 @@ if (
     Move-Item src\gitTransactions.ts .local\gitTransactions.ts
     Move-Item src\workspace\workspaceClass.ts .local\workspaceClass.ts
     Move-Item src\ttsDebugger .local\ttsDebugger
+    Move-Item src\tabLabels\tabLabels.ts .local\tabLabels.ts
 
     Move-Item .web\bufferSource.ts src\Buffer\bufferSource.ts
     Move-Item .web\fetchSource.ts src\Fetch\fetchSource.ts
@@ -39,6 +41,7 @@ if (
     Move-Item .web\tsconfig.json tsconfig.json
     Move-Item .web\gitTransactions.ts src\gitTransactions.ts
     Move-Item .web\workspaceClass.ts src\workspace\workspaceClass.ts
+    Move-Item .web\tabLabels.ts src\tabLabels\tabLabels.ts
 
     npm clean-install
 }
@@ -72,6 +75,7 @@ elseif (
     (Test-Path .local\ttsDebugger\tts\tts.ts) -and
     (Test-Path .local\ttsDebugger\tts\windows.ts) -and
     (Test-Path .local\ttsDebugger\tts\windowsCommand.ts) -and
+    (Test-Path .local\tabLabels.ts) -and
     (Test-Path .local\workspaceClass.ts)
 ) {
     New-Item -ItemType Directory -Path ".web" -ErrorAction SilentlyContinue
@@ -85,6 +89,7 @@ elseif (
     Move-Item tsconfig.json .web\tsconfig.json
     Move-Item src\gitTransactions.ts .web\gitTransactions.ts
     Move-Item src\workspace\workspaceClass.ts .web\workspaceClass.ts 
+    Move-Item src\tabLabels\tabLabels.ts .web\tabLabels.ts
 
     Move-Item .local\ttsDebugger src\ttsDebugger
     Move-Item .local\bufferSource.ts src\Buffer\bufferSource.ts
@@ -99,6 +104,7 @@ elseif (
     Move-Item .local\importExport src\workspace\importExport
     Move-Item .local\gitTransactions.ts src\gitTransactions.ts
     Move-Item .local\workspaceClass.ts src\workspace\workspaceClass.ts
+    Move-Item .local\tabLabels.ts src\tabLabels\tabLabels.ts
 
     npm clean-install
 }

@@ -16,6 +16,7 @@ if \
     os.path.isfile(".web/web/test/suite/index.ts") and \
     os.path.isfile(".web/tsconfig.json") and \
     os.path.isfile(".web/gitTransactions.ts") and \
+    os.path.isfile(".web/tabLabels.ts") and \
     os.path.isfile(".web/workspaceClass.ts"):
 
     os.makedirs(name=".local", exist_ok=True)
@@ -32,6 +33,7 @@ if \
     os.rename("src/gitTransactions.ts", ".local/gitTransactions.ts")
     os.rename("src/workspace/workspaceClass.ts", ".local/workspaceClass.ts")
     os.rename("src/ttsDebugger", ".local/ttsDebugger")
+    os.rename("src/tabLabels/tabLabels.ts", ".local/tabLabels.ts")
 
     os.rename(".web/bufferSource.ts", "src/Buffer/bufferSource.ts")
     os.rename(".web/fetchSource.ts", "src/Fetch/fetchSource.ts")
@@ -43,6 +45,7 @@ if \
     os.rename(".web/tsconfig.json", "tsconfig.json")
     os.rename(".web/gitTransactions.ts", "src/gitTransactions.ts")
     os.rename(".web/workspaceClass.ts", "src/workspace/workspaceClass.ts")
+    os.rename(".web/tabLabels.ts", "src/tabLabels/tabLabels.ts")
 
     subprocess.run(["powershell.exe", "npm", "clean-install"], shell=True)
 
@@ -76,6 +79,7 @@ elif \
     os.path.isfile(".local/ttsDebugger/tts/tts.ts") and \
     os.path.isfile(".local/ttsDebugger/tts/windows.ts") and \
     os.path.isfile(".local/ttsDebugger/tts/windowsCommand.ts") and \
+    os.path.isfile(".local/tabLabels.ts") and \
     os.path.isfile(".local/workspaceClass.ts"):
 
     os.makedirs(name=".web", exist_ok=True)
@@ -88,7 +92,8 @@ elif \
     os.rename("src/web", ".web/web")
     os.rename("tsconfig.json", ".web/tsconfig.json")
     os.rename("src/gitTransactions.ts", ".web/gitTransactions.ts")
-    os.rename("src/workspace/workspaceClass.ts", ".web/workspaceClass.ts ")
+    os.rename("src/workspace/workspaceClass.ts", ".web/workspaceClass.ts")
+    os.rename("src/tabLabels/tabLabels.ts", ".web/tabLabels.ts")
 
     os.rename(".local/ttsDebugger", "src/ttsDebugger")
     os.rename(".local/bufferSource.ts", "src/Buffer/bufferSource.ts")
@@ -103,6 +108,7 @@ elif \
     os.rename(".local/importExport", "src/workspace/importExport")
     os.rename(".local/gitTransactions.ts", "src/gitTransactions.ts")
     os.rename(".local/workspaceClass.ts", "src/workspace/workspaceClass.ts")
+    os.rename(".local/tabLabels.ts", "src/tabLabels/tabLabels.ts")
 
     subprocess.run(["powershell.exe", "npm", "clean-install"], shell=True)
 
