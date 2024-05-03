@@ -27,11 +27,7 @@ export async function exit (this: CoderModer): Promise<void> {
     vscode.commands.executeCommand('workbench.view.extension.wt').then(() => {
         vscode.commands.executeCommand('workbench.action.terminal.toggleTerminal').then(() => {
             // Also focus the first editor group
-            vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup').then(() => {
-                vscode.commands.executeCommand('workbench.action.files.newUntitledFile').then(() => {
-                    vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-                })
-            }); 
+            vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup');
         })
     })
 
