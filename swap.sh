@@ -66,7 +66,6 @@ elif
     test -f .local/ttsDebugger/debugger/debugExtention.ts
     test -f .local/ttsDebugger/debugger/ttsDebug.ts
     test -f .local/ttsDebugger/debugger/ttsRuntime.ts
-    test -f .local/ttsDebugger/debugger/web-extension.ts
     test -f .local/ttsDebugger/debugSession.ts
     test -f .local/ttsDebugger/tts/tts.ts
     test -f .local/ttsDebugger/tts/windows.ts
