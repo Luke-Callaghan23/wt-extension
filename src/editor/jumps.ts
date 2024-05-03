@@ -198,6 +198,9 @@ export function jumpSentenceSingleSelection (
             // If the following character is a capital letter BUT it came right after the stopped punctuation
             //      then assume that the reason for the pause was because of an acronym "C.H.O.A.M." and continue
             //      iterating
+            // If the following character is a capital letter BUT it came right after the stopped punctuation
+            //      BUT that punctuation was a single or double quote then we do actually want to stop here
+            // Listen, man, it's confusing just trust me on this one
             const after = getNextNonPunctuationNonWhitespaceCharacter(docText, iterOffset);
             const miscConditions = /[A-Z]/.test(after.char) && (
                 after.dist !== 1                    // If the capital letter is immediately after, we normally don't want to stop
