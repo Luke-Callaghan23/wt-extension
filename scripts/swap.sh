@@ -12,6 +12,7 @@ if
     test -f .web/web/test/suite/index.ts &&
     test -f .web/tsconfig.json &&
     test -f .web/gitTransactions.ts &&
+    test -f .web/tabLabels.ts && 
     test -f .web/workspaceClass.ts;
 then
     mv src/Buffer/bufferSource.ts .local/bufferSource.ts
@@ -27,6 +28,7 @@ then
     mv src/gitTransactions.ts .local/gitTransactions.ts
     mv src/workspace/workspaceClass.ts .local/workspaceClass.ts
     mv src/ttsDebugger .local/ttsDebugger
+    mv src/tabLabels/tabLabels.ts .local/tabLabels.ts
 
     mv .web/bufferSource.ts src/Buffer/bufferSource.ts
     mv .web/fetchSource.ts src/Fetch/fetchSource.ts
@@ -38,6 +40,7 @@ then
     mv .web/tsconfig.json tsconfig.json
     mv .web/gitTransactions.ts src/gitTransactions.ts
     mv .web/workspaceClass.ts src/workspace/workspaceClass.ts
+    mv .web/tabLabels.ts src/tabLabels/tabLabels.ts
 
     npm clean-install
 elif 
@@ -62,14 +65,15 @@ elif
     test -f .local/importExport/importWorkspace.ts &&
     test -f .local/gitTransactions.ts &&
     test -f .local/ttsDebugger/debugger/activateTTSDebug.ts && 
-    test -f .local/ttsDebugger/debugger/debugAdapter.ts
-    test -f .local/ttsDebugger/debugger/debugExtention.ts
-    test -f .local/ttsDebugger/debugger/ttsDebug.ts
-    test -f .local/ttsDebugger/debugger/ttsRuntime.ts
-    test -f .local/ttsDebugger/debugSession.ts
-    test -f .local/ttsDebugger/tts/tts.ts
-    test -f .local/ttsDebugger/tts/windows.ts
-    test -f .local/ttsDebugger/tts/windowsCommand.ts
+    test -f .local/ttsDebugger/debugger/debugAdapter.ts  &&
+    test -f .local/ttsDebugger/debugger/debugExtention.ts &&
+    test -f .local/ttsDebugger/debugger/ttsDebug.ts &&
+    test -f .local/ttsDebugger/debugger/ttsRuntime.ts &&
+    test -f .local/ttsDebugger/debugSession.ts &&
+    test -f .local/ttsDebugger/tts/tts.ts &&
+    test -f .local/ttsDebugger/tts/windows.ts &&
+    test -f .local/ttsDebugger/tts/windowsCommand.ts &&
+    test -f .local/tabLabels.ts && 
     test -f .local/workspaceClass.ts;
 then
     mv src/Buffer/bufferSource.ts .web/bufferSource.ts
@@ -82,6 +86,7 @@ then
     mv tsconfig.json .web/tsconfig.json
     mv src/gitTransactions.ts .web/gitTransactions.ts
     mv src/workspace/workspaceClass.ts .web/workspaceClass.ts 
+    mv src/tabLabels/tabLabels.ts .web/tabLabels.ts
 
     mv .local/ttsDebugger src/ttsDebugger
     mv .local/bufferSource.ts src/Buffer/bufferSource.ts
@@ -96,6 +101,7 @@ then
     mv .local/importExport src/workspace/importExport
     mv .local/gitTransactions.ts src/gitTransactions.ts
     mv .local/workspaceClass.ts src/workspace/workspaceClass.ts
+    mv .local/tabLabels.ts src/tabLabels/tabLabels.ts
 
     npm clean-install
 else 
