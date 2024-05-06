@@ -101,7 +101,11 @@ export class TabLabels {
                 index++;
             }
             set.add(finalLabel);
-            finalPatterns[pattern] = finalLabel;
+
+            const finalPattern = pattern.startsWith('*/')
+                ? pattern
+                : `*/${pattern}`;
+            finalPatterns[finalPattern] = `${finalLabel}`;
         });
 
         return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);
