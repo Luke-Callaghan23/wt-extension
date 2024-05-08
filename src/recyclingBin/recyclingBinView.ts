@@ -12,6 +12,7 @@ import { deleteNodePermanently } from './node/deleteNodePermanently';
 import { renameResource } from './node/renameNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../outline/outlineView';
+import { TreeNode } from '../outlineProvider/outlineTreeProvider';
 
 export type RecycleLog = {
     oldUri: string,
@@ -142,7 +143,12 @@ implements vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropControlle
                 md: ''
             }), ...this.rootNodes];
         }
-		return element.getChildren(true);
+        
+		const insertIntoNodeMap = (node: OutlineNode, uri: string) => {
+			this.nodeMap[uri] = node as OutlineNode;
+		}
+        //@ts-ignore
+		return element.getChildren(true, insertIntoNodeMap);
 	}
 
 	async getTreeItem (element: OutlineNode): Promise<vscode.TreeItem> {

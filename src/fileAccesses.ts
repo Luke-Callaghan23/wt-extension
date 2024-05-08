@@ -85,10 +85,12 @@ export class FileAccessManager implements Packageable {
 
     static registerCommands (): void {
         vscode.window.onDidChangeActiveTextEditor(async (editor) => {
-            if (editor && editor.document) {
-                FileAccessManager.documentOpened(editor.document.uri);
-            }
-            FileAccessManager.savePosition(editor);
+            setTimeout(() => {
+                if (editor && editor.document) {
+                    FileAccessManager.documentOpened(editor.document.uri);
+                }
+                FileAccessManager.savePosition(editor);
+            }, 0)
         });
         // vscode.workspace.onDidOpenTextDocument((doc) => {
         //     if (doc) {

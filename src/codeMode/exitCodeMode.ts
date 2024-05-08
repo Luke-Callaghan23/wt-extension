@@ -30,13 +30,19 @@ export async function exit (this: CoderModer): Promise<void> {
     if (this.openedOutput) {
         vscode.commands.executeCommand('workbench.action.terminal.toggleTerminal');
     }
-    vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup');
-
-    this.openedExplorer = false;
-    this.openedOutput = false;
+    await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup');
     
-    TabLabels.assignNamesForOpenTabs();
-
     this.openedCodeUris = [];
     this.state = 'noCodeMode';
+    this.openedExplorer = false;
+    this.openedOutput = false;
+
+    // Sometimes on slower machines, exiting code mode deactivates all the timed higlighting and stuff until you 
+    //      switch to a new tab -- no clue why -- so by opening a new tab and then closing it immediately we can
+    //      get around this
+    const result = await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+
+    
+    await TabLabels.assignNamesForOpenTabs();
 }

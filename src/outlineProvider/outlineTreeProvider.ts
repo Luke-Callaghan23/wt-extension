@@ -15,7 +15,7 @@ export abstract class TreeNode {
 	abstract getTooltip(): string | vscode.MarkdownString;
 	abstract getUri(): vscode.Uri;
 	abstract getDisplayString(): string;
-	abstract getChildren(filter: boolean): Promise<TreeNode[]>;
+	abstract getChildren(filter: boolean, insertIntoNodeMap: (node: TreeNode, uri: string)=>void): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
 	abstract getDroppableUris(): vscode.Uri[];
 	abstract generalMoveNode (
@@ -103,10 +103,15 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	public async getChildren (element: T): Promise<T[]> {
 		if (!this.rootNodes) throw `unreachable`;
-		if (!element) {
-			return (await this.rootNodes[0].getChildren(true)).map(on => on as T);
+
+		const insertIntoNodeMap = (node: TreeNode, uri: string) => {
+			this.nodeMap[uri] = node as T;
 		}
-		return (await element.getChildren(true)).map(on => on as T);
+
+		if (!element) {
+			return (await this.rootNodes[0].getChildren(true, insertIntoNodeMap)).map(on => on as T);
+		}
+		return (await element.getChildren(true, insertIntoNodeMap)).map(on => on as T);
 	}
 
 	public async getParent?(element: T): Promise<T> {

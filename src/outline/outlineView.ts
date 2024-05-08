@@ -130,7 +130,9 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> {
 		// Set up callback for text editor change that displays the opened document in the outline view
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
 			if (this.view.visible) {
-				this.selectActiveDocument(editor);
+				setTimeout(() => {
+					this.selectActiveDocument(editor);
+				}, 0)
 			}
 		});
 		this.selectActiveDocument(vscode.window.activeTextEditor);

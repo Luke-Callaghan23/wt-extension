@@ -35,7 +35,9 @@ export class TimedView implements Packageable {
     
         // If the active editor changed, then change the internal activeEditor value and trigger updates
         vscode.window.onDidChangeActiveTextEditor(editor => {
-            this.triggerUpdates();
+            setTimeout(() => {
+                this.triggerUpdates();
+            }, 0);
         }, null, context.subscriptions);
     
         // On text document change within the editor, update decorations with throttle

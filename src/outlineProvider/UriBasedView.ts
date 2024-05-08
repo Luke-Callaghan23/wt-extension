@@ -1,14 +1,16 @@
 import * as vscode from 'vscode';
 import * as extension from '../extension';
+import * as vsconsole from './../vsconsole';
 
 export interface HasGetUri {
     getUri(): vscode.Uri;
 	getParentUri(): vscode.Uri;
-	getChildren(filter: boolean): Promise<HasGetUri[]>;
+	getChildren(filter: boolean, insertIntoNodeMap: (node: HasGetUri, uri: string)=>void): Promise<HasGetUri[]>;
 }
 
 export class UriBasedView<T extends HasGetUri> {
 	protected uriToVisibility: { [index: string]: boolean } = {};
+	public nodeMap: { [index: string]: T } = {};
     public rootNodes: T[];
 
 	constructor () {
@@ -56,6 +58,7 @@ export class UriBasedView<T extends HasGetUri> {
 		}
 		return localRoots;
 	}
+	
 
 	async getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: T, filter?: boolean): Promise<any> {
 		// If there is not targeted key, then assume that the caller is targeting
@@ -64,14 +67,29 @@ export class UriBasedView<T extends HasGetUri> {
 			return this.rootNodes;
 		}
 		
+		if (!targetUri.fsPath.endsWith('wt') && !targetUri.fsPath.endsWith('wtnote')) {
+			return null;
+		}
+	
+		if (targetUri.fsPath in this.nodeMap) {
+			vsconsole.log("Node map hit!");
+			return this.nodeMap[targetUri.fsPath];
+		}
+		vsconsole.log(`Node map miss for target uri: ${targetUri.fsPath}`);
+		
+		const insertIntoNodeMap = (node: HasGetUri, uri: string) => {
+			this.nodeMap[uri] = node as T;
+		}
+		
 		// If there is no provided tree, use the whole tree as the search space
 		const currentNodes = tree ? [tree] : this.rootNodes;
 		for (const currentNode of currentNodes) {
 			if (!currentNode) throw 'unreachable';
 			if (!currentNode.getChildren) return null;
-			const currentChildren = await currentNode.getChildren(!!filter);
+			const currentChildren = await currentNode.getChildren(!!filter, insertIntoNodeMap);
 	
 			if (currentNode.getUri().fsPath === targetUri.fsPath) {
+				this.nodeMap[targetUri.fsPath] = currentNode;
 				return currentNode as T;
 			}
 			// Iterate over all keys-value mappings in the current node
@@ -80,6 +98,7 @@ export class UriBasedView<T extends HasGetUri> {
 	
 				// If the current key matches the targeted key, return the value mapping
 				if (subtreeId === targetUri.fsPath) {
+					this.nodeMap[targetUri.fsPath] = subtree as T;
 					return subtree as T;
 				} 
 				// Otherwise, recurse into this function again, using the current
@@ -89,6 +108,7 @@ export class UriBasedView<T extends HasGetUri> {
 					
 					// If the tree was found, return it
 					if (treeElement) {
+						this.nodeMap[targetUri.fsPath] = treeElement;
 						return treeElement;
 					}
 				}
