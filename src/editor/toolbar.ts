@@ -9,6 +9,7 @@ import { JumpType, defaultJumpFragmentOptions, fragmentStopReg, jumpParagraph, j
 import { bold, commasize, emDash, emDashes, italisize, strikethrough, underline } from './surroundSelection';
 import { commentFragment, commentParagraph, commentSentence } from './comment';
 import { highlightExpand, highlightFragment, highlightParagraph, highlightSentence } from './highlights';
+import { addQuotes } from './addQuotes';
 
 
 export function remove () {
@@ -98,5 +99,7 @@ export class Toolbar {
         vscode.commands.registerCommand('wt.editor.jump.fragment.backward.shift', () => jumpSentence('backward', true, defaultJumpFragmentOptions));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.forward.shift', () => jumpParagraph('forward', true));
         vscode.commands.registerCommand('wt.editor.jump.paragraph.backward.shift', () => jumpParagraph('backward', true));
+
+        vscode.commands.registerCommand('wt.editor.addQuotes', () => addQuotes());
     }
 }
