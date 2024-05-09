@@ -25,6 +25,11 @@
 		"configuration": {
 			"title": "Writing Tool Configuration",
 			"properties": {
+				"wt.codeMode.slowMode": {
+					"type":"boolean",
+					"default": false,
+					"description": "Use this on slower machines.  For some reason, when exiting code mode on slower machines, the timed views (text styling, word highlighting, etc.) stop updating until you change tabs.  I've tried debugging to figure out why this is, but I can only conclude that the bug is either too obscure for me to figure out or something strange with the way VSCode processes async.  When you select this, a new untitled tab will automatically be opened and then closed when you exit code mode, which resolves this bug.  ¯\\_(ツ)_/¯"
+				},
 				"wt.speech.voice": {
 					"type": "string",
 					"default": null,
