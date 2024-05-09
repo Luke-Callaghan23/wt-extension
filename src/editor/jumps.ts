@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 export type JumpType = 'forward' | 'backward'
 
 
-export const punctuationStopsReg = /[\.\?\!\n\r"']/;
+export const punctuationStopsReg = /[\.\?\!\n\r"]/;
 export const punctuationNoWhitespace = /[\.\?\!]/;
 export const fragmentStopReg = /[\-",;\*#~_()\[\]\{\}:/\\]/;
 
