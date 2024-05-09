@@ -668,10 +668,18 @@
 			{
 				"title": "Writing Tool: Insert Double Quotes",
 				"command": "wt.editor.addQuotes"
+			},
+			{
+				"title": "Writing Tool: Insert Accent",
+				"command": "wt.editor.accent.insertAccent"
 			}
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "wt.editor.accent.insertAccent",
+					"when": "editorLangId == wt || editorLandId == wtNote"
+				},
 				{
 					"command": "wt.editor.addQuotes",
 					"when": "false"

@@ -10,6 +10,7 @@ import { bold, commasize, emDash, emDashes, italisize, strikethrough, underline 
 import { commentFragment, commentParagraph, commentSentence } from './comment';
 import { highlightExpand, highlightFragment, highlightParagraph, highlightSentence } from './highlights';
 import { addQuotes } from './addQuotes';
+import { addAccent as insertAccent } from './accents';
 
 
 export function remove () {
@@ -101,5 +102,6 @@ export class Toolbar {
         vscode.commands.registerCommand('wt.editor.jump.paragraph.backward.shift', () => jumpParagraph('backward', true));
 
         vscode.commands.registerCommand('wt.editor.addQuotes', () => addQuotes());
+        vscode.commands.registerCommand('wt.editor.accent.insertAccent', () => insertAccent());
     }
 }
