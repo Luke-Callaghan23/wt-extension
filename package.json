@@ -2,7 +2,7 @@
 	"name": "wtaniwe",
 	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
 	"description": "Writing Tool, An Integrated Writing Environment",
-	"version": "0.0.101",
+	"version": "0.0.102",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -66,7 +66,7 @@
 					"description": "Determines whether you want to show the 'Work Bible' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
 				},
 				"wt.codeMode.slowMode": {
-					"type":"boolean",
+					"type": "boolean",
 					"default": false,
 					"description": "Use this on slower machines.  For some reason, when exiting code mode on slower machines, the timed views (text styling, word highlighting, etc.) stop updating until you change tabs.  I've tried debugging to figure out why this is, but I can only conclude that the bug is either too obscure for me to figure out or something strange with the way VSCode processes async.  When you select this, a new untitled tab will automatically be opened and then closed when you exit code mode, which resolves this bug.  ¯\\_(ツ)_/¯"
 				},
@@ -1985,7 +1985,6 @@
 		"node-fetch": "^3.3.1",
 		"node-fetch-commonjs": "^3.2.4",
 		"path-browserify": "^1.0.1",
-		"rwlock": "^5.0.0",
 		"turndown": "^7.1.2",
 		"uuid": "^9.0.0",
 		"vscode-debugadapter": "^1.51.0",
