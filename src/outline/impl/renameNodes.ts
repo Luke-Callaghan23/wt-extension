@@ -4,11 +4,11 @@ import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../help';
 import * as console from '../../vsconsole';
 import { OutlineView } from '../outlineView';
-import { OutlineNode } from '../nodes_impl/outlineNode';
+import { OutlineNode, SnipNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import { TabLabels } from '../../tabLabels/tabLabels';
 
-export async function renameResource (this: OutlineView, overrideNode?: OutlineNode) {
+export async function renameResource (this: OutlineView, overrideNode?: OutlineNode, overrideRename?: string) {
 
     const resource: OutlineNode = overrideNode || this.view.selection[0];
     const relativePath = resource.data.ids.relativePath;
@@ -19,7 +19,7 @@ export async function renameResource (this: OutlineView, overrideNode?: OutlineN
     const fullPath = vscode.Uri.joinPath(extension.rootPath, relativePath, fileName);
     const originalName = displayName;
 
-    const newName = await vscode.window.showInputBox({
+    const newName = overrideRename || await vscode.window.showInputBox({
         placeHolder: originalName,
         prompt: `What would you like to rename ${type} '${displayName}'?`,
         ignoreFocusOut: false,
@@ -27,9 +27,7 @@ export async function renameResource (this: OutlineView, overrideNode?: OutlineN
         valueSelection: [0, originalName.length]
     });
 
-    if (!newName) {
-        return;
-    }
+    if (!newName) return;
 
     const dotConfigUri = vscodeUris.Utils.joinPath(resource.data.ids.parentUri, '.config');
     if (!dotConfigUri) {
@@ -68,4 +66,29 @@ export async function renameResource (this: OutlineView, overrideNode?: OutlineN
     vscode.window.showInformationMessage(`Successfully renamed '${oldName}' to '${newName}'`);
     this.refresh(false, [resource]);
     TabLabels.assignNamesForOpenTabs();
+
+
+    // IF:
+    //      The renamed resource was a snip
+    //      AND the snip only had one child
+    //      AND the child was a fragment
+    //      AND the fragment had a name pattern like 'New Fragment (#)' or 'Imported Fragment (#)'
+    // Then:
+    //      Ask the user if they would like to rename the child fragment along with the snip
+
+    if (resource.data.ids.type !== 'snip') return;
+    const snipContent = (resource.data as SnipNode).contents;
+    if (snipContent.length !== 1) return;
+    const [ content ] = snipContent;
+    if (content.data.ids.type !== 'fragment') return;
+    if (!(content.data.ids.display.startsWith("New Fragment (") || content.data.ids.display.startsWith("Imported Fragment ("))) return;
+
+    const renameChild = await vscode.window.showQuickPick([ 'Yes', 'No' ], {
+        canPickMany: false,
+        ignoreFocusOut: false,
+        placeHolder: "Yes",
+        title: `Also rename child fragment '${content.data.ids.display}'?`
+    });
+    if (!renameChild || renameChild !== 'Yes') return;
+    this.renameResource(content, newName);
 }
