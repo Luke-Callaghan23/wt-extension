@@ -25,6 +25,46 @@
 		"configuration": {
 			"title": "Writing Tool Configuration",
 			"properties": {
+				"wt.showPanels.wordWatcher": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'Word Watcher' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
+				"wt.showPanels.TODO": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'TODO' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
+				"wt.showPanels.synonyms": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'Synonyms' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
+				"wt.showPanels.WH": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'WH' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
+				"wt.showPanels.importFileExplorer": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'Import File Explorer' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
+				"wt.showPanels.export": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'Export' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
+				"wt.showPanels.recyclingBin": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'Recycling Bin' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
+				"wt.showPanels.workBible": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'Work Bible' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
 				"wt.codeMode.slowMode": {
 					"type":"boolean",
 					"default": false,
@@ -117,14 +157,14 @@
 					"name": "Word Watcher",
 					"icon": "media/dep.svg",
 					"contextualTitle": "Word Watcher",
-					"when": "wt.valid"
+					"when": "wt.valid && config.wt.showPanels.wordWatcher"
 				},
 				{
 					"id": "wt.todo",
 					"name": "TODOs",
 					"icon": "media/dep.svg",
 					"contextualTitle": "TODOs",
-					"when": "wt.valid"
+					"when": "wt.valid && config.wt.showPanels.TODO"
 				},
 				{
 					"type": "webview",
@@ -132,7 +172,7 @@
 					"name": "Synonyms",
 					"icon": "media/dep.svg",
 					"contextualTitle": "Synonyms",
-					"when": "wt.valid"
+					"when": "wt.valid && config.wt.showPanels.synonyms"
 				},
 				{
 					"type": "webview",
@@ -140,27 +180,27 @@
 					"name": "Wh",
 					"icon": "media/dep.svg",
 					"contextualTitle": "Wh",
-					"when": "wt.valid"
+					"when": "wt.valid && config.wt.showPanels.WH"
 				},
 				{
 					"id": "wt.import.fileExplorer",
 					"name": "Import",
 					"icon": "media/dep.svg",
 					"contextualTitle": "Import",
-					"when": "wt.valid"
+					"when": "wt.valid && config.wt.showPanels.importFileExplorer"
 				},
 				{
 					"id": "wt.export",
 					"name": "Export",
 					"icon": "media/dep.svg",
 					"contextualTitle": "Export",
-					"when": "wt.valid"
+					"when": "wt.valid && config.wt.showPanels.export"
 				},
 				{
 					"id": "wt.recyclingBin",
 					"name": "Recycling Bin",
 					"contextualTitle": "Recycling Bin",
-					"when": "wt.valid"
+					"when": "wt.valid && config.wt.showPanels.recyclingBin"
 				}
 			],
 			"workBible": [
@@ -168,7 +208,8 @@
 					"id": "wt.workBible.tree",
 					"name": "Notes",
 					"icon": "media/dep.svg",
-					"contextualTitle": "Notes"
+					"contextualTitle": "Notes",
+					"when": "wt.valid && config.wt.showPanels.workBible"
 				}
 			]
 		},
