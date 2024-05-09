@@ -37,21 +37,16 @@ export async function exit (this: CoderModer): Promise<void> {
     this.openedExplorer = false;
     this.openedOutput = false;
 
-    
-    const settingsEnabled = vscode.workspace.getConfiguration(`wt.codeMode`);
-    const enabled = settingsEnabled
-        ? !!settingsEnabled.get<boolean>("slowMode")
-        : true;
-
-    if (enabled) {
-        // Sometimes on slower machines, exiting code mode deactivates all the timed higlighting and stuff until you 
-        //      switch to a new tab -- no clue why -- so by opening a new tab and then closing it immediately we can
-        //      get around this
-        const result = await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
+    // Sometimes on slower machines, exiting code mode deactivates all the timed higlighting and stuff until you 
+    //      switch to a new tab -- no clue why -- so by opening a new tab and then closing it immediately we can
+    //      get around this
+    const codeModeSettings = vscode.workspace.getConfiguration(`wt.codeMode`);
+    const slowModeEnabled = codeModeSettings ? !!codeModeSettings.get<boolean>("slowMode") : false;
+    if (slowModeEnabled) {
+        await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
     }
 
-
-    
+    // Once full swapped into writing mode, then re-assign labels for all opened tabs
     await TabLabels.assignNamesForOpenTabs();
 }
