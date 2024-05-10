@@ -103,6 +103,8 @@ export async function getChildren(
     })();
 
     for (const n of ret) {
+        const todoNode = n as TODONode;
+        if (todoNode.data.ids.type === 'fragment' && todoNode.data.ids.parentTypeId === 'fragment') continue;
         insertIntoNodeMap(n, n.getUri().fsPath);
     }
     return ret;

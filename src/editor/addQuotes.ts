@@ -29,6 +29,16 @@ export async function addQuotes (quoteKind: `'` | `"` = `"`): Promise<void> {
             continue;
         }
 
+        // When the selection is not empty, surround the text with quotes
+        if (!selection.isEmpty) {
+            const selectedText = document.getText(selection);
+            await editor.edit(eb => {
+                eb.replace(selection, `${quoteKind}${selectedText}${quoteKind}`);
+            }, { undoStopAfter: true, undoStopBefore: true });
+            selections.push(editor.selections[selectionIndex]);
+            continue;
+        }
+
         // Get the count of quotes on the line
         let quoteCount: number = 0;
         for (const char of lineText) {

@@ -67,7 +67,11 @@ export class UriBasedView<T extends HasGetUri> {
 			return this.rootNodes;
 		}
 		
-		if (!targetUri.fsPath.endsWith('wt') && !targetUri.fsPath.endsWith('wtnote')) {
+		// if (!targetUri.fsPath.endsWith('wt') && !targetUri.fsPath.endsWith('wtnote')) {
+		// 	return null;
+		// }
+
+		if (!targetUri.fsPath.includes(extension.rootPath.fsPath)) {
 			return null;
 		}
 	

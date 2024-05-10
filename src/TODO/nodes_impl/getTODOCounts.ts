@@ -117,7 +117,7 @@ export async function getTODOCounts (
         case 'snip': {
             const snip: SnipNode = this.data as SnipNode;
             const contents: TODONode[] = snip.contents;
-
+            
             // (see 'chapter', 'container' cases above)
             const snipsTODOs = (await Promise.all(
                 contents.map(currentContent => currentContent.getTODOCounts())

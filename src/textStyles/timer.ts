@@ -67,7 +67,11 @@ export async function update (this: TextStyles, editor: vscode.TextEditor, comme
     //      we'll replace all instances of "~~~" with a junk string that won't be matched
     // Junk string must be the same length as the replace string to keep everything aligned,
     //      however
-    const text = editor.document.getText().replaceAll("~~~", "@@@");
+    const text = editor.document.getText()
+        .replaceAll("~~~", "@@@")
+
+        // Also allow for escaping text style characters by replacing with the same junk string
+        .replaceAll(/\\\*|\\^|\\~|\\_/g, "@@");
 
     Object.entries(stylePatterns).forEach(([ s, pattern ]) => {
         const style = s as WordStyles;
