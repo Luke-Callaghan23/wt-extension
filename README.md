@@ -60,9 +60,11 @@ Only the brackets and text within brackets are shown in the TODO tree, so you ar
 
 Using the debug adapter API, you can read out contents of a file with real-time tracking.  The current word will be highlighted as it is spoken.
 
-You can also use breakpoints to skip to certain points in the text.
+You can also use breakpoints to skip to certain points in the text. 
 
-> ![TTS](media/README/TTS.mp4)
+CLick the speech bubble:
+
+> [![TTS](media/README/TTS.jpeg)](media/README/TTS.mp4)
 
 ### Exporting Workss
 
