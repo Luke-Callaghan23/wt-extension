@@ -1,6 +1,6 @@
-# Writing Tool -- An Integrated Writing Environment (WTANIWE)  README
+# Writing Tool -- An Integrated Writing Environment (**WTANIWE**)  README
 
-This is the README for your extension  Writing Tool -- An Integrated Writing Environment (WTANIWE) ".  An extension tailor made to write fiction and prose in VSCode, from start to finish including: importing old work, tracking via git, and exporting into industry formats.
+This is the README for your extension  Writing Tool -- An Integrated Writing Environment (**WTANIWE**) ".  An extension tailor made to write fiction and prose in VSCode, from start to finish including: importing old work, tracking via git, and exporting into industry formats.
 
 ## Features
 
@@ -8,29 +8,65 @@ This is the README for your extension  Writing Tool -- An Integrated Writing Env
 
 Let's be honest, Google Docs and Microsoft Word version tracking is... flimsy at best.  It never seems to save a revision at the spot you wanted and it hardly ever has enough of a revision history for you to get an accurate view of the old version you're looking for.
 
-WTANIWE uses git.  You probably don't need me to explain much else.  Save revisions of your work how you want to, where you want to.  See exact diffs between the text.
+**WTANIWE** uses git.  You probably don't need me to explain much else.  Save revisions of your work how you want to, where you want to.  See exact diffs between the text.
 
 ### Importing Work from outside sources
 
-If you've gotten this far, you probably have some writing sitting in other document repositories that you don't want to entirely re-write if you switch to WTANIWE.  
+If you've gotten this far, you probably have some writing sitting in other document repositories that you don't want to entirely re-write if you switch to **WTANIWE**.  
 
-WTANIWE offers *extensive* features for importing from many sources, including `.docx`, `.odt`, `.html`, and `.md`.
+**WTANIWE** offers *extensive* features for importing from many sources, including `.docx`, `.odt`, `.html`, and `.md`.
 
-Once WTANIWE is installed, run the command `wt.walkthroughs.openIntro` or open the Introduction Walkthrough from the welcome screen for more information about importing from outside source.
+Once **WTANIWE** is installed, run the command `wt.walkthroughs.openIntro` or open the Introduction Walkthrough from the welcome screen for more information about importing from outside source.
+
+### Organized writing structure
+
+The main reason **WTANIWE** was first created was to organize and name snippets of writing.  With **WTANIWE**, you can store all writing in organized, easily namable and searchable structure very much akin to a folder structure (because it is one).  
+
+There are two sections to the **WTANIWE** outline tree: Chapters and Work Snips.  In "Work Snips" you can store snippets of text which have not yet been organized into a specific chapter yet.  "Chapters", on the other hand, will store the main text of your work.  In each section, you can also store folders of snips which can each store more fragments and snips.
+
+Here is an example of working with the **WTANIWE** outline:
+
+> ![Outline](media/README/Outline2.gif)
+
+Some more advanced features, such as moving and ordering content:
+
+> ![Outline Advanced](media/README/OutlineAdvanced.gif)
 
 ### IntelliSense-based synonyms
- 
+
+As you may have noticed in a previous gif, **WTANIWE** uses the dictionary API along with VSCode's inbuilt IntelliSense features to quickly query for synonyms and related words without having to leave the VSCode screen or disrupt your flow.
+
+Just hit `ctrl+space` while your cursor is in or highlighting a word you want to replace and you will get a list of definitions you may be referring to with that word.  Hit `enter` to open a definition and `enter` again to replace the original word with the currently highlighted one.
+
+Here is an example:
+
+> ![Synonyms](media/README/synonyms.gif)
+
 ### MarkDown-like styling tailored specifically to writing
 
-More details on this below, but the basics is that WTANIWE uses MarkDown-like text styling to quickly insert obvious demarkations of stylized text.  Stylizations such as \**italics*\*, ^**bolds**^, \~~~strike throughs~~\~, and \_underlines\_ (uh oh that one doesn't exist in MarkDown).
+More details on this below, but the basics is that **WTANIWE** uses MarkDown-like text styling to quickly insert obvious demarkations of stylized text.  Stylizations such as \**italics*\*, ^**bolds**^, \~~~strike throughs~~\~, and \_underlines\_ (uh oh that one doesn't exist in MarkDown).
 
 ### TODO tracking
 
-Mark areas of text you want to come back to later with square brackets.  All TODOs are stored in an organized tree panel to immediately jump to later.
+Mark areas of text you want to come back to later by surrounding "TODO" text with with square brackets.  All TODOs are stored in an organized tree panel and are immediately updated when square brackets are added or removed.
+
+Only the brackets and text within brackets are shown in the TODO tree, so you are always able to return to things you've marked as TODO.
+
+> ![TODOs](media/README/TODO.gif)
 
 ### Text-to-Speech
 
-### Exporting Work
+**[[ONLY ON WINDOWS AS OF NOW!!]]** 
+
+Using the debug adapter API, you can read out contents of a file with real-time tracking.  The current word will be highlighted as it is spoken.
+
+You can also use breakpoints to skip to certain points in the text.
+
+> ![TTS](media/README/TTS.mp4)
+
+### Exporting Workss
+
+Export work developed in **WTANIWE** to many standard formats such as `.docx`, `.odt`, `.html`, and `.md` right in **WTANIWE** itself.
 
 ## Working with Writing Tool fragment files (.wt and .wtnote)
 
@@ -44,27 +80,27 @@ Here are some of the tools built specifically for .wt and .wtnote files.
 
 ### Styling
 
-As mentioned above, WTANIWE uses similar text styling conventions as MarkDown, however they have been modified, reduced, and tailored specifically towards writing.
+As mentioned above, **WTANIWE** uses similar text styling conventions as MarkDown, however they have been modified, reduced, and tailored specifically towards writing.
 
-Specifically, I did not use the conventional MarkDown styling for .wt and .wtnote files because, honestly, there is a lot of clutter in MarkDown.  WTANIWE is not here to write research papers or cleanly display code and data, it is here for writing.
+Specifically, I did not use the conventional MarkDown styling for .wt and .wtnote files because, honestly, there is a lot of clutter in MarkDown.  **WTANIWE** is not here to write research papers or cleanly display code and data, it is here for writing.
 
 By eschewing the prebuilt fluff of MarkDown, it becomes easy to focus in on the necessary text styling for writing only and give the best experience for those.  For example, automatically toggling styling to selected text or inserting/removing style marks at cursors, and showing the text styling *on the document* itself, without having to open a preview window.
 
 These are the style options:
 
-- **Italics:** Like markdown, you can italisize text by surrounding it with astericks \*\* (*like this*).  \*This text would be italisized in WTANIWE\*
+- **Italics:** Like markdown, you can italisize text by surrounding it with astericks \*\* (*like this*).  \*This text would be italisized in **WTANIWE**\*
 
     > Hit ctrl+alt+i to surround selected text with italics or insert italics at the cursor.
 
-- **Bold:** Double astericks vs single astericks is harder to query for when doing on-the-fly text styling, so I have opted to bold items with carets ^^.  ^This text would be bolded in WTANIWE^.
+- **Bold:** Double astericks vs single astericks is harder to query for when doing on-the-fly text styling, so I have opted to bold items with carets ^^.  ^This text would be bolded in **WTANIWE**^.
 
     > Hit ctrl+alt+b to surround selected text with bold or insert bold at the cursor.
 
-- **Strikethrough:** Strikethrough is a non-standard MarkDown styling and doesn't exist in all environments.  Where it does exist, it uses double tildes to denote strikethrough (~~like this~~).  In WTANIWE, I have swapped that to only using a single tilde ~~.  ~This text would be strikedthrough in WTANIWE~
+- **Strikethrough:** Strikethrough is a non-standard MarkDown styling and doesn't exist in all environments.  Where it does exist, it uses double tildes to denote strikethrough (~~like this~~).  In **WTANIWE**, I have swapped that to only using a single tilde ~~.  ~This text would be strikedthrough in **WTANIWE**~
 
     > Hit ctrl+alt+d to surround selected text with strikethrough or insert strikethrough at the cursor.
 
-- **Underline:** Underline is not used in MarkDown.  To underline in WTANIWE, surround text with underscores __.  \_This text would be underlined in WTANIWE\_.
+- **Underline:** Underline is not used in MarkDown.  To underline in **WTANIWE**, surround text with underscores __.  \_This text would be underlined in **WTANIWE**\_.
 
     > Hit ctrl+alt+u to surround selected text with underlines or insert underlines at the cursor.
 
@@ -96,7 +132,7 @@ Misspelled words are highlighted in red.  If you want to prevent certain words f
 
 If you know you have certain 'problem' words that you want to avoid, use word watching to automatically highlight all instances of that word in your text.
 
-For example, the word 'very' and all words that end with 'ly' are automatically added to the word word watched on WTANIWE workspace creation.  And will be highlighted as shown.
+For example, the word 'very' and all words that end with 'ly' are automatically added to the word word watched on **WTANIWE** workspace creation.  And will be highlighted as shown.
 
   > ![Word Watched](media/walkthroughs/intro/word_watcher.png)
 
@@ -104,7 +140,7 @@ In addition, you can assign certain colors to specific watched words.  To know w
 
 ## Requirements
 
-VSCode must be kept up-to-date for access to all features.  VSCode often has the habit of introducing new features or breaking old features with their updates and I am always trying to stay ahead of the break-fix, break-fix cycle.  To have a fully-functional WTANIWE experience, enable automatic updates on VSCode.
+VSCode must be kept up-to-date for access to all features.  VSCode often has the habit of introducing new features or breaking old features with their updates and I am always trying to stay ahead of the break-fix, break-fix cycle.  To have a fully-functional **WTANIWE** experience, enable automatic updates on VSCode.
 
 Some features only function when your machine has external dependancies installed:
 
@@ -164,7 +200,7 @@ NOTE: side effects/commands related to these panels will still be active, even i
 
 **Code Mode settings.**
 
-- `wt.codeMode.slowMode`: Special setting for slower machines.  For some reason on slower machines when existing code mode, all automatic text styling and highlighting stops on currently opened tabs until the user swaps to another tab and then returns.  I can't figure this one out, and it only occurs on slow machines and with large WTANIWE directories.  The only workaround I've found is to open and close an 'Untitled' VSCode document when leaving code mode.  If you find that text highlighting has stopped when exiting code mode, then enable this.
+- `wt.codeMode.slowMode`: Special setting for slower machines.  For some reason on slower machines when existing code mode, all automatic text styling and highlighting stops on currently opened tabs until the user swaps to another tab and then returns.  I can't figure this one out, and it only occurs on slow machines and with large **WTANIWE** directories.  The only workaround I've found is to open and close an 'Untitled' VSCode document when leaving code mode.  If you find that text highlighting has stopped when exiting code mode, then enable this.
 
 ## Known Issues
 
@@ -172,13 +208,13 @@ This extension is still technically in beta, even though I am confident in its g
 
 ### Multiple Actions at once:
 
-It is very rare for an action with WTANIWE to cause problems in the workspace itself, but it does happen.  And, when it does happen, it's because I did too many things at once.  I have been actively using WTANIWE for my own use for many months now, and in that time I have "broken" my WTANIWE workspace maybe a couple of times, and it's always been on a slower machine with huge WTANIWE workspace directories when I got impatient and started messing around with the Outline tree structure without waiting for other updates to resolve.
+It is very rare for an action with **WTANIWE** to cause problems in the workspace itself, but it does happen.  And, when it does happen, it's because I did too many things at once.  I have been actively using **WTANIWE** for my own use for many months now, and in that time I have "broken" my **WTANIWE** workspace maybe a couple of times, and it's always been on a slower machine with huge **WTANIWE** workspace directories when I got impatient and started messing around with the Outline tree structure without waiting for other updates to resolve.
 
 ### On slower machines:
 
-On a sufficiently slow machine with a sufficiently large WTANIWE Outline tree, you may experience slowness.  I am actively working to combat this, but it's difficult.  WTANIWE is a large extension which uses Javascript -- a very slow language -- as its main driver, so there is a limit to how much you can do.
+On a sufficiently slow machine with a sufficiently large **WTANIWE** Outline tree, you may experience slowness.  I am actively working to combat this, but it's difficult.  **WTANIWE** is a large extension which uses Javascript -- a very slow language -- as its main driver, so there is a limit to how much you can do.
 
-For reference, I use a huge WTANIWE workspace with hundreds of fragment files floating around the directory tree on a very old ThinkPad and it functioned fine for months before I experienced significant slow down.
+For reference, I use a huge **WTANIWE** workspace with hundreds of fragment files floating around the directory tree on a very old ThinkPad and it functioned fine for months before I experienced significant slow down.
 
 ### My recommendations:
 
@@ -189,9 +225,9 @@ For reference, I use a huge WTANIWE workspace with hundreds of fragment files fl
   
   - Renaming files and moving files and creating files and deleting files all at once can cause some .config file somewhere to become out of date with what another function expects and cause a break in the project structure, so please wait for each action to complete before starting another.
 
-- For slow machines, please consider turning your WTANIWE folder into a VSCode workspace and uninstalling all other extensions in that workspace.
+- For slow machines, please consider turning your **WTANIWE** folder into a VSCode workspace and uninstalling all other extensions in that workspace.
   
-  - First BACK UP your `data/contextValues.json` file.  This is a file which gets deleted and remade every time you save to git or restart the extension.  It is used to store a lot of internal information about the WTANIWE workspace such as watched words or your personal dictionary.
+  - First BACK UP your `data/contextValues.json` file.  This is a file which gets deleted and remade every time you save to git or restart the extension.  It is used to store a lot of internal information about the **WTANIWE** workspace such as watched words or your personal dictionary.
     
     - Back up by using one of these buttons on the editor toolbar, then cancelling the git commit.
       
@@ -199,7 +235,7 @@ For reference, I use a huge WTANIWE workspace with hundreds of fragment files fl
     
     - Then, create a new file somewhere else on your machine and copy the text of `data/contextValues.json` into there.
   
-  - Create a new file in the same directory as your WTANIWE project's .git folder and data folder called `<project_name>.code-workspace`.
+  - Create a new file in the same directory as your **WTANIWE** project's .git folder and data folder called `<project_name>.code-workspace`.
     
     - Insert this JSON into the code workspace file:
         ```
@@ -222,9 +258,9 @@ For reference, I use a huge WTANIWE workspace with hundreds of fragment files fl
       
     > ![Disable Workspace](media/README/disable_extensions.png)
     
-    - This will disable the extension only in the WTANIWE workspace, but not elsewhere
+    - This will disable the extension only in the **WTANIWE** workspace, but not elsewhere
   
-  - Now, whenever you want to open your WTANIWE workspace, **make sure** you open the one with the pattern `<project_name> (Workspace)` and not just `<project_name>` (see below)
+  - Now, whenever you want to open your **WTANIWE** workspace, **make sure** you open the one with the pattern `<project_name> (Workspace)` and not just `<project_name>` (see below)
       
     > ![choose workspace](media/README/chose_workspace.png)
   
@@ -234,6 +270,6 @@ For reference, I use a huge WTANIWE workspace with hundreds of fragment files fl
 
 ### 0.1.0
 
-> Initial "official" beta release of WTANIWE.
+> Initial "official" beta release of **WTANIWE**.
 
 **Enjoy!**
