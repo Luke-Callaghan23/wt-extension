@@ -41,7 +41,19 @@ export const wtToHtml = (wt: string, options: {
         allowUnsafeSymbols: true,
     });
 
+    // Replacing tabs with 8 unbreakable spaces
+    // Important html-to-docx library does not behave well with tab characters, but 8 unbreakable spaces does the job well enough
     wt = wt.replaceAll("&#x9;", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+
+    // Temporarily replacing style characters that have been escaped
+    const replaceKeys: { [ index: string ]: string } = {};
+    for (const [styleChar, description] of Object.entries(conversionsTable)) {
+        if (styleChar === '\n') continue;
+        const escapedStyleChar = '\\' + styleChar;
+        const replaceKey = `%%REPLACE%ME%%%${description}%%`;
+        wt = wt.replaceAll(escapedStyleChar, replaceKey);
+        replaceKeys[replaceKey] = styleChar;
+    }
 
 
     // Initialize the stack of html tags with an opening paragraph tag
@@ -244,7 +256,7 @@ export const wtToHtml = (wt: string, options: {
     // Then swap out that default separator now
     const swapDefaultSeparatorForEmptyLineSeparator = clearNewlines.replaceAll(defaultFragmentSeparator, '');
     
-    let finalHtml;
+    let finalHtml: string;
     if (options.destinationKind === 'docx') {
         const addNewNewlinesToLineAfterHeadings = swapDefaultSeparatorForEmptyLineSeparator.replaceAll("</h3>", "</h3><p></p>");
         const styleP = addNewNewlinesToLineAfterHeadings.replaceAll(/<p>/g, "<p style=\"line-height: 1.35; position: relative; top: -.5em; text-align: justify;\">");
@@ -255,6 +267,10 @@ export const wtToHtml = (wt: string, options: {
         finalHtml = addNewNewlinesToLineAfterHeadings;
     }
 
+    // Undo all the '%%REPLACE_ME__%%'s from earlier with the unescaped forms of each
+    for (const [ replaceKey, replaceWith ] of Object.entries(replaceKeys)) {
+        finalHtml = finalHtml.replaceAll(replaceKey, replaceWith);
+    }
 
     const fullHtml = `<html><style>
         p { 

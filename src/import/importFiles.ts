@@ -221,8 +221,9 @@ async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Prom
     // Replace some common unicode elements in the file with more friendly stuff
     const filteredContent = replaceCommonUnicode(fileContent);
 
-    let final = filteredContent.replaceAll("**", "^");
-    final = final.replaceAll("~~", "~");
+    const final = filteredContent
+        .replaceAll("**", "^")
+        .replaceAll("~~", "~");
 
     // Split the content with the split rules provided in `split`
     const splits = splitWt(final, split);
@@ -265,8 +266,6 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
         }
     });
 
-    TurndownService.prototype
-    
     // Convert the html to markdown
     const convertedMd = turndownService.turndown(htmlContent);
 
