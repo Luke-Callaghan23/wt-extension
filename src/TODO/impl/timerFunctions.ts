@@ -13,6 +13,7 @@ export async function update (
     const editedFragmentNode: TODONode | null = await this.getTreeElementByUri(editedFragmentUri, undefined, false);
     if (!editedFragmentNode) {
         this.rootNodes = [await initializeOutline((e) => new TODONode(e), true)];
+        Object.keys(TODOsView.todo).forEach(key => delete TODOsView.todo[key]);
         this.refresh(false, []);
         return;
     }
