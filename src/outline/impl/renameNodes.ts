@@ -8,9 +8,13 @@ import { OutlineNode, SnipNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import { TabLabels } from '../../tabLabels/tabLabels';
 
+let lastRenamedNode: OutlineNode | undefined;
 export async function renameResource (this: OutlineView, overrideNode?: OutlineNode, overrideRename?: string) {
 
-    const resource: OutlineNode = overrideNode || this.view.selection[0];
+    const resource: OutlineNode | undefined = overrideNode || this.view.selection[0] || lastRenamedNode;
+    if (!resource) return;
+    lastRenamedNode = resource;
+    
     const relativePath = resource.data.ids.relativePath;
     const fileName = resource.data.ids.fileName;
     const displayName = resource.data.ids.display;
