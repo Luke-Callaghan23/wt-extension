@@ -187,9 +187,4 @@ export async function loadWorkspaceContext (context: vscode.ExtensionContext, co
     context.workspaceState.update('wt.todo.enabled', contextValues['wt.todo.enabled']);
     context.workspaceState.update('wt.wordWatcher.enabled', contextValues['wt.wordWatcher.enabled']);
     context.workspaceState.update('wt.proximity.enabled', contextValues['wt.proximity.enabled']);
-    
-    if (del) {
-        // Then make sure to delete the workspace file when finished
-        vscode.workspace.fs.delete(contextLocation);
-    }
 }
