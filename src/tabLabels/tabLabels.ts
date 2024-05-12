@@ -82,18 +82,15 @@ export class TabLabels {
                 }
     
                 // If the node was found in the recycling bin, mark it as deleted in the label so the user knows
-                newPatterns[relativePath] = foundInRecycling
+                newPatterns['*/' + relativePath] = foundInRecycling
                     ? `(deleted) ${node.data.ids.display}`
                     : node.data.ids.display;
             }
         }
-    
-        const oldPatterns: { [index: string]: string} = await configuration.get('workbench.editor.customLabels.patterns') || {};
-        const combinedPatterns = { ...oldPatterns, ...newPatterns };
 
         const finalPatterns: { [index: string]: string } = {};
         const set = new Set<string>();
-        Object.entries(combinedPatterns).forEach(([ pattern, label ]) => {
+        Object.entries(newPatterns).forEach(([ pattern, label ]) => {
             let finalLabel = label;
             let index = 0;
             while (set.has(finalLabel)) {
