@@ -65,6 +65,7 @@ export async function createWorkspace (
         // Create necessary folders
         for (const folder of workspace.getFolders()) {
             await vscode.workspace.fs.createDirectory(folder);
+            await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(folder, '.gitkeep'), new Uint8Array());
         }
 
         // Create the .config files for chapters and snips
