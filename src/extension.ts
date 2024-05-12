@@ -33,6 +33,7 @@ import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { TabLabels } from './tabLabels/tabLabels';
 import { activateSpeak } from './ttsDebugger/tts/tts';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
+import { searchFiles } from './searchFiles';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -161,6 +162,8 @@ async function activateImpl (context: vscode.ExtensionContext) {
 			loadExtensionWorkspace(context, workspace);
 		}
 	});
+
+	vscode.commands.registerCommand("wt.searchFiles", searchFiles);
 
 	// Attempt to load a workspace from the current location
 	const workspace = await loadWorkspace(context);

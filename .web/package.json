@@ -178,6 +178,10 @@
 		},
 		"commands": [
 			{
+				"title": "Writing Tool: Search Files",
+				"command": "wt.searchFiles"
+			},
+			{
 				"command": "wt.tabLabels.renameActiveTab",
 				"title": "Writing Tool: Rename Active Tab"
 			},
@@ -1294,6 +1298,13 @@
 			]
 		},
 		"keybindings": [
+			{
+				"command": "wt.searchFiles",
+				"win": "ctrl+p",
+				"linux": "ctrl+p",
+				"mac": "cmd+p",
+				"when": "wt.valid"
+			},
 			{
 				"command": "wt.editor.addQuotes",
 				"win": "shift+'",
