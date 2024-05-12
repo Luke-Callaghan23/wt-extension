@@ -40,15 +40,15 @@ export async function getChildren(
             const snip = data as SnipNode;
 
             // Filter out any fragments without any TODOs and sort them
-            const fragments = []
-            for (const textNode of snip.contents) {
-                const todos = await textNode.getTODOCounts();
+            const contentTODOs = []
+            for (const node of snip.contents) {
+                const todos = await node.getTODOCounts();
                 if (!filter || todos > 0) {
-                    fragments.push(textNode);
+                    contentTODOs.push(node);
                 }
             }
-            fragments.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
-            return fragments;
+            contentTODOs.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+            return contentTODOs;
         }
         else if (data.ids.type === 'root') {
             // Collect all chapters and snips

@@ -73,9 +73,16 @@ export async function getTODOCounts (
 
             // Get or re-calculate TODO counts for each of the items in this container's
             //      contents array, and sum them up
-            const containerTODOs = (await Promise.all(
-                contents.map(currentNode => currentNode.getTODOCounts())
-            )).reduce(((acc, cur) => acc + cur), 0);
+            const containerTODOsLst: number[] = [];
+            for (const currentNode of contents) {
+                const counts = await currentNode.getTODOCounts();
+                containerTODOsLst.push(counts)
+            }
+
+            let containerTODOs = 0;
+            for (let n = 0; n < containerTODOsLst.length; n++) {
+                containerTODOs+=containerTODOsLst[n];
+            }
 
             // Set the count of TODOs for this container to the sum of the TODOs for all of
             //      its contents and return the new count
@@ -116,12 +123,24 @@ export async function getTODOCounts (
         }
         case 'snip': {
             const snip: SnipNode = this.data as SnipNode;
-            const contents: TODONode[] = snip.contents;
+            const ctent: TODONode[] = snip.contents;
             
             // (see 'chapter', 'container' cases above)
-            const snipsTODOs = (await Promise.all(
-                contents.map(currentContent => currentContent.getTODOCounts())
-            )).reduce(((acc, cur) => acc + cur), 0);
+            const containerTODOsLst: number[] = [];
+            try {
+                for (const currentNode of ctent) {
+                    const counts = await currentNode.getTODOCounts();
+                    containerTODOsLst.push(counts)
+                }
+            }
+            catch (err) {
+                console.log(snip);
+            }
+
+            let snipsTODOs = 0;
+            for (let n = 0; n < containerTODOsLst.length; n++) {
+                snipsTODOs+=containerTODOsLst[n];
+            }
 
             TODOsView.todo[uri.fsPath] = {
                 type: 'count',

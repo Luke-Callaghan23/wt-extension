@@ -7,6 +7,8 @@ import { OutlineView } from '../outlineView';
 import { OutlineNode, SnipNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import { TabLabels } from '../../tabLabels/tabLabels';
+import { TODOsView } from '../../TODO/TODOsView';
+import { TODONode } from '../../TODO/node';
 
 let lastRenamedNode: OutlineNode | undefined;
 export async function renameResource (this: OutlineView, overrideNode?: OutlineNode, overrideRename?: string) {
@@ -67,9 +69,19 @@ export async function renameResource (this: OutlineView, overrideNode?: OutlineN
     // Update internal outline tree structure's name
     resource.data.ids.display = newName;
 
+    const todoView: TODOsView = await vscode.commands.executeCommand('wt.todo.getView');
+
+
     vscode.window.showInformationMessage(`Successfully renamed '${oldName}' to '${newName}'`);
     this.refresh(false, [resource]);
     TabLabels.assignNamesForOpenTabs();
+
+    setTimeout(async () => {
+        const todoNode: TODONode | null = await todoView.getTreeElementByUri(resource.data.ids.uri);
+        if (!todoNode) return;
+        await todoView.invalidateNode(todoNode.data.ids.uri, todoNode);
+        todoView.refresh(false, []);
+    }, 0);
 
 
     // IF:

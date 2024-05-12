@@ -61,16 +61,21 @@ export function registerCommands(this: TODOsView) {
         }
 
         // Converts a snip container OutlineNode into a snip container TODONode
-        const convertSnips = (snips: OutlineNode) => {
-            return new TODONode(<ContainerNode<TODONode>> {
-                ids: { ...snips.data.ids },
-                contents: (snips.data as ContainerNode<OutlineNode>).contents.map(outlineSnip => {
-                    return new TODONode(<SnipNode<TODONode>> {
-                        ids: { ...outlineSnip.data.ids },
-                        contents: convertFragments((outlineSnip.data as SnipNode<OutlineNode>).contents)
+        const convertSnips = (snips: OutlineNode[]): TODONode[] => {
+            return snips.map(outlineSnip => {
+                return new TODONode(<SnipNode<TODONode>> {
+                    ids: { ...outlineSnip.data.ids },
+                    contents: (outlineSnip.data as SnipNode<OutlineNode>).contents.map(outlineNode => {
+                        if (outlineNode.data.ids.type === 'fragment') {
+                            return convertFragments([ outlineNode ])[0];
+                        }
+                        else if (outlineNode.data.ids.type === 'snip') {
+                            return convertSnips([outlineNode])[0];
+                        }
+                        else throw 'unreachable';
                     })
                 })
-            })
+            });
         }
 
         // Converts a chapter container OutlineNode into a chapter container TODONode
@@ -81,8 +86,11 @@ export function registerCommands(this: TODOsView) {
                     const chapter: ChapterNode<OutlineNode> = outlineChapter.data as ChapterNode<OutlineNode>;
                     return new TODONode(<ChapterNode<TODONode>> {
                         ids: { ...outlineChapter.data.ids },
-                        snips: convertSnips(chapter.snips),
-                        textData: convertFragments(chapter.textData)
+                        textData: convertFragments(chapter.textData),
+                        snips: new TODONode(<ContainerNode<TODONode>> {
+                            ids: { ...chapter.snips.data.ids },
+                            contents: convertSnips((chapter.snips.data as SnipNode<OutlineNode>).contents),
+                        })
                     });
                 })
             })
@@ -92,12 +100,12 @@ export function registerCommands(this: TODOsView) {
         //		with those converted nodes
         if (this.rootNodes[0].data) {
             (this.rootNodes[0].data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
-            (this.rootNodes[0].data as RootNode<TODONode>).snips = convertSnips(outlineWorkSnips);
+            (this.rootNodes[0].data as RootNode<TODONode>).snips = new TODONode(<ContainerNode<TODONode>> {
+                ids: { ...outlineWorkSnips.data.ids },
+                contents: convertSnips((outlineWorkSnips.data as SnipNode<OutlineNode>).contents),
+            })
             Object.keys(TODOsView.todo).forEach(key => delete TODOsView.todo[key]);
             this.refresh(false, []);
-        }
-        else {
-            console.log('hello')
         }
     });
 }
