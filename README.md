@@ -1,6 +1,6 @@
 # Writing Tool -- An Integrated Writing Environment (**WTANIWE**)  README
 
-This is the README for your extension  Writing Tool -- An Integrated Writing Environment (**WTANIWE**) ".  An extension tailor made to write fiction and prose in VSCode, from start to finish including: importing old work, tracking via git, and exporting into industry formats.
+Writing Tool -- An Integrated Writing Environment (**WTANIWE**).  An extension tailor made to write fiction and prose in VSCode, from start to finish including: importing old work, tracking via git, and exporting into industry formats.
 
 ## Features
 
