@@ -79,6 +79,7 @@
         let skipElement = document.getElementById("checkbox-skip");
         let extElement = document.getElementById("select-ext-type");
         let outputTypeElement = document.getElementById("select-output-type");
+        let useNonGenericFragmentNamesElement = document.getElementById("checkbox-non-generic-fragment-names");
         let outputIntoChapterElement = document.getElementById("checkbox-output-into-chapter");
         let outputChapterElement = document.getElementById("select-chapter");
         let outputChapterNameElement = document.getElementById("input-output-chapter-name");
@@ -110,6 +111,9 @@
             }
             if (outputIntoChapterElement?.ariaChecked !== undefined && outputIntoChapterElement?.ariaChecked !== null) {
                 docInfo.outputIntoChapter = outputIntoChapterElement?.ariaChecked === 'true';
+            }
+            if (useNonGenericFragmentNamesElement?.ariaChecked !== undefined && useNonGenericFragmentNamesElement?.ariaChecked !== null) {
+                docInfo.useNonGenericFragmentNames = useNonGenericFragmentNamesElement?.ariaChecked === 'true';
             }
             if (shouldSplitFragmentsElement?.ariaChecked !== undefined && shouldSplitFragmentsElement?.ariaChecked !== null) {
                 docInfo.shouldSplitFragments = shouldSplitFragmentsElement?.ariaChecked === 'true';
@@ -196,6 +200,17 @@
                             ${outputTypeOptions}
                         </vscode-single-select>
                         
+                        <div class="spacer"></div>
+
+                        <vscode-label for="checkbox-non-generic-fragment-names" class="label">Use Non-Generic Fragment Names?</vscode-label>
+                        <vscode-checkbox 
+                            label="Indicates that you want any generic fragment names to inherit any non-generic snip names in this document."
+                            id="checkbox-non-generic-fragment-names" 
+                            name="non-generic-fragment-names" 
+                            class="checkbox"
+                            ${docInfo.useNonGenericFragmentNames && 'checked'}
+                        ></vscode-checkbox>
+
                         <div class="spacer"></div>
         
                         ${
@@ -339,6 +354,7 @@
 
 
             skipElement = document.getElementById("checkbox-skip");
+            useNonGenericFragmentNamesElement = document.getElementById("checkbox-non-generic-fragment-names");
             outputIntoChapterElement = document.getElementById("checkbox-output-into-chapter");
             shouldSplitFragmentsElement = document.getElementById("checkbox-split-document");
             shouldSplitSnipsElement = document.getElementById("checkbox-split-snips");
@@ -348,6 +364,7 @@
             //      must update to reflect those changes
             [ 
                 skipElement, 
+                useNonGenericFragmentNamesElement,
                 outputIntoChapterElement, 
                 shouldSplitFragmentsElement, 
                 shouldSplitSnipsElement 

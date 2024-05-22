@@ -677,8 +677,4 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
 
     // Do the expensive full refresh
     vscode.commands.executeCommand('wt.outline.refresh');
-
-    // No longer need to perform TODO refresh as outline refresh feeds updated content to 
-    //      tree for TODOs
-    // vscode.commands.executeCommand('wt.todo.refresh');
 }
