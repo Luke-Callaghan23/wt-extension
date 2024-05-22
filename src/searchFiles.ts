@@ -8,7 +8,6 @@ export interface IFragmentPick {
     label: string;
     description?: string;
     node: OutlineNode;
-    childOfTarget: boolean,
 }
 
 export interface IButton extends vscode.QuickInputButton {
@@ -34,127 +33,123 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
     }
 
     
-    const processSnip = (snip: SnipNode, node: OutlineNode, indentLevel: number, path: string, isChildOfTarget: boolean) => {
+    const processSnip = (
+        snipNode: OutlineNode, 
+        indentLevel: number, 
+        path: string
+    ) => {
+        const snip = snipNode.data as SnipNode;
         const space = giveMeSomeSpace(indentLevel);
         options.push({
             label: `${space}└─$(folder) Snip: ${snip.ids.display}`,
             description: `(${path})`,
-            node: node,
-            childOfTarget: isChildOfTarget
+            node: snipNode,
         })
-        for (const content of snip.contents) {
+
+        snip.contents.forEach((content, contentIndex) => {
+            const contentIsLast = contentIndex === snip.contents.length - 1;
             if (content.data.ids.type === 'fragment') {
                 options.push({
                     label: `${space}${space}└─$(edit) ${content.data.ids.display}`,
                     description: `(${path}/${snip.ids.display})`,
                     node: content,
-                    childOfTarget: isChildOfTarget
                 });
                 
                 if (!currentNode && currentDoc && content.data.ids.uri.fsPath === currentDoc.fsPath) {
                     currentNode = content;
                     currentPick = options[options.length - 1];
                 }
-                else if (!isChildOfTarget && filterGeneric && content.data.ids.display.startsWith("Imported Fragment (") || content.data.ids.display.startsWith("New Fragment (")) {
+                else if (filterGeneric && content.data.ids.display.startsWith("Imported Fragment (") || content.data.ids.display.startsWith("New Fragment (")) {
                     options.pop();
                 }
             }
             else if (content.data.ids.type === 'snip') {
                 processSnip(
-                    content.data as SnipNode, 
                     content, 
                     indentLevel + TAB_SIZE, 
                     `${path}/${snip.ids.display}`, 
-                    isChildOfTarget 
-                    || targetNode?.fsPath === content.data.ids.uri.fsPath
                 );
             }
-        }
+        })
     }
 
 
-    const processChapter = (chapter: ChapterNode, node: OutlineNode, indentLevel: number, path: string, isChildOfTarget: boolean) => {
-
+    const processChapter = (
+        chapterNode: OutlineNode, 
+        indentLevel: number, 
+        path: string
+    ) => {
+        const chapter = chapterNode.data as ChapterNode;
         const space = giveMeSomeSpace(indentLevel);
+        
+        
         options.push({
             label: `${space}└─$(folder) Chapter: ${chapter.ids.display}`,
             description: `(${path})`,
-            node: node,
-            childOfTarget: isChildOfTarget
-        })
-        for (const fragment of chapter.textData) {
+            node: chapterNode
+        });
+        chapter.textData.forEach((fragment, fragmentIndex) => {
             options.push({
                 label: `${space}${space}└─$(edit) ${fragment.data.ids.display}`,
                 description: `(${path}/${chapter.ids.display})`,
-                node: fragment,
-                childOfTarget: isChildOfTarget
+                node: fragment
             });
             if (!currentNode && currentDoc && fragment.data.ids.uri.fsPath === currentDoc.fsPath) {
                 currentNode = fragment;
                 currentPick = options[options.length - 1];
             }
-            else if (!isChildOfTarget && filterGeneric && fragment.data.ids.display.startsWith("Imported Fragment (") || fragment.data.ids.display.startsWith("New Fragment (")) {
+            else if (filterGeneric && fragment.data.ids.display.startsWith("Imported Fragment (") || fragment.data.ids.display.startsWith("New Fragment (")) {
                 options.pop();
             }
-        }
+        });
+
+
         options.push({
             label: `${space}└─$(folder) ${chapter.snips.data.ids.display}`,
             description: `(${path}/${chapter.ids.display})`,
-            node: chapter.snips,
-            childOfTarget: isChildOfTarget
+            node: chapter.snips
         });
-        for (const snip of (chapter.snips.data as ContainerNode).contents) {
+        const snipContents = (chapter.snips.data as ContainerNode).contents;
+        snipContents.forEach((snip, snipIndex) => {
             processSnip(
-                snip.data as SnipNode, 
                 snip, 
                 indentLevel + TAB_SIZE, 
-                `${path}/${chapter.ids.display}/Snips`, 
-                isChildOfTarget 
-                || targetNode?.fsPath === chapter.snips.data.ids.uri.fsPath 
-                || targetNode?.fsPath === snip.data.ids.uri.fsPath
+                `${path}/${chapter.ids.display}/Snips`
             );
-        }
+        })
     }
 
     const root = outlineView.rootNodes[0].data as RootNode;
     options.push({
         label: "$(folder) Chapters:",
         description: ``,
-        node: root.chapters,
-        childOfTarget: targetNode?.fsPath === root.chapters.data.ids.uri.fsPath
+        node: root.chapters
     })
     const chapters = (root.chapters.data as ContainerNode).contents;
-    for (const chapter of chapters) {
+    chapters.forEach((chapter, chapterIndex) => {
         processChapter(
-            chapter.data as ChapterNode, 
             chapter, 
             TAB_SIZE, 
-            'Chapters', 
-            targetNode?.fsPath === root.chapters.data.ids.uri.fsPath
-            || targetNode?.fsPath === chapter.data.ids.uri.fsPath
+            'Chapters'
         );
-    }
+    });
     
     options.push({
         label: "$(folder) Work Snips:",
         description: ``,
-        node: root.snips,
-        childOfTarget: targetNode?.fsPath === root.snips.data.ids.uri.fsPath
+        node: root.snips
     })
     const snips = (root.snips.data as ContainerNode).contents;
-    for (const snip of snips) {
+    snips.forEach((snip, snipIndex) => {
         processSnip(
-            snip.data as SnipNode, 
             snip, 
             TAB_SIZE, 
-            'Work Snips', 
-            targetNode?.fsPath === root.snips.data.ids.uri.fsPath
-            || targetNode?.fsPath === snip.data.ids.uri.fsPath
+            'Work Snips'
         );
-    }
+    });
 
     return {
-        options: targetNode ? options.filter(op => op.childOfTarget) : options,
+        options,
         currentNode,
         currentPick
     };
