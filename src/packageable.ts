@@ -12,5 +12,5 @@ export async function packageForExport (
             allPackagedItems[contextKey] = contextValue;
         });
     });
-    return allPackagedItems
+    return allPackagedItems;
 }

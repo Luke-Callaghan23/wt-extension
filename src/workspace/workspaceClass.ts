@@ -90,7 +90,7 @@ export class Workspace {
     static async packageContextItems () {
         // Write context items to the file system before git save
         const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
-        const contextJSON = JSON.stringify(contextItems);
+        const contextJSON = JSON.stringify(contextItems, undefined, 2);
         const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
     }
