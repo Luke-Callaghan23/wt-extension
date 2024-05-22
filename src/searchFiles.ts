@@ -32,16 +32,22 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
         return '│' + ' '.repeat(Math.floor(indentLevel));
     }
 
+    const getTreeChar = (isLast: boolean): string => {
+        return isLast ? '└' : '├';
+    }
+
     
     const processSnip = (
         snipNode: OutlineNode, 
         indentLevel: number, 
-        path: string
+        path: string,
+        isLast: boolean
     ) => {
         const snip = snipNode.data as SnipNode;
         const space = giveMeSomeSpace(indentLevel);
+        const treeChar = getTreeChar(isLast);
         options.push({
-            label: `${space}└─$(folder) Snip: ${snip.ids.display}`,
+            label: `${space}${treeChar}─$(folder) Snip: ${snip.ids.display}`,
             description: `(${path})`,
             node: snipNode,
         })
@@ -49,8 +55,9 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
         snip.contents.forEach((content, contentIndex) => {
             const contentIsLast = contentIndex === snip.contents.length - 1;
             if (content.data.ids.type === 'fragment') {
+                const fragmentTreeChar = getTreeChar(contentIsLast);
                 options.push({
-                    label: `${space}${space}└─$(edit) ${content.data.ids.display}`,
+                    label: `${space}${space}${fragmentTreeChar}─$(edit) ${content.data.ids.display}`,
                     description: `(${path}/${snip.ids.display})`,
                     node: content,
                 });
@@ -68,6 +75,7 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
                     content, 
                     indentLevel + TAB_SIZE, 
                     `${path}/${snip.ids.display}`, 
+                    contentIsLast
                 );
             }
         })
@@ -77,20 +85,23 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
     const processChapter = (
         chapterNode: OutlineNode, 
         indentLevel: number, 
-        path: string
+        path: string,
+        isLast: boolean,
     ) => {
         const chapter = chapterNode.data as ChapterNode;
         const space = giveMeSomeSpace(indentLevel);
         
         
+        const treeChar = getTreeChar(isLast);
         options.push({
-            label: `${space}└─$(folder) Chapter: ${chapter.ids.display}`,
+            label: `${space}${treeChar}─$(folder) Chapter: ${chapter.ids.display}`,
             description: `(${path})`,
             node: chapterNode
         });
         chapter.textData.forEach((fragment, fragmentIndex) => {
+            const fragmentTreeChar = getTreeChar(fragmentIndex === chapter.textData.length - 1);
             options.push({
-                label: `${space}${space}└─$(edit) ${fragment.data.ids.display}`,
+                label: `${space}${space}${fragmentTreeChar}─$(edit) ${fragment.data.ids.display}`,
                 description: `(${path}/${chapter.ids.display})`,
                 node: fragment
             });
@@ -105,7 +116,7 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
 
 
         options.push({
-            label: `${space}└─$(folder) ${chapter.snips.data.ids.display}`,
+            label: `${space}${treeChar}─$(folder) ${chapter.snips.data.ids.display}`,
             description: `(${path}/${chapter.ids.display})`,
             node: chapter.snips
         });
@@ -114,7 +125,8 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
             processSnip(
                 snip, 
                 indentLevel + TAB_SIZE, 
-                `${path}/${chapter.ids.display}/Snips`
+                `${path}/${chapter.ids.display}/Snips`,
+                snipIndex === snipContents.length - 1
             );
         })
     }
@@ -130,7 +142,8 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
         processChapter(
             chapter, 
             TAB_SIZE, 
-            'Chapters'
+            'Chapters',
+            chapterIndex === chapters.length - 1
         );
     });
     
@@ -144,7 +157,8 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
         processSnip(
             snip, 
             TAB_SIZE, 
-            'Work Snips'
+            'Work Snips',
+            snipIndex === snips.length - 1
         );
     });
 
