@@ -289,11 +289,16 @@ export async function searchFiles () {
         }
     });
 
-    qp.onDidAccept(() => {
+    qp.onDidAccept(async () => {
         const [ selected ] = qp.selectedItems;
         outlineView.view.reveal(selected.node);
         if (selected.node.data.ids.type === 'fragment') {
-            vscode.window.showTextDocument(selected.node.data.ids.uri);
+            await vscode.window.showTextDocument(selected.node.data.ids.uri);
+            const outline: OutlineView = await vscode.commands.executeCommand<OutlineView>('wt.outline.getOutline');
+            await outline.view.reveal(selected.node, {
+                expand: true,
+                select: true,
+            });
             qp.dispose();
         }
         else {
