@@ -27,7 +27,7 @@ export class UriBasedView<T extends HasGetUri> {
 		//		or opened
 		view.onDidExpandElement((event: vscode.TreeViewExpansionEvent<T>) => {
 			const expandedElementUri = event.element.getUri();
-			const usableUri = expandedElementUri.fsPath.replace(extension.rootPath.fsPath, '');
+			const usableUri = expandedElementUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
 			this.uriToVisibility[usableUri] = true;
 			// Also save the state of all collapse and expands to workspace context state
 			context.workspaceState.update(`${viewName}.collapseState`, this.uriToVisibility);
@@ -35,7 +35,7 @@ export class UriBasedView<T extends HasGetUri> {
 
 		view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
 			const collapsedElementUri = event.element.getUri();
-			const usableUri = collapsedElementUri.fsPath.replace(extension.rootPath.fsPath, '');
+			const usableUri = collapsedElementUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
 			this.uriToVisibility[usableUri] = false;			
 			context.workspaceState.update(`${viewName}.collapseState`, this.uriToVisibility);
 		});

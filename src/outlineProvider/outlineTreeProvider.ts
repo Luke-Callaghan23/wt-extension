@@ -88,14 +88,14 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	abstract refresh(reload: boolean, updates: TreeNode[]): Promise<void>;
 
 	public setOpenedStatusNoUpdate (uri: vscode.Uri, opened: boolean) {
-		const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '');
+		const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');;
 		this.uriToVisibility[usableUri] = opened;
 		// Also save the state of all collapse and expands to workspace context state
 		this.context.workspaceState.update(`${this.viewName}.collapseState`, this.uriToVisibility);
 	}
 
 	public getOpenedStatusOfNode (uri: vscode.Uri): boolean | undefined {
-		const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '');
+		const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');;
 		return this.uriToVisibility[usableUri];
 	}
 
@@ -136,7 +136,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		if (treeElement.hasChildren()) {
 			// If the tree element has children, look that element up in the uri map to find the collapsability
 			const uri = treeElement.getUri();
-			const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '');
+			const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');;
 			const isCollapsed: boolean | undefined = this.uriToVisibility[usableUri];
 			if (isCollapsed === undefined || isCollapsed === false) {
 				collapseState = vscode.TreeItemCollapsibleState.Collapsed;
