@@ -6,6 +6,7 @@ import * as console from '../vsconsole';
 import { ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
 import * as extension from './../extension';
+import {sep} from 'path';
 
 export interface Entry {
 	uri: vscode.Uri;
@@ -178,7 +179,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		});
 
 		vscode.commands.registerCommand('wt.import.fileExplorer.importFolder', (folderUri: vscode.Uri) => {
-			const subFolder = this.allDocs.filter(file => file.fsPath.includes(folderUri.fsPath + '/') && file.fsPath !== folderUri.fsPath);
+			const subFolder = this.allDocs.filter(file => file.fsPath.includes(folderUri.fsPath + sep) && file.fsPath !== folderUri.fsPath);
 			new ImportForm(this.context.extensionUri, this.context, subFolder);
 		});
 
