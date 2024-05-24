@@ -178,7 +178,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		});
 
 		vscode.commands.registerCommand('wt.import.fileExplorer.importFolder', (folderUri: vscode.Uri) => {
-			const subFolder = this.allDocs.filter(file => file.fsPath.includes(folderUri.fsPath) && file.fsPath !== folderUri.fsPath);
+			const subFolder = this.allDocs.filter(file => file.fsPath.includes(folderUri.fsPath + '/') && file.fsPath !== folderUri.fsPath);
 			new ImportForm(this.context.extensionUri, this.context, subFolder);
 		});
 

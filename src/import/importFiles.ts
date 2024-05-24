@@ -47,6 +47,7 @@ export type DocInfo = {
     outputSnipName: string,
     outputChapterName: string,
     outputChapter: string,
+    useNonGenericFragmentNames: boolean,
     shouldSplitFragments: boolean,
     outerSplitRegex: string,
     shouldSplitSnips: boolean,
@@ -85,20 +86,35 @@ type MultiSplit = {
 type DocSplit = NoSplit | SingleSplit | MultiSplit;
 
 type SplitInfo = {
+    useNonGenericFragmentNames: boolean,
     fragmentSplitRegex: RegExp | undefined,
     outerSplitRegex: RegExp | undefined
 };
 
+const getSnipDateString = () => {
+    // Make a date string for the new snip aggregate
+    const date = new Date();
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based
+    const year = date.getFullYear();
+    const dateStr = `${month}-${day}-${year}`;
+    return dateStr;
+}
+
 function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
 
-    const processTitledSplit = (splitter: RegExp, text: string): NamedSingleSplit[] => {
+    const processTitledSplit = (splitter: RegExp, text: string, outerTitle: string | null): NamedSingleSplit[] => {
         
         let nextTitle: string | null = null;
+        if (split.useNonGenericFragmentNames && outerTitle && outerTitle.length > 0) {
+            nextTitle = `(${outerTitle}) Imported Fragment 0`
+        }
         let cursor = 0;
 
         const out: NamedSingleSplit[] = [];
         
         let m: RegExpExecArray | null;
+        let idx: number = 0;
         while ((m = splitter.exec(text)) !== null) {
             const match: RegExpExecArray = m;
             const matchStart = match.index;
@@ -119,8 +135,13 @@ function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
             nextTitle = match[1] ? match[1].trim() : null;
             nextTitle = nextTitle && nextTitle.length > 0 ? nextTitle : null;
 
+            if (split.useNonGenericFragmentNames && nextTitle === null && outerTitle && outerTitle.length > 0) {
+                nextTitle = `(${outerTitle}) Imported Fragment ${idx+1}`
+            }
+
             // And advance the cursor past the matched area
             cursor = match.index + match[0].length;
+            idx++;
         }
 
         // Add the last split starting from the current cursor position to the end of the document
@@ -138,13 +159,13 @@ function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
             const fragmentSplitter = split.fragmentSplitRegex as RegExp;
 
             // Split the full text of the document by the snip splitter
-            const snipsSplit = processTitledSplit(snipSplitter, content);
+            const snipsSplit = processTitledSplit(snipSplitter, content, null);
 
             // Iterate over full text data of each snip and split each of them on the fragment
             //      separator
             const fullSplit: NamedSnipSplit[] = snipsSplit.map(snip => {
                 const { title: snipTitle, data } = snip;
-                const fragmentsSplit = processTitledSplit(fragmentSplitter, data);
+                const fragmentsSplit = processTitledSplit(fragmentSplitter, data, snipTitle);
                 return {
                     title: snipTitle,
                     data: fragmentsSplit
@@ -159,7 +180,7 @@ function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
         }
         else {
             // Document split, but no snipSplit -> return a Single split
-            const singleSplits = processTitledSplit(split.fragmentSplitRegex, content);
+            const singleSplits = processTitledSplit(split.fragmentSplitRegex, content, null);
 
             return {
                 type: 'single',
@@ -339,29 +360,34 @@ async function readAndSplitOdt (split: SplitInfo, fileRelativePath: string): Pro
 function getSplitInfo (doc: DocInfo): SplitInfo {
     let fragmentSplitRegex: RegExp | undefined = undefined;
     if (doc.shouldSplitFragments) {
-        const fragmentSplit = doc.fragmentSplitRegex;
+        let fragmentSplitStr = doc.fragmentSplitRegex;
+        // fragmentSplitStr = '(^|\n)' + fragmentSplitStr;
+        if (!fragmentSplitStr.endsWith("\n")) fragmentSplitStr = fragmentSplitStr + '\n';
         try {
-            fragmentSplitRegex = new RegExp(fragmentSplit, 'g');
+            fragmentSplitRegex = new RegExp(fragmentSplitStr, 'g');
         }
         catch (e) {
-            vscode.window.showErrorMessage(`Error creating regex from provided fragment split string '${fragmentSplit}': ${e}`);
+            vscode.window.showErrorMessage(`Error creating regex from provided fragment split string '${fragmentSplitStr}': ${e}`);
             throw e;
         }
     }
 
     let snipSplitRegex: RegExp | undefined = undefined;
     if (doc.shouldSplitSnips) {
-        const snipSplit = doc.outerSplitRegex;
+        let snipSplitStr = doc.outerSplitRegex;
+        // snipSplitStr = '(^|\n)' + snipSplitStr;
+        if (!snipSplitStr.endsWith("\n")) snipSplitStr = snipSplitStr + '\n';
         try {
-            snipSplitRegex = new RegExp(snipSplit, 'g');
+            snipSplitRegex = new RegExp(snipSplitStr, 'g');
         }
         catch (e) {
-            vscode.window.showErrorMessage(`Error creating regex from provided snip split string '${snipSplit}': ${e}`);
+            vscode.window.showErrorMessage(`Error creating regex from provided snip split string '${snipSplitStr}': ${e}`);
             throw e;
         }
     }
 
     return {
+        useNonGenericFragmentNames: doc.useNonGenericFragmentNames,
         fragmentSplitRegex: doc.shouldSplitFragments ? fragmentSplitRegex : undefined,
         outerSplitRegex: doc.shouldSplitSnips ? snipSplitRegex : undefined
     };
@@ -499,8 +525,11 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
     let parentNode: OutlineNode | undefined;
     const output = snipInfo.output;
     if (output.dest === 'snip') {
+        const snipUri = vscode.Uri.joinPath(extension.rootPath, output.outputSnipPath);
+        const snipNode: OutlineNode | null = await outlineView.getTreeElementByUri(snipUri);
+        if (!snipNode) return;
         // dest = 'snip' -> inserted snips are work snips
-        parentNode = (outlineView.rootNodes[0].data as RootNode).snips;
+        parentNode = snipNode;
     }
     else if (output.dest === 'chapter') {
         // dest = 'chapter' -> inserted snips are inserted into the specified chapter
@@ -512,11 +541,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
     }
 
     // Make a date string for the new snip aggregate
-    const date = new Date();
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based
-    const year = date.getFullYear();
-    const dateStr = `${day}-${month}-${year}`;
+    const dateStr = getSnipDateString();
 
     // If this is a multi split, then we want to store all splits in a newly created snip container in the `parentNode` calculated above
     if (docSplits.type === 'multi') {
@@ -536,6 +561,8 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
         }
     }
 
+    // There's some kind of race condition somewhere, don't really care enough to find it.  This fixes it.  :)
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     // Uploads fragments in a content array into specified path
     const fragmentUpload = async (splits: NamedSingleSplit[], snipUri: vscode.Uri) => {
@@ -609,7 +636,7 @@ async function writeDocumentSplits (docSplits: DocSplit, writeInfo: WriteInfo) {
     }
 }
 
-async function importDoc (doc: DocInfo, fileRelativePath: string) {
+async function importDoc (doc: DocInfo, fileRelativePath: string, workSnipAdditionalPath: string) {
     if (doc.skip) {
         vscode.window.showWarningMessage(`Skipping '${fileRelativePath}' . . . `);
         return;
@@ -635,7 +662,10 @@ async function importDoc (doc: DocInfo, fileRelativePath: string) {
     const splits: DocSplit = docSplit;
 
     // Create a write info struct for this write
-    const writeInfo = getWriteInfo(doc);
+    const writeInfo: WriteInfo = getWriteInfo(doc);
+    if (writeInfo.type === 'snip' && writeInfo.output.dest === 'snip') {
+        writeInfo.output.outputSnipPath += workSnipAdditionalPath;
+    }
 
     // Finally, write the document to the file system
     await writeDocumentSplits(splits, writeInfo);
@@ -662,13 +692,38 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
     // Sort all doc names by the last modified date
     docLastModified.sort((a, b) => a.lastModified - b.lastModified);
 
+    let workSnipsParentFileName = '';
+    const workSnipsCount = Object.entries(docInfo).filter(([_, info]) => info.outputType === 'snip' && !info.outputIntoChapter).length;
+    if (docNames.length > 1 && workSnipsCount > 1) {
+
+        // If there is more than one work snip account to import, then make a parent container to insert all work snips into
+        const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
+        const workSnipsContainer = (outlineView.rootNodes[0].data as RootNode).snips;
+        const snipUri = await outlineView.newSnip(workSnipsContainer, {
+            defaultName: `Imported ${getSnipDateString()}`,
+            preventRefresh: true,
+            skipFragment: true,
+        });
+        await outlineView.refresh(true, []);
+        if (snipUri) {
+            const snipNode: OutlineNode | null = await outlineView.getTreeElementByUri(snipUri);
+            if (snipNode) {
+                workSnipsParentFileName = snipNode.data.ids.fileName;
+            }
+        }
+    }
+
     // Process imports for each imported file
     for (let index = 0; index < docNames.length; index++) {
         const docRelativePath = docNames[index];
         const doc = docInfo[docRelativePath];
         vscode.window.showInformationMessage(`Processing '${docRelativePath}' [${index + 1} of ${docNames.length}]`);
         try {
-            await importDoc(doc, docRelativePath);
+            let workSnipAdditionalPath = '';
+            if (doc.outputType === 'snip' && !doc.outputIntoChapter) {
+                workSnipAdditionalPath += workSnipsParentFileName;
+            }
+            await importDoc(doc, docRelativePath, workSnipAdditionalPath);
         }
         catch (e) {
             vscode.window.showErrorMessage(`Error occurred when importing '${docRelativePath}': ${e}`);

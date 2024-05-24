@@ -39,6 +39,7 @@
                 outputSnipName: `${name} (Imported)`,
 
                 outputChapterName: `${name} (Imported)`,
+                useNonGenericFragmentNames: true,
                 
                 shouldSplitFragments: false,
                 outerSplitRegex: '\\[{3,}([^\\]]*)\\]{3,}',
