@@ -41,6 +41,7 @@ export class SynonymsProvider {
 
     static async getCachedSynonym (word: string, provider: 'wh' | 'synonymsApi'): Promise<SynonymSearchResult> {
         return new Promise((resolve, reject) => {
+            word = word.toLocaleLowerCase().trim();
             if (word in this.cache[provider] && 
                 this.cache[provider][word] !== undefined && 
                 this.cache[provider][word] !== null && 
@@ -66,7 +67,6 @@ export class SynonymsProvider {
                 SynonymsProvider.getCachedSynonym(word, provider),
                 SynonymsProvider.synonymsApi.getSynonym(word, provider),
             ]);
-            if (result) this.cache[provider][word] = result;
 
             if (result !== undefined && 
                 result !== null && 
@@ -74,7 +74,7 @@ export class SynonymsProvider {
                 'type' in result &&
                 result.type === 'success'
             ) {
-                this.cache[provider][word] = result;
+                this.cache[provider][word.toLocaleLowerCase().trim()] = result;
             }
 
             return result;
