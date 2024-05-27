@@ -1,5 +1,4 @@
 import { SynonymsApi } from "./synonymsApi";
-import { SynonymsDB } from "./synonymsDB";
 
 
 export type Definition = {
@@ -29,7 +28,6 @@ export class SynonymsProvider {
         'wh': { [index: string]: SynonymSearchResult },
         'synonymsApi': { [index: string]: SynonymSearchResult },
     };
-    private static synonymsDb: SynonymsDB;
     private static synonymsApi: SynonymsApi;
 
 
@@ -38,8 +36,6 @@ export class SynonymsProvider {
             'wh': {},
             'synonymsApi': {},
         };
-        this.synonymsDb = new SynonymsDB();
-        await this.synonymsDb.initSynonymsDb();
         this.synonymsApi = new SynonymsApi();
     }
 
@@ -68,22 +64,18 @@ export class SynonymsProvider {
         try { 
             const result: SynonymSearchResult = await Promise.any([
                 SynonymsProvider.getCachedSynonym(word, provider),
-                SynonymsProvider.synonymsDb.getSynonym(word, provider),
                 SynonymsProvider.synonymsApi.getSynonym(word, provider),
             ]);
             if (result) this.cache[provider][word] = result;
 
-            
             if (result !== undefined && 
                 result !== null && 
                 typeof result === 'object' &&
                 'type' in result &&
                 result.type === 'success'
             ) {
-                SynonymsProvider.synonymsDb.insertSynonym(result);
-                // this.cache[provider][word] = result;
+                this.cache[provider][word] = result;
             }
-
 
             return result;
         }
