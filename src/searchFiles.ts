@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { OutlineView } from './outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from './outline/nodes_impl/outlineNode';
-import { queryWordHippo } from './intellisense/synonymsProvider/synonymsApi';
 
 
 export interface IFragmentPick {
