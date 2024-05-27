@@ -5,6 +5,7 @@ import { CompletionItemProvider } from './synonyms/completionItemProvider';
 import { HoverProvider } from './synonyms/hoverProvider';
 import { CodeActionProvider } from './synonyms/codeActionProvider';
 import { PersonalDictionary } from './spellcheck/personalDictionary';
+import { SynonymsProvider } from './synonymsProvider/provideSynonyms';
 
 export class SynonymsIntellisense {
     constructor (
@@ -16,11 +17,12 @@ export class SynonymsIntellisense {
         const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
             language: 'wt'
         };
-        vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace, useWordHippo));
-        vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace));
-        vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(context, workspace, personalDictionary));
-    
-        this.registerCommands();
+        SynonymsProvider.init().then(() => {
+            vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace, useWordHippo));
+            vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace));
+            vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(context, workspace, personalDictionary));
+            this.registerCommands();
+        });
     }
 
     registerCommands() {

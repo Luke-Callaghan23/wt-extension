@@ -3,7 +3,7 @@ import * as console from '../vsconsole';
 import { getNonce } from '../help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
-import { queryWordHippo } from '../intellisense/querySynonym';
+import { queryWordHippo } from '../intellisense/synonymsProvider/synonymsApi';
 
 export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 

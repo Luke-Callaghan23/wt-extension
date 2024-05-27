@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
 import { capitalize, getHoverText, getHoveredWord } from '../common';
-import { query } from '../querySynonym';
 import { WorldNotes } from '../../worldNotes/worldNotes';
 
 export class HoverProvider implements vscode.HoverProvider {

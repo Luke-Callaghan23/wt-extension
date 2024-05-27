@@ -1982,6 +1982,7 @@
 	"dependencies": {
 		"@bendera/vscode-webview-elements": "^0.8.1",
 		"@types/markdown-it": "^12.2.3",
+		"@types/nedb": "^1.8.16",
 		"@vscode/codicons": "^0.0.32",
 		"@vscode/debugadapter": "^1.65.0",
 		"await-notify": "^1.0.1",
@@ -1993,6 +1994,7 @@
 		"jsdom": "^21.1.0",
 		"libreoffice-convert": "^1.5.1",
 		"mammoth": "^1.5.1",
+		"nedb": "^1.8.0",
 		"node-fetch": "^3.3.1",
 		"node-fetch-commonjs": "^3.2.4",
 		"path-browserify": "^1.0.1",

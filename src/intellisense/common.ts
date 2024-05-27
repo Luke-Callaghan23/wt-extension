@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { query } from './querySynonym';
+import { SynonymsProvider } from './synonymsProvider/provideSynonyms';
 
 export type HoverPosition = {
     start: number;
@@ -124,7 +124,7 @@ export async function getHoverText (text: string): Promise<string> {
     }
 
     // Query the synonym api for the hovered word
-    const response = await query(text);
+    const response = await SynonymsProvider.provideSynonyms(text, 'synonymsApi');
     if (response.type === 'error') {
         return response.message;
     }

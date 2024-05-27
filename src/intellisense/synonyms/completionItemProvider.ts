@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
 import { Capitalization, HoverPosition, capitalize, getHoverText, getHoveredWord, getTextCapitalization, transformToCapitalization } from '../common';
-import { SynonymError, SynonymSearchResult, Synonyms, query, queryWordHippo } from '../querySynonym';
-import { HoverProvider } from './hoverProvider';
+import { SynonymError, SynonymSearchResult, Synonyms, SynonymsProvider } from '../synonymsProvider/provideSynonyms';
 
 const NUMBER_COMPLETES = 20;
 
@@ -25,7 +24,6 @@ type ActivationState = {
 
 
 export class CompletionItemProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
-    private cache: { [index: string]: SynonymSearchResult };
     private activationState?: ActivationState;
 
     private isWordHippo;
@@ -37,7 +35,6 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         private workspace: Workspace,
         useWordHippo: boolean,
     ) { 
-        this.cache = {};
         this.registerCommands();
         this.isWordHippo = useWordHippo;
     }
@@ -106,31 +103,28 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         
         // Query the synonym api for the hovered word
         let response: Synonyms;
-        if (this.cache[wordText]) {
-            const result = this.cache[wordText];
-            if (result.type === 'error') {
-                return getMisspellCorrections(result, hoverRange, wordText);
-            }
-            response = result;
+        // if (this.cache[wordText]) {
+        //     const result = this.cache[wordText];
+        //     if (result.type === 'error') {
+        //         return getMisspellCorrections(result, hoverRange, wordText);
+        //     }
+        //     response = result;
+        // }
+        // else {
+
+
+        // Query the dictionary api for the selected word
+        const res = await SynonymsProvider.provideSynonyms(hoverPosition.text, this.isWordHippo ? 'wh' : 'synonymsApi');
+        if (res.type === 'error') {
+            // this.cache[wordText] = res;
+            return getMisspellCorrections(res, hoverRange, wordText);
         }
-        else {
 
-            let q = this.isWordHippo 
-                ? queryWordHippo
-                : query;
-
-            // Query the dictionary api for the selected word
-            const res = await q(hoverPosition.text);
-            if (res.type === 'error') {
-                this.cache[wordText] = res;
-                return getMisspellCorrections(res, hoverRange, wordText);
-            }
-
-            // If there was no error querying for synonyms of the selected word, then store the response from
-            //      the dictionary api and cache it for later
-            response = res;
-            this.cache[wordText] = response;
-        }
+        // If there was no error querying for synonyms of the selected word, then store the response from
+        //      the dictionary api and cache it for later
+        response = res;
+        //     this.cache[wordText] = response;
+        // }
 
         
         const defs = response.definitions;
@@ -180,7 +174,9 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         const maxDigits = numDigits(defs.length);
 
         // Create completion items for each of the definitions
-        const allItems = defs.map((def, definitionIndex) => {
+        const allItems: vscode.CompletionItem[] = [];
+        for (let definitionIndex = 0; definitionIndex < defs.length; definitionIndex++) {
+            const def = defs[definitionIndex];
             let preselectDefinition: boolean = false;
             if (this.forceSelectIndex) {
                 preselectDefinition = itemsCount === this.activationState?.selected;
@@ -222,7 +218,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             // If the current definition is activated, then also show all the synonyms for the hovered definition
             let synonymCompletions: vscode.CompletionItem[] = []
             if (activations[definitionIndex]) {
-                synonymCompletions = this.resolveDefinitionItems(hoverRange, hoverPosition, wordText, definitionIndex, indexStr);
+                synonymCompletions = await this.resolveDefinitionItems(hoverRange, hoverPosition, wordText, definitionIndex, indexStr);
                 const originalLength = synonymCompletions.length;
                 if (!expansions[definitionIndex] && originalLength > 5) {
                     synonymCompletions = synonymCompletions.slice(0, 5);
@@ -261,27 +257,27 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             }
 
             // Return the definition completion item and all the synonyms for that definition (if the definition is activated)
-            return [
+            [
                 definitionCompletion,
                 ...synonymCompletions
-            ];
-        }).flat();
+            ].forEach(item => allItems.push(item));
+        }
         this.allCompletionItems = allItems;
         return allItems;
     }
 
     // Returns a list of completion items for each synonym for a selected word's selected definition
-    resolveDefinitionItems (
+    async resolveDefinitionItems (
         hoverRange: vscode.Range,
         hoverPosition: HoverPosition,
         word: string, 
         definitionIndex: number,
         defIndexStr: string
-    ): vscode.CompletionItem[] {
+    ): Promise<vscode.CompletionItem[]> {
         
         const wordCapitalization: Capitalization = getTextCapitalization(word);
 
-        const synonyms = this.cache[word];
+        const synonyms = await SynonymsProvider.provideSynonyms(word, this.isWordHippo ? 'wh' : 'synonymsApi');
         if (!synonyms || synonyms.type === 'error') return [];
 
         // Create completion items for all synonyms of all definitions
@@ -383,7 +379,6 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             // Reset word hippo status, activation state, and cache
             this.isWordHippo = !this.isWordHippo;
             this.activationState = undefined;
-            this.cache = {};
 
             const using = this.isWordHippo
                 ? 'Word Hippo'

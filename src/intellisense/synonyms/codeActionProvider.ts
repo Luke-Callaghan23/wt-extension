@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
 import { Capitalization, capitalize, getHoveredWord, getTextCapitalization, transformToCapitalization } from '../common';
-import { query } from '../querySynonym';
 import { dictionary } from './../spellcheck/dictionary';
 import { PersonalDictionary } from './../spellcheck/personalDictionary';
+import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
 
 export class CodeActionProvider implements vscode.CodeActionProvider {
     constructor (
@@ -34,7 +34,7 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
         if (inDict || inPersonalDict) return [];
 
         // Then check to see if the thesaurus API has it
-        const response = await query(hoverPosition.text);
+        const response = await SynonymsProvider.provideSynonyms(hoverPosition.text, 'synonymsApi');
         if (response.type !== 'error') return [];
 
         const capitalization = getTextCapitalization(hoverPosition.text);

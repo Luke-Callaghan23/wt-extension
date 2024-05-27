@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { query } from '../../intellisense/querySynonym';
 import { Timed } from '../../timedView';
 import { Workspace } from '../../workspace/workspaceClass';
 import { dictionary } from './dictionary';

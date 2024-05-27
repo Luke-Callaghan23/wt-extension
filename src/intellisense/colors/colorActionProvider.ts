@@ -2,10 +2,7 @@ import * as vscode from 'vscode';
 import * as console from '../../vsconsole';
 import * as extension from '../../extension';
 import { capitalize, getHoverText, getHoveredWord } from '../common';
-import { query } from '../querySynonym';
 import { Workspace } from '../../workspace/workspaceClass';
-import { PersonalDictionary } from './../spellcheck/personalDictionary';
-import { dictionary } from './../spellcheck/dictionary';
 import { ColorIntellisense } from './colorIntellisense';
 
 
