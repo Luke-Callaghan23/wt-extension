@@ -97,7 +97,7 @@ export async function renameResource (this: OutlineView, overrideNode?: OutlineN
     if (snipContent.length !== 1) return;
     const [ content ] = snipContent;
     if (content.data.ids.type !== 'fragment') return;
-    if (!(content.data.ids.display.startsWith("New Fragment (") || content.data.ids.display.startsWith("Imported Fragment ("))) return;
+    if (!(content.data.ids.display.startsWith("New Fragment (") || content.data.ids.display.startsWith("Imported Fragment (") || content.data.ids.display !== newName)) return;
 
     const renameChild = await vscode.window.showQuickPick([ 'Yes', 'No' ], {
         canPickMany: false,
