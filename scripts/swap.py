@@ -30,7 +30,7 @@ if \
     os.rename("src/export", ".local/export")
     os.rename("src/import", ".local/import")
     os.rename("src/workspace/importExport", ".local/importExport")
-    os.rename("src/gitTransactions.ts", ".local/gitTransactions.ts")
+    os.rename("src/gitFunctionality/gitTransactions.ts", ".local/gitTransactions.ts")
     os.rename("src/workspace/workspaceClass.ts", ".local/workspaceClass.ts")
     os.rename("src/ttsDebugger", ".local/ttsDebugger")
     os.rename("src/tabLabels/tabLabels.ts", ".local/tabLabels.ts")
@@ -43,7 +43,7 @@ if \
     os.rename(".web/.vscode", ".vscode")
     os.rename(".web/web", "src/web")
     os.rename(".web/tsconfig.json", "tsconfig.json")
-    os.rename(".web/gitTransactions.ts", "src/gitTransactions.ts")
+    os.rename(".web/gitTransactions.ts", "src/gitFunctionality/gitTransactions.ts")
     os.rename(".web/workspaceClass.ts", "src/workspace/workspaceClass.ts")
     os.rename(".web/tabLabels.ts", "src/tabLabels/tabLabels.ts")
 
@@ -91,7 +91,7 @@ elif \
     os.rename(".vscode", ".web/.vscode")
     os.rename("src/web", ".web/web")
     os.rename("tsconfig.json", ".web/tsconfig.json")
-    os.rename("src/gitTransactions.ts", ".web/gitTransactions.ts")
+    os.rename("src/gitFunctionality/gitTransactions.ts", ".web/gitTransactions.ts")
     os.rename("src/workspace/workspaceClass.ts", ".web/workspaceClass.ts")
     os.rename("src/tabLabels/tabLabels.ts", ".web/tabLabels.ts")
 
@@ -106,7 +106,7 @@ elif \
     os.rename(".local/export", "src/export")
     os.rename(".local/import", "src/import")
     os.rename(".local/importExport", "src/workspace/importExport")
-    os.rename(".local/gitTransactions.ts", "src/gitTransactions.ts")
+    os.rename(".local/gitTransactions.ts", "src/gitFunctionality/gitTransactions.ts")
     os.rename(".local/workspaceClass.ts", "src/workspace/workspaceClass.ts")
     os.rename(".local/tabLabels.ts", "src/tabLabels/tabLabels.ts")
 

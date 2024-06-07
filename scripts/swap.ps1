@@ -26,7 +26,7 @@ if (
     Move-Item src\export .local\export
     Move-Item src\import .local\import
     Move-Item src\workspace\importExport .local\importExport
-    Move-Item src\gitTransactions.ts .local\gitTransactions.ts
+    Move-Item src\gitFunctionality\gitTransactions.ts .local\gitTransactions.ts
     Move-Item src\workspace\workspaceClass.ts .local\workspaceClass.ts
     Move-Item src\ttsDebugger .local\ttsDebugger
     Move-Item src\tabLabels\tabLabels.ts .local\tabLabels.ts
@@ -39,7 +39,7 @@ if (
     Move-Item .web\.vscode .vscode
     Move-Item .web\web src\web
     Move-Item .web\tsconfig.json tsconfig.json
-    Move-Item .web\gitTransactions.ts src\gitTransactions.ts
+    Move-Item .web\gitTransactions.ts src\gitFunctionality\gitTransactions.ts
     Move-Item .web\workspaceClass.ts src\workspace\workspaceClass.ts
     Move-Item .web\tabLabels.ts src\tabLabels\tabLabels.ts
 
@@ -87,7 +87,7 @@ elseif (
     Move-Item .vscode .web\.vscode
     Move-Item src\web .web\web
     Move-Item tsconfig.json .web\tsconfig.json
-    Move-Item src\gitTransactions.ts .web\gitTransactions.ts
+    Move-Item src\gitFunctionality\gitTransactions.ts .web\gitTransactions.ts
     Move-Item src\workspace\workspaceClass.ts .web\workspaceClass.ts 
     Move-Item src\tabLabels\tabLabels.ts .web\tabLabels.ts
 
@@ -102,7 +102,7 @@ elseif (
     Move-Item .local\export src\export
     Move-Item .local\import src\import
     Move-Item .local\importExport src\workspace\importExport
-    Move-Item .local\gitTransactions.ts src\gitTransactions.ts
+    Move-Item .local\gitTransactions.ts src\gitFunctionality\gitTransactions.ts
     Move-Item .local\workspaceClass.ts src\workspace\workspaceClass.ts
     Move-Item .local\tabLabels.ts src\tabLabels\tabLabels.ts
 
