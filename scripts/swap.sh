@@ -25,7 +25,7 @@ then
     mv src/export .local/export
     mv src/import .local/import
     mv src/workspace/importExport .local/importExport
-    mv src/gitFunctionality/gitTransactions.ts .local/gitTransactions.ts
+    mv src/gitTransactions.ts .local/gitTransactions.ts
     mv src/workspace/workspaceClass.ts .local/workspaceClass.ts
     mv src/ttsDebugger .local/ttsDebugger
     mv src/tabLabels/tabLabels.ts .local/tabLabels.ts
@@ -38,7 +38,7 @@ then
     mv .web/.vscode .vscode
     mv .web/web src/web
     mv .web/tsconfig.json tsconfig.json
-    mv .web/gitTransactions.ts src/gitFunctionality/gitTransactions.ts
+    mv .web/gitTransactions.ts src/gitTransactions.ts
     mv .web/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .web/tabLabels.ts src/tabLabels/tabLabels.ts
 
@@ -84,7 +84,7 @@ then
     mv .vscode .web/.vscode
     mv src/web .web/web
     mv tsconfig.json .web/tsconfig.json
-    mv src/gitFunctionality/gitTransactions.ts .web/gitTransactions.ts
+    mv src/gitTransactions.ts .web/gitTransactions.ts
     mv src/workspace/workspaceClass.ts .web/workspaceClass.ts 
     mv src/tabLabels/tabLabels.ts .web/tabLabels.ts
 
@@ -99,7 +99,7 @@ then
     mv .local/export src/export
     mv .local/import src/import
     mv .local/importExport src/workspace/importExport
-    mv .local/gitTransactions.ts src/gitFunctionality/gitTransactions.ts
+    mv .local/gitTransactions.ts src/gitTransactions.ts
     mv .local/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .local/tabLabels.ts src/tabLabels/tabLabels.ts
 
