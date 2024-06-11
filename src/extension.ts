@@ -34,7 +34,7 @@ import { TabLabels } from './tabLabels/tabLabels';
 import { activateSpeak } from './ttsDebugger/tts/tts';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
 import { searchFiles } from './searchFiles';
-import { GitWatcher } from './gitFunctionality/gitWatch';
+import { ReloadWatcher } from './reloadWatcher';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -66,8 +66,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
-		const gitWatch = new GitWatcher(context, workspace);
-
+		const reloadWatcher = new ReloadWatcher();
 
 		new CoderModer(context);
 		// const worldNotes = new WorldNotes(workspace, context);
@@ -103,7 +102,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(),
-			personalDictionary, colorGroups, wh
+			personalDictionary, colorGroups, wh, reloadWatcher
 		]));
 
 		// Lastly, clear the 'tmp' folder

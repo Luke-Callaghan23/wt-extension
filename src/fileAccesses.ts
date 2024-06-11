@@ -21,6 +21,14 @@ export class FileAccessManager implements Packageable {
 
     private static positions: { [ index: string ]: vscode.Selection };
 
+    static getPosition (uri: vscode.Uri): vscode.Selection | null {
+        const relativePath = uri.fsPath.replace(extension.rootPath.fsPath, '');
+        if (relativePath in FileAccessManager.positions) {
+            return FileAccessManager.positions[relativePath];
+        }
+        return null;
+    }
+
 
     static async documentOpened (openedUri: vscode.Uri, view?: OutlineView): Promise<void> {
         

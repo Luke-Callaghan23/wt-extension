@@ -12,8 +12,10 @@ export async function gitiniter () {
     }
 }
 
+export let lastCommit: number = Date.now();
 export async function gitCommit () {
     try {
+        lastCommit = Date.now();
         await vscode.commands.executeCommand('workbench.view.scm');
     }
     catch (e) {

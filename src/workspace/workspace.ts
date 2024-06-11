@@ -3,7 +3,7 @@ import * as console from '../vsconsole';
 import { prompt } from '../help';
 import * as vsconsole from '../vsconsole';
 import * as extension from '../extension';
-import { gitiniter } from '../gitFunctionality/gitTransactions';
+import { gitiniter } from '../gitTransactions';
 import { Buff } from '../Buffer/bufferSource';
 import { Workspace } from './workspaceClass';
 
@@ -171,13 +171,61 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
     }
 }
 
-export async function loadWorkspaceContext (context: vscode.ExtensionContext, contextLocation: vscode.Uri, del: boolean = false) {
+export type DiskContextType = {
+    "wt.outline.collapseState": {
+        [index: string]: boolean,
+    },
+    "wt.synonyms.synonyms": string[],
+    "wt.workBible.tree.enabled": boolean,
+    "wt.workBible.dontAskDeleteNote": boolean,
+    "wt.workBible.dontAskDeleteDescription": boolean,
+    "wt.workBible.dontAskDeleteAppearance": boolean,
+    "wt.todo.enabled": boolean,
+    "wt.todo.collapseState": {
+        [index: string]: boolean;
+    },
+    "wt.wordWatcher.enabled": boolean,
+    "wt.wordWatcher.watchedWords": string[],
+    "wt.wordWatcher.disabledWatchedWords": string[],
+    "wt.wordWatcher.unwatchedWords": string[],
+    "wt.wordWatcher.rgbaColors": {
+        [index: string]: boolean;
+
+    },
+    "wt.spellcheck.enabled": boolean,
+    "wt.very.enabled": boolean,
+    "wt.colors.enabled": boolean,
+    "wt.textStyle.enabled": boolean,
+    "wt.fileAccesses.positions": {
+        [index: string]: {
+            "anchorLine": 0,
+            "anchorChar": 0,
+            "activeLine": 0,
+            "activeChar": 0
+        };
+    },
+    "wt.personalDictionary": {
+        [index: string]: 1
+    },
+    "wt.colors.extraColors": {
+        [index: string]: {
+            [index: string]: 1
+        }
+    },
+    "wt.wh.synonyms": string[]
+}
+
+export async function loadWorkspaceContext (
+    context: vscode.ExtensionContext, 
+    contextLocation: vscode.Uri, 
+    del: boolean = false
+): Promise<DiskContextType> {
 
     // Attempt to read context values from the context values file on disk
     // Context values file may not exist, so allow a crash to happen
     const contextValuesBuffer = await vscode.workspace.fs.readFile(contextLocation);
     const contextValuesJSON = extension.decoder.decode(contextValuesBuffer);
-    const contextValues: { [index: string]: any } = JSON.parse(contextValuesJSON);
+    const contextValues: DiskContextType = JSON.parse(contextValuesJSON);
     await Promise.all(Object.entries(contextValues).map(([ contextKey, contextValue ]) => {
         return [
             vscode.commands.executeCommand('setContext', contextKey, contextValue),
@@ -187,5 +235,6 @@ export async function loadWorkspaceContext (context: vscode.ExtensionContext, co
     
     context.workspaceState.update('wt.todo.enabled', contextValues['wt.todo.enabled']);
     context.workspaceState.update('wt.wordWatcher.enabled', contextValues['wt.wordWatcher.enabled']);
-    context.workspaceState.update('wt.proximity.enabled', contextValues['wt.proximity.enabled']);
+    // context.workspaceState.update('wt.proximity.enabled', contextValues['wt.proximity.enabled']);
+    return contextValues;
 }

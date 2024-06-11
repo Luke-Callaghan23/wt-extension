@@ -75,5 +75,8 @@ export class PersonalDictionary implements Packageable {
     registerCommands () {
         vscode.commands.registerCommand('wt.personalDictionary.add', (word: string | undefined | null) => this.addWordCommand(word));
         vscode.commands.registerCommand('wt.personalDictionary.remove', () => this.removeWordCommand());
+        vscode.commands.registerCommand("wt.personalDictionary.refresh", (refreshWith: { [index: string]: 1 }) => {
+            this.dict = refreshWith;
+        });
     }
 }
