@@ -158,7 +158,7 @@ implements vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropControlle
 		if (element.hasChildren()) {
 			// If the tree element has children, look that element up in the uri map to find the collapsability
 			const uri = element.getUri();
-			const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '');
+			const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');;
 			const isCollapsed: boolean | undefined = this.uriToVisibility[usableUri];
 			if (isCollapsed === undefined || isCollapsed === false) {
 				collapseState = vscode.TreeItemCollapsibleState.Collapsed;

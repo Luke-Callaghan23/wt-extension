@@ -22,13 +22,12 @@ export class FileAccessManager implements Packageable {
     private static positions: { [ index: string ]: vscode.Selection };
 
     static getPosition (uri: vscode.Uri): vscode.Selection | null {
-        const relativePath = uri.fsPath.replace(extension.rootPath.fsPath, '');
+        const relativePath = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
         if (relativePath in FileAccessManager.positions) {
             return FileAccessManager.positions[relativePath];
         }
         return null;
     }
-
 
     static async documentOpened (openedUri: vscode.Uri, view?: OutlineView): Promise<void> {
         
@@ -78,17 +77,19 @@ export class FileAccessManager implements Packageable {
     static lastEditor: vscode.TextEditor | undefined = undefined;
     static savePosition (editor: vscode.TextEditor | undefined) {
         // For some reason, this gets fired twice, so this safeguard is needed
-            // !lastEditor won't work, need to do it like this
-            // source: trust me bro
-            if (FileAccessManager.lastEditor) {
-                const document = FileAccessManager.lastEditor.document;
-                if (!document) return;
+        // !lastEditor won't work, need to do it like this
+        //      source: trust me bro
+        if (FileAccessManager.lastEditor) {
+            const document = FileAccessManager.lastEditor.document;
+            if (!document) return;
 
-                const lastUri = document.uri;
-                const usableUri = lastUri.fsPath.replace(extension.rootPath.fsPath, '');
+            const lastUri = document.uri;
+            const usableUri = lastUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
+            if (usableUri.endsWith('.wt') || usableUri.endsWith('.wtnote')) {
                 FileAccessManager.positions[usableUri] = FileAccessManager.lastEditor.selection;
             }
-            FileAccessManager.lastEditor = editor;
+        }
+        FileAccessManager.lastEditor = editor;
     }
 
     static registerCommands (): void {
@@ -98,16 +99,8 @@ export class FileAccessManager implements Packageable {
                     FileAccessManager.documentOpened(editor.document.uri);
                 }
                 FileAccessManager.savePosition(editor);
-            }, 0)
+            }, 0);
         });
-        // vscode.workspace.onDidOpenTextDocument((doc) => {
-        //     if (doc) {
-        //         FileAccessManager.documentOpened(doc.uri);
-        //     }
-        //     if (vscode.window.activeTextEditor) {
-        //         FileAccessManager.savePosition(vscode.window.activeTextEditor);
-        //     }
-        // })
     }
 
     static async initialize () {

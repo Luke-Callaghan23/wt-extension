@@ -178,6 +178,6 @@ export function registerCommands (this: OutlineView) {
     });
 
     vscode.commands.registerCommand('wt.outline.copyRelativePath', (resource: OutlineNode) => {
-        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, ''));
+        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/'));
     });
 }

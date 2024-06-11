@@ -56,7 +56,7 @@ export class ImportForm {
 
 			const name = vscodeUris.Utils.basename(documentUri);
 			const ext = vscodeUris.Utils.extname(documentUri);
-			const fullPath = documentUri.fsPath.replace(extension.rootPath.fsPath, '');
+			const fullPath = documentUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');;
 			return {
 				fullPath, name, ext
 			};

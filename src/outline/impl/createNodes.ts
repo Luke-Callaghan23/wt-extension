@@ -117,8 +117,7 @@ export async function newChapter (
             const fragmentTitle = 'New Fragment';
 
             // Write an empty fragment inside of the chapter's root folder
-            const fragmentWriteFragmentFile = vscode.workspace.fs.writeFile(fragmentUri, new Uint8Array());
-            awaitables.push(fragmentWriteFragmentFile);
+            await vscode.workspace.fs.writeFile(fragmentUri, new Uint8Array());
 
             // Data for the .config file to store fragment names
             fragmentsDotConfig[fragmentFileName] = {

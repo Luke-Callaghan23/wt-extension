@@ -717,6 +717,30 @@
 			{
 				"title": "Writing Tool: Insert Accent",
 				"command": "wt.editor.accent.insertAccent"
+			},
+			{
+				"command": "wt.wordWatcher.refresh",
+				"title": "Writing Tool: Refresh wordWatcher"
+			},
+			{
+				"command": "wt.synonyms.refresh",
+				"title": "Writing Tool: Refresh synonyms"
+			},
+			{
+				"command": "wt.wh.refresh",
+				"title": "Writing Tool: Refresh wh"
+			},
+			{
+				"command": "wt.personalDictionary.refresh",
+				"title": "Writing Tool: Refresh personalDictionary"
+			},
+			{
+				"command": "wt.colors.refresh",
+				"title": "Writing Tool: Refresh colors"
+			},
+			{
+				"command": "wt.workBible.refresh",
+				"title": "Writing Tool: Refresh workBible"
 			}
 		],
 		"menus": {
@@ -1020,6 +1044,30 @@
 				{
 					"command": "wt.editor.highlightExpand",
 					"when": "fals"
+				},
+				{
+					"command": "wt.wordWatcher.refresh",
+					"when": "false"
+				},
+				{
+					"command": "wt.synonyms.refresh",
+					"when": "false"
+				},
+				{
+					"command": "wt.wh.refresh",
+					"when": "false"
+				},
+				{
+					"command": "wt.personalDictionary.refresh",
+					"when": "false"
+				},
+				{
+					"command": "wt.colors.refresh",
+					"when": "false"
+				},
+				{
+					"command": "wt.workBible.refresh",
+					"when": "false"
 				}
 			],
 			"view/title": [

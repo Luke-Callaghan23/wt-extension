@@ -66,7 +66,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
-		const reloadWatcher = new ReloadWatcher();
+		const reloadWatcher = new ReloadWatcher(context);
 
 		new CoderModer(context);
 		// const worldNotes = new WorldNotes(workspace, context);
@@ -151,11 +151,6 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	// Load the root path of file system where the extension was loaded
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
 		? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
-
-	
-	// rootPath = rootPath.replaceAll('\\', '/');
-	// rootPath = rootPath.replaceAll('c:/', 'C:\\');
-
 
 	vscode.commands.registerCommand('wt.reload', async () => {
 		const workspace = await loadWorkspace(context);

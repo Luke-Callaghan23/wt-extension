@@ -6,6 +6,7 @@ import * as extension from '../extension';
 import { gitiniter } from '../gitTransactions';
 import { Buff } from '../Buffer/bufferSource';
 import { Workspace } from './workspaceClass';
+import { TabPositions } from '../reloadWatcher';
 
 
 export type Config = {
@@ -212,7 +213,8 @@ export type DiskContextType = {
             [index: string]: 1
         }
     },
-    "wt.wh.synonyms": string[]
+    "wt.wh.synonyms": string[],
+    "wt.reloadWatcher.openedTabs": TabPositions
 }
 
 export async function loadWorkspaceContext (
