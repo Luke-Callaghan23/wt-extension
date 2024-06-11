@@ -65,6 +65,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+		
+		wordWatcher.commonWordsPrompt();
 
 		new CoderModer(context);
 		// const worldNotes = new WorldNotes(workspace, context);

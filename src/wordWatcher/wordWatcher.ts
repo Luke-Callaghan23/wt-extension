@@ -9,6 +9,7 @@ import { update, disable, defaultWatchedWordDecoration as defaultDecoration, cha
 import { getChildren, getTreeItem } from './tree';
 import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';
 import { hexToRgb } from '../help';
+import { gatherPaths, commonWordsPrompt } from './commonWords';
 
 export interface WordEnrty {
 	uri: string;
@@ -49,7 +50,8 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
 
     getChildren = getChildren;
     getTreeItem = getTreeItem;
-
+    gatherCommonWords = gatherPaths;
+    commonWordsPrompt = commonWordsPrompt;
     
     public lastJumpWord: string | undefined;
     public lastJumpInstance: number;
