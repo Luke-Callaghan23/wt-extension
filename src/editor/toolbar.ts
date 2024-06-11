@@ -1,6 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { gitCommit, gitiniter } from '../gitFunctionality/gitTransactions';
+import { gitCommit, gitiniter } from '../gitTransactions';
 import * as console from '../vsconsole';
 import * as extension from '../extension';
 import { Workspace } from '../workspace/workspaceClass';
