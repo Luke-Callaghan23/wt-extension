@@ -34,6 +34,7 @@ import { TabLabels } from './tabLabels/tabLabels';
 import { activateSpeak } from './ttsDebugger/tts/tts';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
 import { searchFiles } from './searchFiles';
+import { convertFileNames } from './miscTools/convertFileNames';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -163,6 +164,10 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	});
 
 	vscode.commands.registerCommand("wt.searchFiles", searchFiles);
+	
+	vscode.commands.registerCommand('wt.convert', () => {
+		convertFileNames();
+	})
 
 	// Attempt to load a workspace from the current location
 	const workspace = await loadWorkspace(context);
