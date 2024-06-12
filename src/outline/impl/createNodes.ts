@@ -13,7 +13,9 @@ import { NodeTypes } from '../../outlineProvider/fsNodes';
 
 export function getUsableFileName (fileTypePrefix: string, wt?: boolean): string {
     const fileTypePostfix = wt ? '.wt' : '';
-    return `${fileTypePrefix}-${Date.now()}-${uuidv4()}${fileTypePostfix}`;
+    const nano = process.hrtime.bigint();
+    const nanoStr = nano.toString().replaceAll(/[a-zA-Z]+/g, '');           // hrtime has an n at the end
+    return `${fileTypePrefix}-${nanoStr}${fileTypePostfix}`;
 }
 
 type CreateOptions = {
