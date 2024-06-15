@@ -88,6 +88,8 @@ export class TabLabels {
         const oldPatterns: { [index: string]: string} = await configuration.get('workbench.editor.customLabels.patterns') || {};
         const combinedPatterns = { ...oldPatterns, ...newPatterns };
 
+        const maxTabLabel = configuration.get<number>('wt.tabLabels.maxSize');
+
         const finalPatterns: { [index: string]: string } = {};
         const set = new Set<string>();
         Object.entries(combinedPatterns).forEach(([ pattern, label ]) => {
@@ -101,7 +103,9 @@ export class TabLabels {
             const finalPattern = pattern.startsWith('*/')
                 ? pattern
                 : `*/${pattern}`;
-            finalPatterns[finalPattern] = `${finalLabel}`;
+            finalPatterns[finalPattern] = maxTabLabel && maxTabLabel > 3 && finalLabel.length > maxTabLabel-3
+                ? finalLabel.substring(0, maxTabLabel-3) + "...'"
+                : finalLabel;
         });
 
         return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);

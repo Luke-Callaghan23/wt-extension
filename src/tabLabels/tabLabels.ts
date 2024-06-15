@@ -16,6 +16,12 @@ export class TabLabels {
         TabLabels.outlineView = outlineView;
         TabLabels.recylingBinView = recyclingBinView;
         this.registerCommands();
+
+        vscode.workspace.onDidChangeConfiguration((e) => {
+            const configuration = 'wt.tabLabels.maxSize';
+            if (!e.affectsConfiguration(configuration)) return;
+            TabLabels.assignNamesForOpenTabs();
+        });
     }
 
     private registerCommands() {
@@ -52,7 +58,6 @@ export class TabLabels {
         const codeModeState: CodeModeState = await vscode.commands.executeCommand('wt.codeMode.getMode');
         if (codeModeState === 'codeMode') return;
 
-
         const configuration = workspace.getConfiguration();
         configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
     
@@ -87,6 +92,8 @@ export class TabLabels {
                     : node.data.ids.display;
             }
         }
+        
+        const maxTabLabel = configuration.get<number>('wt.tabLabels.maxSize');
 
         const finalPatterns: { [index: string]: string } = {};
         const set = new Set<string>();
@@ -102,7 +109,9 @@ export class TabLabels {
             const finalPattern = pattern.startsWith('*/')
                 ? pattern
                 : `*/${pattern}`;
-            finalPatterns[finalPattern] = `${finalLabel}`;
+                finalPatterns[finalPattern] = maxTabLabel && maxTabLabel > 3 && finalLabel.length > maxTabLabel
+                    ? finalLabel.substring(0, maxTabLabel) + "..."
+                    : finalLabel;
         });
 
         return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);
