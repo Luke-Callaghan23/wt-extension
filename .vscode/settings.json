@@ -25,5 +25,8 @@
           "args": ["-ExecutionPolicy", "Bypass"]
         }
       },
-      "terminal.integrated.defaultProfile.windows": "PowerShell",      
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    
 }

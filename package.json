@@ -215,6 +215,10 @@
 		},
 		"commands": [
 			{
+				"command": "wt.convert",
+				"title": "Writing Tool: Convert to New File names"
+			},
+			{
 				"title": "Writing Tool: Search Files",
 				"command": "wt.searchFiles"
 			},
