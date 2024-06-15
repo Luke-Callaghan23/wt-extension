@@ -332,7 +332,7 @@
 			},
 			{
 				"command": "wt.scratchPad.renameFile",
-				"title": "Writing Tool: Rename Recycled Resource"
+				"title": "Writing Tool: Rename Resource"
 			},
 			{
 				"command": "wt.scratchPad.permanentlyDelete",
@@ -345,7 +345,7 @@
 			},
 			{
 				"command": "wt.scratchPad.refresh",
-				"title": "Writing Tool: Refresh Recycling Bin View",
+				"title": "Writing Tool: Refresh Scratch Pad View",
 				"icon": "$(refresh)"
 			},
 			{

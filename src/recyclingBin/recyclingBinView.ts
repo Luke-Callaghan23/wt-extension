@@ -9,7 +9,7 @@ import { ConfigFileInfo } from '../help';
 import { v4 as uuidv4 } from 'uuid';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { deleteNodePermanently } from './node/deleteNodePermanently';
-import { renameResource } from './node/renameNode';
+import { renameResource as _renameResource } from './node/renameNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../outline/outlineView';
 import { TreeNode } from '../outlineProvider/outlineTreeProvider';
@@ -22,10 +22,14 @@ export type RecycleLog = {
     title: string,
 };
 
+export interface Renamable<T> {
+    renameResource(node?: T): Promise<void>
+}
 
 export class RecyclingBinView 
 extends UriBasedView<OutlineNode>
-implements vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropController<OutlineNode> {
+implements 
+    vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropController<OutlineNode>, Renamable<OutlineNode> {
 
     // tree data provider
     //#region
@@ -58,9 +62,7 @@ implements vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropControlle
 
 
     deleteNodePermanently = deleteNodePermanently;
-    renameResource = renameResource;
-
-
+    renameResource = _renameResource;
 
     rootNodes: OutlineNode[] = [];
     async initializeTree(): Promise<OutlineNode[] | null> {
@@ -288,7 +290,6 @@ implements vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropControlle
             this.initUriExpansion('wt.recyclingBin', this.view, this.context);
         })()
     }
-
 
     dropMimeTypes = ['application/vnd.code.tree.outline', 'text/uri-list'];
     dragMimeTypes = ['text/uri-list'];

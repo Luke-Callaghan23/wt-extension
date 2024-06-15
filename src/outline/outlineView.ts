@@ -18,10 +18,10 @@ import * as activeDocuments from './impl/selectActiveDocument';
 import * as  copyPaste from './impl/copyPaste';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { MoveNodeResult } from './nodes_impl/handleMovement/common';
-import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
+import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { handleDragController, handleDropController } from './impl/dragDropController';
 
-export class OutlineView extends OutlineTreeProvider<OutlineNode> {
+export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Renamable<OutlineNode> {
 
     // Re ordering nodes in the tree
 	moveUp = reorderFunctions.moveUp;

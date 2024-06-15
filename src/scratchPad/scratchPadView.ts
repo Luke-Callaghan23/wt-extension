@@ -14,7 +14,7 @@ import { OutlineView } from '../outline/outlineView';
 import { TreeNode } from '../outlineProvider/outlineTreeProvider';
 import { Buff } from '../Buffer/bufferSource';
 import { newScratchPadFile } from './createScratchPadFile';
-import { throws } from 'assert';
+import { Renamable } from '../recyclingBin/recyclingBinView';
 
 export type RecycleLog = {
     oldUri: string,
@@ -29,7 +29,8 @@ export class ScratchPadView
 extends UriBasedView<OutlineNode>
 implements 
     vscode.TreeDataProvider<OutlineNode>, 
-    vscode.TreeDragAndDropController<OutlineNode> 
+    vscode.TreeDragAndDropController<OutlineNode>,
+    Renamable<OutlineNode>
 {
 
     // tree data provider
@@ -37,6 +38,13 @@ implements
 
     deleteNodePermanently = deleteNodePermanently;
     newScratchPadFile = newScratchPadFile;
+
+    async renameResource (overrideNode?: OutlineNode, overrideRename?: string) {
+        const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
+        if (!outlineView) return;
+        await outlineView.renameResource(overrideNode || this.view.selection[0]);
+        this.refresh(true, []);
+    }
 
     rootNodes: OutlineNode[] = [];
     async initializeTree(): Promise<OutlineNode[] | null> {
@@ -110,22 +118,13 @@ implements
         });
         vscode.commands.registerCommand('wt.scratchPad.renameFile', async () => {
             if (this.view.selection.length > 1) return;
-            const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
-            if (!outlineView) return;
-            await outlineView.renameResource(this.view.selection[0]);
-            this.refresh(true, []);
+            this.renameResource(this.view.selection[0]);
         });
 
         vscode.commands.registerCommand('wt.scratchPad.newFile', () => {
             return this.newScratchPadFile();
         });
     }
-
-    // TODO make the new scratch pad file open in the tab beside the active one
-    // TODO override ctrl+t
-    // TODO test drag and drop
-    // TODO look at "rename active tab" command to allow for renaming scratch pad + recycling bin items
-    // TODO context commands in the scratch pad view still refer to recycling bin stuff
 
     static scratchPadContainerUri: vscode.Uri;
     static scratchPadConfigUri: vscode.Uri;
