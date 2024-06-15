@@ -13,6 +13,8 @@ import { OutlineNode, SnipNode } from '../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../outline/outlineView';
 import { TreeNode } from '../outlineProvider/outlineTreeProvider';
 import { Buff } from '../Buffer/bufferSource';
+import { newScratchPadFile } from './createScratchPadFile';
+import { throws } from 'assert';
 
 export type RecycleLog = {
     oldUri: string,
@@ -34,7 +36,7 @@ implements
     //#region
 
     deleteNodePermanently = deleteNodePermanently;
-
+    newScratchPadFile = newScratchPadFile;
 
     rootNodes: OutlineNode[] = [];
     async initializeTree(): Promise<OutlineNode[] | null> {
@@ -112,6 +114,10 @@ implements
             if (!outlineView) return;
             await outlineView.renameResource(this.view.selection[0]);
             this.refresh(true, []);
+        });
+
+        vscode.commands.registerCommand('wt.scratchPad.newFile', () => {
+            return this.newScratchPadFile();
         });
     }
 

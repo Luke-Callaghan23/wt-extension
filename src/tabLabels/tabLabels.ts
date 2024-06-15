@@ -67,7 +67,7 @@ export class TabLabels {
                 const uri = tab.input.uri;
                 if (!uri.fsPath.endsWith('.wt')) continue;
     
-                let foundInRecycling = false;
+                let source: 'outline' | 'recycle' | 'scratch' = 'outline';
 
                 // First look for the node in the outline view
                 let node: { data: { ids: Ids } } | null = await TabLabels.outlineView.getTreeElementByUri(uri);
@@ -75,12 +75,13 @@ export class TabLabels {
                 if (!node) {
                     // Then look in the recycling bin view
                     node = await TabLabels.recyclingBinView.getTreeElementByUri(uri);
-                    if (node) foundInRecycling = true;
+                    if (node) source = 'recycle';
                 }
                 if (!node) {
                     // Then look in the recycling bin view
                     node = await TabLabels.scratchpadView.getTreeElementByUri(uri);
                     if (!node) continue;
+                    source = 'scratch';
                 }
     
                 // Remove the extension root path from the pattern
@@ -90,9 +91,23 @@ export class TabLabels {
                 }
     
                 // If the node was found in the recycling bin, mark it as deleted in the label so the user knows
-                newPatterns['*/' + relativePath] = foundInRecycling
-                    ? `(deleted) ${node.data.ids.display}`
-                    : node.data.ids.display;
+                let label: string;
+                if (source === 'outline') {
+                    label = node.data.ids.display;
+                }
+                else if (source === 'recycle') {
+                    label = `(deleted) ${node.data.ids.display}`;
+                }
+                else if (source === 'scratch') {
+                    if (/Scratch Pad \d+/i.test(node.data.ids.display)) {
+                        label = node.data.ids.display;
+                    }
+                    else {
+                        label = `(scratch) ${node.data.ids.display}`;
+                    }
+                }
+                else throw 'unreachable';
+                newPatterns['*/' + relativePath] = label;
             }
         }
 

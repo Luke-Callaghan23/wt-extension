@@ -326,6 +326,11 @@
 				"title": "Writing Tool: Copy Relative Path"
 			},
 			{
+				"command": "wt.scratchPad.newFile",
+				"title": "Writing Tool: Create Scratch Pad File",
+				"icon": "$(search-new-editor)"
+			},
+			{
 				"command": "wt.scratchPad.renameFile",
 				"title": "Writing Tool: Rename Recycled Resource"
 			},
@@ -1086,14 +1091,19 @@
 					"group": "navigation@5"
 				},
 				{
+					"command": "wt.scratchPad.newFile",
+					"when": "wt.valid && view == wt.scratchPad",
+					"group": "navigation@1"
+				},
+				{
 					"command": "wt.scratchPad.deleteAll",
 					"when": "wt.valid && view == wt.scratchPad",
-					"group": "navigation@2"
+					"group": "navigation@3"
 				},
 				{
 					"command": "wt.scratchPad.refresh",
 					"when": "wt.valid && view == wt.scratchPad",
-					"group": "navigation@1"
+					"group": "navigation@2"
 				},
 				{
 					"command": "wt.recyclingBin.deleteAll",
