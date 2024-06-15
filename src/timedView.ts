@@ -14,7 +14,6 @@ export class TimedView implements Packageable {
         private timedViews: [string, string, Timed ][]
     ) {
 
-
         // Get the initial 'enabled' state for each of the timed views from the workspace context 
         // These variables are either initially house inside of vscode natively, or they're 
         //      injected into the context in 'loadWorkspace' or 'importWorkspace'

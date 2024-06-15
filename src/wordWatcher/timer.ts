@@ -32,7 +32,14 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
     let regex: RegExp;
     let unwatchedRegeces: RegExp[];
     let watchedRegeces: {uri: string, reg: RegExp }[];
-    if (this.wasUpdated || !this.lastCalculatedRegeces) {
+    if (this.watchedWords.length === 0) {
+        watchedAndEnabled = [];
+        regexString = 'a^';
+        regex = /a^/gi;
+        unwatchedRegeces = [/a^/gi];
+        watchedRegeces = [];
+    }
+    else if (this.wasUpdated || !this.lastCalculatedRegeces) {
         
         // Filter out the disabled words from the main watched array
         const watchedAndEnabledTmp = this.watchedWords.filter(watched => !this.disabledWatchedWords.find(disabled => watched === disabled));
