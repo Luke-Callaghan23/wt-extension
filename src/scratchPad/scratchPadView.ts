@@ -105,7 +105,14 @@ implements
         vscode.commands.registerCommand('wt.scratchPad.getRecyclingBinView', () => this);
         vscode.commands.registerCommand('wt.scratchPad.deleteAll', () => {
             this.deleteNodePermanently(this.rootNodes);
-        })
+        });
+        vscode.commands.registerCommand('wt.scratchPad.renameFile', async () => {
+            if (this.view.selection.length > 1) return;
+            const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
+            if (!outlineView) return;
+            await outlineView.renameResource(this.view.selection[0]);
+            this.refresh(true, []);
+        });
     }
 
     static scratchPadContainerUri: vscode.Uri;

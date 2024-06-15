@@ -254,7 +254,7 @@ implements vscode.TreeDataProvider<OutlineNode>, vscode.TreeDragAndDropControlle
         vscode.commands.registerCommand('wt.recyclingBin.renameFile', () => {
             if (this.view.selection.length > 1) return;
             this.renameResource();
-        });    
+        });
         vscode.commands.registerCommand("wt.recyclingBin.refresh", () => this.refresh(true, []));
         vscode.commands.registerCommand('wt.recyclingBin.getRecyclingBinView', () => this);
         vscode.commands.registerCommand('wt.recyclingBin.deleteAll', () => {

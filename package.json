@@ -823,10 +823,6 @@
 					"when": "false"
 				},
 				{
-					"command": "wt.scratchPad.refresh",
-					"when": "false"
-				},
-				{
 					"command": "wt.recyclingBin.renameFile",
 					"when": "false"
 				},
@@ -1193,7 +1189,7 @@
 				},
 				{
 					"command": "wt.outline.renameFile",
-					"when": "view == wt.outline || view == wt.scratchPad"
+					"when": "view == wt.outline"
 				},
 				{
 					"command": "wt.outline.removeResource",
@@ -1223,6 +1219,10 @@
 					"command": "wt.outline.copyRelativePath",
 					"when": "view == wt.outline || view == wt.todo",
 					"group": "copy_path@7"
+				},
+				{
+					"command": "wt.scratchPad.renameFile",
+					"when": "view == wt.scratchPad"
 				},
 				{
 					"command": "wt.scratchPad.permanentlyDelete",
@@ -1405,6 +1405,13 @@
 				"when": "editorLangId == wt || editorLandId == wtNote"
 			},
 			{
+				"command": "wt.scratchPad.renameFile",
+				"win": "f2",
+				"linux": "f2",
+				"mac": "f2",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.scratchPad"
+			},
+			{
 				"command": "wt.scratchPad.permanentlyDelete",
 				"win": "delete",
 				"linux": "delete",
@@ -1430,7 +1437,7 @@
 				"win": "f2",
 				"linux": "f2",
 				"mac": "f2",
-				"when": "activeViewlet == workbench.view.extension.wt && (focusedView == wt.outline || focusedView == wt.scratchPad)"
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
 			},
 			{
 				"command": "wt.outline.copyItems",
