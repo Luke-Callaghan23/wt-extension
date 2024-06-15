@@ -7,6 +7,8 @@ export interface IFragmentPick {
     label: string;
     description?: string;
     node: OutlineNode;
+    kind?: vscode.QuickPickItemKind;
+    alwaysShow?: boolean;
 }
 
 export interface IButton extends vscode.QuickInputButton {
@@ -15,7 +17,7 @@ export interface IButton extends vscode.QuickInputButton {
     id: 'filterButton' | 'clearFilters'
 }
 
-function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNode?: vscode.Uri): {
+export function getFilesQPOptions (outlineView: OutlineView, filterGeneric: boolean, predicateFilters?: ((node: OutlineNode)=>boolean)[]): {
     options: IFragmentPick[],
     currentNode: OutlineNode | undefined,
     currentPick: IFragmentPick | undefined
@@ -58,6 +60,7 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
         path: string,
         lastItemMarkers: boolean[]
     ) => {
+        if (predicateFilters && !predicateFilters.every(p => p(snipNode))) return;
         const snip = snipNode.data as SnipNode;
 
         // For the snip folder itelf, exclude the last item marker because the last item is inserted as a spacer for the child items
@@ -78,6 +81,7 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
         snip.contents.forEach((content, contentIndex) => {
             const contentIsLast = contentIndex === snip.contents.length - 1;
             if (content.data.ids.type === 'fragment') {
+                if (predicateFilters && !predicateFilters.every(p => p(content))) return;
                 // Create the option for the current fragment child
                 const fragmentTreeChar = getTreeChar(contentIsLast);
                 options.push({
@@ -114,6 +118,8 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
         path: string,
         lastItemMarkers: boolean[],
     ) => {
+        if (predicateFilters && !predicateFilters.every(p => p(chapterNode))) return;
+
         const chapter = chapterNode.data as ChapterNode;
 
         // Create "fake" spacing
@@ -139,6 +145,7 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
         // Sort and create options for text fragments
         chapter.textData.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
         chapter.textData.forEach((fragment, fragmentIndex) => {
+            if (predicateFilters && !predicateFilters.every(p => p(fragment))) return;
 
             // Create option for this fragment
             const fragmentTreeChar = getTreeChar(fragmentIndex === chapter.textData.length - 1);
@@ -161,7 +168,7 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
             }
         });
 
-
+        if (predicateFilters && !predicateFilters.every(p => p(chapter.snips))) return;
         // Snips folder
         options.push({
             // Fake space followed by real space, because we always want the first column to be a line, but we want the second column to be 
@@ -188,39 +195,43 @@ function getOptions (outlineView: OutlineView, filterGeneric: boolean, targetNod
 
     // =========================== CHAPTERS SECTION =========================== 
     /* Chapters Folder */ 
-    options.push({
-        label: "$(folder) Chapters:",
-        description: ``,
-        node: root.chapters
-    })
-    // Sort and create options for chapters 
-    const chapters = (root.chapters.data as ContainerNode).contents;
-    chapters.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
-    chapters.forEach((chapter, chapterIndex) => {
-        processChapter(
-            chapter, 
-            'Chapters',
-            [ chapterIndex === chapters.length - 1 ]
-        );
-    });
+    if (!predicateFilters || predicateFilters.every(p => p(root.chapters))) {
+        options.push({
+            label: "$(folder) Chapters:",
+            description: ``,
+            node: root.chapters
+        })
+        // Sort and create options for chapters 
+        const chapters = (root.chapters.data as ContainerNode).contents;
+        chapters.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+        chapters.forEach((chapter, chapterIndex) => {
+            processChapter(
+                chapter, 
+                'Chapters',
+                [ chapterIndex === chapters.length - 1 ]
+            );
+        });
+    }
     
     // =========================== WORK SNIPS SECTIONS =========================== 
     /* Work Snips Folder */ 
-    options.push({
-        label: "$(folder) Work Snips:",
-        description: ``,
-        node: root.snips
-    });
-    // Sort and create options for work snips
-    const snips = (root.snips.data as ContainerNode).contents;
-    snips.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
-    snips.forEach((snip, snipIndex) => {
-        processSnip(
-            snip, 
-            'Work Snips',
-            [ snipIndex === snips.length - 1 ]
-        );
-    });
+    if (!predicateFilters || predicateFilters.every(p => p(root.snips))) {
+        options.push({
+            label: "$(folder) Work Snips:",
+            description: ``,
+            node: root.snips
+        });
+        // Sort and create options for work snips
+        const snips = (root.snips.data as ContainerNode).contents;
+        snips.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+        snips.forEach((snip, snipIndex) => {
+            processSnip(
+                snip, 
+                'Work Snips',
+                [ snipIndex === snips.length - 1 ]
+            );
+        });
+    }
     // ===========================================================================
 
     return {
@@ -243,7 +254,7 @@ export async function searchFiles () {
 
     
     const outlineView: OutlineView = await vscode.commands.executeCommand("wt.outline.getOutline");
-    const { options, currentNode, currentPick } = getOptions(outlineView, true);
+    const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, true);
     
     qp.busy = false;
     qp.items = options;
@@ -270,7 +281,7 @@ export async function searchFiles () {
         if (button.id === 'filterButton') {
             isFiltering = !isFiltering;
             qp.busy = true;
-            const { options, currentNode, currentPick } = getOptions(outlineView, isFiltering);
+            const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, isFiltering);
             qp.items = options;
             if (currentPick) {
                 qp.activeItems = [ currentPick ];
@@ -281,7 +292,7 @@ export async function searchFiles () {
         else if (button.id === 'clearFilters') {
             isFiltering = false;
             qp.busy = true;
-            const { options } = getOptions(outlineView, isFiltering);
+            const { options } = getFilesQPOptions(outlineView, isFiltering);
             qp.items = options;
             qp.value = ``
             qp.busy = false;

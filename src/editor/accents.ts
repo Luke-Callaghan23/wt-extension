@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 
 const accents: { [index: string]: string } = {
-    'ç': 'Ç',
     'é': 'É',
-    'â': 'Â',
     'ê': 'Ê',
+    'ç': 'Ç',
+    'â': 'Â',
     'î': 'Î',
     'ô': 'Ô',
     'û': 'Û',

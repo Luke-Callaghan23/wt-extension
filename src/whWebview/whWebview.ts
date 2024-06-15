@@ -95,6 +95,13 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 				}
 			})();
 		});
+		
+		vscode.commands.registerCommand("wt.wh.refresh", (refreshWith: string[]) => {
+			this._view?.webview.postMessage({
+				type: "refreshSynonyms",
+				terms: refreshWith
+			});
+		})
 	}
 
 	public resolveWebviewView (

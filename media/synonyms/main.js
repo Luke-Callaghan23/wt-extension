@@ -53,7 +53,7 @@
     // Message handling
     {
         // Handle messages sent from the extension to the webview
-        window.addEventListener('message', event => {
+        window.addEventListener('message', async (event) => {
             const message = event.data; // The json data that the extension sent
             switch (message.type) {
                 case 'addSynonym':
@@ -66,6 +66,12 @@
                     synonyms = message.synonyms;
                     dicationatyApi = message.dicationatyApi;
                     startup();
+                    break;
+                case 'refreshSynonyms':
+                    await clearSynonyms();
+                    for (const term of message.terms) {
+                        await addSynonym(term);
+                    }
                     break;
             }
         });

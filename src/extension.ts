@@ -34,6 +34,9 @@ import { TabLabels } from './tabLabels/tabLabels';
 import { activateSpeak } from './ttsDebugger/tts/tts';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
 import { searchFiles } from './searchFiles';
+import { ReloadWatcher } from './reloadWatcher';
+import { convertFileNames } from './miscTools/convertFileNames';
+import { ScratchPadView } from './scratchPad/scratchPadView';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -65,7 +68,12 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+		const reloadWatcher = new ReloadWatcher(context);
+		
+		wordWatcher.commonWordsPrompt();
 
+		const scratchPad = new ScratchPadView(context, workspace);
+		await scratchPad.init();
 
 		new CoderModer(context);
 		// const worldNotes = new WorldNotes(workspace, context);
@@ -86,7 +94,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.textStyle', 'textStyle', textStyles],
 		]);
 
-		const tabLabels = new TabLabels(outline, recycleBin);
+		const tabLabels = new TabLabels(outline, recycleBin, scratchPad);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
@@ -101,7 +109,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(),
-			personalDictionary, colorGroups, wh
+			personalDictionary, colorGroups, wh, reloadWatcher
 		]));
 
 		// Lastly, clear the 'tmp' folder
@@ -151,11 +159,6 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
 		? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
-	
-	// rootPath = rootPath.replaceAll('\\', '/');
-	// rootPath = rootPath.replaceAll('c:/', 'C:\\');
-
-
 	vscode.commands.registerCommand('wt.reload', async () => {
 		const workspace = await loadWorkspace(context);
 		if (workspace !== null) {
@@ -164,6 +167,10 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	});
 
 	vscode.commands.registerCommand("wt.searchFiles", searchFiles);
+	
+	vscode.commands.registerCommand('wt.convert', () => {
+		convertFileNames();
+	})
 
 	// Attempt to load a workspace from the current location
 	const workspace = await loadWorkspace(context);

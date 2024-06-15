@@ -177,7 +177,10 @@ implements
 
 	private _onDidChangeTreeData: vscode.EventEmitter<Note | SubNote | AppearanceContainer | undefined> = new vscode.EventEmitter<Note | SubNote | AppearanceContainer | undefined>();
 	readonly onDidChangeTreeData: vscode.Event<Note | SubNote | AppearanceContainer | undefined> = this._onDidChangeTreeData.event;
-	refresh () {
+	async refresh (reload: boolean = false) {
+        if (reload) {
+            this.notes = await this.readNotes(this.workspace.worldNotesPath);
+        }
         // Also update the nouns regex
         this.nounsRegex = this.getNounsRegex();
 		this._onDidChangeTreeData.fire(undefined);
@@ -229,6 +232,9 @@ implements
         vscode.commands.registerCommand('wt.workBible.search', (resource: Note) => { this.searchNote(resource) });
         vscode.commands.registerCommand('wt.workBible.editNote', (resource: Note | AppearanceContainer | SubNote) => { this.editNote(resource) });
         vscode.commands.registerCommand('wt.workBible.getWorkBible', () => this);
+        vscode.commands.registerCommand('wt.workBible.refresh', () => {
+            return this.refresh(true);
+        });
     }
 
     getPackageItems(): { [index: string]: any; } {

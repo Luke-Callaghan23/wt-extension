@@ -26,6 +26,7 @@ import { TextStyles } from './textStyles/textStyles';
 import { WorldNotes } from './worldNotes/worldNotes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { TabLabels } from './tabLabels/tabLabels';
+import { ReloadWatcher } from './reloadWatcher';
 
 
 
@@ -57,6 +58,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+		const reloadWatcher = new ReloadWatcher(context);
+
 		
 		const worldNotes = new WorldNotes(workspace, context);
 		const wordCountStatus = new WordCount();
@@ -84,7 +87,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		FileAccessManager.initialize();
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
-			outline, synonyms, timedViews, new FileAccessManager()
+			outline, synonyms,  timedViews, new FileAccessManager(), 
+			personalDictionary, colorGroups, reloadWatcher
 		]));
 		
 		// Lastly, clear the 'tmp' folder

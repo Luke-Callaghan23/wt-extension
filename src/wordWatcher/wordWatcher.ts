@@ -9,6 +9,7 @@ import { update, disable, defaultWatchedWordDecoration as defaultDecoration, cha
 import { getChildren, getTreeItem } from './tree';
 import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';
 import { hexToRgb } from '../help';
+import { gatherPaths, commonWordsPrompt } from './commonWords';
 
 export interface WordEnrty {
 	uri: string;
@@ -49,7 +50,8 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
 
     getChildren = getChildren;
     getTreeItem = getTreeItem;
-
+    gatherCommonWords = gatherPaths;
+    commonWordsPrompt = commonWordsPrompt;
     
     public lastJumpWord: string | undefined;
     public lastJumpInstance: number;
@@ -154,6 +156,34 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         });
         vscode.commands.registerCommand('wt.wordWatcher.changePattern', (resource: WordEnrty) => {
             this.changePattern(resource);
+        });
+
+        vscode.commands.registerCommand("wt.wordWatcher.refresh", (refreshWith: {
+            watchedWords: string[],
+            disabledWatchedWords: string[],
+            unwatchedWords: string[],
+            rgbaColors: { [index: string]: string },
+        }) => {
+
+            this.watchedWords = refreshWith.watchedWords;
+            this.disabledWatchedWords = refreshWith.disabledWatchedWords;
+            this.unwatchedWords = refreshWith.unwatchedWords;
+
+            const contextColors = refreshWith.rgbaColors;
+            this.watchedWords.forEach(watched => {
+                const color = contextColors[watched];
+                if (!color) return;
+    
+                const decoratorType = createDecorationFromRgbString(color);
+                this.wordColors[watched] = {
+                    rgbaString: color,
+                    decoratorsIndex: this.allDecorationTypes.length
+                };
+    
+                this.allDecorationTypes.push(decoratorType);
+            });
+            
+            this.refresh();
         });
 	}
 

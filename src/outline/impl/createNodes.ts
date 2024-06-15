@@ -13,7 +13,9 @@ import { NodeTypes } from '../../outlineProvider/fsNodes';
 
 export function getUsableFileName (fileTypePrefix: string, wt?: boolean): string {
     const fileTypePostfix = wt ? '.wt' : '';
-    return `${fileTypePrefix}-${Date.now()}-${uuidv4()}${fileTypePostfix}`;
+    const nano = process.hrtime.bigint();
+    const nanoB36 = nano.toString(36);
+    return `${fileTypePrefix}-${nanoB36}${fileTypePostfix}`;
 }
 
 type CreateOptions = {
@@ -117,8 +119,7 @@ export async function newChapter (
             const fragmentTitle = 'New Fragment';
 
             // Write an empty fragment inside of the chapter's root folder
-            const fragmentWriteFragmentFile = vscode.workspace.fs.writeFile(fragmentUri, new Uint8Array());
-            awaitables.push(fragmentWriteFragmentFile);
+            await vscode.workspace.fs.writeFile(fragmentUri, new Uint8Array());
 
             // Data for the .config file to store fragment names
             fragmentsDotConfig[fragmentFileName] = {

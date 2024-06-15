@@ -94,6 +94,13 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 				}
 			})();
 		});
+
+		vscode.commands.registerCommand("wt.synonyms.refresh", (refreshWith: string[]) => {
+			this._view?.webview.postMessage({
+				type: "refreshSynonyms",
+				terms: refreshWith
+			});
+		})
 	}
 
 	public resolveWebviewView (

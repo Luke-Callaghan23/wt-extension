@@ -4,6 +4,7 @@ import { initializeOutline } from '../../outlineProvider/initialize';
 import { TODONode } from '../node';
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode } from '../../outlineProvider/fsNodes';
+import { DiskContextType } from '../../workspace/workspace';
 
 export function registerCommands(this: TODOsView) {
     vscode.commands.registerCommand('wt.todo.openFile', async (resourceUri: vscode.Uri, todoData: TODO) => {
@@ -19,10 +20,28 @@ export function registerCommands(this: TODOsView) {
         await vscode.window.showTextDocument(resourceUri, { selection: textDocumentRange });
     });
 
-    vscode.commands.registerCommand('wt.todo.refresh', async () => {
+    vscode.commands.registerCommand('wt.todo.refresh', async (resource: TODONode | DiskContextType['wt.outline.collapseState'] | undefined | null) => {
         Object.getOwnPropertyNames(TODOsView.todo).forEach(uri => {
             TODOsView.todo[uri] = { type: 'invalid' };
         });
+
+
+        // If every entry in the resouce argument is a string -> boolean mapping then we can assume the resource is the collapse
+        //      state mapping table
+        const argIsCollapseState = resource && Object.entries(resource).every(([ key, val ]) => {
+            return typeof key === 'string' && typeof val === 'boolean';
+        });
+        if (argIsCollapseState) {
+            // Combine current uri visibility with the previous, inserting the old values and then
+            //      the new values (so if there is any collisions the new states override the
+            //      old ones)
+            const collapseState = resource as DiskContextType['wt.outline.collapseState'];
+            this.uriToVisibility = {
+                ...this.uriToVisibility,
+                ...collapseState
+            };
+        }
+
         // Refresh command involves ambiguous changes to TODO tree structure
         //      so should reload the tree fully from disk
         this.refresh(true, []);

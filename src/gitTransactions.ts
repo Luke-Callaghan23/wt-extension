@@ -12,8 +12,10 @@ export async function gitiniter () {
     }
 }
 
+export let lastCommit: number = Date.now();
 export async function gitCommit () {
     try {
+        lastCommit = Date.now();
         await vscode.commands.executeCommand('git.commitAll');
     }
     catch (e) {
@@ -24,6 +26,7 @@ export async function gitCommit () {
 
 export async function gitCommitFile () {
     try {
+        lastCommit = Date.now();
         await vscode.commands.executeCommand('git.stage');
         await vscode.commands.executeCommand('git.commit');
     }

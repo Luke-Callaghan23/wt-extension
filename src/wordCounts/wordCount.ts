@@ -22,7 +22,7 @@ export class WordCount {
         this.registerCommands();
     }
 
-    private static nonAlphanumeric = /[^a-zA-Z0-9]+/g;
+    public static nonAlphanumeric = /[^a-zA-Z0-9]+/g;
     private updateWordCountStatusBar (editor: vscode.TextEditor, document: vscode.TextDocument) {
         // Only update if the saved document was the same document in the active editor
         // I *think* this is always true, but who cares -- this extension is already inefficient as
@@ -58,7 +58,6 @@ export class WordCount {
             .filter(str => (/\s*/.test(str)))
             .length;
     }
-    
     
     private async getFullWordCounts (outlineView: OutlineView) {
 

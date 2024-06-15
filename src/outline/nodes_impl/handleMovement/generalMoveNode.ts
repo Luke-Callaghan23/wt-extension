@@ -18,7 +18,7 @@ import { chapterMove } from './chapterMove';
 
 export async function generalMoveNode (
     this: OutlineNode,
-    operation: 'move' | 'recover',
+    operation: 'move' | 'recover' | 'scratch',
     newParent: TreeNode, 
     recycleView: UriBasedView<OutlineNode>,
     outlineView: OutlineTreeProvider<TreeNode>,
@@ -39,9 +39,11 @@ export async function generalMoveNode (
 
     let chapterDestination: DestinationResult | undefined;
     if (moverType === 'container') {
+        if (operation === 'scratch') throw 'unreachable';
         return containerMove(operation, this, recycleView, outlineView, newParent, moveOffset);
     }
     else if (moverType === 'chapter') {
+        if (operation === 'scratch') throw 'unreachable';
         const chapterMoveResult = await chapterMove(
             operation, this, 
             recycleView, outlineView,

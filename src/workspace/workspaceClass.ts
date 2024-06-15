@@ -3,7 +3,6 @@ import * as console from '../vsconsole';
 import { prompt } from '../help';
 import * as vsconsole from '../vsconsole';
 import * as extension from '../extension';
-import { gitiniter } from '../gitTransactions';
 import { Config, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
 
