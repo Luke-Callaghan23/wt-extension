@@ -169,22 +169,33 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
         workspace.config = config;
 
         // Check for the existence of all the necessary folders
-        const folderStats: vscode.FileStat[] = await Promise.all(workspace.getFolders().map((folder) => {
-            return vscode.workspace.fs.stat(folder);
-        }));
-        valid = folderStats.every(({ type }) => type === vscode.FileType.Directory);
-
+        let attempting: vscode.Uri | undefined;
         try {
-            await loadWorkspaceContext(context, workspace.contextValuesFilePath, true);
+            const folderStats: vscode.FileStat[] = [];
+            for (const folder of workspace.getFolders()) {
+                attempting = folder;
+                folderStats.push(await vscode.workspace.fs.stat(folder));
+            }
+            valid = folderStats.every(({ type }) => type === vscode.FileType.Directory);
+            
+            try {
+                await loadWorkspaceContext(context, workspace.contextValuesFilePath, true);
+            }
+            catch (e) {
+                console.log(`${e}`);
+                vscode.window.showWarningMessage(`Coult not load WT environment because \`loadWorkspaceContext\` failed with the following error: ${e}`);
+            }
         }
-        catch (e) {
-            console.log(`${e}`);
+        catch (err: any) {
+            vscode.window.showWarningMessage(`Could not load WT environment because '${attempting}' was missing`);
+            return null;
         }
+
     }
     catch (e) {
         console.log(`${e}`);
+        vscode.window.showWarningMessage(`Coult not load WT environment because the following error occurred: ${e}`);
     }
-
     
     // Set the value of the context item wt.valid to the result of the validation process 
     vscode.commands.executeCommand('setContext', 'wt.valid', valid);
