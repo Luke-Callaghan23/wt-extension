@@ -488,6 +488,10 @@
 				"title": "Writing Tool: Change watched word pattern"
 			},
 			{
+				"command": "wt.wordWatcher.addCommonWords",
+				"title": "Writing Tool: Add Common Words to Word Watcher"
+			},
+			{
 				"command": "wt.synonyms.help",
 				"title": "Writing Tool: Synonyms View Help",
 				"icon": "$(question)"

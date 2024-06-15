@@ -2,14 +2,20 @@ import * as vscode from 'vscode';
 import * as extension from './../extension';
 import { WordWatcher } from './wordWatcher';
 import { TimedView } from '../timedView';
+import { Workspace } from '../workspace/workspaceClass';
 
 export function addOrDeleteTargetedWord (
     this: WordWatcher,
     operation: 'add' | 'delete' | 'replace',
     target: string,
     contextItem: 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.disabledWatchedWords',
-    replaceIndex: number=-1
+    replaceIndex?: number,
+    preventRefresh: boolean = false,
 ) {
+    if (replaceIndex === undefined || replaceIndex === null) {
+        replaceIndex = -1;
+    }
+
     // Get the targeted array, depending on the context that this updateWords function call was made in
     let targetArray: string[];
     if (contextItem === 'wt.wordWatcher.watchedWords') {
@@ -50,7 +56,11 @@ export function addOrDeleteTargetedWord (
     for (const editor of vscode.window.visibleTextEditors) {
         this.update(editor, TimedView.findCommentedRanges(editor));
     }
-    this.refresh();
+    Workspace.packageContextItems();
+
+    if (!preventRefresh) {
+        this.refresh();
+    }
 }
 
 export async function addWordToWatchedWords (this: WordWatcher, options?: {

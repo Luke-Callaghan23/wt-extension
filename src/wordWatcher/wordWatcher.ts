@@ -158,6 +158,10 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             this.changePattern(resource);
         });
 
+        vscode.commands.registerCommand('wt.wordWatcher.addCommonWords', () => {
+            return this.commonWordsPrompt();
+        })
+
         vscode.commands.registerCommand("wt.wordWatcher.refresh", (refreshWith: {
             watchedWords: string[],
             disabledWatchedWords: string[],

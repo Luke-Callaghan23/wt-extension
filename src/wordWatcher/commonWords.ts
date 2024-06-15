@@ -5,6 +5,7 @@ import { OutlineView } from '../outline/outlineView';
 import { WordCount } from '../wordCounts/wordCount';
 import { getFilesQPOptions, IFragmentPick } from '../searchFiles';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
+import { lastCommit, setLastCommit } from '../gitTransactions';
 
 export type InstanceCount = { [index: string]: number };
 
@@ -84,7 +85,7 @@ export async function readAndCollectCommonWords (paths: string[]): Promise<Insta
 
     const fragmentInstances: InstanceCount = {};
     allWords.forEach(word => {
-        if (/\d+|and|the|of|to|you|she|her|it|my|me|in|for|but|on|not|so|we|be|up|don|or|m|if|out|re|no|do|is|were|didn|did|ve|he|ll|by/.test(word)) return;
+        if (/^(\d+|and|the|of|to)$/.test(word)) return;
         if (word.length === 1) return;
 
 
@@ -96,6 +97,29 @@ export async function readAndCollectCommonWords (paths: string[]): Promise<Insta
         }
     });
     return fragmentInstances;
+}
+
+const uncontractWord = (word: string) => {
+    const map: { [index: string]: string } = {
+        "aren": "aren't",
+        "couldn": "couldn't",
+        "didn": "didn't",
+        "doesn": "doesn't",
+        "don": "don't",
+        "hadn": "hadn't",
+        "hasn": "hasn't",
+        "haven": "haven't",
+        "weren": "weren't",
+        "where": "where's",
+        "isn": "isn't",
+        "mightn": "mightn't",
+        "mustn": "mustn't",
+        "won": "won't",
+        "shan": "shan't",
+        "wouldn": "wouldn't",
+        "shouldn": "shouldn't",
+    };
+    return map[word] || word;
 }
 
 export async function gatherPaths (this: WordWatcher): Promise<string[] | null> {
@@ -196,36 +220,73 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
 }
 
 const THRESHOLD = 20;
-export async function commonWordsPrompt (this: WordWatcher) {
-    const paths = await this.gatherCommonWords();
-    if (!paths) return;
-
-    const qp = vscode.window.createQuickPick<{ word: string, label: string }>();
-    qp.canSelectMany = true;
-    qp.ignoreFocusOut = true;
-    qp.matchOnDescription = true;
-    qp.title = "Reading Common Words from disk... this may take a moment..."
-    qp.busy = true;
-    qp.show();
-
-
-    const words = await readAndCollectCommonWords(paths);
-    const filtered: InstanceCount = {};
-    Object.entries(words).forEach(([ word, count ]) => {
-        if (count > THRESHOLD) {
-            filtered[word] = count;
-        }
-    });
-    const orderedCommonWords: [ string, number ][] = Object.entries(filtered).sort((a, b) => b[1] - a[1]);
+async function getChosenCommonWords (ww: WordWatcher): Promise<string[] | null> {
+    return new Promise(async (accept, reject) => {
+        const paths = await ww.gatherCommonWords();
+        if (!paths) return null;
     
+        const qp = vscode.window.createQuickPick<{ word: string, label: string, description: string }>();
+        qp.canSelectMany = true;
+        qp.ignoreFocusOut = true;
+        qp.matchOnDescription = true;
+        qp.title = "Reading Common Words from disk... this may take a moment..."
+        qp.busy = true;
+        qp.show();
+    
+        const words = await readAndCollectCommonWords(paths);
+        const filtered: InstanceCount = {};
+        Object.entries(words).forEach(([ word, count ]) => {
+            if (count > THRESHOLD) {
+                filtered[word] = count;
+            }
+        });
+        const orderedCommonWords: [ string, number ][] = Object.entries(filtered).sort((a, b) => b[1] - a[1]);
+        const uncontracted: [ string, number ][] = orderedCommonWords.map(([ word, count ]) => [ uncontractWord(word), count ]);
+        
+        qp.items = uncontracted.map(([ word, count ]) => {
+            return {
+                label: `${word} : (${count})`,
+                description: word,
+                word: word,
+            };
+        });
+        qp.title = "Select words you would like to watch out for:"
+        qp.busy = false;
+    
+    
+        qp.onDidAccept(() => {
+            accept(qp.selectedItems.map(({ word }) => word));
+        });
+    })
+}
 
 
-    qp.items = orderedCommonWords.map(([ word, count ]) => {
-        return {
-            label: `${word} : (${count})`,
-            word: word,
-        };
+export async function commonWordsPrompt (this: WordWatcher) {
+    const chosenWords = await getChosenCommonWords(this);
+    if (!chosenWords) return;
+    
+    type Response = "Single Item (recommended)" | "Multiple";
+    const responses: Response[] = [ "Single Item (recommended)", "Multiple" ]
+    const r = await vscode.window.showQuickPick(responses, {
+        canPickMany: false,
+        ignoreFocusOut: false,
+        matchOnDescription: true,
+        matchOnDetail: true,
+        title: "Create multiple Word Watcher items or a single one with multiple options?"
     });
-    qp.title = "Select words you would like to watch out for:"
-    qp.busy = false;
+    if (!r) return;
+
+    const response = r as Response;
+    if (response === 'Single Item (recommended)') {
+        const reg = chosenWords.join("|");
+        setLastCommit();
+        this.updateWords('add', reg, 'wt.wordWatcher.watchedWords', -1, true);
+    }
+    else if (response === 'Multiple') {
+        chosenWords.forEach(cw => {
+            setLastCommit();
+            this.updateWords('add', cw, 'wt.wordWatcher.watchedWords', -1, true);
+        });
+    }
+    return this.refresh();
 }
