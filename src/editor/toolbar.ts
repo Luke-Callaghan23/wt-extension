@@ -1,11 +1,8 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import { gitCommit, gitiniter } from '../gitTransactions';
-import * as console from '../vsconsole';
-import * as extension from '../extension';
 import { Workspace } from '../workspace/workspaceClass';
-import { isSpace } from 'markdown-it/lib/common/utils';
-import { JumpType, defaultJumpFragmentOptions, fragmentStopReg, jumpParagraph, jumpSentence, jumpWord, punctuationStopsReg } from './jumps';
+import { JumpType, defaultJumpFragmentOptions, jumpParagraph, jumpSentence, jumpWord } from './jumps';
 import { bold, commasize, emDash, emDashes, italisize, strikethrough, underline } from './surroundSelection';
 import { commentFragment, commentParagraph, commentSentence } from './comment';
 import { highlightExpand, highlightFragment, highlightParagraph, highlightSentence } from './highlights';

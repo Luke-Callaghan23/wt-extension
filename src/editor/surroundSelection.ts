@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 // Function for surrounding selected text with a specified string
-export async function surroundSelectionWith (start: string, end?: string) {
+export async function surroundSelectionWith (start: string, end?: string, overrideSelections?: vscode.Selection[]) {
     // Get the active text editor
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
@@ -130,16 +130,25 @@ export function commasize () {
     let endPos: vscode.Position = editor.selection.end;
     let endStr = ', ';
 
+    let diff: number = 1;
+
+    // Check if the character before the cursor is a space
+    // If so, then move the cursor back to before the space and only insert ',' instead of ', '
     const startOffset = document.offsetAt(editor.selection.start);
-    if (text[startOffset - 1] === ' ') {
-        const prev = document.positionAt(startOffset - 1);
+    while (text[startOffset - diff] === ' ') {
+        const prev = document.positionAt(startOffset - diff);
         startPos = prev;
         startStr = ',';
+        diff++;
     }
+
+    // Check if the character before the cursor is a space
+    // If so, then insert only insert ',' instead of ', '
     const endOffset = document.offsetAt(editor.selection.end);
     if (text[endOffset] === ' ') {
         endStr = ',';
     }
+
     editor.selection = new vscode.Selection(startPos, endPos);
     return surroundSelectionWith(startStr, endStr);
 }
