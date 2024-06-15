@@ -3,18 +3,21 @@ import { ConfigurationTarget, workspace } from 'vscode';
 import * as console from './../vsconsole'
 import { OutlineView } from '../outline/outlineView';
 import * as extension from './../extension';
-import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
+import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
 import { CodeModeState } from '../codeMode/codeMode';
+import { ScratchPadView } from '../scratchPad/scratchPadView';
 
 export class TabLabels {
     private static outlineView: OutlineView;
-    private static recylingBinView: RecyclingBinView;
+    private static recyclingBinView: RecyclingBinView;
+    private static scratchPadView: ScratchPadView;
 
-    constructor (outlineView: OutlineView, recyclingBinView: RecyclingBinView) {
+    constructor (outlineView: OutlineView, recyclingBinView: RecyclingBinView, scratchPadView: ScratchPadView) {
         TabLabels.outlineView = outlineView;
-        TabLabels.recylingBinView = recyclingBinView;
+        TabLabels.recyclingBinView = recyclingBinView;
+        TabLabels.scratchPadView = scratchPadView;
         this.registerCommands();
 
         vscode.workspace.onDidChangeConfiguration((e) => {
@@ -27,19 +30,22 @@ export class TabLabels {
     private registerCommands() {
 
         const renameFromUri = async (uri: vscode.Uri) => {
-            // Look in outline view
-            let node: { data: { ids: Ids } } | null = await TabLabels.outlineView.getTreeElementByUri(uri);
-            // Look in recycling bin view
-            if (!node) node = await TabLabels.recylingBinView.getTreeElementByUri(uri);
-
-            // If not found in either give an error message
-            if (!node) {
+            type ViewSource = Renamable<OutlineNode>;
+            let nodeResult: [ ViewSource, OutlineNode ]
+            try {
+                nodeResult = await Promise.any([
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) => TabLabels.outlineView.getTreeElementByUri(uri).then(node => node ? resolve([ TabLabels.outlineView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  TabLabels.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ TabLabels.recyclingBinView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  TabLabels.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ TabLabels.scratchPadView, node ]) : reject())),
+                ]);
+            }
+            catch (err: any) {
                 vscode.window.showErrorMessage("[ERROR] Could not find selected item within Writing Tool's scope.  Please only use this command on .wt files within this project.");
                 return;
             }
 
-            const outlineNode = node as OutlineNode;
-            TabLabels.outlineView.renameResource(outlineNode);
+            const [ source, node ] = nodeResult;
+            return source.renameResource(node);
         }
 
         vscode.commands.registerCommand("wt.tabLabels.rename", async (uri: vscode.Uri) => {            
@@ -69,15 +75,21 @@ export class TabLabels {
                 const uri = tab.input.uri;
                 if (!uri.fsPath.endsWith('.wt')) continue;
     
-                let foundInRecycling = false;
+                let source: 'outline' | 'recycle' | 'scratch' = 'outline';
 
                 // First look for the node in the outline view
                 let node: { data: { ids: Ids } } | null = await TabLabels.outlineView.getTreeElementByUri(uri);
+
                 if (!node) {
                     // Then look in the recycling bin view
-                    node = await TabLabels.recylingBinView.getTreeElementByUri(uri);
+                    node = await TabLabels.recyclingBinView.getTreeElementByUri(uri);
+                    if (node) source = 'recycle';
+                }
+                if (!node) {
+                    // Then look in the recycling bin view
+                    node = await TabLabels.scratchPadView.getTreeElementByUri(uri);
                     if (!node) continue;
-                    foundInRecycling = true;
+                    source = 'scratch';
                 }
     
                 // Remove the extension root path from the pattern
@@ -87,9 +99,23 @@ export class TabLabels {
                 }
     
                 // If the node was found in the recycling bin, mark it as deleted in the label so the user knows
-                newPatterns['*/' + relativePath] = foundInRecycling
-                    ? `(deleted) ${node.data.ids.display}`
-                    : node.data.ids.display;
+                let label: string;
+                if (source === 'outline') {
+                    label = node.data.ids.display;
+                }
+                else if (source === 'recycle') {
+                    label = `(deleted) ${node.data.ids.display}`;
+                }
+                else if (source === 'scratch') {
+                    if (/Scratch Pad \d+/i.test(node.data.ids.display)) {
+                        label = node.data.ids.display;
+                    }
+                    else {
+                        label = `(scratch) ${node.data.ids.display}`;
+                    }
+                }
+                else throw 'unreachable';
+                newPatterns['*/' + relativePath] = label;
             }
         }
         

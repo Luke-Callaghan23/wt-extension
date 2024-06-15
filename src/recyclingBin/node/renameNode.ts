@@ -6,10 +6,11 @@ import * as console from '../../vsconsole';
 import * as extension from '../../extension';
 import { RecyclingBinView } from '../recyclingBinView';
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
+import { TabLabels } from '../../tabLabels/tabLabels';
 
-export async function renameResource (this: RecyclingBinView) {
+export async function renameResource (this: RecyclingBinView, overrideNode?: OutlineNode, overrideRename?: string): Promise<void> {
 
-    const resource: OutlineNode = this.view.selection[0];
+    const resource: OutlineNode = overrideNode || this.view.selection[0];
     const relativePath = resource.data.ids.relativePath;
     const fileName = resource.data.ids.fileName;
     const displayName = resource.data.ids.display;
@@ -35,7 +36,7 @@ export async function renameResource (this: RecyclingBinView) {
     let oldName: string;
     if (relativePath === '') {
         const log = await RecyclingBinView.readRecycleLog();
-        if (!log) return null;
+        if (!log) return;
 
         const logItem = log.find(li => {
             return li.recycleBinName === fileName;
@@ -87,4 +88,5 @@ export async function renameResource (this: RecyclingBinView) {
 
     vscode.window.showInformationMessage(`Successfully renamed '${oldName}' to '${newName}'`);
     this.refresh(false, [resource]);
+    TabLabels.assignNamesForOpenTabs();
 }

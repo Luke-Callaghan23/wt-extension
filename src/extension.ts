@@ -36,6 +36,7 @@ import { activateDebug } from './ttsDebugger/debugger/debugExtention';
 import { searchFiles } from './searchFiles';
 import { ReloadWatcher } from './reloadWatcher';
 import { convertFileNames } from './miscTools/convertFileNames';
+import { ScratchPadView } from './scratchPad/scratchPadView';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -71,6 +72,9 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		
 		wordWatcher.commonWordsPrompt();
 
+		const scratchPad = new ScratchPadView(context, workspace);
+		await scratchPad.init();
+
 		new CoderModer(context);
 		// const worldNotes = new WorldNotes(workspace, context);
 		const workBible = new WorkBible(workspace, context);
@@ -90,7 +94,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.textStyle', 'textStyle', textStyles],
 		]);
 
-		const tabLabels = new TabLabels(outline, recycleBin);
+		const tabLabels = new TabLabels(outline, recycleBin, scratchPad);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();

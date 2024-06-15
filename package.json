@@ -60,6 +60,11 @@
 					"default": true,
 					"description": "Determines whether you want to show the 'Export' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
 				},
+				"wt.showPanels.scratchPad": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'Scratch Pad' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
 				"wt.showPanels.recyclingBin": {
 					"type": "boolean",
 					"default": true,
@@ -202,6 +207,12 @@
 					"when": "wt.valid && config.wt.showPanels.export"
 				},
 				{
+					"id": "wt.scratchPad",
+					"name": "Scratch Pad",
+					"contextualTitle": "Scratch Pad",
+					"when": "wt.valid && config.wt.showPanels.scratchPad"
+				},
+				{
 					"id": "wt.recyclingBin",
 					"name": "Recycling Bin",
 					"contextualTitle": "Recycling Bin",
@@ -322,6 +333,29 @@
 			{
 				"command": "wt.outline.copyRelativePath",
 				"title": "Writing Tool: Copy Relative Path"
+			},
+			{
+				"command": "wt.scratchPad.newFile",
+				"title": "Writing Tool: Create Scratch Pad File",
+				"icon": "$(search-new-editor)"
+			},
+			{
+				"command": "wt.scratchPad.renameFile",
+				"title": "Writing Tool: Rename Resource"
+			},
+			{
+				"command": "wt.scratchPad.permanentlyDelete",
+				"title": "Writing Tool: Pemanently Delete Resource"
+			},
+			{
+				"command": "wt.scratchPad.deleteAll",
+				"title": "Writing Tool: Delete All",
+				"icon": "$(circle-slash)"
+			},
+			{
+				"command": "wt.scratchPad.refresh",
+				"title": "Writing Tool: Refresh Scratch Pad View",
+				"icon": "$(refresh)"
 			},
 			{
 				"command": "wt.recyclingBin.renameFile",
@@ -819,6 +853,14 @@
 					"when": "false"
 				},
 				{
+					"command": "wt.scratchPad.permanentlyDelete",
+					"when": "false"
+				},
+				{
+					"command": "wt.scratchPad.deleteAll",
+					"when": "false"
+				},
+				{
 					"command": "wt.recyclingBin.renameFile",
 					"when": "false"
 				},
@@ -1106,6 +1148,21 @@
 					"group": "navigation@5"
 				},
 				{
+					"command": "wt.scratchPad.newFile",
+					"when": "wt.valid && view == wt.scratchPad",
+					"group": "navigation@1"
+				},
+				{
+					"command": "wt.scratchPad.deleteAll",
+					"when": "wt.valid && view == wt.scratchPad",
+					"group": "navigation@3"
+				},
+				{
+					"command": "wt.scratchPad.refresh",
+					"when": "wt.valid && view == wt.scratchPad",
+					"group": "navigation@2"
+				},
+				{
 					"command": "wt.recyclingBin.deleteAll",
 					"when": "wt.valid && view == wt.recyclingBin",
 					"group": "navigation@2"
@@ -1229,6 +1286,18 @@
 					"command": "wt.outline.copyRelativePath",
 					"when": "view == wt.outline || view == wt.todo",
 					"group": "copy_path@7"
+				},
+				{
+					"command": "wt.scratchPad.renameFile",
+					"when": "view == wt.scratchPad"
+				},
+				{
+					"command": "wt.scratchPad.permanentlyDelete",
+					"when": "view == wt.scratchPad"
+				},
+				{
+					"command": "wt.scratchPad.deleteAll",
+					"when": "view == wt.scratchPad"
 				},
 				{
 					"command": "wt.recyclingBin.renameFile",
@@ -1401,6 +1470,27 @@
 				"linux": "shift+'",
 				"mac": "shift+'",
 				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
+				"command": "wt.scratchPad.renameFile",
+				"win": "f2",
+				"linux": "f2",
+				"mac": "f2",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.scratchPad"
+			},
+			{
+				"command": "wt.scratchPad.newFile",
+				"win": "ctrl+t",
+				"linux": "ctrl+t",
+				"mac": "ctrl+t",
+				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
+				"command": "wt.scratchPad.permanentlyDelete",
+				"win": "delete",
+				"linux": "delete",
+				"mac": "delete",
+				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.scratchPad"
 			},
 			{
 				"command": "wt.recyclingBin.renameFile",

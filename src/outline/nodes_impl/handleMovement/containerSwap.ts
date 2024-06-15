@@ -13,7 +13,7 @@ import { updateChapterTextFragments, updateSnipContent } from '../updateChildren
 // In this case we need to shift internal contents of the outline tree as well as the
 //      config files for both the destination and the original parent containers
 export async function handleContainerSwap (
-    operation: 'move' | 'recover',
+    operation: 'move' | 'recover' | 'scratch',
     node: OutlineNode,
     destinationProvider: OutlineTreeProvider<TreeNode>,
     sourceProvider: UriBasedView<OutlineNode>,
@@ -28,7 +28,7 @@ export async function handleContainerSwap (
     const destinationDotConfigUri = vscode.Uri.joinPath(destinationContainerUri, '.config');
     
     // Uri where the mover will be moved to
-    const newFileName = operation === 'move'
+    const newFileName = operation === 'move' || operation === 'scratch'
         ? node.data.ids.fileName
         : getUsableFileName(node.data.ids.type, node.data.ids.type === 'fragment');
     const moverDestinationUri = vscode.Uri.joinPath(destinationContainerUri, newFileName);
@@ -79,7 +79,10 @@ export async function handleContainerSwap (
             return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
         }
 
-        spliceFromContainer = true;
+        // No need to splice from any containers if the operation is a scratch
+        if (operation !== 'scratch') {
+            spliceFromContainer = true;
+        }
     }
     // Update internal 
 
