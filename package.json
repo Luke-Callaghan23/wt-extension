@@ -1422,6 +1422,13 @@
 				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.scratchPad"
 			},
 			{
+				"command": "wt.scratchPad.newFile",
+				"win": "ctrl+t",
+				"linux": "ctrl+t",
+				"mac": "ctrl+t",
+				"when": "editorLangId == wt || editorLandId == wtNote"
+			},
+			{
 				"command": "wt.scratchPad.permanentlyDelete",
 				"win": "delete",
 				"linux": "delete",

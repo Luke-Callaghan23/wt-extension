@@ -20,7 +20,7 @@ export async function newScratchPadFile (
 
     // Write the fragment file
     const fragmentUri = vscode.Uri.joinPath(ScratchPadView.scratchPadContainerUri, fileName);
-    const fragment = <FragmentNode> {
+    const fragment: FragmentNode = {
         ids: {
             display: title,
             fileName: fileName,
@@ -52,7 +52,22 @@ export async function newScratchPadFile (
 
     await writeDotConfig(ScratchPadView.scratchPadConfigUri, parentDotConfig);
 
-    vscode.window.showTextDocument(fragmentUri);
+    // Normally open the scratch pad doucument in the view column beside the current one
+    let viewColumn = vscode.ViewColumn.Beside;
+
+    // When we are currently editing a scratch pad document, however, open the new 
+    //      scratch pad doc in the same view column
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+        const activeDocumentUri = activeEditor.document.uri;
+        if (await this.getTreeElementByUri(activeDocumentUri)) {
+            viewColumn = vscode.ViewColumn.Active;
+        }
+    }
+
+    vscode.window.showTextDocument(fragmentUri, {
+        viewColumn: viewColumn
+    });
     this.refresh(false, []);
     return fragmentNode.getUri();
 }
