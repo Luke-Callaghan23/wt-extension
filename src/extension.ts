@@ -34,6 +34,7 @@ import { TabLabels } from './tabLabels/tabLabels';
 import { activateSpeak } from './ttsDebugger/tts/tts';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
 import { searchFiles } from './searchFiles';
+import { ReloadWatcher } from './reloadWatcher';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -65,6 +66,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+		const reloadWatcher = new ReloadWatcher(context);
 
 		new CoderModer(context);
 		// const worldNotes = new WorldNotes(workspace, context);
@@ -100,7 +102,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(),
-			personalDictionary, colorGroups, wh
+			personalDictionary, colorGroups, wh, reloadWatcher
 		]));
 
 		// Lastly, clear the 'tmp' folder
@@ -149,11 +151,6 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	// Load the root path of file system where the extension was loaded
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
 		? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
-
-	
-	// rootPath = rootPath.replaceAll('\\', '/');
-	// rootPath = rootPath.replaceAll('c:/', 'C:\\');
-
 
 	vscode.commands.registerCommand('wt.reload', async () => {
 		const workspace = await loadWorkspace(context);

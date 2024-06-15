@@ -3,6 +3,7 @@ import { OutlineView } from "../outlineView";
 import { ContainerNode, OutlineNode, RootNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import { CopiedSelection } from './copyPaste';
+import { DiskContextType } from '../../workspace/workspace';
 
 
 // Register all the commands needed for the outline view to work
@@ -10,10 +11,30 @@ export function registerCommands (this: OutlineView) {
     vscode.commands.registerCommand('wt.outline.openFile', (resource) => {
         vscode.window.showTextDocument(resource, { preserveFocus: true });
     });
-    vscode.commands.registerCommand('wt.outline.refresh', 
-        // Reload command has ambiguous changes and should include a full reload from disk
-        (resource: OutlineNode) => this.refresh(true, [])
-    );
+    // Reload command has ambiguous changes and should include a full reload from disk
+    vscode.commands.registerCommand('wt.outline.refresh', (resource: OutlineNode | DiskContextType['wt.outline.collapseState'] | undefined | null) => {
+
+        // If every entry in the resouce argument is a string -> boolean mapping then we can assume the resource is the collapse
+        //      state mapping table
+        const argIsCollapseState = resource && Object.entries(resource).every(([ key, val ]) => {
+            return typeof key === 'string' && typeof val === 'boolean';
+        });
+        if (argIsCollapseState) {
+            // Combine current uri visibility with the previous, inserting the old values and then
+            //      the new values (so if there is any collisions the new states override the
+            //      old ones)
+            const collapseState = resource as DiskContextType['wt.outline.collapseState'];
+            this.uriToVisibility = {
+                ...this.uriToVisibility,
+                ...collapseState
+            };
+        }
+
+
+        this.refresh(true, []);
+        return;
+    });
+
     vscode.commands.registerCommand('wt.outline.renameFile', () => {
         if (this.view.selection.length > 1) return;
         this.renameResource();
@@ -157,6 +178,6 @@ export function registerCommands (this: OutlineView) {
     });
 
     vscode.commands.registerCommand('wt.outline.copyRelativePath', (resource: OutlineNode) => {
-        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, ''));
+        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/'));
     });
 }
