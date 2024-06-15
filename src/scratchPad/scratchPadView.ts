@@ -104,9 +104,9 @@ implements
             this.deleteNodePermanently(targets);
         });
         vscode.commands.registerCommand("wt.scratchPad.refresh", () => this.refresh(true, []));
-        vscode.commands.registerCommand('wt.scratchPad.getRecyclingBinView', () => this);
+        vscode.commands.registerCommand('wt.scratchPad.getScratchPad', () => this);
         vscode.commands.registerCommand('wt.scratchPad.deleteAll', () => {
-            this.deleteNodePermanently(this.rootNodes);
+            return this.deleteNodePermanently(this.rootNodes);
         });
         vscode.commands.registerCommand('wt.scratchPad.renameFile', async () => {
             if (this.view.selection.length > 1) return;
@@ -120,6 +120,12 @@ implements
             return this.newScratchPadFile();
         });
     }
+
+    // TODO make the new scratch pad file open in the tab beside the active one
+    // TODO override ctrl+t
+    // TODO test drag and drop
+    // TODO look at "rename active tab" command to allow for renaming scratch pad + recycling bin items
+    // TODO context commands in the scratch pad view still refer to recycling bin stuff
 
     static scratchPadContainerUri: vscode.Uri;
     static scratchPadConfigUri: vscode.Uri;
