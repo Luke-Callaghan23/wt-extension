@@ -17,7 +17,7 @@ class ConfigFile {
     static renames: [ vscode.Uri, vscode.Uri ][] = [];
     private parent: vscode.Uri;
     private cfgPath: vscode.Uri;
-    private fileInfo: { [index: string]: FileInfo };
+    public fileInfo: { [index: string]: FileInfo };
     constructor (parent: vscode.Uri) {
         this.parent = parent;
         this.cfgPath = vscode.Uri.joinPath(parent, '.config');
@@ -101,6 +101,30 @@ class ConfigFile {
 }
 
 
+// Function to count all files in a directory and its subdirectories
+// Used to report progress on the rename tool
+async function countFilesInDirectory (directoryPath: vscode.Uri) {
+    let totalFiles = 0;
+
+    async function traverseDirectory(currentPath: vscode.Uri) {
+        const files = await vscode.workspace.fs.readDirectory(currentPath);
+
+        for (const [ name, ft ] of files) {
+            const filePath = vscode.Uri.joinPath(currentPath, name);
+            if (ft === vscode.FileType.Directory) {
+                await traverseDirectory(filePath); // Recurse into subdirectory
+            } 
+            else if (ft === vscode.FileType.File) {
+                totalFiles++;
+            }
+        }
+    }
+
+    await traverseDirectory(directoryPath);
+    return totalFiles;
+}
+
+
 export async function convertFileNames () {
 
     const doConvert = await vscode.window.showInformationMessage("Convert File Names", {
@@ -126,22 +150,46 @@ files as you were before the rename.`
 
     const configs: ConfigFile[] = [];
     const q: vscode.Uri[] = [ chaptersDir, snipsDir, scratchPadDir ];
-    while (q.length !== 0) {
-        const cfg = await ConfigFile.fromConfig(q.pop()!);
-        if (!cfg) continue;
-
-        await cfg.performRename();
-
-        configs.push(cfg);
-        const next = await cfg.childDirs();
-        next.forEach(n => q.push(n));
+    
+    // Get count of all files in all the targeted directories
+    let totalCount = 0;
+    for (const dir of q) {
+        totalCount += await countFilesInDirectory(dir);
     }
+
+    // Perform all renames
+    await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        cancellable: false,
+        title: 'Renaming files'
+    }, async (progress) => {
+
+        // While there are still more configs in the queue:
+        while (q.length !== 0) {
+            // Perform renames of all files directly inside of the next item in the queue
+            const cfg = await ConfigFile.fromConfig(q.pop()!);
+            if (!cfg) continue;
+            await cfg.performRename();
+
+            // Amount of files changed in this increment is the length of files in the config file
+            // Report the updated increment by getting the pct of this update out of all files
+            const thisIncrement = Object.keys(cfg.fileInfo).length;
+            progress.report({ increment: (thisIncrement/totalCount)*100 })
+            
+            // Then push all the subdirs of the current queue item into the queue as well
+            configs.push(cfg);
+            const next = await cfg.childDirs();
+            next.forEach(n => q.push(n));
+        }
+    });
+
 
     const contextValuesPath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
     let contextValuesStr = extension.decoder.decode(
         await vscode.workspace.fs.readFile(contextValuesPath)
     );
 
+    // Change all old paths to new paths in the context values file
     for (const [ oldUri, newUri ] of ConfigFile.renames) {
         const oldRel = oldUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
         const newRel = newUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');

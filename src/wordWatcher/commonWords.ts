@@ -151,7 +151,6 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
 
         qp.buttons = [ snipFilterButton ];
     
-    
         let isFilteringSnips = false;
         //@ts-ignore
         qp.onDidTriggerButton((button: IButton) => {
