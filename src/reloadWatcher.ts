@@ -64,10 +64,6 @@ export class ReloadWatcher implements Packageable {
             // It doesn't throw an error.  It doesn't print anything.  It just
             //      never returns.  It still opens the tab, but it does not return
             //      from the function call.
-            // I don't know.
-            // I don't know.
-            // I don't know.
-            // I don't know.
             // When you try running `showTextDocument` without the await or
             //      in a `setTimeout`, it will open one, or two, or maybe
             //      even three of the text documents in the set, but it
@@ -76,9 +72,14 @@ export class ReloadWatcher implements Packageable {
             // Additionally, this seems to crash all other extension capabilities
             //      until you reload the window.  ALL OTHER CAPABILITIES OF THE EXTENSION
             //      UNTIL YOU RELOAD THE WINDOW
+            // I don't know.
+            // I don't know.
+            // I don't know.
+            // I don't know.
             // For some completely and utterly unexplainable reason, for some reason
-            //      unknown to all earthly beings, putting all this stuff inside of 
-            //      an async IIFIE fixes everything (me 🔫 me)
+            //      unknown to all earthly beings, for some reason known only to jesus and
+            //      satan and buddha, putting all this stuff inside of a non-awaited async IIFIE 
+            //      fixes everything (me 🔫 me)
             (async () => {
                 try {
                     // First, close all the active tab groups
