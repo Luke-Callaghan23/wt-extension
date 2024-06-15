@@ -7,14 +7,17 @@ import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
 import { CodeModeState } from '../codeMode/codeMode';
+import { ScratchPadView } from '../scratchPad/scratchPadView';
 
 export class TabLabels {
     private static outlineView: OutlineView;
-    private static recylingBinView: RecyclingBinView;
+    private static recyclingBinView: RecyclingBinView;
+    private static scratchpadView: ScratchPadView;
 
-    constructor (outlineView: OutlineView, recyclingBinView: RecyclingBinView) {
+    constructor (outlineView: OutlineView, recyclingBinView: RecyclingBinView, scratchPadView: ScratchPadView) {
         TabLabels.outlineView = outlineView;
-        TabLabels.recylingBinView = recyclingBinView;
+        TabLabels.recyclingBinView = recyclingBinView;
+        TabLabels.scratchpadView = scratchPadView;
         this.registerCommands();
     }
 
@@ -24,7 +27,7 @@ export class TabLabels {
             // Look in outline view
             let node: { data: { ids: Ids } } | null = await TabLabels.outlineView.getTreeElementByUri(uri);
             // Look in recycling bin view
-            if (!node) node = await TabLabels.recylingBinView.getTreeElementByUri(uri);
+            if (!node) node = await TabLabels.recyclingBinView.getTreeElementByUri(uri);
 
             // If not found in either give an error message
             if (!node) {
@@ -68,11 +71,16 @@ export class TabLabels {
 
                 // First look for the node in the outline view
                 let node: { data: { ids: Ids } } | null = await TabLabels.outlineView.getTreeElementByUri(uri);
+
                 if (!node) {
                     // Then look in the recycling bin view
-                    node = await TabLabels.recylingBinView.getTreeElementByUri(uri);
+                    node = await TabLabels.recyclingBinView.getTreeElementByUri(uri);
+                    if (node) foundInRecycling = true;
+                }
+                if (!node) {
+                    // Then look in the recycling bin view
+                    node = await TabLabels.scratchpadView.getTreeElementByUri(uri);
                     if (!node) continue;
-                    foundInRecycling = true;
                 }
     
                 // Remove the extension root path from the pattern

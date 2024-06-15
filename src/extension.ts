@@ -34,6 +34,7 @@ import { TabLabels } from './tabLabels/tabLabels';
 import { activateSpeak } from './ttsDebugger/tts/tts';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
 import { searchFiles } from './searchFiles';
+import { ScratchPadView } from './scratchPad/scratchPadView';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -66,6 +67,9 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 
+		const scratchPad = new ScratchPadView(context, workspace);
+		scratchPad.init();
+
 		new CoderModer(context);
 		// const worldNotes = new WorldNotes(workspace, context);
 		const workBible = new WorkBible(workspace, context);
@@ -85,7 +89,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.textStyle', 'textStyle', textStyles],
 		]);
 
-		const tabLabels = new TabLabels(outline, recycleBin);
+		const tabLabels = new TabLabels(outline, recycleBin, scratchPad);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
