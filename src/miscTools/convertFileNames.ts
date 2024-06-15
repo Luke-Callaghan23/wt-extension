@@ -108,7 +108,7 @@ export async function convertFileNames () {
         detail: `
 Convert file names in the WTANIWE directory?
 Older versions of WTANIWE used much longer file names than the newest versions.   This may cause some problems for some Operating Systems who have limits on file path sizes.  
-If you encounter this problem, hit 'Continue' to rename all files in the WTANIWE 'chapters' and 'snips' directories.  
+If you encounter this problem, hit 'Continue' to rename all files in the WTANIWE 'chapters', 'snips', 'scratchPad' directories.  
 
 Before executing, make sure all files are saved, and you might want to do a git commit to be safe.
 
@@ -122,9 +122,10 @@ files as you were before the rename.`
 
     const chaptersDir = vscode.Uri.joinPath(extension.rootPath, 'data', 'chapters');
     const snipsDir = vscode.Uri.joinPath(extension.rootPath, 'data', 'snips');
+    const scratchPadDir = vscode.Uri.joinPath(extension.rootPath, 'data', 'scratchPad');
 
     const configs: ConfigFile[] = [];
-    const q: vscode.Uri[] = [ chaptersDir, snipsDir ];
+    const q: vscode.Uri[] = [ chaptersDir, snipsDir, scratchPadDir ];
     while (q.length !== 0) {
         const cfg = await ConfigFile.fromConfig(q.pop()!);
         if (!cfg) continue;
