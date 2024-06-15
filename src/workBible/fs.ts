@@ -3,6 +3,7 @@ import { Note, WorkBible } from './workBible';
 import * as extension from '../extension';
 import { v4 as uuidv4 } from 'uuid';
 import { getNoteText } from './editNote';
+import { Buff } from '../Buffer/bufferSource';
 
 
 const aliasesSplitter = /-- Enter ALIASES for .* here, separated by semicolons -- ALSO, DON'T DELETE THIS LINE!/;
@@ -87,6 +88,16 @@ export function readSingleNote (this: WorkBible, noteId: string, content: string
 
 export async function readNotes (this: WorkBible, workBiblePath: vscode.Uri): Promise<Note[]> {
     try {
+
+        try {
+            await vscode.workspace.fs.stat(this.workBibleFolderPath);
+        }
+        catch (err: any) {
+            // If the stat fails, then make the container directory and an empty config file
+            await vscode.workspace.fs.createDirectory(this.workBibleFolderPath);
+            await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(this.workBibleFolderPath, '.gitkeep'), Buff.from(""));
+        }
+
         const folders = await vscode.workspace.fs.readDirectory(this.workBibleFolderPath);
         const readPromises: Thenable<{
             noteId: string,

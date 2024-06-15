@@ -10,6 +10,7 @@ import { provideHover } from './hoverProvider';
 import { searchNote } from './search';
 import { provideDefinition } from './definitionLink';
 import { editNote } from './editNote';
+import { Buff } from '../Buffer/bufferSource';
 
 export interface Note {
     kind: 'note';

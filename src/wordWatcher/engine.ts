@@ -3,6 +3,7 @@ import * as extension from './../extension';
 import { WordWatcher } from './wordWatcher';
 import { TimedView } from '../timedView';
 import { Workspace } from '../workspace/workspaceClass';
+import { setLastCommit } from '../gitTransactions';
 
 export function addOrDeleteTargetedWord (
     this: WordWatcher,
@@ -53,10 +54,10 @@ export function addOrDeleteTargetedWord (
     // Do updates 
     this.wasUpdated = true;
     this.context.workspaceState.update(contextItem, targetArray);
+    Workspace.packageContextItems();
     for (const editor of vscode.window.visibleTextEditors) {
         this.update(editor, TimedView.findCommentedRanges(editor));
     }
-    Workspace.packageContextItems();
 
     if (!preventRefresh) {
         this.refresh();
@@ -137,6 +138,7 @@ export async function addWordToWatchedWords (this: WordWatcher, options?: {
         }
 
         if (options.addWord) {
+            setLastCommit();
             // If the word is valid and doesn't already exist in the word list, then continue adding the words
             this.updateWords('add', response, watchedWord ? 'wt.wordWatcher.watchedWords' : 'wt.wordWatcher.unwatchedWords');
         }

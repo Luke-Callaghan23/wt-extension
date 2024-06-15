@@ -16,7 +16,15 @@ export async function scanFragment(uri: vscode.Uri, fragmentNode: FragmentNode):
     const unfinishedTodoStack: IncompleteTODO[] = [];
     
     // Read the fragment file and split on newlines
-    const fragmentBuffer = await vscode.workspace.fs.readFile(uri);
+    let fragmentBuffer;
+    try {
+        fragmentBuffer = await vscode.workspace.fs.readFile(uri);
+    }
+    catch {
+        return [
+            { type: 'invalid' },0
+        ]
+    }
     const fragmentDecoded = extension.decoder.decode(fragmentBuffer);
     const fragmentStream = fragmentDecoded.split(/\r?\n/);
 

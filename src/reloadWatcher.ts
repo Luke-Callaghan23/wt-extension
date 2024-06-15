@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as extension from './extension';
-import { lastCommit as _lastCommit } from './gitTransactions';
+import { lastCommit as _lastCommit, setLastCommit } from './gitTransactions';
 import { Packageable } from './packageable';
 import { FileAccessManager } from './fileAccesses';
 import { DiskContextType, loadWorkspaceContext } from './workspace/workspace';
@@ -20,23 +20,29 @@ export type TabPositions = {
 };
 
 export class ReloadWatcher implements Packageable {
+    private lastReload: number;
     constructor (
         private context: vscode.ExtensionContext
     ) {
+        this.lastReload = 0;
         const contextValuesUri = vscode.Uri.joinPath(extension.rootPath, "data", "contextValues.json");
         const watcher = vscode.workspace.createFileSystemWatcher(contextValuesUri.fsPath);
-        watcher.onDidChange(() => this.changedContextValues(contextValuesUri, 'change'));
-        watcher.onDidDelete(() => this.changedContextValues(contextValuesUri, 'delete'));
-        watcher.onDidCreate(() => this.changedContextValues(contextValuesUri, 'create'));
+        watcher.onDidChange(() => {
+            this.changedContextValues(contextValuesUri);
+        });
     }
 
-    async changedContextValues (contextValuesUri: vscode.Uri, action: "create" | "delete" | "change") {
+
+    async changedContextValues (
+        contextValuesUri: vscode.Uri, 
+    ) {
         const time = Date.now();
         const lastCommit = _lastCommit;
         if (time - lastCommit <= 1000) {
             // If the last commit was less than a second ago, then this is a false alarm
             return;
         }
+        setLastCommit();
 
         const response = await vscode.window.showInformationMessage("Reload", {
             modal: true,
@@ -44,79 +50,80 @@ export class ReloadWatcher implements Packageable {
         }, "Reload view and tabs", "Don't reload tabs", "Don't reload");
         if (!response || response === "Don't reload") return;
 
-        // When the action was a delete, write a new empty state context values json file to disk just so the rest of the 
-        //      method works
-        if (action === 'delete') {
-            await vscode.workspace.fs.writeFile(contextValuesUri, extension.encoder.encode(JSON.stringify({
-                "wt.colors.enabled": true,
-                "wt.colors.extraColors": {},
-                "wt.fileAccesses.positions": {},
-                "wt.outline.collapseState": {},
-                "wt.personalDictionary": {},
-                "wt.reloadWatcher.openedTabs": {},
-                "wt.spellcheck.enabled": true,
-                "wt.synonyms.synonyms": [],
-                "wt.textStyle.enabled": true,
-                "wt.todo.collapseState": {},
-                "wt.todo.enabled": true,
-                "wt.very.enabled": true, 
-                "wt.wh.synonyms": [],
-                "wt.wordWatcher.disabledWatchedWords": [],
-                "wt.wordWatcher.enabled": true,
-                "wt.wordWatcher.rgbaColors": {},
-                "wt.wordWatcher.unwatchedWords": [],
-                "wt.wordWatcher.watchedWords": [],
-                "wt.workBible.dontAskDeleteAppearance": false,
-                "wt.workBible.dontAskDeleteDescription": false,
-                "wt.workBible.dontAskDeleteNote": false,
-                "wt.workBible.tree.enabled": false,
-            })));
-        }
-
         // Load context items from the new context values json 
         const contextValues: DiskContextType = await loadWorkspaceContext(this.context, contextValuesUri);
 
         if (response === "Reload view and tabs") {
             // Reload tabs
 
-            // First, close all the active tab groups
-            await vscode.window.tabGroups.close(vscode.window.tabGroups.all);
-
-            const tabContext = contextValues["wt.reloadWatcher.openedTabs"];
-            for (const [ viewColStr, tabs ] of Object.entries(tabContext)) {
-                const viewCol = parseInt(viewColStr);
-                if (isNaN(viewCol)) continue;
-
-                // Open all of the tabs in this tab group in order
-                let activeUri: vscode.Uri | undefined;
-                for (const [ relativePath, positions ] of Object.entries(tabs)) {
-                    const openUri = vscode.Uri.joinPath(extension.rootPath, relativePath);
-                    await vscode.window.showTextDocument(openUri, {
-                        viewColumn: viewCol,
-                        selection: new vscode.Range(
-                            new vscode.Position(positions.activeLine, positions.activeChar),
-                            new vscode.Position(positions.anchorLine, positions.activeChar)
-                        ),
-                        preview: false,
-                    });
-
-                    // Save the active tab for later
-                    if (!activeUri && positions.active) {
-                        activeUri = openUri;
+            // I don't know........
+            // I genuinely don't know.........
+            // For some reason if this function is called when there is no
+            //      active text editor (I THINK?????????????) then the call to
+            //      `showTextDocument` below never returns
+            // It doesn't throw an error.  It doesn't print anything.  It just
+            //      never returns.  It still opens the tab, but it does not return
+            //      from the function call.
+            // I don't know.
+            // I don't know.
+            // I don't know.
+            // I don't know.
+            // When you try running `showTextDocument` without the await or
+            //      in a `setTimeout`, it will open one, or two, or maybe
+            //      even three of the text documents in the set, but it
+            //      WILL NOT open all of them, and then execution will halt
+            //      after those few are opened
+            // Additionally, this seems to crash all other extension capabilities
+            //      until you reload the window.  ALL OTHER CAPABILITIES OF THE EXTENSION
+            //      UNTIL YOU RELOAD THE WINDOW
+            // For some completely and utterly unexplainable reason, for some reason
+            //      unknown to all earthly beings, putting all this stuff inside of 
+            //      an async IIFIE fixes everything (me 🔫 me)
+            (async () => {
+                try {
+                    // First, close all the active tab groups
+                    await vscode.window.tabGroups.close(vscode.window.tabGroups.all);
+                    const tabContext = contextValues["wt.reloadWatcher.openedTabs"];
+                    for (const [ viewColStr, tabs ] of Object.entries(tabContext)) {
+                        const viewCol = parseInt(viewColStr);
+                        if (isNaN(viewCol)) continue;
+        
+                        // Open all of the tabs in this tab group in order
+                        let activeUri: vscode.Uri | undefined;
+                        for (const [ relativePath, positions ] of Object.entries(tabs)) {
+                            const openUri = vscode.Uri.joinPath(extension.rootPath, relativePath);
+                            
+                            await vscode.window.showTextDocument(openUri, {
+                                viewColumn: viewCol,
+                                selection: new vscode.Range(
+                                    new vscode.Position(positions.activeLine, positions.activeChar),
+                                    new vscode.Position(positions.anchorLine, positions.activeChar)
+                                ),
+                                preview: false,
+                            });
+        
+                            // Save the active tab for later
+                            if (!activeUri && positions.active) {
+                                activeUri = openUri;
+                            }
+                        }
+        
+                        // If we came across the active tab, then re-show that document
+                        if (activeUri) {
+                            await vscode.window.showTextDocument(activeUri, {
+                                viewColumn: viewCol,
+                                // Since we opened it with the correct positions earlier, we don't need to do it again here
+                                preview: false,
+                            });
+                        }
                     }
                 }
-
-                // If we came across the active tab, then re-show that document
-                if (activeUri) {
-                    await vscode.window.showTextDocument(activeUri, {
-                        viewColumn: viewCol,
-                        // Since we opened it with the correct positions earlier, we don't need to do it again here
-                        preview: false,
-                    });
+                catch (err: any) {
+                    console.log(err)
                 }
-            }
+            })()
         }
-        
+
         // Either of the first two options requires us to update the internals of all views and timed classes
         //      as well as other internal information
 
@@ -137,9 +144,12 @@ export class ReloadWatcher implements Packageable {
             vscode.commands.executeCommand("wt.personalDictionary.refresh", contextValues['wt.personalDictionary']),
             vscode.commands.executeCommand("wt.colors.refresh", contextValues['wt.colors.extraColors']),
             vscode.commands.executeCommand("wt.workBible.refresh"),
+            vscode.commands.executeCommand("wt.scratchPad.refresh"),
         ]).then(() => {
             // And trigger a forced timed views update
             vscode.commands.executeCommand('wt.timedViews.update');
+        }).catch((err) => {
+            console.log(err);
         });
         
     }

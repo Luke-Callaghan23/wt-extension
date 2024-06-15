@@ -63,17 +63,45 @@ export async function createWorkspace (
         const dataUri = vscode.Uri.joinPath(extension.rootPath, `data`);
         await vscode.workspace.fs.createDirectory(dataUri);
 
+        const contextValuesJsonUri = vscode.Uri.joinPath(extension.rootPath, 'data', 'contextValues.json');
+        await vscode.workspace.fs.writeFile(contextValuesJsonUri, extension.encoder.encode(JSON.stringify({
+            "wt.colors.enabled": true,
+            "wt.colors.extraColors": {},
+            "wt.fileAccesses.positions": {},
+            "wt.outline.collapseState": {},
+            "wt.personalDictionary": {},
+            "wt.reloadWatcher.openedTabs": {},
+            "wt.spellcheck.enabled": true,
+            "wt.synonyms.synonyms": [],
+            "wt.textStyle.enabled": true,
+            "wt.todo.collapseState": {},
+            "wt.todo.enabled": true,
+            "wt.very.enabled": true, 
+            "wt.wh.synonyms": [],
+            "wt.wordWatcher.disabledWatchedWords": [],
+            "wt.wordWatcher.enabled": true,
+            "wt.wordWatcher.rgbaColors": {},
+            "wt.wordWatcher.unwatchedWords": [],
+            "wt.wordWatcher.watchedWords": [],
+            "wt.workBible.dontAskDeleteAppearance": false,
+            "wt.workBible.dontAskDeleteDescription": false,
+            "wt.workBible.dontAskDeleteNote": false,
+            "wt.workBible.tree.enabled": false,
+        }, undefined, 2)));
+
         // Create necessary folders
         for (const folder of workspace.getFolders()) {
             await vscode.workspace.fs.createDirectory(folder);
             await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(folder, '.gitkeep'), new Uint8Array());
         }
 
-        // Create the .config files for chapters and snips
+        // Create the .config files for chapters, snips, and scratchPad
         const chaptersDotConfig = vscode.Uri.joinPath(workspace.chaptersFolder, `.config`);
         const snipsDotConfig = vscode.Uri.joinPath(workspace.workSnipsFolder, `.config`);
+        const scratchPadConfig = vscode.Uri.joinPath(workspace.scratchPadFolder, `.config`);
         await vscode.workspace.fs.writeFile(chaptersDotConfig, Buff.from('{}', 'utf-8'));
         await vscode.workspace.fs.writeFile(snipsDotConfig, Buff.from('{}', 'utf-8'));
+        await vscode.workspace.fs.writeFile(scratchPadConfig, Buff.from('{}', 'utf-8'));
         
         // Creating the log of the recyclng bin
         const recycleBinLog = vscode.Uri.joinPath(workspace.recyclingBin, `.log`);

@@ -27,6 +27,7 @@ export class Workspace {
     public contextValuesFilePath: vscode.Uri;
     public worldNotesPath: vscode.Uri;
     public workBibleFolder: vscode.Uri;
+    public scratchPadFolder: vscode.Uri;
 
     // Returns a list of all 
     getFolders() {
@@ -36,6 +37,8 @@ export class Workspace {
             this.importFolder, 
             this.exportFolder,
             this.recyclingBin,
+            this.workBibleFolder,
+            this.scratchPadFolder
         ];
     }
 
@@ -106,6 +109,7 @@ export class Workspace {
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         this.worldNotesPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotes.json');
         this.workBibleFolder = vscode.Uri.joinPath(extension.rootPath, `data/workBible`);
+        this.scratchPadFolder = vscode.Uri.joinPath(extension.rootPath, `data/scratchPad`);
     }
 
     registerCommands(context: vscode.ExtensionContext): void {
