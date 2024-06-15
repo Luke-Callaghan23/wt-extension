@@ -68,7 +68,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 
 		const scratchPad = new ScratchPadView(context, workspace);
-		scratchPad.init();
+		await scratchPad.init();
 
 		new CoderModer(context);
 		// const worldNotes = new WorldNotes(workspace, context);
