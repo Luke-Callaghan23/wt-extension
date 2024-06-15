@@ -177,7 +177,7 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
                 folderStats.push(await vscode.workspace.fs.stat(folder));
             }
             valid = folderStats.every(({ type }) => type === vscode.FileType.Directory);
-            
+
             try {
                 await loadWorkspaceContext(context, workspace.contextValuesFilePath, true);
             }
@@ -187,7 +187,7 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
             }
         }
         catch (err: any) {
-            vscode.window.showWarningMessage(`Could not load WT environment because '${attempting}' was missing`);
+            vscode.window.showWarningMessage(`Could not load WT environment because folder '${attempting}' was missing`);
             return null;
         }
 
