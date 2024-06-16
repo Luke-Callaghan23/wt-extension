@@ -200,16 +200,50 @@ export async function emDashes () {
     const document = editor.document;
     if (!document) return;
 
+    const text = document.getText();
+    
     // Move the cursor backwards if the cursor is on a whitespace character
-    const newSelections = [ ...editor.selections ];
-    for (let selIndex = 0; selIndex < newSelections.length; selIndex++) {
-        const selection = newSelections[selIndex];
-        const offset = document.offsetAt(selection.start);
-        if (selection.isEmpty && document.getText()[offset - 1] === ' ') {
-            const prev = document.positionAt(offset - 1);
-            newSelections[selIndex] = new vscode.Selection(prev, prev);
+    const newSelections: vscode.Selection[] = [];
+    const starts: string[] = [];
+    const ends: string[] = [];
+    for (let selIndex = 0; selIndex < editor.selections.length; selIndex++) {
+        const selection = editor.selections[selIndex];
+        
+        let startPos: vscode.Position = selection.start;
+        let startStr = ' -- ';
+    
+        let endPos: vscode.Position = selection.end;
+        let endStr = ' -- ';
+    
+        let diff: number = 1;
+    
+        // Check if the character before the cursor is a space
+        // If so, then move the cursor back to before the space and only insert ',' instead of ', '
+        const startOffset = document.offsetAt(selection.start);
+        while (text[startOffset - diff] === ' ') {
+            const prev = document.positionAt(startOffset - diff);
+            startPos = prev;
+            startStr = ' --';
+            diff++;
         }
+        if (text[startOffset] === ' ') startStr = ' --';
+        
+        // Check if the character before the cursor is a space
+        // If so, then insert only insert ' -- ' instead of ', '
+        diff = 1;
+        const endOffset = document.offsetAt(selection.end);
+        while (text[endOffset - diff] === ' ') {
+            const prev = document.positionAt(endOffset - diff);
+            endPos = prev;
+            endStr = ' --';
+            diff++;
+        }
+        if (text[endOffset] === ' ') endStr = ' --';
+    
+        newSelections.push(new vscode.Selection(startPos, endPos));
+        starts.push(startStr);
+        ends.push(endStr);
     }
     editor.selections = newSelections;
-    return surroundSelectionWith(' -- ');
+    return surroundSelectionWith(starts, ends);
 }
