@@ -1,15 +1,18 @@
 import * as vscode from 'vscode';
 
 // Function for surrounding selected text with a specified string
-export async function surroundSelectionWith (start: string, end?: string, overrideSelections?: vscode.Selection[]) {
+export async function surroundSelectionWith (startRanges: string | string[], endRanges?: string | string[], overrideSelections?: vscode.Selection[]) {
     // Get the active text editor
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
     
+    endRanges = endRanges || startRanges;
     const document = editor.document;
     for (let selIndex = 0; selIndex < editor.selections.length; selIndex++) {
         const selection = editor.selections[selIndex];
-        end = end || start;
+
+        const start = Array.isArray(startRanges) ? startRanges[selIndex % startRanges.length] : startRanges;
+        const end = Array.isArray(endRanges) ? endRanges[selIndex % endRanges.length] : endRanges;
 
         // Get the selected text within the selection
         const selected = document.getText(selection);
@@ -124,33 +127,50 @@ export function commasize () {
 
     const text = document.getText();
 
-    let startPos: vscode.Position = editor.selection.start;
-    let startStr = ', ';
-
-    let endPos: vscode.Position = editor.selection.end;
-    let endStr = ', ';
-
-    let diff: number = 1;
-
-    // Check if the character before the cursor is a space
-    // If so, then move the cursor back to before the space and only insert ',' instead of ', '
-    const startOffset = document.offsetAt(editor.selection.start);
-    while (text[startOffset - diff] === ' ') {
-        const prev = document.positionAt(startOffset - diff);
-        startPos = prev;
-        startStr = ',';
-        diff++;
+    
+    const newSelections: vscode.Selection[] = [];
+    const starts: string[] = [];
+    const ends: string[] = [];
+    for (const selection of editor.selections) {
+        let startPos: vscode.Position = selection.start;
+        let startStr = ', ';
+    
+        let endPos: vscode.Position = selection.end;
+        let endStr = ', ';
+    
+        let diff: number = 1;
+    
+        // Check if the character before the cursor is a space
+        // If so, then move the cursor back to before the space and only insert ',' instead of ', '
+        const startOffset = document.offsetAt(selection.start);
+        while (text[startOffset - diff] === ' ') {
+            const prev = document.positionAt(startOffset - diff);
+            startPos = prev;
+            startStr = ',';
+            diff++;
+        }
+        if (text[startOffset] === ' ') startStr = ',';
+        if (text[startOffset - 1] === ',' && text[startOffset - 2] === ' ') startStr = ',';
+        
+        // Check if the character before the cursor is a space
+        // If so, then insert only insert ',' instead of ', '
+        diff = 1;
+        const endOffset = document.offsetAt(selection.end);
+        while (text[endOffset - diff] === ' ') {
+            const prev = document.positionAt(endOffset - diff);
+            endPos = prev;
+            endStr = ',';
+            diff++;
+        }
+        if (text[endOffset] === ' ') endStr = ',';
+        if (text[endOffset + 0] === ',' && text[endOffset + 1] === ' ') endStr = ',';
+    
+        newSelections.push(new vscode.Selection(startPos, endPos));
+        starts.push(startStr);
+        ends.push(endStr);
     }
-
-    // Check if the character before the cursor is a space
-    // If so, then insert only insert ',' instead of ', '
-    const endOffset = document.offsetAt(editor.selection.end);
-    if (text[endOffset] === ' ') {
-        endStr = ',';
-    }
-
-    editor.selection = new vscode.Selection(startPos, endPos);
-    return surroundSelectionWith(startStr, endStr);
+    editor.selections = newSelections;
+    return surroundSelectionWith(starts, ends);
 }
 
 export async function emDash () {
