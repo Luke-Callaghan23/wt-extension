@@ -3,10 +3,8 @@ import * as console from '../vsconsole';
 import { prompt } from '../help';
 import * as vsconsole from '../vsconsole';
 import * as extension from '../extension';
-import { gitiniter } from '../gitTransactions';
 import { Config, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
-
 
 
 export class Workspace {
@@ -27,6 +25,7 @@ export class Workspace {
     public contextValuesFilePath: vscode.Uri;
     public worldNotesPath: vscode.Uri;
     public workBibleFolder: vscode.Uri;
+    public scratchPadFolder: vscode.Uri;
 
     // Returns a list of all 
     getFolders() {
@@ -34,25 +33,29 @@ export class Workspace {
             this.chaptersFolder, 
             this.workSnipsFolder, 
             this.recyclingBin,
+            this.workBibleFolder,
+            this.scratchPadFolder
         ];
     }
 
     // List of allowed import file types
     public importFileTypes: string[] = [
-        'pdf',
         'wt',
         'txt',
         'docx',
-        'html'
+        'html',
+        'odt',
+        'md'
     ];
 
     // List of allowed export file types
     public exportFileTypes: string[] = [
-        'pdf',
         'wt',
         'txt',
         'docx',
-        'html'
+        'html',
+        'odt',
+        'md'
     ];
 
     // List of non-allowed characters in exported file names
@@ -82,7 +85,6 @@ export class Workspace {
         '.'
     ];
 
-
     static async packageContextItems () {
         // Write context items to the file system before git save
         const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
@@ -90,6 +92,7 @@ export class Workspace {
         const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
     }
+
     
     // Simply initializes all the paths of necessary 
     constructor(context: vscode.ExtensionContext) {
@@ -99,7 +102,8 @@ export class Workspace {
         this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         this.worldNotesPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotes.json');
-        this.workBibleFolder = vscode.Uri.joinPath(extension.rootPath, 'data/workBible');
+        this.workBibleFolder = vscode.Uri.joinPath(extension.rootPath, `data/workBible`);
+        this.scratchPadFolder = vscode.Uri.joinPath(extension.rootPath, `data/scratchPad`);
     }
 
     registerCommands(context: vscode.ExtensionContext): void {

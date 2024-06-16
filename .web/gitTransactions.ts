@@ -13,6 +13,7 @@ export async function gitiniter () {
 }
 
 export let lastCommit: number = Date.now();
+export const setLastCommit = () => lastCommit = Date.now();
 export async function gitCommit () {
     try {
         lastCommit = Date.now();

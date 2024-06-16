@@ -26,14 +26,15 @@ import { TextStyles } from './textStyles/textStyles';
 import { WorldNotes } from './worldNotes/worldNotes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { TabLabels } from './tabLabels/tabLabels';
+import { searchFiles } from './searchFiles';
 import { ReloadWatcher } from './reloadWatcher';
-
-
+import { convertFileNames } from './miscTools/convertFileNames';
+import { ScratchPadView } from './scratchPad/scratchPadView';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
 export let rootPath: vscode.Uri;
-export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n]|$)';
+export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n"\'^_*~]|$)';
 export const wordSeparatorRegex = new RegExp(wordSeparator.split('|')[1], 'g');
 export const sentenceSeparator: RegExp = /[.?!]/g;
 export const paragraphSeparator: RegExp = /\n\n/g;
@@ -59,6 +60,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
 		const reloadWatcher = new ReloadWatcher(context);
+		const scratchPad = new ScratchPadView(context, workspace);
+		await scratchPad.init();
 
 		
 		const worldNotes = new WorldNotes(workspace, context);
@@ -76,7 +79,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.textStyle','textStyle',  textStyles]
 		]);
 		
-		const tabLabels = new TabLabels(outline, recycleBin);
+		const tabLabels = new TabLabels(outline, recycleBin, scratchPad);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
@@ -140,6 +143,12 @@ async function activateImpl (context: vscode.ExtensionContext) {
 			loadExtensionWorkspace(context, workspace);
 		}
 	});
+
+	vscode.commands.registerCommand("wt.searchFiles", searchFiles);
+	
+	vscode.commands.registerCommand('wt.convert', () => {
+		convertFileNames();
+	})
 
 	// Attempt to load a workspace from the current location
 	const workspace = await loadWorkspace(context);
