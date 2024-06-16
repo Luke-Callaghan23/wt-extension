@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.105",
+	"version": "0.0.106",
 	"publisher": "luke-callaghan",
 	"private": false,
 	"license": "MIT",
@@ -596,7 +596,7 @@
 			{
 				"command": "wt.colors.removeColor",
 				"title": "Writing Tool: Remove Color from Color Group"
-			},,
+			},
 			{
 				"title": "Writing Tool: Display Options",
 				"command": "wt.statusBarTimer.displayOptions",
