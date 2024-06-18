@@ -215,6 +215,11 @@ implements
     }
 
     getTreeItem(noteNode: Note | SubNote | AppearanceContainer): vscode.TreeItem | Thenable<vscode.TreeItem> {
+        const editCommand: vscode.Command = {
+            command: "wt.workBible.editNote",
+            title: "Edit Note",
+            arguments: [ noteNode ],
+        };
         switch (noteNode.kind) {
             case 'note': 
                 const aliasesString = noteNode.aliases.join(', ');
@@ -227,6 +232,7 @@ implements
                     tooltip: aliasesString.length !== 0 
                         ? `${noteNode.noun} (${aliasesString})`
                         : `${noteNode.noun}`,
+                    command: editCommand
                 }
             case 'description': case 'appearance': return {
                 id: `${noteNode.noteId}__${noteNode.idx}__${noteNode.kind}`,
@@ -234,7 +240,8 @@ implements
                 label: noteNode.description,
                 collapsibleState: vscode.TreeItemCollapsibleState.None,
                 tooltip: noteNode.description,
-                iconPath: new vscode.ThemeIcon("debug-breakpoint-disabled")
+                iconPath: new vscode.ThemeIcon("debug-breakpoint-disabled"),
+                command: editCommand
             }
             case 'appearanceContainer': return {
                 id: `${noteNode.noteId}__appearanceContainer`,
@@ -242,6 +249,7 @@ implements
                 label: 'Appearance',
                 collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
                 tooltip: 'Appearance',
+                command: editCommand
             }
         }
     }

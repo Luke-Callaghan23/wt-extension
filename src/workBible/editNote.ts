@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { AppearanceContainer, Note, SubNote, WorkBible } from './workBible';
+import { TabLabels } from '../tabLabels/tabLabels';
 
 export async function editNote (this: WorkBible, resource: Note | SubNote | AppearanceContainer) {
     
@@ -18,7 +19,12 @@ export async function editNote (this: WorkBible, resource: Note | SubNote | Appe
     const notePath = vscode.Uri.joinPath(this.workBibleFolderPath, noteFileName);
     
     const document = await vscode.workspace.openTextDocument(notePath);
-    vscode.window.showTextDocument(document);
+    return vscode.window.showTextDocument(document, {
+        preview: false,
+        viewColumn: vscode.ViewColumn.Beside,
+    }).then(() => {
+        TabLabels.assignNamesForOpenTabs();
+    });
 }
 
 export function getNoteText (note: Note): string {
@@ -35,15 +41,12 @@ export function getNoteText (note: Note): string {
     return `${note.noun}
 
 -- Enter ALIASES for ${note.noun} here, separated by semicolons -- ALSO, DON'T DELETE THIS LINE!
-
 ${aliasesText}
 
 -- Enter APPEARANCE descriptions for ${note.noun} here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!
-
 ${appearancesText}
 
 -- Enter GENERAL DESCRIPTIONS for ${note.noun} here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!
-
 ${descriptionsText}
 `;
 }
