@@ -38,7 +38,7 @@ export class ReloadWatcher implements Packageable {
     ) {
         const time = Date.now();
         const lastCommit = _lastCommit;
-        if (time - lastCommit <= 1000) {
+        if (time - lastCommit <= 60000) {
             // If the last commit was less than a second ago, then this is a false alarm
             return;
         }

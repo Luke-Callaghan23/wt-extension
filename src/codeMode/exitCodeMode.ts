@@ -6,21 +6,35 @@ import { OutlineView } from '../outline/outlineView';
 export async function exit (this: CoderModer): Promise<void> {
     if (!this.repoUris) return;
 
-    for (const group of vscode.window.tabGroups.all) {
+    // #240 -- idk man
+    // For some reason, `vscode.window.tabGroups.close` won't work two times in a row any more
+    //      not sure if it can't work in different tab groups or what
+    // For some other reason, simply letting the exception happen, then running again fixes it
+    // Hacky workaround is to run the code for closing tabs nine times (once for every potential
+    //      tab group (and therefore every opened tab that needs to be closed)) and breaking early 
+    //      if we do close all the tabs
+    for (let i = 0; i < 9; i++) {
+        try {
+            for (const group of vscode.window.tabGroups.all) {
+                
+                // Select a random uri from this.repoUris to open
+                //      in this tab group
+                
+                // All tabs open in the current group
+                const ind = group.tabs.findIndex(tab => {
+                    return this.openedCodeUris.find(opened => 
+                        tab.input instanceof vscode.TabInputText 
+                        && tab.input.uri.fsPath === opened.fsPath
+                    );
+                });
         
-        // Select a random uri from this.repoUris to open
-        //      in this tab group
-        
-        // All tabs open in the current group
-        const ind = group.tabs.findIndex(tab => {
-            return this.openedCodeUris.find(opened => 
-                tab.input instanceof vscode.TabInputText 
-                && tab.input.uri.fsPath === opened.fsPath
-            );
-        });
-
-        if (ind === -1) continue;
-        await vscode.window.tabGroups.close(group.tabs[ind]);
+                if (ind === -1) continue;
+                const tab = group.tabs[ind];
+                await vscode.window.tabGroups.close(tab);
+            }
+            break;
+        }
+        catch (err: any) {}
     }
 
     // Bring back terminal in bottom pane and writing tool in side pane
