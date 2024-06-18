@@ -17,11 +17,25 @@ export async function editNote (this: WorkBible, resource: Note | SubNote | Appe
 
     const noteFileName = `${note.noteId}.wtnote`
     const notePath = vscode.Uri.joinPath(this.workBibleFolderPath, noteFileName);
+
+    
+    // Normally open the work notes doucument in the view column beside the current one
+    let viewColumn = vscode.ViewColumn.Beside;
+
+    // When we are currently editing a work notes document, however, open the new 
+    //      work notes doc in the same view column
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+        const activeDocumentUri = activeEditor.document.uri;
+        if (this.getNote(activeDocumentUri)) {
+            viewColumn = vscode.ViewColumn.Active;
+        }
+    }
     
     const document = await vscode.workspace.openTextDocument(notePath);
     return vscode.window.showTextDocument(document, {
         preview: false,
-        viewColumn: vscode.ViewColumn.Beside,
+        viewColumn: viewColumn,
     }).then(() => {
         TabLabels.assignNamesForOpenTabs();
     });
