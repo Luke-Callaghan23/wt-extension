@@ -8,16 +8,19 @@ import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
 import { CodeModeState } from '../codeMode/codeMode';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
+import { WorkBible } from '../workBible/workBible';
 
 export class TabLabels {
     private static outlineView: OutlineView;
     private static recyclingBinView: RecyclingBinView;
     private static scratchPadView: ScratchPadView;
+    private static workBible: WorkBible;
 
-    constructor (outlineView: OutlineView, recyclingBinView: RecyclingBinView, scratchPadView: ScratchPadView) {
+    constructor (outlineView: OutlineView, recyclingBinView: RecyclingBinView, scratchPadView: ScratchPadView, workBible: WorkBible) {
         TabLabels.outlineView = outlineView;
         TabLabels.recyclingBinView = recyclingBinView;
         TabLabels.scratchPadView = scratchPadView;
+        TabLabels.workBible = workBible;
         this.registerCommands();
 
         vscode.workspace.onDidChangeConfiguration((e) => {
@@ -73,12 +76,12 @@ export class TabLabels {
                 if (!(tab.input instanceof vscode.TabInputText)) continue;
     
                 const uri = tab.input.uri;
-                if (!uri.fsPath.endsWith('.wt')) continue;
+                if (!(uri.fsPath.endsWith('.wt') || uri.fsPath.endsWith('.wtnote'))) continue;
     
-                let source: 'outline' | 'recycle' | 'scratch' = 'outline';
+                let source: 'outline' | 'recycle' | 'scratch' | 'workBible' = 'outline';
 
                 // First look for the node in the outline view
-                let node: { data: { ids: Ids } } | null = await TabLabels.outlineView.getTreeElementByUri(uri);
+                let node: { data: { ids: { display: string } } } | null = await TabLabels.outlineView.getTreeElementByUri(uri);
 
                 if (!node) {
                     // Then look in the recycling bin view
@@ -88,9 +91,18 @@ export class TabLabels {
                 if (!node) {
                     // Then look in the recycling bin view
                     node = await TabLabels.scratchPadView.getTreeElementByUri(uri);
-                    if (!node) continue;
                     source = 'scratch';
                 }
+                if (!node && uri.fsPath.endsWith(".wtnote")) {
+                    const note = TabLabels.workBible.getNote(uri);
+                    if (note) {
+                        node = {data: { ids: {
+                            display: note.noun
+                        }}};
+                        source = 'workBible';
+                    }
+                }
+                if (!node) continue;
     
                 // Remove the extension root path from the pattern
                 let relativePath = uri.fsPath.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/')
@@ -113,6 +125,9 @@ export class TabLabels {
                     else {
                         label = `(scratch) ${node.data.ids.display}`;
                     }
+                }
+                else if (source === 'workBible') {
+                    label = `(notes) ${node.data.ids.display}`;
                 }
                 else throw 'unreachable';
                 newPatterns['*/' + relativePath] = label;

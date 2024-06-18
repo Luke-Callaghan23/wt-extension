@@ -91,7 +91,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.textStyle', 'textStyle', textStyles],
 		]);
 
-		const tabLabels = new TabLabels(outline, recycleBin, scratchPad);
+		const tabLabels = new TabLabels(outline, recycleBin, scratchPad, workBible);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();

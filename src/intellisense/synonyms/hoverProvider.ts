@@ -2,22 +2,20 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
 import { capitalize, getHoverText, getHoveredWord } from '../common';
-import { WorldNotes } from '../../worldNotes/worldNotes';
+import { WorkBible } from '../../workBible/workBible';
 
 export class HoverProvider implements vscode.HoverProvider {
     constructor (
         private context: vscode.ExtensionContext,
         workspace: Workspace
-    ) {
-
-    }
+    ) {}
 
     async provideHover (document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.Hover> {
         const hoverPosition = getHoveredWord(document, position);
         if (!hoverPosition) return new vscode.Hover('');
 
         // Don't give hover on words that have a matched world notes Note
-        const worldNotes = WorldNotes.singleton;
+        const worldNotes = WorkBible.singleton;
         if (worldNotes) {
             const matchedNotes = worldNotes.matchedNotes;
             if (

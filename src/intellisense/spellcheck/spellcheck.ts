@@ -4,7 +4,6 @@ import { Workspace } from '../../workspace/workspaceClass';
 import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
 import { WordRange } from '../../intellisense/common';
-import { WorldNotes } from '../../worldNotes/worldNotes';
 import { WorkBible } from '../../workBible/workBible';
 
 

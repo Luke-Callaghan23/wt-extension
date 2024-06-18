@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Packageable } from '../packageable';
 import { readNotes, readSingleNote, writeNotes, writeSingleNote } from './fs';
 import { Workspace } from '../workspace/workspaceClass';
-import { addAlias, addSubNote, addNote, removeAlias, removeSubNote, removeNote, addAppearance } from './update';
+import { addNote, removeNote } from './update';
 import { Timed } from '../timedView';
 import { disable, update } from './timer';
 import { v4 as uuidv4 } from 'uuid';
@@ -19,6 +19,7 @@ export interface Note {
     appearance: string[];
     aliases: string[];
     description: string[];
+    uri: vscode.Uri;
 }
 
 export interface AppearanceContainer {
@@ -46,8 +47,7 @@ export interface UriNoteMatch {
 export class WorkBible 
 implements 
     vscode.TreeDataProvider<Note | SubNote | AppearanceContainer>, 
-    vscode.HoverProvider,
-    Packageable, Timed 
+    vscode.HoverProvider, Timed 
 {
 
     readNotes = readNotes;
@@ -55,19 +55,12 @@ implements
     writeNotes = writeNotes;
     writeSingleNote = writeSingleNote;
 
-    addAlias = addAlias;
-    removeAlias = removeAlias;
     addNote = addNote;
     removeNote = removeNote;
-    addSubNote = addSubNote;
-    removeSubNote = removeSubNote;
-    addAppearance = addAppearance;
-
-    searchNote = searchNote;
     editNote = editNote;
 
+    searchNote = searchNote;
     provideHover = provideHover;
-
     provideDefinition = provideDefinition;
     
     enabled: boolean;
@@ -80,9 +73,6 @@ implements
     protected nounsRegex: RegExp | undefined;
 
     protected notes: Note[];
-    protected dontAskDeleteNote: boolean;
-    protected dontAskDeleteDescription: boolean;
-    protected dontAskDeleteAppearance: boolean;
     protected workBibleFolderPath: vscode.Uri;
     public view: vscode.TreeView<Note | SubNote | AppearanceContainer>;
     constructor (
@@ -91,15 +81,6 @@ implements
     ) {
         this.workBibleFolderPath = workspace.workBibleFolder;
         
-        const dontAskDeleteNote: boolean | undefined = context.globalState.get<boolean>('wt.workBible.dontAskDeleteNote');
-        this.dontAskDeleteNote = dontAskDeleteNote || false;
-        
-        const dontAskDeleteDescription: boolean | undefined = context.globalState.get<boolean>('wt.workBible.dontAskDeleteDescription');
-        this.dontAskDeleteDescription = dontAskDeleteDescription || false;
-
-        const dontAskDeleteAppearance: boolean | undefined = context.globalState.get<boolean>('wt.workBible.dontAskDeleteAppearance');
-        this.dontAskDeleteAppearance = dontAskDeleteAppearance || false;
-
         // Will be modified by TimedView
         this.enabled = true;
 
@@ -141,7 +122,7 @@ implements
             //      document
             const noteIdSplit = e.fileName.replace('.wtnote', '').split(/\/|\\/);
             const noteId = noteIdSplit[noteIdSplit.length - 1] || '';
-            const note = this.readSingleNote(noteId, e.getText());
+            const note = this.readSingleNote(noteId, e.getText(), e.uri);
 
             // Find the location of the saved note in the existing notes array
             const oldNoteIdx = this.notes.findIndex(on => {
@@ -223,13 +204,8 @@ implements
             this.writeSingleNote(note);
         }
 
-        vscode.commands.registerCommand("wt.workBible.addAlias", (resource: Note) => { doTheThingAndWrite(() => this.addAlias(resource)) });
-        vscode.commands.registerCommand("wt.workBible.removeAlias", (resource: Note) => { doTheThingAndWrite(() => this.removeAlias(resource)) });
         vscode.commands.registerCommand("wt.workBible.addNote", (resource: Note | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) });
         vscode.commands.registerCommand("wt.workBible.removeNote", (resource: Note) => { doTheThingAndWrite(() => this.removeNote(resource)) });
-        vscode.commands.registerCommand("wt.workBible.addSubNote", (resource: SubNote) => { doTheThingAndWrite(() => this.addSubNote(resource)) });
-        vscode.commands.registerCommand("wt.workBible.removeSubNote", (resource: SubNote) => { doTheThingAndWrite(() => this.removeSubNote(resource)) });
-        vscode.commands.registerCommand("wt.workBible.addAppearance", (resource: AppearanceContainer) => { doTheThingAndWrite(() => this.addAppearance(resource)) });
         vscode.commands.registerCommand('wt.workBible.search', (resource: Note) => { this.searchNote(resource) });
         vscode.commands.registerCommand('wt.workBible.editNote', (resource: Note | AppearanceContainer | SubNote) => { this.editNote(resource) });
         vscode.commands.registerCommand('wt.workBible.getWorkBible', () => this);
@@ -237,15 +213,6 @@ implements
             return this.refresh(true);
         });
     }
-
-    getPackageItems(): { [index: string]: any; } {
-        return {
-            'wt.workBible.dontAskDeleteNote': this.dontAskDeleteNote,
-            'wt.workBible.dontAskDeleteDescription': this.dontAskDeleteDescription,
-            'wt.workBible.dontAskDeleteAppearance': this.dontAskDeleteAppearance
-        };
-    }
-
 
     getTreeItem(noteNode: Note | SubNote | AppearanceContainer): vscode.TreeItem | Thenable<vscode.TreeItem> {
         switch (noteNode.kind) {
@@ -321,5 +288,11 @@ implements
             return null;
         }
         else throw `Not possible`;
+    }
+
+    getNote (noteUri: vscode.Uri): Note | null {
+        return this.notes.find(note => {
+            return note.uri.fsPath === noteUri.fsPath;
+        }) || null;
     }
 }

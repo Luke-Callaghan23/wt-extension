@@ -11,7 +11,7 @@ const appearancesSplitter = /-- Enter APPEARANCE descriptions for .* here, separ
 const generalSplitter = /-- Enter GENERAL DESCRIPTIONS for .* here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!/;
 
 
-export function readSingleNote (this: WorkBible, noteId: string, content: string): Note {
+export function readSingleNote (this: WorkBible, noteId: string, content: string, uri: vscode.Uri): Note {
     // If the aliases splitter was not found, use the first newline as the separator instead
     let [ name, remaining ] = content.split(aliasesSplitter);
     if (remaining === undefined) {
@@ -82,7 +82,8 @@ export function readSingleNote (this: WorkBible, noteId: string, content: string
         appearance: appearancesReal,
         description: descriptionsReal,
         kind: 'note',
-        noun: nameReal
+        noun: nameReal,
+        uri: uri,
     };
 }
 
@@ -101,18 +102,20 @@ export async function readNotes (this: WorkBible, workBiblePath: vscode.Uri): Pr
         const folders = await vscode.workspace.fs.readDirectory(this.workBibleFolderPath);
         const readPromises: Thenable<{
             noteId: string,
-            content: string
+            content: string,
+            uri: vscode.Uri
         } | null>[] = folders.map(([ name, ft ]) => {
             if (ft !== vscode.FileType.File || !name.endsWith('wtnote')) {
                 return new Promise((resolve, reject) => resolve(null));
             }
             const noteId = name.replace('.wtnote', '');
             console.log(noteId);
-            const path = vscode.Uri.joinPath(this.workBibleFolderPath, name)
-            return vscode.workspace.fs.readFile(path).then(buff => {
+            const pathUri = vscode.Uri.joinPath(this.workBibleFolderPath, name)
+            return vscode.workspace.fs.readFile(pathUri).then(buff => {
                 return {
                     noteId: noteId,
                     content: extension.decoder.decode(buff),
+                    uri: pathUri
                 }
             });
         });
@@ -122,8 +125,8 @@ export async function readNotes (this: WorkBible, workBiblePath: vscode.Uri): Pr
         const contents = await Promise.all(readPromises);
         for (const data of contents) {
             if (data === null) continue;
-            const { content, noteId } = data;
-            notes.push(this.readSingleNote(noteId, content));
+            const { content, noteId, uri } = data;
+            notes.push(this.readSingleNote(noteId, content, uri));
         }
 
         return notes;
