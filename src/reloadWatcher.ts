@@ -30,30 +30,40 @@ export class ReloadWatcher implements Packageable {
         watcher.onDidChange(() => {
             this.changedContextValues(contextValuesUri);
         });
+
+        vscode.commands.registerCommand("wt.reloadWatcher.reloadWorkspace", () => {
+            return this.changedContextValues(contextValuesUri, true);
+        });
     }
 
 
     async changedContextValues (
         contextValuesUri: vscode.Uri, 
+        overrideCommitCheck: boolean = false,
     ) {
-        const time = Date.now();
-        const lastCommit = _lastCommit;
-        if (time - lastCommit <= 60000) {
-            // If the last commit was less than a second ago, then this is a false alarm
-            return;
-        }
-        setLastCommit();
+        
+        let reloadTabs = overrideCommitCheck;
+        if (!overrideCommitCheck) {
+            const time = Date.now();
+            const lastCommit = _lastCommit;
+            if (time - lastCommit <= 7500) {
+                // If the last commit was less than 7.5 seconds ago, then this is a false alarm
+                return;
+            }
+            setLastCommit();
 
-        const response = await vscode.window.showInformationMessage("Reload", {
-            modal: true,
-            detail: "We detected a change in your WTANIWE environment not done by WTANIWE itself, would you like to reload the extension?  (This will update all views to reflect any changes made outside of WTANIWE).\nIn the case of a git pull or branch change, we can also close all current tabs and open the tabs from the branch or remote origin you pulled from.",
-        }, "Reload view and tabs", "Don't reload tabs", "Don't reload");
-        if (!response || response === "Don't reload") return;
+            const response = await vscode.window.showInformationMessage("Reload", {
+                modal: true,
+                detail: "We detected a change in your WTANIWE environment not done by WTANIWE itself, would you like to reload the extension?  (This will update all views to reflect any changes made outside of WTANIWE).\nIn the case of a git pull or branch change, we can also close all current tabs and open the tabs from the branch or remote origin you pulled from.",
+            }, "Reload view and tabs", "Don't reload tabs", "Don't reload");
+            if (!response || response === "Don't reload") return;
+            reloadTabs = response === 'Reload view and tabs';
+        }
 
         // Load context items from the new context values json 
         const contextValues: DiskContextType = await loadWorkspaceContext(this.context, contextValuesUri);
 
-        if (response === "Reload view and tabs") {
+        if (reloadTabs) {
             // Reload tabs
 
             // I don't know........

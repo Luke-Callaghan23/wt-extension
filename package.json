@@ -772,6 +772,10 @@
 			{
 				"command": "wt.workBible.refresh",
 				"title": "Writing Tool: Refresh workBible"
+			},
+			{
+				"command": "wt.reloadWatcher.reloadWorkspace",
+				"title": "Writing Tool: Refresh Workspace"
 			}
 		],
 		"menus": {
