@@ -68,7 +68,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
-		const reloadWatcher = new ReloadWatcher(context);
+		const reloadWatcher = new ReloadWatcher(workspace, context);
 		const scratchPad = new ScratchPadView(context, workspace);
 		await scratchPad.init();
 
@@ -104,10 +104,18 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		//		fragment/snips/chapters in the outline view
 		FileAccessManager.initialize();
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
-		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
-			outline, synonyms, timedViews, new FileAccessManager(),
-			personalDictionary, colorGroups, wh, reloadWatcher
-		]));
+		vscode.commands.registerCommand('wt.getPackageableItems', async () => {
+			try {
+				const result = await packageForExport([
+					outline, synonyms, timedViews, new FileAccessManager(),
+					personalDictionary, colorGroups, wh, //reloadWatcher
+				]);
+				return result;
+			}
+			catch (err: any) {
+				return null;
+			}
+		});
 
 		// Lastly, clear the 'tmp' folder
 		// This is used to store temporary data for a session and should not last between sessions

@@ -6,6 +6,7 @@ import * as extension from '../extension';
 import { Config, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
 import { setLastCommit } from '../gitTransactions';
+import { ReloadWatcher } from '../reloadWatcher';
 
 
 export class Workspace {
@@ -91,12 +92,15 @@ export class Workspace {
     ];
 
     static async packageContextItems (preventReloadTrigger: boolean) {
-        if (preventReloadTrigger) setLastCommit();
+        // ReloadWatcher.disableReloadWatch();
         // Write context items to the file system before git save
         const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
         const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-        return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+        return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'))
+        // .then(() => {
+        //     ReloadWatcher.enableReloadWatch();
+        // });
     }
     
 
