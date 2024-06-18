@@ -21,13 +21,13 @@ export function remove () {
 
 
 export async function save () {
-    await Workspace.packageContextItems();
+    await Workspace.packageContextItems(true);
     vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
     return gitCommit();
 }
 
 export async function saveAll () {
-    await Workspace.packageContextItems();
+    await Workspace.packageContextItems(true);
     vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
     return gitCommit();
 }

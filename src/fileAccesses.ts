@@ -6,6 +6,7 @@ import * as console from './vsconsole';
 import * as extension from './extension';
 import { Packageable } from './packageable';
 import { TabLabels } from './tabLabels/tabLabels';
+import { Workspace } from './workspace/workspaceClass';
 
 export class FileAccessManager implements Packageable {
 
@@ -92,14 +93,26 @@ export class FileAccessManager implements Packageable {
         FileAccessManager.lastEditor = editor;
     }
 
+    private static lastContextUpdate: number = Date.now();
     static registerCommands (): void {
-        vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+
+
+        const cb = async (editor: vscode.TextEditor | undefined) => {
             setTimeout(() => {
                 if (editor && editor.document) {
                     FileAccessManager.documentOpened(editor.document.uri);
                 }
                 FileAccessManager.savePosition(editor);
+                if (Date.now() - FileAccessManager.lastContextUpdate > 1000 * 60 * 5) {
+                    Workspace.packageContextItems(true);
+                }
             }, 0);
+        };
+
+        vscode.window.onDidChangeActiveTextEditor(cb);
+        vscode.workspace.onDidSaveTextDocument(() => {
+            const editor = vscode.window.activeTextEditor;
+            return cb(editor);
         });
     }
 

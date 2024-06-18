@@ -5,6 +5,7 @@ import * as vsconsole from '../vsconsole';
 import * as extension from '../extension';
 import { Config, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
+import { setLastCommit } from '../gitTransactions';
 
 
 export class Workspace {
@@ -85,7 +86,8 @@ export class Workspace {
         '.'
     ];
 
-    static async packageContextItems () {
+    static async packageContextItems (preventReloadTrigger: boolean) {
+        if (preventReloadTrigger) setLastCommit();
         // Write context items to the file system before git save
         const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
@@ -150,7 +152,7 @@ export class Workspace {
 
         vscode.commands.registerCommand('wt.workspace.generateContextValues', async () => {
             try {
-                await Workspace.packageContextItems();
+                await Workspace.packageContextItems(true);
             }
             catch (err: any) {
                 vscode.window.showErrorMessage(`ERROR: An error occurred while generating context items: ${err.message}: ${JSON.stringify(err, null, 2)}`);

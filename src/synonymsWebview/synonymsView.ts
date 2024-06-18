@@ -142,6 +142,7 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 				case 'deliveredSynonyms':
 					this.synonyms = (data.synonyms as string[]);
 					this.context.workspaceState.update('wt.synonyms.synonyms', this.synonyms);
+					Workspace.packageContextItems(true);
 					break;
 			}
 		});
