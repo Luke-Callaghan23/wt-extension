@@ -108,7 +108,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			try {
 				const result = await packageForExport([
 					outline, synonyms, timedViews, new FileAccessManager(),
-					personalDictionary, colorGroups, wh, //reloadWatcher
+					personalDictionary, colorGroups, wh, reloadWatcher
 				]);
 				return result;
 			}

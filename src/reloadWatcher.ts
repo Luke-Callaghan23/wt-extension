@@ -30,25 +30,28 @@ export class ReloadWatcher implements Packageable {
     ) {
         ReloadWatcher.context = context;
         ReloadWatcher.contextValuesUri = workspace.contextValuesFilePath;
-        ReloadWatcher.watcher = vscode.workspace.createFileSystemWatcher(ReloadWatcher.contextValuesUri.fsPath);
         vscode.commands.registerCommand("wt.reloadWatcher.reloadWorkspace", () => {
-            return ReloadWatcher.changedContextValues(workspace.contextValuesFilePath, true);
+            return ReloadWatcher.changedContextValues(true);
         });
+        ReloadWatcher.enableReloadWatch();
     }
     
+    static hello = 0;
     public static disableReloadWatch () {
-        ReloadWatcher.watcher.dispose();
+        ReloadWatcher.watcher?.dispose();
+        console.log('disabled reload watching');
     }
     
     public static enableReloadWatch () {
+        ReloadWatcher.watcher = vscode.workspace.createFileSystemWatcher(ReloadWatcher.contextValuesUri.fsPath);
         ReloadWatcher.watcher.onDidChange(() => {
-            ReloadWatcher.changedContextValues(ReloadWatcher.contextValuesUri);
+            ReloadWatcher.changedContextValues();
         });
+        console.log('enabled reload watching');
     }
 
 
     static async changedContextValues (
-        contextValuesUri: vscode.Uri, 
         overrideCommitCheck: boolean = false,
     ) {
         
@@ -71,7 +74,7 @@ export class ReloadWatcher implements Packageable {
         }
 
         // Load context items from the new context values json 
-        const contextValues: DiskContextType = await loadWorkspaceContext(ReloadWatcher.context, contextValuesUri);
+        const contextValues: DiskContextType = await loadWorkspaceContext(ReloadWatcher.context, ReloadWatcher.contextValuesUri);
 
         if (reloadTabs) {
             // Reload tabs
