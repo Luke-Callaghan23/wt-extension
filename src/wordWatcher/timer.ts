@@ -32,40 +32,42 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
     let regex: RegExp;
     let unwatchedRegeces: RegExp[];
     let watchedRegeces: {uri: string, reg: RegExp }[];
-    if (this.watchedWords.length === 0) {
-        watchedAndEnabled = [];
-        regexString = 'a^';
-        regex = /a^/gi;
-        unwatchedRegeces = [/a^/gi];
-        watchedRegeces = [];
-    }
-    else if (this.wasUpdated || !this.lastCalculatedRegeces) {
+
+    if (this.wasUpdated || !this.lastCalculatedRegeces) {
         
         // Filter out the disabled words from the main watched array
         const watchedAndEnabledTmp = this.watchedWords.filter(watched => !this.disabledWatchedWords.find(disabled => watched === disabled));
-
-        // Add a mapping to the watched words array to add a named group
-        watchedAndEnabled = watchedAndEnabledTmp.map((watchedRegexString, index) => {
-            return `(?<index${index}>${watchedRegexString})`;
-        });
-
-        // Create the regex string from the still-enabled watched words
-        // Join all the enabled watched words by a string like `wordSeparator` + `|` + `wordSeparator
-        //      to add explicit 'OR' to all of the watched words ('|' semantically means OR)
-        const mainRegex = watchedAndEnabled.join(`${extension.wordSeparator}|${extension.wordSeparator}`);
-        // Bookend the main regex with word separators
-        regexString = extension.wordSeparator + mainRegex + extension.wordSeparator;
-        regex = new RegExp(regexString, 'gi');
-        unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${extension.wordSeparator}${unwatched}${extension.wordSeparator}`, 'i'));
-        watchedRegeces = this.watchedWords.map(watched => ({ uri: watched, reg: new RegExp(`${extension.wordSeparator}${watched}${extension.wordSeparator}`, 'i') }));
-
-        this.lastCalculatedRegeces = {
-            watchedAndEnabled,
-            regexString,
-            regex,
-            unwatchedRegeces,
-            watchedRegeces
-        };
+        if (watchedAndEnabledTmp.length === 0) {
+            watchedAndEnabled = [];
+            regexString = 'a^';
+            regex = /a^/gi;
+            unwatchedRegeces = [/a^/gi];
+            watchedRegeces = [];
+        }
+        else {
+            // Add a mapping to the watched words array to add a named group
+            watchedAndEnabled = watchedAndEnabledTmp.map((watchedRegexString, index) => {
+                return `(?<index${index}>${watchedRegexString})`;
+            });
+    
+            // Create the regex string from the still-enabled watched words
+            // Join all the enabled watched words by a string like `wordSeparator` + `|` + `wordSeparator
+            //      to add explicit 'OR' to all of the watched words ('|' semantically means OR)
+            const mainRegex = watchedAndEnabled.join(`${extension.wordSeparator}|${extension.wordSeparator}`);
+            // Bookend the main regex with word separators
+            regexString = extension.wordSeparator + mainRegex + extension.wordSeparator;
+            regex = new RegExp(regexString, 'gi');
+            unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${extension.wordSeparator}${unwatched}${extension.wordSeparator}`, 'i'));
+            watchedRegeces = this.watchedWords.map(watched => ({ uri: watched, reg: new RegExp(`${extension.wordSeparator}${watched}${extension.wordSeparator}`, 'i') }));
+    
+            this.lastCalculatedRegeces = {
+                watchedAndEnabled,
+                regexString,
+                regex,
+                unwatchedRegeces,
+                watchedRegeces
+            };
+        }
     }
     else {
         watchedAndEnabled = this.lastCalculatedRegeces.watchedAndEnabled;
