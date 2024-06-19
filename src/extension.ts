@@ -73,14 +73,12 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		await scratchPad.init();
 
 		new CoderModer(context);
-		// const worldNotes = new WorldNotes(workspace, context);
-		const workBible = new WorkBible(workspace, context);
 
+		const workBible = new WorkBible(workspace, context);
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);
 
 		const timedViews = new TimedView(context, [
-			// ['wt.worldNotes.tree', worldNotes],
 			['wt.workBible.tree', 'workBible', workBible],
 			['wt.todo', 'todo', todo],
 			['wt.wordWatcher', 'wordWatcher', wordWatcher],
@@ -104,18 +102,10 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		//		fragment/snips/chapters in the outline view
 		FileAccessManager.initialize();
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
-		vscode.commands.registerCommand('wt.getPackageableItems', async () => {
-			try {
-				const result = await packageForExport([
-					outline, synonyms, timedViews, new FileAccessManager(),
-					personalDictionary, colorGroups, wh, reloadWatcher
-				]);
-				return result;
-			}
-			catch (err: any) {
-				return null;
-			}
-		});
+		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
+			outline, synonyms, timedViews, new FileAccessManager(),
+			personalDictionary, colorGroups, wh, reloadWatcher
+		]));
 
 		// Lastly, clear the 'tmp' folder
 		// This is used to store temporary data for a session and should not last between sessions
@@ -125,6 +115,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
         // Setting to make writing dialogue easier -- always skip past closing dialogue quotes
         const configuration = vscode.workspace.getConfiguration();
         configuration.update("editor.autoClosingOvertype", "always", vscode.ConfigurationTarget.Workspace)
+
 
 		await TabLabels.assignNamesForOpenTabs();
 		activateSpeak(context);
@@ -151,8 +142,6 @@ export function activate (context: vscode.ExtensionContext) {
 }
 
 async function activateImpl (context: vscode.ExtensionContext) {
-
-	
 	vscode.commands.registerCommand("wt.walkthroughs.openIntro", () => {
 		vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
 	});

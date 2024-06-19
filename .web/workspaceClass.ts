@@ -6,6 +6,7 @@ import * as extension from '../extension';
 import { Config, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
 import { setLastCommit } from '../gitTransactions';
+import { ReloadWatcher } from '../reloadWatcher';
 
 
 export class Workspace {
@@ -86,13 +87,27 @@ export class Workspace {
         '.'
     ];
 
+    private static interval: NodeJS.Timer | null = null;
+    private static allowReload: number = 0;
     static async packageContextItems (preventReloadTrigger: boolean) {
-        if (preventReloadTrigger) setLastCommit();
+        ReloadWatcher.disableReloadWatch();
+        this.allowReload = 100;
         // Write context items to the file system before git save
         const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
         const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-        return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+        await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+        if (!this.interval) {
+            this.interval = setInterval(() => {
+                this.allowReload--;
+                if (this.allowReload <= 0) {
+                    ReloadWatcher.enableReloadWatch();
+                    this.interval && clearInterval(this.interval);
+                    this.interval = null;
+                    this.allowReload = 0;
+                }
+            }, 10);
+        }
     }
 
     

@@ -15,7 +15,7 @@ import { packageForExport } from './packageable';
 import { TimedView } from './timedView';
 import { Proximity } from './proximity/proximity';
 import { PersonalDictionary } from './intellisense/spellcheck/personalDictionary';
-import { SynonymsIntellisense } from './intellisense/intellisense';
+import { SynonymsIntellisense as Intellisense } from './intellisense/intellisense';
 import { Spellcheck } from './intellisense/spellcheck/spellcheck';
 import { ColorIntellisense } from './intellisense/colors/colorIntellisense';
 import { ColorGroups } from './intellisense/colors/colorGroups';
@@ -23,7 +23,7 @@ import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
-import { WorldNotes } from './worldNotes/worldNotes';
+import { WorkBible } from './workBible/workBible';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { TabLabels } from './tabLabels/tabLabels';
 import { searchFiles } from './searchFiles';
@@ -54,32 +54,32 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const recycleBin = new RecyclingBinView(context, workspace);
 
 		const personalDictionary = new PersonalDictionary(context, workspace);
-		const synonymsIntellisense = new SynonymsIntellisense(context, workspace, personalDictionary, false);
+		const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, false);
 		const spellcheck = new Spellcheck(context, workspace, personalDictionary);
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
-		const reloadWatcher = new ReloadWatcher(context);
+		const reloadWatcher = new ReloadWatcher(workspace, context);
 		const scratchPad = new ScratchPadView(context, workspace);
 		await scratchPad.init();
 
 		
-		const worldNotes = new WorldNotes(workspace, context);
+		const workBible = new WorkBible(workspace, context);
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);
 
 		const timedViews = new TimedView(context, [
-			['wt.worldNotes.tree','worldNotes',  worldNotes],
-			['wt.todo','todo',  todo],
-			['wt.wordWatcher','wordWatcher',  wordWatcher],
-			// ['wt.proximity','proximity',  proximity],
-			['wt.spellcheck','spellcheck',  spellcheck],
-			['wt.very','very',  veryIntellisense],
-			['wt.colors','colors',  colorIntellisense],
-			['wt.textStyle','textStyle',  textStyles]
+			['wt.workBible.tree', 'workBible', workBible],
+			['wt.todo', 'todo', todo],
+			['wt.wordWatcher', 'wordWatcher', wordWatcher],
+			// ['wt.proximity', 'proximity', proximity],
+			['wt.spellcheck', 'spellcheck', spellcheck],
+			['wt.very', 'very', veryIntellisense],
+			['wt.colors', 'colors', colorIntellisense],
+			['wt.textStyle', 'textStyle', textStyles],
 		]);
 		
-		const tabLabels = new TabLabels(outline, recycleBin, scratchPad);
+		const tabLabels = new TabLabels(outline, recycleBin, scratchPad, workBible);
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
@@ -90,7 +90,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		FileAccessManager.initialize();
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
-			outline, synonyms,  timedViews, new FileAccessManager(), 
+			outline, synonyms, timedViews, new FileAccessManager(), 
 			personalDictionary, colorGroups, reloadWatcher
 		]));
 		
@@ -123,6 +123,7 @@ function handleLoadFailure (err: Error | string | unknown) {
 
 export function activate (context: vscode.ExtensionContext) {
 	activateImpl(context);
+	return context;
 }
 
 async function activateImpl (context: vscode.ExtensionContext) {
