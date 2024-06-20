@@ -10,6 +10,10 @@ export async function update (
     const document = editor.document;
     
     const editedFragmentUri: vscode.Uri = document.uri;
+    if (editedFragmentUri.fsPath.endsWith("wtnote")) return;
+    if (editedFragmentUri.fsPath.includes("scratchPad")) return;
+    if (editedFragmentUri.fsPath.includes("recycling")) return;
+    
     const editedFragmentNode: TODONode | null = await this.getTreeElementByUri(editedFragmentUri, undefined, false);
     if (!editedFragmentNode) {
         this.rootNodes = [await initializeOutline((e) => new TODONode(e), true)];

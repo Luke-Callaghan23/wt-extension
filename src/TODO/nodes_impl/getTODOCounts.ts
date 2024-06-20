@@ -134,7 +134,7 @@ export async function getTODOCounts (
                 }
             }
             catch (err) {
-                console.log(snip);
+                console.log(err);
             }
 
             let snipsTODOs = 0;

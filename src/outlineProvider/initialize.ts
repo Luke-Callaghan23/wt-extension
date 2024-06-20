@@ -355,15 +355,7 @@ export async function initializeSnip<T extends TreeNode> ({
         snips.push(snip);
     }
 
-    if (snips.length > 0) {
-        console.log(snipFragmentsDotConfig)
-
-    }
-
     const snipNodes = snips.map(snip => init(snip));
-
-
-
     return {
         ids: {
             type: 'snip',
