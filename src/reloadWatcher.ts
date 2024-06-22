@@ -188,7 +188,9 @@ export class ReloadWatcher implements Packageable {
             detail: "We've detected that your currently opened tabs are different from the ones you've had opened in the past.  Would you like to close current tabs and open the saved tabs?",
         }, "Sure", "Nope");
         if (!resp || resp === 'Nope') return;
-        ReloadWatcher.restoreTabs(tabContext)
+        (async () => {
+            setTimeout(() => ReloadWatcher.restoreTabs(tabContext), 0);
+        })()
     }
 
     async checkForRestoreTabs () {
@@ -213,6 +215,8 @@ export class ReloadWatcher implements Packageable {
                 return this.askForRestoreTabs(contextTabState);
             }
         }
+
+        return this.askForRestoreTabs(contextTabState);
     }
 
     getPackageItems(): { ['wt.reloadWatcher.openedTabs']: DiskContextType['wt.reloadWatcher.openedTabs'] } {
