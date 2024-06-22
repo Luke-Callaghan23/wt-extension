@@ -8,12 +8,12 @@ import { addWordToWatchedWords } from './engine';
 import { TimedView } from '../timedView';
 
 const defaultDecorations: vscode.DecorationRenderOptions = {
-    borderWidth: '1px',
-    borderRadius: '3px',
-    borderStyle: 'solid',
+    // borderWidth: '1px',
+    // borderRadius: '3px',
+    // borderStyle: 'solid',
     overviewRulerColor: 'rgb(161, 8, 8, 0.3)',
-    backgroundColor: 'rgb(161, 8, 8, 0.3)',
-    borderColor: 'rgb(161, 8, 8, 0.3)',
+    // backgroundColor: 'rgb(161, 8, 8, 0.3)',
+    color: 'rgb(161, 8, 8, 0.3)',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
 };
 
@@ -332,8 +332,7 @@ export function createDecorationType (color: Rgba): vscode.TextEditorDecorationT
 export function createDecorationFromRgbString (colorString: string): vscode.TextEditorDecorationType {
     const newDecoration: vscode.DecorationRenderOptions = { ...defaultDecorations };
     newDecoration.overviewRulerColor = colorString;
-    newDecoration.backgroundColor = colorString;
-    newDecoration.borderColor = colorString;
+    newDecoration.color = colorString;
     
     // Register the new decoration type
     return vscode.window.createTextEditorDecorationType(newDecoration);
