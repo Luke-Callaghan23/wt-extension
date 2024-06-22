@@ -124,6 +124,41 @@
 					"description": "Enable automatic querying for terms in your notes",
 					"type": "boolean",
 					"default": true
+				},
+				"wt.editor.showSaveAll": {
+					"description": "Enable the 'Save All' button in the editor toolbar",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.editor.showSearchWord": {
+					"description": "Enable the 'Search Word' button in the editor toolbar",
+					"type": "boolean",
+					"default": true
+				}, 
+				"wt.editor.showItalisize": {
+					"description": "Enable the 'Italisize' button in the editor toolbar",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.editor.showBold": {
+					"description": "Enable the 'Bold' button in the editor toolbar",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.editor.showStrikethrough": {
+					"description": "Enable the 'Strikethrough' button in the editor toolbar",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.editor.showUnderline": {
+					"description": "Enable the 'Underline' button in the editor toolbar",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.editor.showRemove": {
+					"description": "Enable the 'Remove' button in the editor toolbar",
+					"type": "boolean",
+					"default": true
 				}
 			}
 		},
@@ -1352,43 +1387,38 @@
 			],
 			"editor/title": [
 				{
-					"command": "wt.editor.save",
-					"when": "editorLangId == wt || editorLangId == wtNote",
-					"group": "navigation@1"
-				},
-				{
 					"command": "wt.editor.saveAll",
-					"when": "editorLangId == wt || editorLangId == wtNote",
+					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showSaveAll",
 					"group": "navigation@2"
 				},
 				{
 					"command": "wt.synonyms.searchWord",
-					"when": "editorLangId == wt || editorLangId == wtNote",
+					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showSearchWord",
 					"group": "navigation@3"
 				},
 				{
 					"command": "wt.editor.italisize",
-					"when": "editorLangId == wt || editorLangId == wtNote",
+					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showItalisize",
 					"group": "navigation@3"
 				},
 				{
 					"command": "wt.editor.bold",
-					"when": "editorLangId == wt || editorLangId == wtNote",
+					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showBold",
 					"group": "navigation@5"
 				},
 				{
 					"command": "wt.editor.strikethrough",
-					"when": "editorLangId == wt || editorLangId == wtNote",
+					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showStrikethrough",
 					"group": "navigation@6"
 				},
 				{
 					"command": "wt.editor.underline",
-					"when": "editorLangId == wt || editorLangId == wtNote",
+					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showUnderline",
 					"group": "navigation@7"
 				},
 				{
 					"command": "wt.editor.remove",
-					"when": "editorLangId == wt || editorLangId == wtNote",
+					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showRemove",
 					"group": "navigation@9"
 				}
 			]
