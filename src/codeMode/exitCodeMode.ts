@@ -56,7 +56,7 @@ export async function exit (this: CoderModer): Promise<void> {
     const codeModeSettings = vscode.workspace.getConfiguration(`wt.codeMode`);
     const slowModeEnabled = codeModeSettings ? !!codeModeSettings.get<boolean>("slowMode") : false;
 
-
+    // If slow mode is enabled, then open untitled tabs in each of the view columns and immediately close them
     if (slowModeEnabled) {
         const document = await vscode.workspace.openTextDocument({});
 
@@ -66,7 +66,6 @@ export async function exit (this: CoderModer): Promise<void> {
             });
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
         }
-        // await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
     }
     
     
