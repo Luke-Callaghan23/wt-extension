@@ -298,6 +298,10 @@
 				"title": "Writing Tool: Copy Relative Path"
 			},
 			{
+				"command": "wt.scratchPad.openFile",
+				"title": "Writing Tool: Open Scratch Pad File"
+			},
+			{
 				"command": "wt.scratchPad.newFile",
 				"title": "Writing Tool: Create Scratch Pad File",
 				"icon": "$(search-new-editor)"
@@ -781,6 +785,10 @@
 				},
 				{
 					"command": "wt.outline.copyRelativePath",
+					"when": "false"
+				},
+				{
+					"command": "wt.scratchPad.openFile",
 					"when": "false"
 				},
 				{

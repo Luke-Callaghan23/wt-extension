@@ -77,7 +77,7 @@ implements
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             resourceUri: element.getUri(),
             command: { 
-                command: 'wt.outline.openFile', 
+                command: 'wt.scratchPad.openFile', 
                 title: "Open File", 
                 arguments: [element.getUri()], 
             },
@@ -123,6 +123,25 @@ implements
 
         vscode.commands.registerCommand('wt.scratchPad.newFile', () => {
             return this.newScratchPadFile();
+        });
+
+        vscode.commands.registerCommand('wt.scratchPad.openFile', async (resource: vscode.Uri) => {
+            // Normally open the scratch pad doucument in the view column beside the current one
+            let viewColumn = vscode.ViewColumn.Beside;
+
+            // When we are currently editing a scratch pad document, however, open the new 
+            //      scratch pad doc in the same view column
+            const activeEditor = vscode.window.activeTextEditor;
+            if (activeEditor) {
+                const activeDocumentUri = activeEditor.document.uri;
+                if (await this.getTreeElementByUri(activeDocumentUri)) {
+                    viewColumn = vscode.ViewColumn.Active;
+                }
+            }
+            vscode.window.showTextDocument(resource, { 
+                preserveFocus: true,
+                viewColumn: viewColumn,
+            });
         });
     }
 
