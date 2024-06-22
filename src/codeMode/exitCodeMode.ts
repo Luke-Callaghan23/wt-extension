@@ -23,8 +23,7 @@ export async function exit (this: CoderModer): Promise<void> {
                 // All tabs open in the current group
                 const ind = group.tabs.findIndex(tab => {
                     return this.openedCodeUris.find(opened => 
-                        tab.input instanceof vscode.TabInputText 
-                        && tab.input.uri.fsPath === opened.fsPath
+                        tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === opened.fsPath
                     );
                 });
         
@@ -56,10 +55,21 @@ export async function exit (this: CoderModer): Promise<void> {
     //      get around this
     const codeModeSettings = vscode.workspace.getConfiguration(`wt.codeMode`);
     const slowModeEnabled = codeModeSettings ? !!codeModeSettings.get<boolean>("slowMode") : false;
+
+
     if (slowModeEnabled) {
-        await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
-        await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+        const document = await vscode.workspace.openTextDocument({});
+
+        for (const tg of vscode.window.tabGroups.all) {
+            await vscode.window.showTextDocument(document, {
+                viewColumn: tg.viewColumn
+            });
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+        }
+        // await vscode.commands.executeCommand('workbench.action.files.newUntitledFile');
     }
+    
+    
 
     // Once full swapped into writing mode, then re-assign labels for all opened tabs
     await TabLabels.assignNamesForOpenTabs();
