@@ -112,27 +112,37 @@ export class TimedView implements Packageable {
     
     private timeout: NodeJS.Timer | undefined = undefined;
 	private triggerUpdates(throttle: boolean = false) {
-        for (const editor of vscode.window.visibleTextEditors) {
-            const commentedRanges = TimedView.findCommentedRanges(editor);
-    
-            // Clear timeout if it exists
-            // This is the 'throttling' part of the function
-            // If there was a throttled call to triggerUpdates in the last 500 ms, then
-            //      clear that timer (preventing the call), and use the timer generated 
-            //      in this call instead
-            if (this.timeout) {
-                clearTimeout(this.timeout);
-                this.timeout = undefined;
-            }
-    
-            // If this call is throttled, use a timeout to call the update function
-            if (throttle) {
-                this.timeout = setTimeout(() => this.doUpdates(editor, commentedRanges), 500);
-            } 
-            else {
-                this.doUpdates(editor, commentedRanges);
-            }
+
+        // Clear timeout if it exists
+        // This is the 'throttling' part of the function
+        // If there was a throttled call to triggerUpdates in the last 500 ms, then
+        //      clear that timer (preventing the call), and use the timer generated 
+        //      in this call instead
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.timeout = undefined;
         }
+        
+        this.timeout = setTimeout(() => {
+            for (const editor of vscode.window.visibleTextEditors) {
+                const commentedRanges = TimedView.findCommentedRanges(editor);
+        
+        
+                // If this call is throttled, use a timeout to call the update function
+                if (throttle) {
+                    try {
+                        this.doUpdates(editor, commentedRanges);
+                        console.log("hello")
+                    }
+                    catch (err: any) {
+                        console.log('awdwad');
+                    }
+                } 
+                else {
+                    this.doUpdates(editor, commentedRanges);
+                }
+            }
+        }, 500);
 	}
 
     private registerCommands () {

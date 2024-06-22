@@ -49,24 +49,6 @@ export async function exit (this: CoderModer): Promise<void> {
     this.state = 'noCodeMode';
     this.openedExplorer = false;
     this.openedOutput = false;
-
-    // Sometimes on slower machines, exiting code mode deactivates all the timed higlighting and stuff until you 
-    //      switch to a new tab -- no clue why -- so by opening a new tab and then closing it immediately we can
-    //      get around this
-    const codeModeSettings = vscode.workspace.getConfiguration(`wt.codeMode`);
-    const slowModeEnabled = codeModeSettings ? !!codeModeSettings.get<boolean>("slowMode") : false;
-
-    // If slow mode is enabled, then open untitled tabs in each of the view columns and immediately close them
-    if (slowModeEnabled) {
-        const document = await vscode.workspace.openTextDocument({});
-
-        for (const tg of vscode.window.tabGroups.all) {
-            await vscode.window.showTextDocument(document, {
-                viewColumn: tg.viewColumn
-            });
-            await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-        }
-    }
     
     if (this.previousActiveDocument && this.previousActiveViewColumn) {
         await vscode.window.showTextDocument(this.previousActiveDocument, {

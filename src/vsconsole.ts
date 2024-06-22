@@ -2,6 +2,7 @@ import { window } from 'vscode';
 const channel = window.createOutputChannel('WTLog');
 
 export const log = (p: Object | string | null | undefined) => {
+    console.log(p);
     if (p === undefined) {
         channel.appendLine('undefined');
     }
