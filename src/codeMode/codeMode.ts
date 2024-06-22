@@ -12,6 +12,9 @@ export class CoderModer {
 
     openedExplorer: boolean = false;
     openedOutput: boolean = false;
+    previousActiveViewColumn: vscode.ViewColumn | null;
+    previousActiveDocument: vscode.Uri | null;
+
 
     swapModeStatus: vscode.StatusBarItem;
 
@@ -51,7 +54,8 @@ export class CoderModer {
                 });
             });
         }
-        console.log(this.repoUris)
+        this.previousActiveDocument = null;
+        this.previousActiveViewColumn = null
 
         vscode.commands.registerCommand('wt.codeMode.enterCodeMode', async () => {
             if (this.state !== 'noCodeMode') {

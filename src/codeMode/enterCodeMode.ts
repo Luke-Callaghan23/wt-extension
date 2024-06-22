@@ -32,6 +32,11 @@ export async function enter (this: CoderModer): Promise<void> {
             viewColumn: targetLocation,
         });
         shownDocumentPromises.push(showRepoDocumentPromise);
+
+        if (group.isActive && group.activeTab && group.activeTab.input instanceof vscode.TabInputText) {
+            this.previousActiveViewColumn = targetLocation;
+            this.previousActiveDocument = group.activeTab.input.uri;
+        }
     }
 
     

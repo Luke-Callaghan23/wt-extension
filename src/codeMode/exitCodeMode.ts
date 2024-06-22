@@ -68,6 +68,13 @@ export async function exit (this: CoderModer): Promise<void> {
         }
     }
     
+    if (this.previousActiveDocument && this.previousActiveViewColumn) {
+        await vscode.window.showTextDocument(this.previousActiveDocument, {
+            viewColumn: this.previousActiveViewColumn
+        });
+        this.previousActiveDocument = null;
+        this.previousActiveViewColumn = null;
+    }
     
 
     // Once full swapped into writing mode, then re-assign labels for all opened tabs
