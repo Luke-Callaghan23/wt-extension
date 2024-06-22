@@ -127,7 +127,6 @@ export class TimedView implements Packageable {
             for (const editor of vscode.window.visibleTextEditors) {
                 const commentedRanges = TimedView.findCommentedRanges(editor);
         
-        
                 // If this call is throttled, use a timeout to call the update function
                 if (throttle) {
                     try {

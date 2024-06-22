@@ -120,6 +120,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		await TabLabels.assignNamesForOpenTabs();
 		activateSpeak(context);
 		activateDebug(context);
+
+		reloadWatcher.checkForRestoreTabs();
 	}
 	catch (e) {
 		handleLoadFailure(e);
