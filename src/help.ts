@@ -3,6 +3,11 @@ import * as extension from './extension';
 import { Buff } from './Buffer/bufferSource';
 import { TreeNode } from './outlineProvider/outlineTreeProvider';
 import { OutlineNode } from './outline/nodes_impl/outlineNode';
+import { RecyclingBinView } from './recyclingBin/recyclingBinView';
+import { OutlineView } from './outline/outlineView';
+import { ScratchPadView } from './scratchPad/scratchPadView';
+import { Note, WorkBible } from './workBible/workBible';
+import { TabLabels } from './tabLabels/tabLabels';
 
 export type PromptOptions = {
     placeholder: string,
@@ -112,4 +117,54 @@ export function clamp(num: number, min: number, max: number) {
         : num >= max 
             ? max 
             : num
-  }
+}
+
+
+export type VagueSearchSource = 'outline' | 'recycle' | 'scratch' | 'workBible' | null;
+
+export async function vagueNodeSearch (
+    target: vscode.Uri,
+    outlineView: OutlineView,
+    recyclingBinView: RecyclingBinView,
+    scratchPadView: ScratchPadView,
+    workBible: WorkBible,
+): Promise<{
+    source: VagueSearchSource,
+    node: OutlineNode | Note | null
+}> {
+        
+    if (target.fsPath.includes("recycling")) {
+        const node = await recyclingBinView.getTreeElementByUri(target);
+        if (node) return {
+            node: node,
+            source: 'recycle'
+        }
+    }
+    else if (target.fsPath.includes("scratchPad")) {
+        const node = await scratchPadView.getTreeElementByUri(target);
+        if (node) return {
+            node: node,
+            source: 'scratch',
+        }
+    }
+    else if (target.fsPath.endsWith(".wtnote")) {
+        const note = workBible.getNote(target);
+        if (note) return {
+            source: 'workBible',
+            node: note
+        }
+    }
+    else {
+        const node = await outlineView.getTreeElementByUri(target)
+        if (node) return {
+            source: 'outline',
+            node: node,
+        }
+    } 
+
+
+    return {
+        source: null,
+        node: null,
+    }
+}

@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
 import { OutlineNode } from '../nodes_impl/outlineNode';
+import { vagueNodeSearch } from '../../help';
+import { ExtensionGlobals } from '../../extension';
+import { Note } from '../../workBible/workBible';
 
 
 // Is called whenever there is a change in the active document in vscode
@@ -13,17 +16,42 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
 
     // Get the node item
     const uri = editor.document.uri;
-    if (uri.toString().includes('recycling')) {
-        return;
+    // if (uri.toString().includes('recycling')) {
+    //     return;
+    // }
+
+    const { node: nodeOrNote, source } = await vagueNodeSearch(uri, ExtensionGlobals.outlineView, ExtensionGlobals.recyclingBinView, ExtensionGlobals.scratchPadView, ExtensionGlobals.workBible);
+    if (!nodeOrNote || !source) return;
+
+    if (source !== 'workBible' && nodeOrNote instanceof OutlineNode) {
+        let view: vscode.TreeView<OutlineNode>;
+        let node: OutlineNode = nodeOrNote;
+        switch (source) {
+            case 'outline': {
+                view = this.view;
+            } break;
+            case 'recycle': {
+                view = ExtensionGlobals.recyclingBinView.view;
+            } break;
+            case 'scratch': {
+                view = ExtensionGlobals.scratchPadView.view;
+            } break;
+        }
+
+
+        // Reveal and focus the node
+        view.reveal(node as OutlineNode, {
+            expand: true,
+            focus: false,
+            select: true
+        });
     }
-
-    const node = await this.getTreeElementByUri(uri);
-    if (!node) return;
-
-    // Reveal and focus the node
-    this.view.reveal(node as OutlineNode, {
-        expand: true,
-        focus: false,
-        select: true
-    });
+    else {
+        const note = nodeOrNote as Note;
+        ExtensionGlobals.workBible.view.reveal(note, {
+            expand: true,
+            focus: false,
+            select: true
+        })
+    }
 }

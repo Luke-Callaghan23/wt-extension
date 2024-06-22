@@ -7,6 +7,10 @@ import * as extension from './extension';
 import { Packageable } from './packageable';
 import { TabLabels } from './tabLabels/tabLabels';
 import { Workspace } from './workspace/workspaceClass';
+import { RecyclingBinView } from './recyclingBin/recyclingBinView';
+import { ScratchPadView } from './scratchPad/scratchPadView';
+import { WorkBible } from './workBible/workBible';
+import { vagueNodeSearch } from './help';
 
 export class FileAccessManager implements Packageable {
 
@@ -31,19 +35,17 @@ export class FileAccessManager implements Packageable {
     }
 
     static async documentOpened (openedUri: vscode.Uri, view?: OutlineView): Promise<void> {
-        
-        let outlineView: OutlineView;
-        if (!view) {
-            // Get the outline view for querying nodes, if not provided by caller
-            outlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
-        }
-        else {
-            outlineView = view;
-        }
 
         // Mark the last opened document for each parental node as the document which was just opened
         let currentUri: vscode.Uri | undefined = openedUri;
-        let currentNode : OutlineNode | null = await outlineView.getTreeElementByUri(openedUri);
+        let { node, source } = await vagueNodeSearch (
+            openedUri, 
+            FileAccessManager.outlineView, FileAccessManager.recyclingBinView, 
+            FileAccessManager.scratchPadView, FileAccessManager.workBible
+        );
+        if (!node || !source || source !== 'outline') return;
+
+        let currentNode: OutlineNode = node as OutlineNode;
         while (currentUri && currentNode) {
             // Mark latest accessed chapter or snip if the current node is a chapter or snip
             if (currentNode.data.ids.type === 'chapter') {
@@ -62,7 +64,7 @@ export class FileAccessManager implements Packageable {
             
             // Traverse upwards
             currentUri = currentNode.data.ids.parentUri;
-            currentNode = await outlineView.getTreeElementByUri(currentUri);
+            currentNode = await FileAccessManager.outlineView.getTreeElementByUri(currentUri);
         }
 
         // Also update the latest file access
@@ -117,10 +119,19 @@ export class FileAccessManager implements Packageable {
         });
     }
 
-    static async initialize () {
+    
+    private static outlineView: OutlineView;
+    private static recyclingBinView: RecyclingBinView;
+    private static scratchPadView: ScratchPadView;
+    private static workBible: WorkBible;
+    
+    static async initialize (outlineView: OutlineView, recyclingBinView: RecyclingBinView, scratchPadView: ScratchPadView, workBible: WorkBible) {
+        FileAccessManager.outlineView = outlineView;
+        FileAccessManager.recyclingBinView = recyclingBinView;
+        FileAccessManager.scratchPadView = scratchPadView;
+        FileAccessManager.workBible = workBible;
 
         FileAccessManager.latestFragmentForUri = {};
-        const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
 
         // Collect set of all opened tabs
         const tabGroups = vscode.window.tabGroups.all;
@@ -136,8 +147,8 @@ export class FileAccessManager implements Packageable {
             
             // If the uri cannot be found inside of the outline view's structure,
             //      then skip the uri
-            const node: OutlineNode | undefined | null = await outlineView.getTreeElementByUri(tabUri);
-            if (!node) continue;
+            const { node, source } = await vagueNodeSearch(tabUri, outlineView, recyclingBinView, scratchPadView, workBible);
+            if (!node || !source) continue;
 
             // Otherwise, the uri is validated
             validatedOpenedTabs.push(tabUri);

@@ -148,7 +148,7 @@ implements
     static scratchPadContainerUri: vscode.Uri;
     static scratchPadConfigUri: vscode.Uri;
 
-    protected view: vscode.TreeView<OutlineNode>;
+    public view: vscode.TreeView<OutlineNode>;
     constructor(
         private context: vscode.ExtensionContext,
         private workspace: Workspace,
@@ -222,10 +222,7 @@ implements
     }
 
     async getParent (element: OutlineNode): Promise<OutlineNode> {
-        if (element.data.ids.relativePath === '') {
-            return element;
-        }
-        const parentUri = element.getParentUri();
-        return this.getTreeElementByUri(parentUri);
+        //@ts-ignore
+        return null;
     }
 }

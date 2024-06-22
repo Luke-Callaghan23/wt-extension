@@ -264,7 +264,7 @@ implements
         })
     }
 
-    protected view: vscode.TreeView<OutlineNode>;
+    public view: vscode.TreeView<OutlineNode>;
     constructor(
         private context: vscode.ExtensionContext,
         private workspace: Workspace,

@@ -5,6 +5,7 @@ import { Packageable } from './packageable';
 import { FileAccessManager } from './fileAccesses';
 import { DiskContextType, loadWorkspaceContext } from './workspace/workspace';
 import { Workspace } from './workspace/workspaceClass';
+import { TabLabels } from './tabLabels/tabLabels';
 
 type PositionInfo = {
     anchorLine: number,
@@ -114,7 +115,6 @@ export class ReloadWatcher implements Packageable {
 
     private static async restoreTabs (tabContext: TabPositions) {
         // Reload tabs
-
         // I don't know........
         // I genuinely don't know.........
         // For some reason if this function is called when there is no
@@ -140,6 +140,7 @@ export class ReloadWatcher implements Packageable {
         //      satan and buddha, putting all this stuff inside of a non-awaited async IIFIE 
         //      fixes everything (me 🔫 me)
         (async () => {
+            TabLabels.enabled = false;
             try {
                 // First, close all the active tab groups
                 await vscode.window.tabGroups.close(vscode.window.tabGroups.all);
@@ -180,13 +181,13 @@ export class ReloadWatcher implements Packageable {
             catch (err: any) {
                 console.log(err)
             }
+            TabLabels.enabled = true;
+            TabLabels.assignNamesForOpenTabs();
         })()
     }
 
     private async askForRestoreTabs (tabContext: TabPositions) {
-        const resp = await vscode.window.showInformationMessage("Reload Tabs", {
-            detail: "We've detected that your currently opened tabs are different from the ones you've had opened in the past.  Would you like to close current tabs and open the saved tabs?",
-        }, "Sure", "Nope");
+        const resp = await vscode.window.showInformationMessage("Reload Tabs: We've detected that your currently opened tabs are different from the ones you've had opened in the past.  Would you like to close current tabs and open the saved tabs?", "Sure", "Nope");
         if (!resp || resp === 'Nope') return;
         (async () => {
             setTimeout(() => ReloadWatcher.restoreTabs(tabContext), 0);
@@ -215,8 +216,6 @@ export class ReloadWatcher implements Packageable {
                 return this.askForRestoreTabs(contextTabState);
             }
         }
-
-        return this.askForRestoreTabs(contextTabState);
     }
 
     getPackageItems(): { ['wt.reloadWatcher.openedTabs']: DiskContextType['wt.reloadWatcher.openedTabs'] } {
