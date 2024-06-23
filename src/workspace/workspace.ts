@@ -89,6 +89,12 @@ export async function createWorkspace (
             "wt.workBible.tree.enabled": false,
         }, undefined, 2)));
 
+        const gitignoreUri = vscode.Uri.joinPath(extension.rootPath, '.gitignore');
+        await vscode.workspace.fs.writeFile(gitignoreUri, Buff.from(`
+tmp/
+tmp/**
+`));
+
         // Create necessary folders
         for (const folder of workspace.getFolders()) {
             await vscode.workspace.fs.createDirectory(folder);
