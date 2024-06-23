@@ -13,6 +13,8 @@ export async function update (
     if (editedFragmentUri.fsPath.endsWith("wtnote")) return;
     if (editedFragmentUri.fsPath.includes("scratchPad")) return;
     if (editedFragmentUri.fsPath.includes("recycling")) return;
+    if (editedFragmentUri.fsPath.includes("tmp/")) return;
+    if (editedFragmentUri.fsPath.includes("tmp\\")) return;
     
     const editedFragmentNode: TODONode | null = await this.getTreeElementByUri(editedFragmentUri, undefined, false);
     if (!editedFragmentNode) {

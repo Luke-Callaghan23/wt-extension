@@ -10,6 +10,7 @@ import { getChildren, getTreeItem } from './tree';
 import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';
 import { hexToRgb } from '../help';
 import { gatherPaths, commonWordsPrompt } from './commonWords';
+import { colorPick } from './colorPick';
 
 export interface WordEnrty {
 	uri: string;
@@ -52,6 +53,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
     getTreeItem = getTreeItem;
     gatherCommonWords = gatherPaths;
     commonWordsPrompt = commonWordsPrompt;
+    colorPick = colorPick;
     
     public lastJumpWord: string | undefined;
     public lastJumpInstance: number;
@@ -189,6 +191,10 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             
             this.refresh();
         });
+
+        vscode.commands.registerCommand("wt.colorPicker.pick", async () => {
+            // this.colorPick('maybe|perhaps', 'maybe')
+        })
 	}
 
     getPackageItems(): { [index: string]: any; } {

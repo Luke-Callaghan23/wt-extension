@@ -133,6 +133,8 @@ export async function vagueNodeSearch (
     node: OutlineNode | Note | null
 }> {
         
+    if (!(target.fsPath.endsWith("wt") || target.fsPath.endsWith("wtnote"))) return { node:null, source:null };
+    if (target.fsPath.includes("tmp/") || target.fsPath.includes("tmp\\")) return { node:null, source:null };
     if (target.fsPath.includes("recycling")) {
         const node = await recyclingBinView.getTreeElementByUri(target);
         if (node) return {

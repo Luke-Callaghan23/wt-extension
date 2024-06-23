@@ -136,7 +136,6 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 				}, 0)
 			}
 		});
-		this.selectActiveDocument(vscode.window.activeTextEditor);
 	}
 	
 	dropMimeTypes = ['application/vnd.code.tree.outline', 'application/vnd.code.tree.recycling', 'application/vnd.code.tree.scratch', 'text/uri-list'];
