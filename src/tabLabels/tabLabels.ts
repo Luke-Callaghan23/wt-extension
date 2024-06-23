@@ -81,7 +81,10 @@ export class TabLabels {
                 const uri = tab.input.uri;
                 if (!(uri.fsPath.endsWith('.wt') || uri.fsPath.endsWith('.wtnote'))) continue;
 
+                console.log(`Tab labels: inspecting ${uri.fsPath}`);
+
                 const { node: nodeOrNote, source } = await vagueNodeSearch(uri, TabLabels.outlineView, TabLabels.recyclingBinView, TabLabels.scratchPadView, TabLabels.workBible);
+                console.log(`Tab labels for ${uri.fsPath}:\n  node=${nodeOrNote}\n  source='${source}'`);
                 if (!nodeOrNote || !source) continue;
 
                 const node: { data: { ids: { display: string } } } = nodeOrNote instanceof OutlineNode ?
@@ -113,6 +116,7 @@ export class TabLabels {
                     label = `(notes) ${node.data.ids.display}`;
                 }
                 else throw 'unreachable';
+                console.log(`Tab labels for ${uri.fsPath}: label='${label}'`);
                 newPatterns['*/' + relativePath] = label;
             }
         }

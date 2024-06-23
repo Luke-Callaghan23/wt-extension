@@ -89,6 +89,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		new CoderModer(context);
 
 		const workBible = new WorkBible(workspace, context);
+		await workBible.initialize()
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);
 

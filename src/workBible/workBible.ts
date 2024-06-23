@@ -88,30 +88,6 @@ implements
         this.notes = []; 
         this.view = {} as vscode.TreeView<Note | SubNote | AppearanceContainer>
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
-        (async () => { 
-            this.notes = await this.readNotes(workspace.worldNotesPath)
-            this.nounsRegex = this.getNounsRegex();
-            this.view = vscode.window.createTreeView(`wt.workBible.tree`, {
-                treeDataProvider: this,
-                canSelectMany: true,
-                showCollapseAll: true,
-            });
-            vscode.languages.registerHoverProvider({
-                language: 'wt',
-            }, this);
-            vscode.languages.registerHoverProvider({
-                language: 'wtNote',
-            }, this);
-
-            vscode.languages.registerDefinitionProvider({
-                language: 'wt',
-            }, this);
-            vscode.languages.registerDefinitionProvider({
-                language: 'wtNote',
-            }, this);
-
-            this.registerCommands();
-        })();
         WorkBible.singleton = this;
 
         vscode.workspace.onDidSaveTextDocument(async (e: vscode.TextDocument) => {
@@ -141,6 +117,31 @@ implements
             // Refresh the treeview
             this.refresh();
         });
+    }
+
+    async initialize () {
+        this.notes = await this.readNotes(this.workspace.worldNotesPath)
+        this.nounsRegex = this.getNounsRegex();
+        this.view = vscode.window.createTreeView(`wt.workBible.tree`, {
+            treeDataProvider: this,
+            canSelectMany: true,
+            showCollapseAll: true,
+        });
+        vscode.languages.registerHoverProvider({
+            language: 'wt',
+        }, this);
+        vscode.languages.registerHoverProvider({
+            language: 'wtNote',
+        }, this);
+
+        vscode.languages.registerDefinitionProvider({
+            language: 'wt',
+        }, this);
+        vscode.languages.registerDefinitionProvider({
+            language: 'wtNote',
+        }, this);
+
+        this.registerCommands();
     }
 
     static getNewNoteId (): string {
