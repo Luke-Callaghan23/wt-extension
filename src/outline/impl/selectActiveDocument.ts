@@ -4,6 +4,7 @@ import { OutlineNode } from '../nodes_impl/outlineNode';
 import { vagueNodeSearch } from '../../help';
 import { ExtensionGlobals } from '../../extension';
 import { Note } from '../../workBible/workBible';
+import { TabLabels } from '../../tabLabels/tabLabels';
 
 
 // Is called whenever there is a change in the active document in vscode
@@ -54,4 +55,6 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
             select: true
         })
     }
+
+    TabLabels.assignNamesForOpenTabs();
 }

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as console from '../vsconsole';
 import { SubNote, Note, WorkBible, AppearanceContainer } from "./workBible";
+import { determineAuxViewColumn } from '../help';
 
 
 export async function addNote (this: WorkBible, resource: Note | undefined): Promise<string | null> {
@@ -48,8 +49,10 @@ export async function addNote (this: WorkBible, resource: Note | undefined): Pro
     
     this.writeSingleNote(insert).then(result => {
         if (result === null) return;
-        vscode.workspace.openTextDocument(result).then(document => {
-            vscode.window.showTextDocument(document);
+        vscode.workspace.openTextDocument(result).then(async document => {
+            vscode.window.showTextDocument(document, {
+                viewColumn: await determineAuxViewColumn((uri) => this.getNote(uri))
+            });
         });
     })
 

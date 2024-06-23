@@ -170,3 +170,22 @@ export async function vagueNodeSearch (
         node: null,
     }
 }
+
+
+// Determines which view column should be used for "auxilliary" documents being opened
+// "auxilliary" documents are documents such as a scratch pad fragment or a work bible wtnote
+// since these documents are often not the main thing a user will be editing, we'll *usually* want to open the 
+//      aux document in in the "Beside" view column
+// BUT, if the currently active view column is already a document of the same type as the aux document being
+//      opened, then we want to open the document in the same view column as that doc
+export async function determineAuxViewColumn <T>(getter: ((uri: vscode.Uri)=>Promise<T | null>|(T | null))): Promise<vscode.ViewColumn> {
+    
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+        const activeDocumentUri = activeEditor.document.uri;
+        if (await getter(activeDocumentUri)) {
+            return vscode.ViewColumn.Active;
+        }
+    }
+    return vscode.ViewColumn.Beside;
+}

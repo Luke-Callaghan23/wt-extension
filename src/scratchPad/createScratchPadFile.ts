@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as extension from './../extension';
 import { FragmentNode, OutlineNode } from "../outline/nodes_impl/outlineNode";
 import { ScratchPadView } from "./scratchPadView";
-import { getLatestOrdering, readDotConfig, writeDotConfig } from '../help';
+import { determineAuxViewColumn, getLatestOrdering, readDotConfig, writeDotConfig } from '../help';
 import { getUsableFileName } from '../outline/impl/createNodes';
 
 export async function newScratchPadFile (
@@ -72,23 +72,8 @@ export async function newScratchPadFile (
     }
     else showUri = replace;
 
-
-
-    // Normally open the scratch pad doucument in the view column beside the current one
-    let viewColumn = vscode.ViewColumn.Beside;
-
-    // When we are currently editing a scratch pad document, however, open the new 
-    //      scratch pad doc in the same view column
-    const activeEditor = vscode.window.activeTextEditor;
-    if (activeEditor) {
-        const activeDocumentUri = activeEditor.document.uri;
-        if (await this.getTreeElementByUri(activeDocumentUri)) {
-            viewColumn = vscode.ViewColumn.Active;
-        }
-    }
-
     vscode.window.showTextDocument(showUri, {
-        viewColumn: viewColumn
+        viewColumn: await determineAuxViewColumn((uri) => this.getTreeElementByUri(uri))
     });
     this.refresh(false, []);
     return showUri;

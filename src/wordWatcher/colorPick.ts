@@ -51,7 +51,7 @@ NOTE: please don't edit anything in this document besides the color.  You'll pro
     const exampleSentenceBuff = extension.encoder.encode(exampleSentence);
     await vscode.workspace.fs.writeFile(exampleSentenceUri, exampleSentenceBuff);
 
-    const ed = await vscode.window.showTextDocument(exampleSentenceUri, {
+    await vscode.window.showTextDocument(exampleSentenceUri, {
         preview: false,
         viewColumn: vscode.ViewColumn.One
     });
