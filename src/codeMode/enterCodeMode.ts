@@ -5,6 +5,7 @@ import { isText } from 'istextorbinary';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { OutlineView } from '../outline/outlineView';
 import { WorkBible } from '../workBible/workBible';
+import { ExtensionGlobals } from '../extension';
 
 export async function enter (this: CoderModer): Promise<void> {
 
@@ -40,8 +41,8 @@ export async function enter (this: CoderModer): Promise<void> {
     }
 
     
-    const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
-    const workBibleView: WorkBible = await vscode.commands.executeCommand('wt.workBible.getWorkBible');
+    const outlineView: OutlineView = ExtensionGlobals.outlineView;
+    const workBibleView: WorkBible = ExtensionGlobals.workBible;
     if (outlineView.view.visible) {
         vscode.commands.executeCommand('workbench.view.explorer');
         this.openedExplorer = true;

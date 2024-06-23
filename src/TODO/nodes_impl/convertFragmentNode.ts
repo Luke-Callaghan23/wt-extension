@@ -5,11 +5,12 @@ import { Ids } from '../../outlineProvider/fsNodes';
 import { TODOData, TODONode } from '../node';
 import { v4 as uuidv4 } from 'uuid';
 import { TODOsView } from '../TODOsView';
+import { ExtensionGlobals } from '../../extension';
 
 export async function convertToTODOData (this: TODONode): Promise<TODONode[]> {
     const uri = this.getUri().fsPath;
 
-    const todosView: TODOsView = await vscode.commands.executeCommand('wt.todo.getView');
+    const todosView: TODOsView = ExtensionGlobals.todoView;
 
     const todos = TODOsView.todo[uri];
     if (todos.type !== 'todos') throw new Error('Not possible');

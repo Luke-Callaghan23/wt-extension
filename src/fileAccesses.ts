@@ -40,8 +40,8 @@ export class FileAccessManager implements Packageable {
         let currentUri: vscode.Uri | undefined = openedUri;
         let { node, source } = await vagueNodeSearch (
             openedUri, 
-            FileAccessManager.outlineView, FileAccessManager.recyclingBinView, 
-            FileAccessManager.scratchPadView, FileAccessManager.workBible
+            extension.ExtensionGlobals.outlineView, extension.ExtensionGlobals.recyclingBinView, 
+            extension.ExtensionGlobals.scratchPadView, extension.ExtensionGlobals.workBible
         );
         if (!node || !source || source !== 'outline') return;
 
@@ -64,7 +64,7 @@ export class FileAccessManager implements Packageable {
             
             // Traverse upwards
             currentUri = currentNode.data.ids.parentUri;
-            currentNode = await FileAccessManager.outlineView.getTreeElementByUri(currentUri);
+            currentNode = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(currentUri);
         }
 
         // Also update the latest file access
@@ -120,16 +120,7 @@ export class FileAccessManager implements Packageable {
     }
 
     
-    private static outlineView: OutlineView;
-    private static recyclingBinView: RecyclingBinView;
-    private static scratchPadView: ScratchPadView;
-    private static workBible: WorkBible;
-    
-    static async initialize (outlineView: OutlineView, recyclingBinView: RecyclingBinView, scratchPadView: ScratchPadView, workBible: WorkBible) {
-        FileAccessManager.outlineView = outlineView;
-        FileAccessManager.recyclingBinView = recyclingBinView;
-        FileAccessManager.scratchPadView = scratchPadView;
-        FileAccessManager.workBible = workBible;
+    static async initialize () {
 
         FileAccessManager.latestFragmentForUri = {};
 
@@ -147,7 +138,7 @@ export class FileAccessManager implements Packageable {
             
             // If the uri cannot be found inside of the outline view's structure,
             //      then skip the uri
-            const { node, source } = await vagueNodeSearch(tabUri, outlineView, recyclingBinView, scratchPadView, workBible);
+            const { node, source } = await vagueNodeSearch(tabUri, extension.ExtensionGlobals.outlineView, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.scratchPadView, extension.ExtensionGlobals.workBible);
             if (!node || !source) continue;
 
             // Otherwise, the uri is validated
@@ -176,7 +167,7 @@ export class FileAccessManager implements Packageable {
         // Call document opened for each of the opened fragments in ascending
         //      order to simulate as if all the documents were opened sequentially
         for (const opened of sortedUris) {
-            await this.documentOpened(opened, outlineView);
+            await this.documentOpened(opened, extension.ExtensionGlobals.outlineView);
         }
 
         FileAccessManager.positions = {};

@@ -5,6 +5,7 @@ import { RecyclingBinView } from '../../recyclingBin/recyclingBinView';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { MoveNodeResult } from '../nodes_impl/handleMovement/common';
 import { ScratchPadView } from '../../scratchPad/scratchPadView';
+import { ExtensionGlobals } from '../../extension';
 
 export async function handleDropController (this: OutlineView, target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
     const targ = target || this.rootNodes[0];
@@ -16,8 +17,8 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
         [index: string]: OutlineNode,
     } = {};
 
-    const recyclingView: RecyclingBinView = await vscode.commands.executeCommand('wt.recyclingBin.getRecyclingBinView');
-    const scratchPadView: ScratchPadView = await vscode.commands.executeCommand('wt.scratchPad.getScratchPad');
+    const recyclingView: RecyclingBinView = ExtensionGlobals.recyclingBinView;
+    const scratchPadView: ScratchPadView = ExtensionGlobals.scratchPadView;
 
     const moveOperations: { 
         dataTransferType: string, 

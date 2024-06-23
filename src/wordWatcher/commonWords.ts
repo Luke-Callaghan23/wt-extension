@@ -131,7 +131,7 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
         qp.busy = true;
         qp.show();
         
-        const outlineView: OutlineView = await vscode.commands.executeCommand("wt.outline.getOutline");
+        const outlineView: OutlineView = extension.ExtensionGlobals.outlineView
         const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, false);
         
         qp.busy = false;

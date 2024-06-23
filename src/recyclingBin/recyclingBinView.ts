@@ -301,7 +301,7 @@ implements
         const outlineTransferItem = dataTransfer.get('application/vnd.code.tree.outline');
         if (!outlineTransferItem) return;
         
-        const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
+        const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
         const movedItemsJSON: OutlineNode[] = JSON.parse(outlineTransferItem.value);
         const movedItems: OutlineNode[] = await Promise.all(
             movedItemsJSON.map(mij => {

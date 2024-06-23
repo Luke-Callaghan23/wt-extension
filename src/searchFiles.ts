@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { OutlineView } from './outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from './outline/nodes_impl/outlineNode';
+import { ExtensionGlobals } from './extension';
 
 
 export interface IFragmentPick {
@@ -253,7 +254,7 @@ export async function searchFiles () {
     qp.show();
 
     
-    const outlineView: OutlineView = await vscode.commands.executeCommand("wt.outline.getOutline");
+    const outlineView: OutlineView = ExtensionGlobals.outlineView;
     const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, true);
     
     qp.busy = false;
@@ -304,7 +305,7 @@ export async function searchFiles () {
         outlineView.view.reveal(selected.node);
         if (selected.node.data.ids.type === 'fragment') {
             await vscode.window.showTextDocument(selected.node.data.ids.uri);
-            const outline: OutlineView = await vscode.commands.executeCommand<OutlineView>('wt.outline.getOutline');
+            const outline: OutlineView = ExtensionGlobals.outlineView;
             await outline.view.reveal(selected.node, {
                 expand: true,
                 select: true,

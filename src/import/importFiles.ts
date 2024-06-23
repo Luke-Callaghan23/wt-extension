@@ -487,7 +487,7 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
         return;
     }
 
-    const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
+    const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
     const chapterUri: vscode.Uri | null = await outlineView.newChapter(undefined, {
         preventRefresh: false, 
         defaultName: chapterInfo.outputChapterName,
@@ -519,7 +519,7 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
 }
 
 async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo) {
-    const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
+    const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
     
     // Get the parent node where the new snip(s) should be inserted
     let parentNode: OutlineNode | undefined;
@@ -697,7 +697,7 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
     if (docNames.length > 1 && workSnipsCount > 1) {
 
         // If there is more than one work snip account to import, then make a parent container to insert all work snips into
-        const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline');
+        const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
         const workSnipsContainer = (outlineView.rootNodes[0].data as RootNode).snips;
         const snipUri = await outlineView.newSnip(workSnipsContainer, {
             defaultName: `Imported ${getSnipDateString()}`,

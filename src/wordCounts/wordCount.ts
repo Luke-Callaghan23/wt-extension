@@ -174,7 +174,7 @@ export class WordCount {
             )
         });
         vscode.commands.registerCommand('wt.wordCount.showFullWordCounts', async () => {
-            const outlineView: OutlineView = await vscode.commands.executeCommand('wt.outline.getOutline')
+            const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
             this.getFullWordCounts(outlineView);
         });
     } 

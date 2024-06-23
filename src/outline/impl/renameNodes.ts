@@ -69,7 +69,7 @@ export async function renameResource (this: OutlineView, overrideNode?: OutlineN
     // Update internal outline tree structure's name
     resource.data.ids.display = newName;
 
-    const todoView: TODOsView = await vscode.commands.executeCommand('wt.todo.getView');
+    const todoView: TODOsView = extension.ExtensionGlobals.todoView;
 
 
     vscode.window.showInformationMessage(`Successfully renamed '${oldName}' to '${newName}'`);
