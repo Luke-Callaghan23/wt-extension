@@ -131,11 +131,8 @@ export class TimedView implements Packageable {
                 if (throttle) {
                     try {
                         this.doUpdates(editor, commentedRanges);
-                        console.log("hello")
                     }
-                    catch (err: any) {
-                        console.log('awdwad');
-                    }
+                    catch (err: any) {}
                 } 
                 else {
                     this.doUpdates(editor, commentedRanges);

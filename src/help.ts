@@ -132,24 +132,27 @@ export async function vagueNodeSearch (
     source: VagueSearchSource,
     node: OutlineNode | Note | null
 }> {
+    const relative = target.fsPath.replaceAll(extension.rootPath.fsPath, "");
         
-    if (!(target.fsPath.endsWith("wt") || target.fsPath.endsWith("wtnote"))) return { node:null, source:null };
-    if (target.fsPath.includes("tmp/") || target.fsPath.includes("tmp\\")) return { node:null, source:null };
-    if (target.fsPath.includes("recycling")) {
+    if (!(relative.endsWith("wt") || relative.endsWith("wtnote"))) return { node:null, source:null };
+    if (relative.includes("tmp/") || relative.includes("tmp\\")) return { node:null, source:null };
+
+
+    if (relative.includes("recycling")) {
         const node = await recyclingBinView.getTreeElementByUri(target);
         if (node) return {
             node: node,
             source: 'recycle'
         }
     }
-    else if (target.fsPath.includes("scratchPad")) {
+    else if (relative.includes("scratchPad")) {
         const node = await scratchPadView.getTreeElementByUri(target);
         if (node) return {
             node: node,
             source: 'scratch',
         }
     }
-    else if (target.fsPath.endsWith(".wtnote")) {
+    else if (relative.endsWith(".wtnote")) {
         const note = workBible.getNote(target);
         if (note) return {
             source: 'workBible',
