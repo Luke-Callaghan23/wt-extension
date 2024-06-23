@@ -11,6 +11,8 @@ import { searchNote } from './search';
 import { provideDefinition } from './definitionLink';
 import { editNote } from './editNote';
 import { Buff } from '../Buffer/bufferSource';
+import { Renamable } from '../recyclingBin/recyclingBinView';
+import { TabLabels } from '../tabLabels/tabLabels';
 
 export interface Note {
     kind: 'note';
@@ -47,7 +49,7 @@ export interface UriNoteMatch {
 export class WorkBible 
 implements 
     vscode.TreeDataProvider<Note | SubNote | AppearanceContainer>, 
-    vscode.HoverProvider, Timed 
+    vscode.HoverProvider, Timed, Renamable<Note>
 {
 
     readNotes = readNotes;
@@ -116,6 +118,26 @@ implements
 
             // Refresh the treeview
             this.refresh();
+        });
+    }
+
+    async renameResource (node?: Note | undefined): Promise<void> {
+        if (!node) return;
+        
+        const originalName = node.noun;
+        const newName = await vscode.window.showInputBox({
+            placeHolder: originalName,
+            prompt: `What would you like to rename note for '${originalName}'?`,
+            ignoreFocusOut: false,
+            value: originalName,
+            valueSelection: [0, originalName.length]
+        });
+        if (!newName) return;
+
+        node.noun = newName;
+        this.writeSingleNote(node);
+        return this.refresh().then(() => {
+            TabLabels.assignNamesForOpenTabs();
         });
     }
 

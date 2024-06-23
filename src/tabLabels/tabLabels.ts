@@ -8,7 +8,7 @@ import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
 import { CodeModeState } from '../codeMode/codeMode';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
-import { WorkBible } from '../workBible/workBible';
+import { Note, WorkBible } from '../workBible/workBible';
 import { vagueNodeSearch } from '../help';
 
 export class TabLabels {
@@ -35,13 +35,22 @@ export class TabLabels {
     private registerCommands() {
 
         const renameFromUri = async (uri: vscode.Uri) => {
-            type ViewSource = Renamable<OutlineNode>;
-            let nodeResult: [ ViewSource, OutlineNode ]
+            type ViewSource = Renamable<OutlineNode | Note>;
+            let nodeResult: [ ViewSource, OutlineNode | Note ]
             try {
                 nodeResult = await Promise.any([
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) => TabLabels.outlineView.getTreeElementByUri(uri).then(node => node ? resolve([ TabLabels.outlineView, node ]) : reject())),
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  TabLabels.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ TabLabels.recyclingBinView, node ]) : reject())),
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  TabLabels.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ TabLabels.scratchPadView, node ]) : reject())),
+                    new Promise<[ ViewSource, Note ]>((resolve, reject) =>  {
+                        const note = extension.ExtensionGlobals.workBible.getNote(uri);
+                        if (note) {
+                            resolve([ extension.ExtensionGlobals.workBible, note ]);
+                        } 
+                        else {
+                            reject();
+                        }
+                    })
                 ]);
             }
             catch (err: any) {
