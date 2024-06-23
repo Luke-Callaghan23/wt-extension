@@ -6,6 +6,8 @@ import { WordEnrty, WordWatcher } from './wordWatcher';
 import { clamp, hexToRgb } from '../help';
 import { addWordToWatchedWords } from './engine';
 import { TimedView } from '../timedView';
+import { Color, parseForColor } from './colorPick';
+import { Workspace } from '../workspace/workspaceClass';
 
 const defaultDecorations: vscode.DecorationRenderOptions = {
     // borderWidth: '1px',
@@ -190,141 +192,121 @@ export async function disable(this: WordWatcher): Promise<void> {
 }
 
 const DEFAULT_ALPHA = 0.3;
-type Rgba = {
-    r: number,
-    g: number, 
-    b: number,
-    a: number
-};
 
 const defaultColor = "rgb(161, 8, 8, 0.3)";
+const defaultColorObj: Color = {
+    a: 0.3,
+    b: 8,
+    g: 8,
+    r: 161
+};
 export async function changeColor(this: WordWatcher, word: WordEnrty) {
     const colorMap = this.wordColors[word.uri];
     const currentColor: string = (colorMap || { rgbaString: defaultColor }).rgbaString;
+    const currentColorObj = parseForColor(currentColor) || defaultColorObj;
 
-    // Read the user's rgb response
-    let rgbaString: string;
-    let result: Rgba;
+    const updateColor = (color: Color, confirm: boolean) => {
+        // Create a new decorator options for the selected color
+        const decoratorType = createDecorationType(color);
+        const index = this.allDecorationTypes.length;
+        this.allDecorationTypes.push(decoratorType);
+    
+        // Insert a color entry into the color map
+        const rgbaString = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`
+        const insert: ColorEntry = { rgbaString: rgbaString, decoratorsIndex: index };
+        this.wordColors[word.uri] = insert;
+    
+        // Update context
+        const context = convertWordColorsToContextItem(this.wordColors);
+        this.context.workspaceState.update('wt.wordWatcher.rgbaColors', context);
+        if (confirm) Workspace.packageContextItems(true);
+    
+        for (const editor of vscode.window.visibleTextEditors) {
+            this.update(editor, TimedView.findCommentedRanges(editor));
+        }
+    }
+
+    const wordRegex = new RegExp(word.uri);
+
+    let exampleWord: string;
     while (true) {
-        const newColor = await vscode.window.showInputBox({
+        const response: string | undefined = await vscode.window.showInputBox({
             ignoreFocusOut: false,
-            prompt: `Enter the hex code or rgb(#, #, #, #) formatted color you would like to use:`,
-            title: `Enter the hex code or rgb(#, #, #, #) formatted color you would like to use:`,
-            value: currentColor,
-            placeHolder: currentColor,
-            valueSelection: [ 0, currentColor.length ]
+            placeHolder: word.uri,
+            title: "Example Word",
+            prompt: "Please provide an example word that passes this passes this regex so you can see the colors in action... (For instance: WW='[\w]+ly', you enter='quickly'"
         });
-        if (!newColor) return;
+        if (!response) return;
 
-        // Try parsing the color with an extra hastag or without
-
-        const res = readColorFromString(newColor);
-        if ('errMessage' in res) {
-            vscode.window.showErrorMessage(`Could not parse '${newColor}': ${res.errMessage}`);
+        if (!wordRegex.test(response)) {
+            vscode.window.showErrorMessage(`'${response}' did not pass the regex '${word.uri}', please try again!`);
             continue;
         }
-
-        result = res;
-        rgbaString = `rgb(${res.r}, ${res.g}, ${res.b}, ${res.a})`;
+        exampleWord = response;
         break;
     }
 
-    // Create a new decorator options for the selected color
-    const decoratorType = createDecorationType(result);
-    const index = this.allDecorationTypes.length;
-    this.allDecorationTypes.push(decoratorType);
+    type Response = 'Yes, use last color' | 'No, keep choosing' | 'Yes, keep choosing' | 'Yes, use new color' | 'No, keep choosing' | 'Quit';
 
-    // Insert a color entry into the color map
-    const insert: ColorEntry = { rgbaString: rgbaString, decoratorsIndex: index };
-    this.wordColors[word.uri] = insert;
+    while (true) {
+        let latestColor: Color | null = null;
+        const colorsHistory: Color[] = [];
+        for await (const color of this.colorPick(word.uri, exampleWord, currentColor)) {
+            latestColor = color;
+            if (color === null) continue;
+    
+            const result = color;
+            colorsHistory.push(result);
+            updateColor(result, false);
+        }
+    
+        let response: Response;
+        if (latestColor === null) {
+            if (colorsHistory.length > 0) {
+                response = await vscode.window.showInformationMessage("Use latest color instead?", {
+                    modal: true,
+                    detail: `Latest color could not be parsed, would you like to use the latest color '${colorsHistory[colorsHistory.length - 1]}' instead?`
+                }, 'Yes, use last color', 'No, keep choosing') || 'Quit';
+                
+            }
+            else {
+                // Reload
+                response = await vscode.window.showInformationMessage("Try again", {
+                    modal: true,
+                    detail: `No colors could be parsed.  Would you like to keep picking?`
+                }, 'Yes, keep choosing') || 'Quit';
+            }
+        }
+        else {
+            // confirm use latest color
+            response = await vscode.window.showInformationMessage("Confirm", {
+                modal: true,
+                detail: `Are you sure you want to swap ${currentColor} for ${latestColor}?`
+            }, 'Yes, use new color', 'No, keep choosing') || 'Quit';
+        }
 
-    // Update context
-    const context = convertWordColorsToContextItem(this.wordColors);
-    this.context.workspaceState.update('wt.wordWatcher.rgbaColors', context);
-
-    for (const editor of vscode.window.visibleTextEditors) {
-        this.update(editor, TimedView.findCommentedRanges(editor));
+        switch (response) {
+            case "No, keep choosing": case "Yes, keep choosing": 
+                break;
+            case "Quit": {
+                updateColor(currentColorObj, true);
+                return;
+            }
+            case "Yes, use last color": {
+                let chosen: Color = colorsHistory[colorsHistory.length - 1];
+                updateColor(chosen, true);
+                return;
+            }
+            case "Yes, use new color": {
+                let chosen: Color = latestColor!;
+                updateColor(chosen, true);
+                return;
+            }
+        }
     }
 }
 
-function readColorFromString (src: string): { errMessage: string } | Rgba {
-    const rgbaRegex = /\s*rgba?\s*\(\s*(?<r>\d{1,3})\s*,\s*(?<g>\d{1,3})\s*,\s*(?<b>\d{1,3})\s*(\s*,\s*(?<a>0\.\d+)\s*)?\)\s*/gi;
-
-    let match: RegExpExecArray | null;
-    if ((match = rgbaRegex.exec(src)) !== null) {
-        const groups = match.groups;
-        if (groups && 'r' in groups && 'g' in groups && 'b' in groups) {
-            const rgba = groups as {
-                r: string,
-                g: string,
-                b: string,
-                a?: string
-            };
-            const { r, g, b, a } = rgba;
-            const ri = parseInt(r);
-            const gi = parseInt(g);
-            const bi = parseInt(b);
-
-            if (isNaN(ri)) return { errMessage: `'r' (${r}) could not be parsed as an integer` };
-            if (isNaN(gi)) return { errMessage: `'g' (${g}) could not be parsed as an integer` };
-            if (isNaN(bi)) return { errMessage: `'b' (${b}) could not be parsed as an integer` };
-
-            let ai = DEFAULT_ALPHA;
-            if (a) {
-                ai = parseFloat(a);
-                if (isNaN(ai)) return { errMessage: `'a' (${a}) could not be parsed as an integer` };
-            }
-
-            return { 
-                r: clamp(ri, 0, 255), 
-                b: clamp(bi, 0, 255), 
-                g: clamp(gi, 0, 255), 
-                a: ai 
-            };
-        }
-        else return { errMessage: `(rgba color error) Missing 'r', 'g', or 'b' from input'` };
-    }
-
-    const hexRegex = /\s*#(?<r>[a-f0-9]{2})(?<g>[a-f0-9]{2})(?<b>[a-f0-9]{2})(?<a>[a-f0-9]{2})?/;
-    if ((match = hexRegex.exec(src)) !== null) {
-        const groups = match.groups;
-        if (groups && 'r' in groups && 'g' in groups && 'b' in groups) {
-            const rgba = groups as {
-                r: string,
-                g: string,
-                b: string,
-                a?: string
-            };
-            const { r, g, b, a } = rgba;
-            const ri = parseInt(r, 16);
-            const gi = parseInt(g, 16);
-            const bi = parseInt(b, 16);
-
-            if (isNaN(ri)) return { errMessage: `'r' (${r}) could not be parsed as a hex integer` };
-            if (isNaN(gi)) return { errMessage: `'g' (${g}) could not be parsed as a hex integer` };
-            if (isNaN(bi)) return { errMessage: `'b' (${b}) could not be parsed as a hex integer` };
-
-            let ai = DEFAULT_ALPHA;
-            if (a) {
-                ai = parseInt(a, 16) / 0xff;
-                if (isNaN(ai)) return { errMessage: `'a' (${a}) could not be parsed as an integer` };
-            }
-
-            return { 
-                r: clamp(ri, 0, 255), 
-                b: clamp(bi, 0, 255), 
-                g: clamp(gi, 0, 255), 
-                a: ai 
-            };
-        }
-        else return { errMessage: `(hex color error) Missing 'r', 'g', or 'b' from input'` };
-    }
-
-    return { errMessage: `Could not parse color in either color format!` };
-}
-
-
-export function createDecorationType (color: Rgba): vscode.TextEditorDecorationType {
+export function createDecorationType (color: Color): vscode.TextEditorDecorationType {
     const colorString = `rgb(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
     return createDecorationFromRgbString(colorString);
 }

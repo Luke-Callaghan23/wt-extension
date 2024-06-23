@@ -137,6 +137,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		activateDebug(context);
 
 		reloadWatcher.checkForRestoreTabs();
+		outline.selectActiveDocument(vscode.window.activeTextEditor);
 	}
 	catch (e) {
 		handleLoadFailure(e);
