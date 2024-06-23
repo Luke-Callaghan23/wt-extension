@@ -17,7 +17,30 @@ export async function update (this: WorkBible, editor: vscode.TextEditor): Promi
 
     this.matchedNotes = undefined;
     const matches: NoteMatch[] = [];
-    const text = editor.document.getText();
+    let text = editor.document.getText();
+
+    // If the document is a wtnote document itself we want to avoid highlighting our OWN note names, because there 
+    //      will be too much purple highlighting everywhere
+    // But we do want to continue highlighting other notes, because one note can reference another and we want
+    //      to click between them
+    // To achieve this, replace any reference that matches this noun or its aliases with something generic that won't
+    //      likely be matched '#'
+    const uri = editor.document.uri;
+    const ownNote = this.getNote(uri);
+    if (ownNote) {
+        const ownNotePattern = this.getNounPattern(ownNote);
+        const ownNoteGlobal = new RegExp(ownNotePattern, 'gi');
+        text = text.replaceAll(ownNoteGlobal, (replace) => {
+            // Using a replacer function which recieves the substring to replace and returns a string of '#'s
+            //      with the same length as the replacing string
+            let hashStr = '';
+            for (let idx = 0; idx < replace.length; idx++) {
+                hashStr += '#';
+            }
+            return hashStr;
+        })
+    }
+
     while ((match = this.nounsRegex.exec(text))) {
         const matchReal: RegExpExecArray = match;
 
