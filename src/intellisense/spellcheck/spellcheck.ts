@@ -14,6 +14,7 @@ export class Spellcheck implements Timed {
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
 		overviewRulerColor: '#ad0505',
         borderStyle: 'none none dashed none',
+        color: '#ad0505',
         borderColor: '#ad0505',
     });
 
