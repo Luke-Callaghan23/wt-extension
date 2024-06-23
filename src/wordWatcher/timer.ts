@@ -13,9 +13,9 @@ const defaultDecorations: vscode.DecorationRenderOptions = {
     // borderWidth: '1px',
     // borderRadius: '3px',
     // borderStyle: 'solid',
-    overviewRulerColor: 'rgb(161, 8, 8, 0.3)',
-    // backgroundColor: 'rgb(161, 8, 8, 0.3)',
-    color: 'rgb(161, 8, 8, 0.3)',
+    overviewRulerColor: 'rgb(8, 161, 8)',
+    // backgroundColor: 'rgb(8, 161, 8)',
+    color: 'rgb(8, 161, 8)',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
 };
 
@@ -193,12 +193,12 @@ export async function disable(this: WordWatcher): Promise<void> {
 
 const DEFAULT_ALPHA = 0.3;
 
-const defaultColor = "rgb(161, 8, 8, 0.3)";
+const defaultColor = "rgb(8, 161, 8)";
 const defaultColorObj: Color = {
-    a: 0.3,
+    a: 1,
     b: 8,
-    g: 8,
-    r: 161
+    r: 8,
+    g: 161
 };
 export async function changeColor(this: WordWatcher, word: WordEnrty) {
     const colorMap = this.wordColors[word.uri];
