@@ -35,7 +35,7 @@ export async function shiftTrailingNodesDown<T extends HasGetUri> (
 
     // Shift any node that comes after this one down by one inside of the internal 
     //      outline view tree structure
-    const parentContainer: OutlineNode | null | undefined = await view.getTreeElementByUri(this.data.ids.parentUri);
+    const parentContainer: OutlineNode | null = await view.getTreeElementByUri(this.data.ids.parentUri) as OutlineNode | null;
     if (parentContainer) {
         // Find the content array in which this node resides
         let content: OutlineNode[];

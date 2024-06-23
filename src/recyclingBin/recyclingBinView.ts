@@ -306,7 +306,7 @@ implements
         const movedItems: OutlineNode[] = await Promise.all(
             movedItemsJSON.map(mij => {
                 const uri = vscode.Uri.file(mij.data.ids.uri.fsPath);
-                return outlineView.getTreeElementByUri(uri);
+                return outlineView.getTreeElementByUri(uri) as Promise<OutlineNode>;
             })
         );
 
@@ -332,6 +332,8 @@ implements
             return element;
         }
         const parentUri = element.getParentUri();
-        return this.getTreeElementByUri(parentUri);
+        const parent = await this.getTreeElementByUri(parentUri);
+        if (!parent) return this.rootNodes[0];
+        return parent;
     }
 }

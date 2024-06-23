@@ -200,7 +200,7 @@ implements
         const movedItems: OutlineNode[] = await Promise.all(
             movedItemsJSON.map(mij => {
                 const uri = vscode.Uri.file(mij.data.ids.uri.fsPath);
-                return outlineView.getTreeElementByUri(uri);
+                return outlineView.getTreeElementByUri(uri) as Promise<OutlineNode>;
             })
         );
 

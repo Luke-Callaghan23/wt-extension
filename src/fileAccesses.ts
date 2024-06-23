@@ -45,7 +45,7 @@ export class FileAccessManager implements Packageable {
         );
         if (!node || !source || source !== 'outline') return;
 
-        let currentNode: OutlineNode = node as OutlineNode;
+        let currentNode: OutlineNode | null = node as OutlineNode;
         while (currentUri && currentNode) {
             // Mark latest accessed chapter or snip if the current node is a chapter or snip
             if (currentNode.data.ids.type === 'chapter') {

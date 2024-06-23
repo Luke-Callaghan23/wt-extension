@@ -95,7 +95,7 @@ export async function generalMoveNode (
         // Add the new override's parent to the effected containers if that container exists (and its parent does as well)
         const effectedContainers = swapResult.effectedContainers;
         if (newOverride) {
-            const parent: OutlineNode | null = await outlineView.getTreeElementByUri(newOverride.getParentUri());
+            const parent: OutlineNode | null = await outlineView.getTreeElementByUri(newOverride.getParentUri()) as OutlineNode | null;
             if (parent) {
                 effectedContainers.push(parent);
             }

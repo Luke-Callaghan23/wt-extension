@@ -50,18 +50,18 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
         //		uris
         if (typeof transferItems.value === 'string') {
             const movedItemsJSON: OutlineNode[] = JSON.parse(transferItems.value as string);
-            const movedRecyclingItemsRaw: (OutlineNode | undefined)[] = await Promise.all(
+            const movedRecyclingItemsRaw: (OutlineNode | null)[] = await Promise.all(
                 movedItemsJSON.map(mij => {
                     // Convert to a string then back to the Uri because I'm not sure if the parsed JSON will be correctly viewed
                     //		as an instanceof vscode.Uri on all platforms
                     const uri = vscode.Uri.file(mij.data.ids.uri.fsPath);
                     if (operation === 'recover') {
-                        return recyclingView.getTreeElementByUri(uri);
+                        return recyclingView.getTreeElementByUri(uri) as Promise<OutlineNode | null>;
                     }
                     else if (operation === 'scratch') {
-                        return scratchPadView.getTreeElementByUri(uri);
+                        return scratchPadView.getTreeElementByUri(uri) as Promise<OutlineNode | null>;
                     }
-                    else return undefined;
+                    else return null;
                 })
             );
 

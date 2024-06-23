@@ -255,7 +255,7 @@ export async function newSnip (
                         // If the parent type is root, we still don't know if the selected item is a chapter container
                         //		or the work snips
                         // Need to check the ids of each of these containers against the id of the resource
-                        const rootNode: OutlineNode = await this.getTreeElementByUri(resource.data.ids.parentUri);
+                        const rootNode: OutlineNode = await this.getTreeElementByUri(resource.data.ids.parentUri)! as OutlineNode;
                         const root: RootNode = rootNode.data as RootNode;
 
                         // Check the id of the chapters container and the work snips container of the root node against
@@ -436,7 +436,7 @@ export async function newFragment (
         }
         
         // If there is a last accessed fragment, use that
-        resource = await this.getTreeElementByUri(lastAccessedFragmentUri);
+        resource = await this.getTreeElementByUri(lastAccessedFragmentUri)! as OutlineNode;
         if (!resource) {
             vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
             return null;
@@ -449,12 +449,12 @@ export async function newFragment (
     if (resource.data.ids.type === 'fragment') {
         // If the selected resource is a fragment itself, then look at the parent node of that fragment
         parentUri = resource.data.ids.parentUri;
-        parentNode = await this.getTreeElementByUri(parentUri);
+        parentNode = await this.getTreeElementByUri(parentUri)! as OutlineNode;
     }
     else if (resource.data.ids.type === 'container') {
         // Get the last fragment of the selected container that was accessed
         const lastAccessedFragmentInContainerUri = FileAccessManager.lastAccessedFragmentForUri(resource.data.ids.uri);
-        resource = await this.getTreeElementByUri(lastAccessedFragmentInContainerUri);
+        resource = await this.getTreeElementByUri(lastAccessedFragmentInContainerUri)! as OutlineNode;
         if (!resource) {
             // Since a container is a something that holds other folder nodes, you cannot add a fragment direcly to a container
             vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
@@ -463,7 +463,7 @@ export async function newFragment (
 
         // Get the parent of that last accessed fragment to use as the house of the new fragment
         parentUri = resource.data.ids.parentUri;
-        parentNode = await this.getTreeElementByUri(parentUri);
+        parentNode = await this.getTreeElementByUri(parentUri)! as OutlineNode;
 
     }
     else {

@@ -69,7 +69,7 @@ export async function deleteNodePermanently (this: RecyclingBinView, targets: Ou
 
             // Finally, remove the fragment from the parent's text node container
             const fragmentParentUri = target.data.ids.parentUri;
-            const fragmentParent: OutlineNode = await this.getTreeElementByUri(fragmentParentUri);
+            const fragmentParent: OutlineNode = await this.getTreeElementByUri(fragmentParentUri) as OutlineNode;
             if (!fragmentParent) continue;
 
             containers.push(fragmentParent);
@@ -105,7 +105,7 @@ export async function deleteNodePermanently (this: RecyclingBinView, targets: Ou
 
             // Finally, remove the chapter or snip from the parent container
             const removedNodeParentUri = target.data.ids.parentUri;
-            const removedNodeParent: OutlineNode = await this.getTreeElementByUri(removedNodeParentUri);
+            const removedNodeParent: OutlineNode = await this.getTreeElementByUri(removedNodeParentUri) as OutlineNode;
             if (!removedNodeParent) continue;
 
             containers.push(removedNodeParent);

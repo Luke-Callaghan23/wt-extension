@@ -35,7 +35,7 @@ export async function chapterMove (
         }
         else if (grandparentTypeId === 'chapter') {
             const newGrandparentUri = newParent.data.ids.parentUri;
-            const newGrandparent: OutlineNode = await outlineView.getTreeElementByUri(newGrandparentUri);
+            const newGrandparent: OutlineNode = await outlineView.getTreeElementByUri(newGrandparentUri)! as OutlineNode;
             destinationParent = (newGrandparent.data as ChapterNode).snips;
             destinationContents = ((newGrandparent.data as ChapterNode).snips.data as ContainerNode).contents;
         }
@@ -56,7 +56,7 @@ export async function chapterMove (
     }
     else if (newParentType === 'fragment') {
         const newGrandparentUri = newParent.data.ids.parentUri;
-        const newGrandparent: OutlineNode = await outlineView.getTreeElementByUri(newGrandparentUri);
+        const newGrandparent: OutlineNode = await outlineView.getTreeElementByUri(newGrandparentUri)! as OutlineNode;
         if (newParent.data.ids.parentTypeId === 'chapter') {
             destinationParent = (newGrandparent.data as ChapterNode).snips;
             destinationContents = ((newGrandparent.data as ChapterNode).snips.data as ContainerNode).contents;
@@ -87,7 +87,7 @@ export async function chapterMove (
         skipFragment: true,
     });
     if (chapterSnipUri === null) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null } };
-    const chapterSnip = await outlineView.getTreeElementByUri(chapterSnipUri);
+    const chapterSnip = await outlineView.getTreeElementByUri(chapterSnipUri)! as OutlineNode;
     
     
     // Then move every single fragment from the original chapter into the new snip
@@ -109,7 +109,7 @@ export async function chapterMove (
         skipFragment: true,
     });
     if (chapterSnipContainerUri === null) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null } };
-    const chapterSnipContainer = await outlineView.getTreeElementByUri(chapterSnipContainerUri);
+    const chapterSnipContainer = await outlineView.getTreeElementByUri(chapterSnipContainerUri)! as OutlineNode;
 
     // Then move every single snip from the moved chapter into the converted snip's snip container
     acc = 0;

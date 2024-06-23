@@ -60,11 +60,11 @@ export class UriBasedView<T extends HasGetUri> {
 	}
 	
 
-	async getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: T, filter?: boolean): Promise<any> {
+	async getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: T, filter?: boolean): Promise<T | null> {
 		// If there is not targeted key, then assume that the caller is targeting
 		//		the entire tree
 		if (!targetUri) {
-			return this.rootNodes;
+			return this.rootNodes[0];
 		}
 		
 		if (!targetUri.fsPath.includes(extension.rootPath.fsPath)) {

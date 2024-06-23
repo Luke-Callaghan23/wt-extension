@@ -116,7 +116,9 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 	public async getParent?(element: T): Promise<T> {
 		const parentUri = element.getParentUri();
-		return this.getTreeElementByUri(parentUri);
+		const node = await this.getTreeElementByUri(parentUri);
+		if (!node) return this.rootNodes[0];
+		return node;
 	}
 
 	public async getTreeItem (element: T): Promise<vscode.TreeItem> {

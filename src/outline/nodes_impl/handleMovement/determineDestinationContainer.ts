@@ -26,7 +26,7 @@ export async function determineDestinationContainer (
         }
         // Use the chapter's .snips container
         else if (newParentType === 'chapter') {
-            const chapterNode: ChapterNode = (await provider.getTreeElementByUri(newParentUri)).data;
+            const chapterNode: ChapterNode = (await provider.getTreeElementByUri(newParentUri)! as OutlineNode).data as ChapterNode;
             destinationContainer = chapterNode.snips;
         }
         // Traverse upwards until we find the nearest 'root' or 'chapter' node that we can move the snip into
@@ -50,7 +50,7 @@ export async function determineDestinationContainer (
     }
     else if (moverType === 'fragment') {
         if (newParentType === 'chapter' || newParentType === 'snip') {
-            destinationContainer = (await provider.getTreeElementByUri(newParentUri));
+            destinationContainer = (await provider.getTreeElementByUri(newParentUri)! as OutlineNode);
         }
         else if (newParentType === 'fragment') {
             destinationContainer = (await newParentNode.getContainerParent(provider, ['snip']));
@@ -78,7 +78,7 @@ export async function determineDestinationContainer (
                 if (!snipUri) return null;
 
                 // Get the snip node itself from the outline view 
-                const snipNode = await outlineView.getTreeElementByUri(snipUri);
+                const snipNode = await outlineView.getTreeElementByUri(snipUri)! as OutlineNode;
 
                 // Use that snip node as both the override for all potential future
                 //      fragment moves and as the destination node

@@ -39,7 +39,7 @@ export class OutlineNode extends TreeNode {
         let foundParent: OutlineNode;
         let parentUri = this.data.ids.parentUri;
         while (true) {
-            foundParent = await provider.getTreeElementByUri(parentUri);
+            foundParent = await provider.getTreeElementByUri(parentUri)! as OutlineNode;
             if (searches.includes(foundParent.data.ids.type) || foundParent.data.ids.type === 'chapter') {
                 break;
             }
