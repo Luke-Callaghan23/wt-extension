@@ -93,6 +93,7 @@ export async function createWorkspace (
         await vscode.workspace.fs.writeFile(gitignoreUri, Buff.from(`
 tmp/
 tmp/**
+**/synonymsCache.json
 `));
 
         // Create necessary folders
