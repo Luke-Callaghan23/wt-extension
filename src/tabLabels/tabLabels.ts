@@ -151,6 +151,10 @@ export class TabLabels {
                     : finalLabel;
         });
 
+        // Patterns for the color picker
+        finalPatterns['*/tmp/**.wt'] = 'Example Fragment';
+        finalPatterns['*/tmp/**.css'] = 'Color Picker';
+
         return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);
     }
     
