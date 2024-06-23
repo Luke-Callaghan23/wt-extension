@@ -39,6 +39,20 @@ export const wordSeparatorRegex = new RegExp(wordSeparator.split('|')[1], 'g');
 export const sentenceSeparator: RegExp = /[.?!]/g;
 export const paragraphSeparator: RegExp = /\n\n/g;
 
+export class ExtensionGlobals {
+    public static outlineView: OutlineView;
+    public static recyclingBinView: RecyclingBinView;
+    public static scratchPadView: ScratchPadView;
+    public static workBible: WorkBible;
+
+    public static initialize (outlineView: OutlineView, recyclingBinView: RecyclingBinView, scratchPadView: ScratchPadView, workBible: WorkBible) {
+        ExtensionGlobals.outlineView = outlineView;
+        ExtensionGlobals.recyclingBinView = recyclingBinView;
+        ExtensionGlobals.scratchPadView = scratchPadView;
+        ExtensionGlobals.workBible = workBible;
+	}
+}
+
 // To be called whenever a workspace is successfully loaded
 // Loads all the content for all the views for the wt extension
 async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspace: Workspace): Promise<void> {
@@ -87,7 +101,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		// Initialize the file access manager
 		// Manages any accesses of .wt fragments, for various uses such as drag/drop in outline view or creating new
 		//		fragment/snips/chapters in the outline view
-		FileAccessManager.initialize();
+		FileAccessManager.initialize(outline, recycleBin, scratchPad, workBible);
+		ExtensionGlobals.initialize(outline, recycleBin, scratchPad, workBible);
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(), 
@@ -105,6 +120,9 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 
 
 		await TabLabels.assignNamesForOpenTabs();
+		
+		reloadWatcher.checkForRestoreTabs();
+		outline.selectActiveDocument(vscode.window.activeTextEditor);
 	}
 	catch (e) {
 		handleLoadFailure(e);

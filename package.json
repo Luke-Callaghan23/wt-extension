@@ -810,10 +810,6 @@
 			{
 				"command": "wt.reloadWatcher.reloadWorkspace",
 				"title": "Writing Tool: Refresh Workspace"
-			},
-			{
-				"command": "wt.colorPicker.pick",
-				"title": "Writing Tool: Pick Color"
 			}
 		],
 		"menus": {
