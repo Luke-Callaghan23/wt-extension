@@ -338,7 +338,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         //      and use that as the doc string for the completion item
         try {
             const syn = item.insertText as string;
-            const documentation = 'testing'; //await getHoverText(syn);
+            const documentation = await getHoverText(syn);
             item.documentation = new vscode.MarkdownString(documentation);
             return item;
         }

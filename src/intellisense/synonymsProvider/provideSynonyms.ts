@@ -208,7 +208,7 @@ export class SynonymsProvider {
         }
     }
 
-    static async getCachedSynonym (word: string, provider: 'wh' | 'synonymsApi'): Promise<SynonymSearchResult> {
+    static async getCachedSynonym (word: string, provider: 'wh' | 'synonymsApi'): Promise<SynonymSearchResult | null> {
         return new Promise((resolve, reject) => {
             word = word.toLocaleLowerCase().trim();
             if (word in this.cache[provider] && 
@@ -222,7 +222,7 @@ export class SynonymsProvider {
                 resolve(this.cache[provider][word]);
                 return;
             }
-            reject();
+            else return resolve(null);
         });
     }
 
@@ -231,11 +231,16 @@ export class SynonymsProvider {
             type: "error",
             message: "Blank word",
         };
-        try { 
-            const result: SynonymSearchResult = await Promise.any([
-                SynonymsProvider.getCachedSynonym(word, provider),
-                SynonymsProvider.synonymsApi.getSynonym(word, provider),
-            ]);
+        try {
+            let result: SynonymSearchResult;
+
+            const cacheResult: SynonymSearchResult | null = await SynonymsProvider.getCachedSynonym(word, provider);
+            if (!cacheResult) {
+                result = await SynonymsProvider.synonymsApi.getSynonym(word, provider);
+            }
+            else {
+                result = cacheResult;
+            }
 
             if (result !== undefined && 
                 result !== null && 
@@ -243,6 +248,7 @@ export class SynonymsProvider {
                 'type' in result &&
                 result.type === 'success'
             ) {
+                console.log(this.cache);
                 this.cache[provider][word.toLocaleLowerCase().trim()] = result;
                 this.cacheWasUpdated = true;
             }
