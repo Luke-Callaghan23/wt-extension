@@ -13,6 +13,7 @@ import { update } from './impl/timerFunctions';
 import { disable } from '../wordWatcher/timer';
 import { registerCommands } from './impl/registerCommands';
 import { getTODOCounts } from './nodes_impl/getTODOCounts';
+import { ExtensionGlobals } from '../extension';
 
 export type TODO = {
 	rowStart: number,
@@ -153,6 +154,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 	constructor(context: vscode.ExtensionContext, protected workspace: Workspace) {
         super(context, 'wt.todo');
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+		ExtensionGlobals.todoView = this;
 	}
 
 	async init (): Promise<void> {

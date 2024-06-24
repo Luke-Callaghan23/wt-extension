@@ -87,11 +87,11 @@ export async function surroundSelectionWith (startRanges: string | string[], end
             //      that were added
             // After the edits, the current position of the cursor is at the end of the surround string
             const endPos = selection.end;
-            const endSequenceLength = end.length;
+            const startSequenceLength = start.length;
 
             // The new position is the same as the current position, minus the amount of characters in the 
             //      surround string
-            const newPosition = new vscode.Position(endPos.line, endPos.character + endSequenceLength);
+            const newPosition = new vscode.Position(endPos.line, endPos.character + startSequenceLength);
 
             // New selection is the desired position of the cursor (provided to the constructor twice, to
             //      get an empty selection)
@@ -216,17 +216,17 @@ export async function emDashes () {
         let endStr = ' -- ';
     
         let diff: number = 1;
-    
+
         // Check if the character before the cursor is a space
         // If so, then move the cursor back to before the space and only insert ',' instead of ', '
         const startOffset = document.offsetAt(selection.start);
         while (text[startOffset - diff] === ' ') {
             const prev = document.positionAt(startOffset - diff);
             startPos = prev;
-            startStr = ' --';
+            startStr = !selection.isEmpty ? ' --' : ' -- ';
             diff++;
         }
-        if (text[startOffset] === ' ') startStr = ' --';
+        if (text[startOffset] === ' ') startStr = !selection.isEmpty ? ' --' : ' -- ';
         
         // Check if the character before the cursor is a space
         // If so, then insert only insert ' -- ' instead of ', '
@@ -239,6 +239,7 @@ export async function emDashes () {
             diff++;
         }
         if (text[endOffset] === ' ') endStr = ' --';
+    
     
         newSelections.push(new vscode.Selection(startPos, endPos));
         starts.push(startStr);
