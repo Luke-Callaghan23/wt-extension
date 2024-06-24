@@ -13,6 +13,7 @@ if
     test -f .web/tsconfig.json &&
     test -f .web/gitTransactions.ts &&
     test -f .web/tabLabels.ts && 
+    test -f .web/provideSynonyms.ts && 
     test -f .web/workspaceClass.ts;
 then
     mv src/Buffer/bufferSource.ts .local/bufferSource.ts
@@ -29,6 +30,7 @@ then
     mv src/workspace/workspaceClass.ts .local/workspaceClass.ts
     mv src/ttsDebugger .local/ttsDebugger
     mv src/tabLabels/tabLabels.ts .local/tabLabels.ts
+    mv src/intellisense/synonymsProvider/provideSynonyms.ts .local/provideSynonyms.ts
 
     mv .web/bufferSource.ts src/Buffer/bufferSource.ts
     mv .web/fetchSource.ts src/Fetch/fetchSource.ts
@@ -41,6 +43,7 @@ then
     mv .web/gitTransactions.ts src/gitTransactions.ts
     mv .web/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .web/tabLabels.ts src/tabLabels/tabLabels.ts
+    mv .web/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
 
     npm clean-install
 elif 
@@ -74,6 +77,7 @@ elif
     test -f .local/ttsDebugger/tts/windows.ts &&
     test -f .local/ttsDebugger/tts/windowsCommand.ts &&
     test -f .local/tabLabels.ts && 
+    test -f .local/provideSynonyms.ts && 
     test -f .local/workspaceClass.ts;
 then
     mv src/Buffer/bufferSource.ts .web/bufferSource.ts
@@ -87,6 +91,7 @@ then
     mv src/gitTransactions.ts .web/gitTransactions.ts
     mv src/workspace/workspaceClass.ts .web/workspaceClass.ts 
     mv src/tabLabels/tabLabels.ts .web/tabLabels.ts
+    mv src/intellisense/synonymsProvider/provideSynonyms.ts .web/provideSynonyms.ts
 
     mv .local/ttsDebugger src/ttsDebugger
     mv .local/bufferSource.ts src/Buffer/bufferSource.ts
@@ -102,6 +107,7 @@ then
     mv .local/gitTransactions.ts src/gitTransactions.ts
     mv .local/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .local/tabLabels.ts src/tabLabels/tabLabels.ts
+    mv .local/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
 
     npm clean-install
 else 
