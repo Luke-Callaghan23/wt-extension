@@ -7,7 +7,6 @@ import { Config, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
 import { setLastCommit } from '../gitTransactions';
 import { ReloadWatcher } from '../reloadWatcher';
-import { SynonymViewProvider } from '../synonymsWebview/synonymsView';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 import * as fs from 'fs';
 

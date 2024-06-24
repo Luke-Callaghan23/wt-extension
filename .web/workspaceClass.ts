@@ -7,7 +7,7 @@ import { Config, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
 import { setLastCommit } from '../gitTransactions';
 import { ReloadWatcher } from '../reloadWatcher';
-
+import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 
 export class Workspace {
     // Basic configuration information about the workspace
@@ -92,8 +92,9 @@ export class Workspace {
 
     private static interval: NodeJS.Timer | null = null;
     private static allowReload: number = 0;
-    static async packageContextItems (preventReloadTrigger: boolean) {
+    static async packageContextItems (useDefaultFS: boolean = false) {
         ReloadWatcher.disableReloadWatch();
+        const saveCache = SynonymsProvider.writeCacheToDisk(false);
         this.allowReload = 100;
         // Write context items to the file system before git save
         const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
@@ -111,6 +112,7 @@ export class Workspace {
                 }
             }, 10);
         }
+        return saveCache;
     }
 
     
@@ -171,7 +173,7 @@ export class Workspace {
 
         vscode.commands.registerCommand('wt.workspace.generateContextValues', async () => {
             try {
-                await Workspace.packageContextItems(true);
+                await Workspace.packageContextItems();
             }
             catch (err: any) {
                 vscode.window.showErrorMessage(`ERROR: An error occurred while generating context items: ${err.message}: ${JSON.stringify(err, null, 2)}`);

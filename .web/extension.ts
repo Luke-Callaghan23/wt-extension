@@ -190,3 +190,7 @@ async function activateImpl (context: vscode.ExtensionContext) {
 		loadExtensionWorkspace(context, workspace);
 	}
 }
+
+export function deactivate (): Promise<void> {
+	return Workspace.packageContextItems(true);
+}
