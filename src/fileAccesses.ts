@@ -106,7 +106,7 @@ export class FileAccessManager implements Packageable {
                 }
                 FileAccessManager.savePosition(editor);
                 if (Date.now() - FileAccessManager.lastContextUpdate > 1000 * 60 * 5) {
-                    Workspace.packageContextItems(true);
+                    Workspace.packageContextItems();
                     FileAccessManager.lastContextUpdate = Date.now();
                 }
             }, 0);

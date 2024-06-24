@@ -143,7 +143,7 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 				case 'deliveredSynonyms':
 					this.synonyms = (data.synonyms as string[]);
 					this.context.workspaceState.update('wt.wh.synonyms', this.synonyms);
-					Workspace.packageContextItems(true);
+					Workspace.packageContextItems();
 					break;
 				case 'requestWH':
 					const phrase = data.phrase;

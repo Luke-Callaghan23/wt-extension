@@ -237,3 +237,7 @@ async function activateImpl (context: vscode.ExtensionContext) {
 		});
 	}
 }
+
+export function deactivate (): Promise<void> {
+	return Workspace.packageContextItems(true);
+}

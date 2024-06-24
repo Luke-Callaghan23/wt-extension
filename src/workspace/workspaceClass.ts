@@ -9,7 +9,7 @@ import { setLastCommit } from '../gitTransactions';
 import { ReloadWatcher } from '../reloadWatcher';
 import { SynonymViewProvider } from '../synonymsWebview/synonymsView';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
-
+import * as fs from 'fs';
 
 export class Workspace {
     // Basic configuration information about the workspace
@@ -98,15 +98,21 @@ export class Workspace {
 
     private static interval: NodeJS.Timer | null = null;
     private static allowReload: number = 0;
-    static async packageContextItems (preventReloadTrigger: boolean) {
+    static async packageContextItems (useDefaultFS: boolean = false) {
         ReloadWatcher.disableReloadWatch();
-        SynonymsProvider.writeCacheToDisk();
+        const saveCache = SynonymsProvider.writeCacheToDisk(useDefaultFS);
         this.allowReload = 100;
         // Write context items to the file system before git save
         const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
         const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-        await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+        
+        if (!useDefaultFS) {
+            await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+        }
+        else {
+            fs.writeFileSync(contextUri.fsPath, contextJSON);
+        }
         if (!this.interval) {
             this.interval = setInterval(() => {
                 this.allowReload--;
@@ -118,6 +124,7 @@ export class Workspace {
                 }
             }, 10);
         }
+        return saveCache;
     }
     
 
@@ -180,7 +187,7 @@ export class Workspace {
 
         vscode.commands.registerCommand('wt.workspace.generateContextValues', async () => {
             try {
-                await Workspace.packageContextItems(true);
+                await Workspace.packageContextItems();
             }
             catch (err: any) {
                 vscode.window.showErrorMessage(`ERROR: An error occurred while generating context items: ${err.message}: ${JSON.stringify(err, null, 2)}`);

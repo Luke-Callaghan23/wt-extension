@@ -219,7 +219,7 @@ export async function changeColor(this: WordWatcher, word: WordEnrty) {
         // Update context
         const context = convertWordColorsToContextItem(this.wordColors);
         this.context.workspaceState.update('wt.wordWatcher.rgbaColors', context);
-        if (confirm) Workspace.packageContextItems(true);
+        if (confirm) Workspace.packageContextItems();
     
         for (const editor of vscode.window.visibleTextEditors) {
             this.update(editor, TimedView.findCommentedRanges(editor));

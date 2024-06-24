@@ -3,6 +3,7 @@ import { SynonymsApi } from "./synonymsApi";
 import * as extension from './../../extension';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from './../../vsconsole';
+import * as fs from 'fs';
 
 export type Definition = {
     definitions :  string[],
@@ -196,11 +197,17 @@ export class SynonymsProvider {
         } 
     }
 
-    public static async writeCacheToDisk () {
+    public static async writeCacheToDisk (useDefaultFS: boolean = false) {
         try {
             const cachePath = extension.ExtensionGlobals.workspace.synonymsCachePath;
             const cacheBuffer = extension.encoder.encode(JSON.stringify(this.cache));
-            await vscode.workspace.fs.writeFile(cachePath, cacheBuffer);
+            
+            if (!useDefaultFS) {
+                await vscode.workspace.fs.writeFile(cachePath, cacheBuffer);
+            }
+            else {
+                fs.writeFileSync(cachePath.fsPath, cacheBuffer);
+            }
             console.log("Saving cache to disk");
         }
         catch (err: any) {
