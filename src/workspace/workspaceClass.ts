@@ -7,6 +7,8 @@ import { Config, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
 import { setLastCommit } from '../gitTransactions';
 import { ReloadWatcher } from '../reloadWatcher';
+import { SynonymViewProvider } from '../synonymsWebview/synonymsView';
+import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 
 
 export class Workspace {
@@ -98,6 +100,7 @@ export class Workspace {
     private static allowReload: number = 0;
     static async packageContextItems (preventReloadTrigger: boolean) {
         ReloadWatcher.disableReloadWatch();
+        SynonymsProvider.writeCacheToDisk();
         this.allowReload = 100;
         // Write context items to the file system before git save
         const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');

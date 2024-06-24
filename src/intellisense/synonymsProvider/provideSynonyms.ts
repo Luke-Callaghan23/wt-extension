@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { SynonymsApi } from "./synonymsApi";
 import * as extension from './../../extension';
 import { Workspace } from '../../workspace/workspaceClass';
+import * as console from './../../vsconsole';
 
 export type Definition = {
     definitions :  string[],
@@ -33,13 +34,22 @@ export class SynonymsProvider {
     private static cache: CacheType;
     private static synonymsApi: SynonymsApi;
 
+    private static cacheWasUpdated: boolean = true;
     static async init (workspace: Workspace) {
         this.cache = {
             'wh': {},
             'synonymsApi': {},
         };
         this.synonymsApi = new SynonymsApi();
-        this.loadCacheFromDisk(workspace);
+        this.loadCacheFromDisk(workspace).then(() => {
+            const interval = setInterval(() => {
+                if (this.cacheWasUpdated) {
+                    this.writeCacheToDisk().then(() => {
+                        this.cacheWasUpdated = false;
+                    });
+                }
+            }, 2 * 60 * 1000);
+        });
     }
 
     private static async loadCacheFromDisk (workspace: Workspace) {
@@ -186,11 +196,12 @@ export class SynonymsProvider {
         } 
     }
 
-    private static async writeCacheToDisk () {
+    public static async writeCacheToDisk () {
         try {
             const cachePath = extension.ExtensionGlobals.workspace.synonymsCachePath;
             const cacheBuffer = extension.encoder.encode(JSON.stringify(this.cache));
             await vscode.workspace.fs.writeFile(cachePath, cacheBuffer);
+            console.log("Saving cache to disk");
         }
         catch (err: any) {
             vscode.window.showInformationMessage(`[WARN] Could not save synonyms cache because: '${err}'`);
@@ -233,7 +244,7 @@ export class SynonymsProvider {
                 result.type === 'success'
             ) {
                 this.cache[provider][word.toLocaleLowerCase().trim()] = result;
-                this.writeCacheToDisk();
+                this.cacheWasUpdated = true;
             }
 
             return result;

@@ -29,9 +29,6 @@ export class TimedView implements Packageable {
             timed.enabled = enabled;
         });
 
-        // Trigger visual updates right off the bat
-        this.triggerUpdates();
-    
         // If the active editor changed, then change the internal activeEditor value and trigger updates
         vscode.window.onDidChangeActiveTextEditor(editor => {
             setTimeout(() => {
@@ -40,7 +37,7 @@ export class TimedView implements Packageable {
         }, null, context.subscriptions);
     
         // On text document change within the editor, update decorations with throttle
-        vscode.workspace.onDidChangeTextDocument(event => {
+        vscode.workspace.onDidSaveTextDocument(event => {
             this.triggerUpdates(true);
         }, null, context.subscriptions);
 
@@ -138,7 +135,7 @@ export class TimedView implements Packageable {
                     this.doUpdates(editor, commentedRanges);
                 }
             }
-        }, 500);
+        }, 2000);
 	}
 
     private registerCommands () {
