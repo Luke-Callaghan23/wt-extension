@@ -37,7 +37,7 @@ export class TimedView implements Packageable {
         }, null, context.subscriptions);
     
         // On text document change within the editor, update decorations with throttle
-        vscode.workspace.onDidSaveTextDocument(event => {
+        vscode.workspace.onDidChangeTextDocument(event => {
             this.triggerUpdates(true);
         }, null, context.subscriptions);
 
