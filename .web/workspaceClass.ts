@@ -29,6 +29,9 @@ export class Workspace {
     public workBibleFolder: vscode.Uri;
     public scratchPadFolder: vscode.Uri;
 
+
+    public synonymsCachePath: vscode.Uri;
+
     // Returns a list of all 
     getFolders() {
         return [
@@ -121,6 +124,7 @@ export class Workspace {
         this.worldNotesPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotes.json');
         this.workBibleFolder = vscode.Uri.joinPath(extension.rootPath, `data/workBible`);
         this.scratchPadFolder = vscode.Uri.joinPath(extension.rootPath, `data/scratchPad`);
+        this.synonymsCachePath = vscode.Uri.joinPath(extension.rootPath, 'synonymsCache.json');
     }
 
     registerCommands(context: vscode.ExtensionContext): void {

@@ -1,7 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as console from './vsconsole';
+// import * as console from './vsconsole';
 import { OutlineView } from './outline/outlineView';
 import { TODOsView } from './TODO/TODOsView';
 import { WordWatcher } from './wordWatcher/wordWatcher';
@@ -44,12 +44,23 @@ export class ExtensionGlobals {
     public static recyclingBinView: RecyclingBinView;
     public static scratchPadView: ScratchPadView;
     public static workBible: WorkBible;
+	public static todoView: TODOsView;
+	public static workspace: Workspace;
 
-    public static initialize (outlineView: OutlineView, recyclingBinView: RecyclingBinView, scratchPadView: ScratchPadView, workBible: WorkBible) {
+    public static initialize (
+		outlineView: OutlineView, 
+		recyclingBinView: RecyclingBinView, 
+		scratchPadView: ScratchPadView, 
+		workBible: WorkBible,
+		todoView: TODOsView,
+		workspace: Workspace
+) {
         ExtensionGlobals.outlineView = outlineView;
         ExtensionGlobals.recyclingBinView = recyclingBinView;
         ExtensionGlobals.scratchPadView = scratchPadView;
         ExtensionGlobals.workBible = workBible;
+		ExtensionGlobals.todoView = todoView;
+		ExtensionGlobals.workspace = workspace;
 	}
 }
 
@@ -79,6 +90,10 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 
 		
 		const workBible = new WorkBible(workspace, context);
+		await workBible.initialize()
+
+		ExtensionGlobals.initialize(outline, recycleBin, scratchPad, workBible, todo, workspace);
+
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);
 
@@ -93,7 +108,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.textStyle', 'textStyle', textStyles],
 		]);
 		
-		const tabLabels = new TabLabels(outline, recycleBin, scratchPad, workBible);
+		const tabLabels = new TabLabels();
+
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
@@ -101,8 +117,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		// Initialize the file access manager
 		// Manages any accesses of .wt fragments, for various uses such as drag/drop in outline view or creating new
 		//		fragment/snips/chapters in the outline view
-		FileAccessManager.initialize(outline, recycleBin, scratchPad, workBible);
-		ExtensionGlobals.initialize(outline, recycleBin, scratchPad, workBible);
+		FileAccessManager.initialize();
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(), 

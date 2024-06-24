@@ -7,21 +7,12 @@ import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
-import { WorkBible } from '../workBible/workBible';
+import { Note, WorkBible } from '../workBible/workBible';
 import { vagueNodeSearch } from '../help';
 
 export class TabLabels {
-    private static outlineView: OutlineView;
-    private static recyclingBinView: RecyclingBinView;
-    private static scratchPadView: ScratchPadView;
-    private static workBible: WorkBible;
-
     public static enabled: boolean = true;
-        constructor (outlineView: OutlineView, recyclingBinView: RecyclingBinView, scratchPadView: ScratchPadView, workBible: WorkBible) {
-        TabLabels.outlineView = outlineView;
-        TabLabels.recyclingBinView = recyclingBinView;
-        TabLabels.scratchPadView = scratchPadView;
-        TabLabels.workBible = workBible;
+        constructor () {
         this.registerCommands();
 
         vscode.workspace.onDidChangeConfiguration((e) => {
@@ -34,13 +25,22 @@ export class TabLabels {
     private registerCommands() {
 
         const renameFromUri = async (uri: vscode.Uri) => {
-            type ViewSource = Renamable<OutlineNode>;
-            let nodeResult: [ ViewSource, OutlineNode ]
+            type ViewSource = Renamable<OutlineNode | Note>;
+            let nodeResult: [ ViewSource, OutlineNode | Note ]
             try {
                 nodeResult = await Promise.any([
-                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) => TabLabels.outlineView.getTreeElementByUri(uri).then(node => node ? resolve([ TabLabels.outlineView, node ]) : reject())),
-                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  TabLabels.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ TabLabels.recyclingBinView, node ]) : reject())),
-                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  TabLabels.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ TabLabels.scratchPadView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) => extension.ExtensionGlobals.outlineView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.outlineView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.recyclingBinView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.scratchPadView, node ]) : reject())),
+                    new Promise<[ ViewSource, Note ]>((resolve, reject) =>  {
+                        const note = extension.ExtensionGlobals.workBible.getNote(uri);
+                        if (note) {
+                            resolve([ extension.ExtensionGlobals.workBible, note ]);
+                        } 
+                        else {
+                            reject();
+                        }
+                    })
                 ]);
             }
             catch (err: any) {
@@ -77,8 +77,11 @@ export class TabLabels {
     
                 const uri = tab.input.uri;
                 if (!(uri.fsPath.endsWith('.wt') || uri.fsPath.endsWith('.wtnote'))) continue;
+
+                console.log(`Tab labels: inspecting ${uri.fsPath}`);
     
-                const { node: nodeOrNote, source } = await vagueNodeSearch(uri, TabLabels.outlineView, TabLabels.recyclingBinView, TabLabels.scratchPadView, TabLabels.workBible);
+                const { node: nodeOrNote, source } = await vagueNodeSearch(uri, extension.ExtensionGlobals.outlineView, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.scratchPadView, extension.ExtensionGlobals.workBible);
+                console.log(`Tab labels for ${uri.fsPath}:\n  node=${nodeOrNote}\n  source='${source}'`);
                 if (!nodeOrNote || !source) continue;
 
                 const node: { data: { ids: { display: string } } } = nodeOrNote instanceof OutlineNode ?
@@ -110,6 +113,7 @@ export class TabLabels {
                     label = `(notes) ${node.data.ids.display}`;
                 }
                 else throw 'unreachable';
+                console.log(`Tab labels for ${uri.fsPath}: label='${label}'`);
                 newPatterns['*/' + relativePath] = label;
             }
         }
@@ -134,6 +138,10 @@ export class TabLabels {
                 ? finalLabel.substring(0, maxTabLabel) + "..."
                 : finalLabel;
         });
+
+        // Patterns for the color picker
+        finalPatterns['*/tmp/**.wt'] = 'Example Fragment';
+        finalPatterns['*/tmp/**.css'] = 'Color Picker';
 
         return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);
     }
