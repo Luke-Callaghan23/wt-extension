@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 import { FileAccessManager } from '../../fileAccesses';
-import * as vscodeUris from 'vscode-uri';
 import { getUsableFileName } from './createNodes';
 import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../help';
 
@@ -455,7 +454,7 @@ export async function paste (
         //      a fragment in the same location as the original
         const newFileName = getUsableFileName('fragment', true);
         const destinationContainerUri = dest.data.ids.uri;
-        const destinationFullUri = vscodeUris.Utils.joinPath(destinationContainerUri, newFileName);
+        const destinationFullUri = vscode.Uri.joinPath(destinationContainerUri, newFileName);
         
         // Do the copy operation after reading .config from disk
         const copyPromise = vscode.workspace.fs.copy(src.data.ids.uri, destinationFullUri);
@@ -520,7 +519,7 @@ export async function paste (
         // Create the folder which will contain the contents of the copied snip
         const newFileName = getUsableFileName('snip');
         const destinationContainerUri = dest.data.ids.uri;
-        const destinationFullUri = vscodeUris.Utils.joinPath(destinationContainerUri, newFileName);
+        const destinationFullUri = vscode.Uri.joinPath(destinationContainerUri, newFileName);
         await vscode.workspace.fs.createDirectory(destinationFullUri);
         
         // Create the configuration item for this new snip
@@ -568,7 +567,7 @@ export async function paste (
         }
 
         // Write the .config for snip fragments to disk
-        const snipsFragmentsDotConfigUri = vscodeUris.Utils.joinPath(destinationFullUri, '.config');
+        const snipsFragmentsDotConfigUri = vscode.Uri.joinPath(destinationFullUri, '.config');
         const writeSnipFragmentsDotConfig = writeDotConfig(snipsFragmentsDotConfigUri, snipFragmentConfig);
         awaitables.push(writeSnipFragmentsDotConfig);
 
@@ -598,12 +597,12 @@ export async function paste (
         // Create the folder which will contain the contents of the copied chapter
         const newFileName = getUsableFileName('chapter');
         const destinationContainerUri = dest.data.ids.uri;
-        const copiedChapterFullUri = vscodeUris.Utils.joinPath(destinationContainerUri, newFileName);
+        const copiedChapterFullUri = vscode.Uri.joinPath(destinationContainerUri, newFileName);
         await vscode.workspace.fs.createDirectory(copiedChapterFullUri);
 
         // Create the inner snips container which will hold all the copied chapters'
         //      snips content
-        const copiedChapterSnipsContainerUri = vscodeUris.Utils.joinPath(copiedChapterFullUri, 'snips');
+        const copiedChapterSnipsContainerUri = vscode.Uri.joinPath(copiedChapterFullUri, 'snips');
         await vscode.workspace.fs.createDirectory(copiedChapterSnipsContainerUri);
         
         // Create the configuration item for this new chapter
@@ -690,12 +689,12 @@ export async function paste (
         }
 
         // Write the .config for chapter fragments to disk
-        const chapterFragmentsDotConfigUri = vscodeUris.Utils.joinPath(copiedChapterFullUri, '.config');
+        const chapterFragmentsDotConfigUri = vscode.Uri.joinPath(copiedChapterFullUri, '.config');
         const writeChapterFragmentsDotConfigPromise = writeDotConfig(chapterFragmentsDotConfigUri, chapterFragmentsConfig);
         awaitables.push(writeChapterFragmentsDotConfigPromise);
 
         // Write the .config for the chapter snips
-        const chapterSnipsDotConfigUri = vscodeUris.Utils.joinPath(copiedChapterSnipsContainerUri, '.config');
+        const chapterSnipsDotConfigUri = vscode.Uri.joinPath(copiedChapterSnipsContainerUri, '.config');
         const writeChapterSnipsDotConfigPromise = writeDotConfig(chapterSnipsDotConfigUri, chapterSnipsConfig);
         awaitables.push(writeChapterSnipsDotConfigPromise);
 
@@ -724,7 +723,7 @@ export async function paste (
     }
     
     // Read configuration info for pasted content
-    const destinationConfigUri = vscodeUris.Utils.joinPath(
+    const destinationConfigUri = vscode.Uri.joinPath(
         pasteData.destination.data.ids.uri,
         '.config'
     );
