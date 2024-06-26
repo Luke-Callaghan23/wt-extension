@@ -1376,7 +1376,7 @@
 				"win": "shift+'",
 				"linux": "shift+'",
 				"mac": "shift+'",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.scratchPad.renameFile",
@@ -1460,196 +1460,196 @@
 				"win": "ctrl+alt+f",
 				"linux": "ctrl+alt+f",
 				"mac": "cmd+alt+f",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.save",
 				"win": "ctrl+alt+s",
 				"linux": "ctrl+alt+s",
 				"mac": "cmd+alt+s",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.saveAll",
 				"win": "ctrl+alt+shift+s",
 				"linux": "ctrl+alt+shift+s",
 				"mac": "cmd+alt+shift+s",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.italisize",
 				"win": "ctrl+alt+i",
 				"linux": "ctrl+alt+i",
 				"mac": "cmd+alt+i",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.commasize",
 				"win": "ctrl+alt+,",
 				"linux": "ctrl+alt+,",
 				"mac": "cmd+alt+,",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.bold",
 				"win": "ctrl+alt+b",
 				"linux": "ctrl+alt+b",
 				"mac": "cmd+alt+b",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.strikethrough",
 				"win": "ctrl+alt+d",
 				"linux": "ctrl+alt+d",
 				"mac": "cmd+alt+d",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.underline",
 				"win": "ctrl+alt+u",
 				"linux": "ctrl+alt+u",
 				"mac": "cmd+alt+u",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.emdash",
 				"win": "ctrl+alt+-",
 				"linux": "ctrl+alt+-",
 				"mac": "cmd+alt+-",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.emdashes",
 				"win": "ctrl+alt+shift+-",
 				"linux": "ctrl+alt+shift+-",
 				"mac": "cmd+alt+shift+-",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.word.forward",
 				"win": "ctrl+left",
 				"linux": "ctrl+left",
 				"mac": "cmd+left",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.word.backward",
 				"win": "ctrl+right",
 				"linux": "ctrl+right",
 				"mac": "cmd+right",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward",
 				"win": "alt+[",
 				"linux": "alt+[",
 				"mac": "alt+[",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.sentence.backward",
 				"win": "alt+]",
 				"linux": "alt+]",
 				"mac": "alt+]",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.fragment.forward",
 				"win": "ctrl+[",
 				"linux": "ctrl+[",
 				"mac": "cmd+[",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.fragment.backward",
 				"win": "ctrl+]",
 				"linux": "ctrl+]",
 				"mac": "cmd+]",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.forward",
 				"win": "ctrl+alt+[",
 				"linux": "ctrl+alt+[",
 				"mac": "cmd+alt+[",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.backward",
 				"win": "ctrl+alt+]",
 				"linux": "ctrl+alt+]",
 				"mac": "cmd+alt+]",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.word.forward.shift",
 				"win": "ctrl+shift+left",
 				"linux": "ctrl+shift+left",
 				"mac": "cmd+shift+left",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.word.backward.shift",
 				"win": "ctrl+shift+right",
 				"linux": "ctrl+shift+right",
 				"mac": "cmd+shift+right",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward.shift",
 				"win": "alt+shift+[",
 				"linux": "alt+shift+[",
 				"mac": "alt+shift+[",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.sentence.backward.shift",
 				"win": "alt+shift+]",
 				"linux": "alt+shift+]",
 				"mac": "alt+shift+]",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.fragment.forward.shift",
 				"win": "ctrl+shift+[",
 				"linux": "ctrl+shift+[",
 				"mac": "cmd+shift+[",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.fragment.backward.shift",
 				"win": "ctrl+shift+]",
 				"linux": "ctrl+shift+]",
 				"mac": "cmd+shift+]",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.forward.shift",
 				"win": "ctrl+alt+shift+[",
 				"linux": "ctrl+alt+shift+[",
 				"mac": "cmd+alt+shift+[",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.backward.shift",
 				"win": "ctrl+alt+shift+]",
 				"linux": "ctrl+alt+shift+]",
 				"mac": "cmd+alt+shift+]",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.delete.forward",
 				"win": "ctrl+backspace",
 				"linux": "ctrl+backspace",
 				"mac": "cmd+backspace",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.delete.backward",
 				"win": "ctrl+delete",
 				"linux": "ctrl+delete",
 				"mac": "cmd+delete",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.intellisense.synonyms.prevDefinition",
@@ -1684,49 +1684,49 @@
 				"win": "ctrl+shift+/",
 				"linux": "ctrl+shift+/",
 				"mac": "cmd+shift+/",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.todo.commentFragment",
 				"win": "alt+shift+/",
 				"linux": "alt+shift+/",
 				"mac": "alt+shift+/",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.todo.commentParagraph",
 				"win": "ctrl+alt+shift+/",
 				"linux": "ctrl+alt+shift+/",
 				"mac": "cmd+alt+shift+/",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.highlightSentence",
 				"win": "ctrl+shift+h",
 				"linux": "ctrl+shift+h",
 				"mac": "cmd+shift+h",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.highlightFragment",
 				"win": "alt+shift+h",
 				"linux": "alt+shift+h",
 				"mac": "alt+shift+h",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.highlightParagraph",
 				"win": "ctrl+alt+shift+h",
 				"linux": "ctrl+alt+shift+h",
 				"mac": "cmd+alt+shift+h",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.highlightExpand",
 				"win": "ctrl+alt+h",
 				"linux": "ctrl+alt+h",
 				"mac": "cmd+alt+h",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			}
 		],
 		"languages": [
