@@ -183,6 +183,33 @@ async function activateImpl (context: vscode.ExtensionContext) {
 		vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.importsWalkthrough`, false);
 	});
 
+
+	vscode.commands.registerCommand("wt.example", async () => {
+
+		const cap: vscode.QuickPickItem = {
+			label: "Alpha Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliett Kilo Lima Mike November Oscar Papa Quebec Romeo Sierra Tango Uniform Victor Whiskey X-ray Yankee Zulu",
+			// description: "Alpha Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliett Kilo Lima Mike November Oscar Papa Quebec Romeo Sierra Tango Uniform Victor Whiskey X-ray Yankee Zulu",
+			// detail: "Alpha Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliett Kilo Lima Mike November Oscar Papa Quebec Romeo Sierra Tango Uniform Victor Whiskey X-ray Yankee Zulu",
+			kind: vscode.QuickPickItemKind.Default,
+		};
+
+		const lower: vscode.QuickPickItem = {
+			label: "alpha bravo charlie delta echo foxtrot golf hotel india juliett kilo lima mike november oscar papa quebec romeo sierra tango uniform victor whiskey x-ray yankee zulu",
+			// description: "alpha bravo charlie delta echo foxtrot golf hotel india juliett kilo lima mike november oscar papa quebec romeo sierra tango uniform victor whiskey x-ray yankee zulu",
+			// detail: "alpha bravo charlie delta echo foxtrot golf hotel india juliett kilo lima mike november oscar papa quebec romeo sierra tango uniform victor whiskey x-ray yankee zulu",
+			kind: vscode.QuickPickItemKind.Default,
+		};
+
+		const result = await vscode.window.showQuickPick([
+			cap,
+			lower
+		], {
+			canPickMany: false,
+			title: "Example",
+			matchOnDescription: true, matchOnDetail: true
+		});
+	})
+
 	// Load the root path of file system where the extension was loaded
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
 		? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');

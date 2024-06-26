@@ -262,6 +262,10 @@
 		},
 		"commands": [
 			{
+				"command": "wt.example",
+				"title": "Writing Tool: Example"
+			},
+			{
 				"command": "wt.convert",
 				"title": "Writing Tool: Convert to New File names"
 			},
@@ -1804,6 +1808,10 @@
 				"linux": "ctrl+alt+h",
 				"mac": "cmd+alt+h",
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+			},
+			{
+				"command": "wt.example",
+				"win": "shift+f4"
 			}
 		],
 		"languages": [
