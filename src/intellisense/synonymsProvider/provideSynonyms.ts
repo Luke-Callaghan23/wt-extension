@@ -255,7 +255,6 @@ export class SynonymsProvider {
                 'type' in result &&
                 result.type === 'success'
             ) {
-                console.log(this.cache);
                 this.cache[provider][word.toLocaleLowerCase().trim()] = result;
                 this.cacheWasUpdated = true;
             }
