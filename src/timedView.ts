@@ -135,7 +135,7 @@ export class TimedView implements Packageable {
                     this.doUpdates(editor, commentedRanges);
                 }
             }
-        }, 2000);
+        }, 250);
 	}
 
     private registerCommands () {
