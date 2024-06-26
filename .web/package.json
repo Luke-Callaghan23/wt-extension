@@ -1365,6 +1365,13 @@
 		},
 		"keybindings": [
 			{
+				"command": "wt.tabLabels.renameActiveTab",
+				"win": "shift+f2",
+				"linux": "shift+f2",
+				"mac": "shift+f2",
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+			},
+			{
 				"command": "wt.searchFiles",
 				"win": "ctrl+p",
 				"linux": "ctrl+p",
