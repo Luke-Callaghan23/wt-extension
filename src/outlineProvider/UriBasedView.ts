@@ -63,7 +63,8 @@ export class UriBasedView<T extends HasGetUri> {
 	async getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: T, filter?: boolean): Promise<T | null> {
 		// If there is not targeted key, then assume that the caller is targeting
 		//		the entire tree
-		if (!targetUri) {
+		if (!targetUri || targetUri.fsPath === this.rootNodes[0].getUri().fsPath) {
+			vsconsole.log(`[${this.constructor.name}] Root node hit!`);
 			return this.rootNodes[0];
 		}
 		
@@ -72,10 +73,10 @@ export class UriBasedView<T extends HasGetUri> {
 		}
 	
 		if (targetUri.fsPath in this.nodeMap) {
-			vsconsole.log("Node map hit!");
+			vsconsole.log(`[${this.constructor.name}] Node map hit!`);
 			return this.nodeMap[targetUri.fsPath];
 		}
-		vsconsole.log(`Node map miss for target uri: ${targetUri.fsPath}`);
+		vsconsole.log(`[${this.constructor.name}] Node map miss for target uri: ${targetUri.fsPath}`);
 		
 		const insertIntoNodeMap = (node: HasGetUri, uri: string) => {
 			this.nodeMap[uri] = node as T;
