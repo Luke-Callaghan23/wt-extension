@@ -23,7 +23,8 @@ export async function generalMoveNode (
     recycleView: UriBasedView<OutlineNode>,
     outlineView: OutlineTreeProvider<TreeNode>,
     moveOffset: number,
-    overrideDestination: TreeNode | null
+    overrideDestination: TreeNode | null,
+    rememberedMoveDecision: 'Reorder' | 'Insert' | null
 ): Promise<MoveNodeResult> {
     const newParentNode = newParent as OutlineNode;
     const newParentType = newParentNode.data.ids.type;
@@ -34,7 +35,7 @@ export async function generalMoveNode (
     
     const thisAllowedMoves = allowedMoves[moverType];
     if (!thisAllowedMoves.find(allowed => allowed === newParentType)) {
-        return { moveOffset: -1, effectedContainers: [], createdDestination: null };
+        return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
     }
 
     let chapterDestination: DestinationResult | undefined;
@@ -48,7 +49,8 @@ export async function generalMoveNode (
             operation, this, 
             recycleView, outlineView,
             newParentType, newParentNode, 
-            moveOffset
+            moveOffset,
+            rememberedMoveDecision
         );
         if (chapterMoveResult.kind === 'move') {
             return chapterMoveResult.result;
@@ -60,21 +62,23 @@ export async function generalMoveNode (
     
 
     const destinationResult = chapterDestination || await determineDestinationContainer(
-        moverType, newParentType, 
+        this, moverType, newParentType, 
         outlineView, newParent, 
         newParentNode, newParentUri, 
-        overrideDestination
+        overrideDestination,
+        rememberedMoveDecision
     );
-    if (destinationResult === null) return { moveOffset: -1, effectedContainers: [], createdDestination: null };
-    const { destinationContainer, newOverride } = destinationResult;
+    if (destinationResult === null) return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
+    const { destinationContainer, newOverride, rememberedMoveDecision: moveDecision } = destinationResult;
 
 
     if (operation === 'recover') {
-        const swapResult = await handleContainerSwap('recover', this, outlineView, recycleView, destinationContainer);
+        const swapResult = await handleContainerSwap('recover', this, outlineView, recycleView, destinationContainer, moveDecision);
         return { 
             moveOffset: swapResult.moveOffset, 
             createdDestination: newOverride || null,
-            effectedContainers: swapResult.effectedContainers 
+            effectedContainers: swapResult.effectedContainers,
+            rememberedMoveDecision: moveDecision,
         };
     }
 
@@ -82,14 +86,15 @@ export async function generalMoveNode (
     //      not actually moving the node anywhere, we are just changing the internal ordering
     // This is an entirely separate set of logic than moving to a different container
     if (destinationContainer.getUri().toString() === moverParentUri.toString()) {
-        return handleInternalContainerReorder(this, destinationContainer, newParentNode, moveOffset);
+        return handleInternalContainerReorder(this, destinationContainer, newParentNode, moveOffset, rememberedMoveDecision);
     }
 
     try {
         const swapResult = await handleContainerSwap(
             operation, this, 
             outlineView, outlineView as any as UriBasedView<OutlineNode>,
-            destinationContainer
+            destinationContainer,
+            moveDecision
         );
 
         // Add the new override's parent to the effected containers if that container exists (and its parent does as well)
@@ -104,11 +109,12 @@ export async function generalMoveNode (
         return { 
             moveOffset: swapResult.moveOffset, 
             createdDestination: newOverride || null,
-            effectedContainers: effectedContainers
+            effectedContainers: effectedContainers,
+            rememberedMoveDecision: moveDecision
         };
     }
     catch (e) {
         vscode.window.showErrorMessage(`Error: unable to move fragment file: ${e}`);
-        return { moveOffset: 0, createdDestination: null, effectedContainers: [] };
+        return { moveOffset: 0, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
     }
 }

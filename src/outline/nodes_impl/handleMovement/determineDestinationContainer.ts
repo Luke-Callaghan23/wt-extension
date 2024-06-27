@@ -7,13 +7,15 @@ import { DestinationResult } from './common';
 
 
 export async function determineDestinationContainer (
+    mover: TreeNode,
     moverType: ResourceType,
     newParentType: ResourceType,
     provider: OutlineTreeProvider<TreeNode>,
     newParent: TreeNode, 
     newParentNode: OutlineNode,
     newParentUri: vscode.Uri,
-    overrideDestination: TreeNode | null
+    overrideDestination: TreeNode | null,
+    rememberedMoveDecision: 'Reorder' | 'Insert' | null
 ): Promise<DestinationResult | null> {
 
     let newOverride: OutlineNode | undefined;
@@ -42,7 +44,31 @@ export async function determineDestinationContainer (
             else throw `unreachable`;
         }
         else if (newParentType === 'snip') {
-            destinationContainer = newParentNode;
+            if (mover.getParentUri().fsPath === newParentNode.getParentUri().fsPath) {
+
+                const moverON = mover as OutlineNode;
+                const npnON = newParentNode as OutlineNode;
+
+                // When mover type is a snip and destination is a snip and they are both in the same container,
+                //      then we need to determine if the user wants to nest the mover inside of the target
+                //      or if they were intending to re-order
+                const response = rememberedMoveDecision || await vscode.window.showQuickPick([ 'Reorder', 'Insert' ], {
+                    canPickMany: false,
+                    ignoreFocusOut: false,
+                    title: `Were you intending to insert '${moverON.data.ids.display}' into '${npnON.data.ids.display}' or re-order them?`
+                }) as 'Reorder' | 'Insert' | undefined;
+                if (!response || response === 'Insert') {
+                    destinationContainer = newParentNode; 
+                    rememberedMoveDecision = 'Insert';
+                }
+                else {
+                    destinationContainer = await provider.getTreeElementByUri(mover.getParentUri())! as OutlineNode;
+                    rememberedMoveDecision = 'Reorder';
+                }
+            }
+            else {
+                destinationContainer = newParentNode;
+            }
         }
         else {
             throw new Error('Not possible');
@@ -101,5 +127,6 @@ export async function determineDestinationContainer (
     return {
         destinationContainer: destinationContainer,
         newOverride: newOverride || null,
+        rememberedMoveDecision: rememberedMoveDecision,
     }
 }

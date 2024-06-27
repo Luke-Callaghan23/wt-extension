@@ -10,7 +10,8 @@ export async function handleInternalContainerReorder (
     node: OutlineNode, 
     destinationContainer: OutlineNode, 
     newParentNode: OutlineNode, 
-    moveOffset: number
+    moveOffset: number,
+    rememberedMoveDecision: 'Reorder' | 'Insert' | null
 ): Promise<MoveNodeResult> {
     // Get the .config for the container -- this contains the ordering values for both the mover
     //      and the destination item
@@ -18,7 +19,7 @@ export async function handleInternalContainerReorder (
     //      as there is no moving actually occurring)
     const containerDotConfigUri = vscode.Uri.joinPath(destinationContainer.getUri(), `.config`);
     const containerConfig = await readDotConfig(containerDotConfigUri);
-    if (!containerConfig) return { moveOffset: -1, effectedContainers: [], createdDestination: null };
+    if (!containerConfig) return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
 
     type FileInfo = {
         filename: string,
@@ -126,6 +127,6 @@ export async function handleInternalContainerReorder (
         moving.data.ids.ordering = config.ordering;
     });
 
-    return { moveOffset: off, createdDestination: null, effectedContainers: [ destinationContainer ] };
+    return { moveOffset: off, createdDestination: null, effectedContainers: [ destinationContainer ], rememberedMoveDecision: rememberedMoveDecision };
 }
 

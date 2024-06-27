@@ -18,6 +18,7 @@ export async function handleContainerSwap (
     destinationProvider: OutlineTreeProvider<TreeNode>,
     sourceProvider: UriBasedView<OutlineNode>,
     destinationContainer: OutlineNode, 
+    rememberedMoveDecision: 'Reorder' | 'Insert' | null
 ): Promise<MoveNodeResult> {
     // Old path of the node we will be moving
     const moverOriginalUri = node.getUri();
@@ -42,7 +43,7 @@ export async function handleContainerSwap (
     let movedFragmentNumber = 1000000;
     const destinationDotConfig = await readDotConfig(destinationDotConfigUri);
     {
-        if (!destinationDotConfig) return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
+        if (!destinationDotConfig) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
     
         // Find the record in the new .config file with the highest ordering
         const latestFragmentNumber = getLatestOrdering(destinationDotConfig);
@@ -60,14 +61,14 @@ export async function handleContainerSwap (
     let spliceFromContainer: boolean = false;
     if (operation === 'recover' && node.data.ids.relativePath === '') {
         const log = await RecyclingBinView.readRecycleLog();
-        if (!log) return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
+        if (!log) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
 
         const rootIndex = sourceProvider.rootNodes.findIndex(li => li.data.ids.fileName === node.data.ids.fileName);
-        if (rootIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
+        if (rootIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
         sourceProvider.rootNodes.splice(rootIndex, 1);
 
         const removeLogIndex = log.findIndex(li => li.recycleBinName === node.data.ids.fileName);
-        if (removeLogIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
+        if (removeLogIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
         log.splice(removeLogIndex, 1);
         await RecyclingBinView.writeRecycleLog(log);    
     }
@@ -76,7 +77,7 @@ export async function handleContainerSwap (
     else {
         const movedRecordTitle = await node.shiftTrailingNodesDown(sourceProvider);
         if (movedRecordTitle === '') {
-            return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
+            return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
         }
 
         // No need to splice from any containers if the operation is a scratch
@@ -166,11 +167,11 @@ export async function handleContainerSwap (
     else throw new Error(`Not possible`);
 
     if (operation === 'move' || spliceFromContainer) {
-        if (!oldParentContents) return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
+        if (!oldParentContents) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
         // Get the index of the mover in the parent's contents
         const moverUri = node.getUri().toString();
         const oldParentIndex = oldParentContents.findIndex(node => node.getUri().toString() === moverUri);
-        if (oldParentIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
+        if (oldParentIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
     
         // Remove this from parent
         oldParentContents.splice(oldParentIndex, 1);
@@ -181,5 +182,5 @@ export async function handleContainerSwap (
         containers.push(oldParentNode);
     }
 
-    return { moveOffset: 0, createdDestination: null, effectedContainers: containers };
+    return { moveOffset: 0, createdDestination: null, effectedContainers: containers, rememberedMoveDecision: rememberedMoveDecision };
 }

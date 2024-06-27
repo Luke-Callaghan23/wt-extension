@@ -17,6 +17,7 @@ export async function chapterMove (
     newParentType: ResourceType,
     newParent: OutlineNode, 
     off: number,
+    rememberedMoveDecision: 'Reorder' | 'Insert' | null
 ): Promise<ChapterMoveResult> {
 
     let destinationParent: OutlineNode | undefined;
@@ -30,6 +31,7 @@ export async function chapterMove (
                 result: {
                     destinationContainer: ((outlineView.rootNodes[0] as OutlineNode).data as RootNode).chapters,
                     newOverride: null,
+                    rememberedMoveDecision: rememberedMoveDecision,
                 }
             };
         }
@@ -47,6 +49,7 @@ export async function chapterMove (
             result: {
                 destinationContainer: ((outlineView.rootNodes[0] as OutlineNode).data as RootNode).chapters,
                 newOverride: null,
+                rememberedMoveDecision: rememberedMoveDecision,
             }
         } 
     }
@@ -77,7 +80,7 @@ export async function chapterMove (
     const chapterNode = node.data as ChapterNode;    
     const result = await vscode.window.showInformationMessage(`Are you sure you want to convert chapter '${chapterNode.ids.display}' into a snip?  This is an irreversible operation.  (And it takes quite a while).`, { modal: true }, "Yes", "No");
     if (result === 'No' || result === undefined) {
-        return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null } };
+        return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
     }
     
     // To convert the above content into a snip, we need to make a new snip to represent the chapter
@@ -86,7 +89,7 @@ export async function chapterMove (
         preventRefresh: true,
         skipFragment: true,
     });
-    if (chapterSnipUri === null) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null } };
+    if (chapterSnipUri === null) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
     const chapterSnip = await outlineView.getTreeElementByUri(chapterSnipUri)! as OutlineNode;
     
     
@@ -97,9 +100,10 @@ export async function chapterMove (
         let { moveOffset, createdDestination, effectedContainers } = await moveFragment.generalMoveNode(
             operation, chapterSnip, 
             recycleView, outlineView,
-            off, null
+            off, null,
+            rememberedMoveDecision,
         );
-        if (moveOffset === -1) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null } };
+        if (moveOffset === -1) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
     }
 
     // Then create a snip inside of the newly created snip to represent the snips container of the moved chapter
@@ -108,7 +112,7 @@ export async function chapterMove (
         preventRefresh: true,
         skipFragment: true,
     });
-    if (chapterSnipContainerUri === null) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null } };
+    if (chapterSnipContainerUri === null) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
     const chapterSnipContainer = await outlineView.getTreeElementByUri(chapterSnipContainerUri)! as OutlineNode;
 
     // Then move every single snip from the moved chapter into the converted snip's snip container
@@ -118,9 +122,9 @@ export async function chapterMove (
         let { moveOffset, createdDestination, effectedContainers } = await moveSnip.generalMoveNode(
             operation, chapterSnipContainer, 
             recycleView, outlineView, 
-            off, null
+            off, null, rememberedMoveDecision
         );
-        if (moveOffset === -1) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null } };
+        if (moveOffset === -1) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
     }
 
     // Remove the trace of the old chapter from the file system
@@ -135,6 +139,6 @@ export async function chapterMove (
 
     return { 
         kind: 'move',
-        result: { moveOffset: acc, createdDestination: null, effectedContainers: [ (outlineView.rootNodes[0] as OutlineNode) ] }
+        result: { moveOffset: acc, createdDestination: null, effectedContainers: [ (outlineView.rootNodes[0] as OutlineNode) ], rememberedMoveDecision }
     };
 };

@@ -35,12 +35,14 @@ export const allowedMoves: { [index: string]: ResourceType[] } = {
 export type MoveNodeResult = {
     moveOffset: number,
     effectedContainers: OutlineNode[],
-    createdDestination: OutlineNode | null
+    createdDestination: OutlineNode | null,
+    rememberedMoveDecision: 'Reorder' | 'Insert' | null
 }
 
 export type DestinationResult = {
     destinationContainer: OutlineNode;
     newOverride: OutlineNode | null;
+    rememberedMoveDecision: 'Reorder' | 'Insert' | null
 }
 
 export type ChapterMoveResult = {

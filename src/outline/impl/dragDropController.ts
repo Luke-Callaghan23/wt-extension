@@ -84,6 +84,8 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
         // Move all the valid nodes into the target
         if (filteredOutlineParents.length <= 0) continue;
 
+        let rememberedMoveDecision: 'Reorder' | 'Insert' | null = null;
+
         // Offset tells how many nodes have moved downwards in the same container so far
         // In the case where multiple nodes are moving downwards at once, it lets
         //		.moveNode know how many nodes have already moved down, and 
@@ -112,11 +114,14 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
             // Do the move on the target destination with the selected operation
             const res: MoveNodeResult = await mover.generalMoveNode(
                 actualOperation, targ, sourceProvider,				// the source is either the outline tree for 'move's or the recycling bin for 'recovers'
-                this, offset, overrideDestination
+                this, offset, overrideDestination,
+                rememberedMoveDecision,
             );
-            const { moveOffset, createdDestination, effectedContainers } = res;
+            const { moveOffset, createdDestination, effectedContainers, rememberedMoveDecision: moveDecision } = res;
             if (moveOffset === -1) break;
             offset += moveOffset;
+
+            rememberedMoveDecision = moveDecision || rememberedMoveDecision;
 
             // If there was a destination created by the latest move, then use that destination as the override destination for 
             //		all future moves in this function call

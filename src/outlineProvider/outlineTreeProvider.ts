@@ -25,7 +25,8 @@ export abstract class TreeNode {
 		recycleView: UriBasedView<TreeNode>,
 		outlineView: OutlineTreeProvider<TreeNode>,
 		moveOffset: number,
-		overrideDestination: TreeNode | null
+		overrideDestination: TreeNode | null,
+		rememberedMoveDecision: 'Reorder' | 'Insert' | null
 	): Promise<MoveNodeResult>;
 }
 

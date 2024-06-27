@@ -44,9 +44,10 @@ export async function containerMove (
             recycleView,
             outlineView,
             off,
-            null
+            null,
+            'Insert'
         );
-        if (moveOffset === -1) return { moveOffset: -1, effectedContainers: [], createdDestination: null };
+        if (moveOffset === -1) return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
         acc += moveOffset;
 
         for (const container of effectedContainers) {
@@ -56,5 +57,5 @@ export async function containerMove (
     
     const allEffectedContainers = Object.entries(effectedContainersUriMap)
         .map(([ _, container ]) => container);
-    return { moveOffset: acc, createdDestination: null, effectedContainers: allEffectedContainers };
+    return { moveOffset: acc, createdDestination: null, effectedContainers: allEffectedContainers, rememberedMoveDecision: null };
 };

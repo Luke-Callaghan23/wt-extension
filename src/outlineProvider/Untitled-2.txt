@@ -1,0 +1,12 @@
+src\Buffer\bufferSource.ts
+src\Fetch\fetchSource.ts
+src\extension.ts
+src\web
+src\gitTransactions.ts
+src\workspace\workspaceClass.ts
+src\tabLabels\tabLabels.ts
+src\intellisense\synonymsProvider\provideSynonyms.ts 
+package-lock.json
+package.json
+tsconfig.json
+.vscode
