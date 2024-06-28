@@ -66,7 +66,6 @@ export class TabLabels {
 
     static async assignNamesForOpenTabs () {
 
-
         const configuration = workspace.getConfiguration();
         configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
     
