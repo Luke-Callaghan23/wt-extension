@@ -217,6 +217,7 @@ export async function emDashes () {
     
         let diff: number = 1;
 
+        
         // Check if the character before the cursor is a space
         // If so, then move the cursor back to before the space and only insert ',' instead of ', '
         const startOffset = document.offsetAt(selection.start);
@@ -228,17 +229,24 @@ export async function emDashes () {
         }
         if (text[startOffset] === ' ') startStr = !selection.isEmpty ? ' --' : ' -- ';
         
-        // Check if the character before the cursor is a space
-        // If so, then insert only insert ' -- ' instead of ', '
-        diff = 1;
         const endOffset = document.offsetAt(selection.end);
-        while (text[endOffset - diff] === ' ') {
-            const prev = document.positionAt(endOffset - diff);
-            endPos = prev;
-            endStr = ' --';
-            diff++;
+
+        // If the substring after the cursor is an emdash, then the surroundSelectionWith function will be moving
+        //      the cursor to after the em dash.  In which case we don't want to move or edit the 
+        //      end selection at all
+        const beforeEmDash = text.substring(endOffset, endOffset+4) === ' -- ';
+        if (beforeEmDash) {
+            // Check if the character before the cursor is a space
+            // If so, then insert only insert ' -- ' instead of ', '
+            diff = 1;
+            while (text[endOffset - diff] === ' ') {
+                const prev = document.positionAt(endOffset - diff);
+                endPos = prev;
+                endStr = ' --';
+                diff++;
+            }
+            if (text[endOffset] === ' ') endStr = ' --';
         }
-        if (text[endOffset] === ' ') endStr = ' --';
     
     
         newSelections.push(new vscode.Selection(startPos, endPos));
