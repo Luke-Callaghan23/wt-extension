@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
-import { ContainerNode, OutlineNode, RootNode } from '../nodes_impl/outlineNode';
+import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import { CopiedSelection } from './copyPaste';
 import { DiskContextType } from '../../workspace/workspace';
+import { ConfigFileInfo, readDotConfig, writeDotConfig } from '../../help';
 
 
 // Register all the commands needed for the outline view to work
@@ -60,8 +61,106 @@ export function registerCommands (this: OutlineView) {
         this.newFragment(resource);
     });
 
-    vscode.commands.registerCommand("wt.outline.moveUp", (resource) => this.moveUp(resource));
-    vscode.commands.registerCommand("wt.outline.moveDown", (resource) => this.moveDown(resource));
+    vscode.commands.registerCommand("wt.outline.moveUp", async (resource: OutlineNode) => {
+        const parent = await this.getTreeElementByUri(resource.data.ids.parentUri);
+        if (!parent) return;
+
+        let collection: OutlineNode[];
+        switch (parent.data.ids.type) {
+            case 'chapter': {
+                collection = (parent.data as ChapterNode).textData;
+            } break;
+            case 'container': case 'snip': {
+                collection = (parent.data as ContainerNode | SnipNode).contents;
+            } break;
+            case 'root': 
+            case 'fragment': 
+                return null;
+        }
+
+        let movers: OutlineNode[];
+        if (this.view.selection.length > 0) {
+            let resourceInList = false;
+            const filteredSelection = this.view.selection.filter(sel => {
+                if (sel.data.ids.uri.fsPath === resource.data.ids.uri.fsPath) {
+                    resourceInList = true;
+                }
+                return sel.data.ids.parentUri.fsPath === resource.data.ids.parentUri.fsPath;
+            });
+            if (!resourceInList) {
+                filteredSelection.push(resource);
+            }
+            filteredSelection.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+            movers = filteredSelection;
+        }
+        else {
+            movers = [ resource ];
+        }
+
+        let target: OutlineNode;
+        if (movers[0].data.ids.ordering !== 0) {
+            const above = collection.find(node => node.data.ids.ordering === movers[0].data.ids.ordering - 1);
+            if (!above) return;
+            target = above;
+        }
+        else return;
+
+        
+        const dataTransfer = new vscode.DataTransfer();
+        dataTransfer.set('application/vnd.code.tree.outline', new vscode.DataTransferItem(movers))
+        return this.handleDrop(target, dataTransfer, {} as vscode.CancellationToken);
+    });
+
+
+    vscode.commands.registerCommand("wt.outline.moveDown", async (resource: OutlineNode) => {
+        const parent = await this.getTreeElementByUri(resource.data.ids.parentUri);
+        if (!parent) return;
+
+        let collection: OutlineNode[];
+        switch (parent.data.ids.type) {
+            case 'chapter': {
+                collection = (parent.data as ChapterNode).textData;
+            } break;
+            case 'container': case 'snip': {
+                collection = (parent.data as ContainerNode | SnipNode).contents;
+            } break;
+            case 'root': 
+            case 'fragment': 
+                return null;
+        }
+
+        let movers: OutlineNode[];
+        if (this.view.selection.length > 0) {
+            let resourceInList = false;
+            const filteredSelection = this.view.selection.filter(sel => {
+                if (sel.data.ids.uri.fsPath === resource.data.ids.uri.fsPath) {
+                    resourceInList = true;
+                }
+                return sel.data.ids.parentUri.fsPath === resource.data.ids.parentUri.fsPath;
+            });
+            if (!resourceInList) {
+                filteredSelection.push(resource);
+            }
+            filteredSelection.sort((a, b) => b.data.ids.ordering - a.data.ids.ordering);
+            movers = filteredSelection;
+        }
+        else {
+            movers = [ resource ];
+        }
+
+        let target: OutlineNode;
+        if (movers[movers.length - 1].data.ids.ordering !== collection.length - 1) {
+            const below = collection.find(node => node.data.ids.ordering === movers[0].data.ids.ordering + 1);
+            if (!below) return;
+            target = below;
+        }
+        else return;
+
+        
+        const dataTransfer = new vscode.DataTransfer();
+        dataTransfer.set('application/vnd.code.tree.outline', new vscode.DataTransferItem(movers))
+        return this.handleDrop(target, dataTransfer, {} as vscode.CancellationToken);
+    });
     
     vscode.commands.registerCommand("wt.outline.removeResource", (resource) => {
         let targets: OutlineNode[];

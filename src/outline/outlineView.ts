@@ -6,7 +6,6 @@ import * as vscode from 'vscode';
 import { InitializeNode, initializeOutline } from "../outlineProvider/initialize";
 import { OutlineNode, ContainerNode, RootNode } from "./nodes_impl/outlineNode";
 import { OutlineTreeProvider } from "../outlineProvider/outlineTreeProvider";
-import * as reorderFunctions from './impl/reorderNodes';
 import * as removeFunctions from './impl/removeNodes';
 import * as createFunctions from './impl/createNodes';
 import * as renameFunctions from './impl/renameNodes';
@@ -22,11 +21,6 @@ import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { handleDragController, handleDropController } from './impl/dragDropController';
 
 export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Renamable<OutlineNode> {
-
-    // Re ordering nodes in the tree
-	moveUp = reorderFunctions.moveUp;
-	moveDown = reorderFunctions.moveDown;
-
     // Deleting nodes
 	removeResource = removeFunctions.removeResource;
 
