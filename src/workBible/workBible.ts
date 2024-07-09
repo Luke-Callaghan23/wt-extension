@@ -13,6 +13,7 @@ import { editNote } from './editNote';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
+import { compareFsPath } from '../help';
 
 export interface Note {
     kind: 'note';
@@ -323,7 +324,7 @@ implements
 
     getNote (noteUri: vscode.Uri): Note | null {
         return this.notes.find(note => {
-            return note.uri.fsPath === noteUri.fsPath;
+            return compareFsPath(note.uri, noteUri);
         }) || null;
     }
 }

@@ -4,7 +4,7 @@ import { OutlineView } from "../outlineView";
 import * as extension from '../../extension';
 import * as console from '../../vsconsole';
 import { Buff } from "../../Buffer/bufferSource";
-import { writeDotConfig } from "../../help";
+import { compareFsPath, writeDotConfig } from "../../help";
 import { RecycleLog } from "../../recyclingBin/recyclingBinView";
 import { TabLabels } from "../../tabLabels/tabLabels";
 
@@ -75,8 +75,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
             }
             else throw `unsupported parent type ${fragmentParent.data.ids.type}`;
             
-            const targetFragUriStr = removedFragmentUri.toString();
-            const targetFragmentIndex = fragmentParentTextNodes.findIndex(frag => frag.data.ids.uri.toString() === targetFragUriStr);
+            const targetFragmentIndex = fragmentParentTextNodes.findIndex(frag => compareFsPath(frag.data.ids.uri, removedFragmentUri));
             if (targetFragmentIndex === -1) continue;
 
             // Splice that fragment away
@@ -115,8 +114,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
 
             // Find the index of the target fragment
             const nodeParentContents = (removedNodeParent.data as ContainerNode).contents;
-            const targetNodeUriStr = target.getUri().toString();
-            const targetNodeIndex = nodeParentContents.findIndex(node => node.data.ids.uri.toString() === targetNodeUriStr);
+            const targetNodeIndex = nodeParentContents.findIndex(node => compareFsPath(node.data.ids.uri, target.getUri()));
             if (targetNodeIndex === -1) continue;
 
             // Splice that fragment away

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from "../outlineNode";
 import { OutlineTreeProvider, TreeNode } from '../../../outlineProvider/outlineTreeProvider';
 import { MoveNodeResult } from './common';
-import { getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help';
+import { compareFsPath, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help';
 import { RecyclingBinView } from '../../../recyclingBin/recyclingBinView';
 import { getUsableFileName } from '../../impl/createNodes';
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
@@ -168,8 +168,7 @@ export async function handleContainerSwap (
     if (operation === 'move' || spliceFromContainer) {
         if (!oldParentContents) return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
         // Get the index of the mover in the parent's contents
-        const moverUri = node.getUri().toString();
-        const oldParentIndex = oldParentContents.findIndex(node => node.getUri().toString() === moverUri);
+        const oldParentIndex = oldParentContents.findIndex(node => compareFsPath(node.getUri(), node.getUri()));
         if (oldParentIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [] };
     
         // Remove this from parent

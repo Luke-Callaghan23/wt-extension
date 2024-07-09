@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { CoderModer } from './codeMode';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { OutlineView } from '../outline/outlineView';
+import { compareFsPath } from '../help';
 
 export async function exit (this: CoderModer): Promise<void> {
     if (!this.repoUris) return;
@@ -23,7 +24,7 @@ export async function exit (this: CoderModer): Promise<void> {
                 // All tabs open in the current group
                 const ind = group.tabs.findIndex(tab => {
                     return this.openedCodeUris.find(opened => 
-                        tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === opened.fsPath
+                        tab.input instanceof vscode.TabInputText && compareFsPath(tab.input.uri, opened)
                     );
                 });
         

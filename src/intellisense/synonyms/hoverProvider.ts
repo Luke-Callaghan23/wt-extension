@@ -3,6 +3,7 @@ import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../vsconsole';
 import { capitalize, getHoverText, getHoveredWord } from '../common';
 import { WorkBible } from '../../workBible/workBible';
+import { compareFsPath } from '../../help';
 
 export class HoverProvider implements vscode.HoverProvider {
     constructor (
@@ -20,7 +21,7 @@ export class HoverProvider implements vscode.HoverProvider {
             const matchedNotes = worldNotes.matchedNotes;
             if (
                 matchedNotes 
-                && matchedNotes.docUri.fsPath === document.uri.fsPath
+                && compareFsPath(matchedNotes.docUri, document.uri)
                 && matchedNotes.matches.find(note => note.range.contains(position))
             ) {
                 return new vscode.Hover('');

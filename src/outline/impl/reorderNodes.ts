@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import { ConfigFileInfo, ConfigFileInfoExpanded, readDotConfig, writeDotConfig } from "../../help";
+import { compareFsPath, ConfigFileInfo, ConfigFileInfoExpanded, readDotConfig, writeDotConfig } from "../../help";
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "../nodes_impl/outlineNode";
 import { OutlineView } from "../outlineView";
 import * as extension from '../../extension';
@@ -172,11 +172,11 @@ export async function moveUp (this: OutlineView, resource: OutlineNode | undefin
 
     // Of all the possible moving nodes, only move those who have the same parent node as the node that was clicked
     const targets = prelimTargets.filter(target => {
-        return target.data.ids.parentUri.toString() === resource.data.ids.parentUri.toString();
+        return compareFsPath(target.data.ids.parentUri, resource.data.ids.parentUri);
     });
     
 
-    if (!targets.find(target => target.data.ids.uri.toString() === resource.data.ids.uri.toString())) {
+    if (!targets.find(target => compareFsPath(target.data.ids.uri, resource.data.ids.uri))) {
         targets.push(resource);
     }
 
@@ -282,10 +282,10 @@ export async function moveDown (this: OutlineView, resource: any) {
 
     // Of all the possible moving nodes, only move those who have the same parent node as the node that was clicked
     const targets = prelimTargets.filter(target => {
-        return target.data.ids.parentUri.toString() === resource.data.ids.parentUri.toString();
+        return compareFsPath(target.data.ids.parentUri, resource.data.ids.parentUri);
     });
 
-    if (!targets.find(target => target.data.ids.uri.toString() === resource.data.ids.uri.toString())) {
+    if (!targets.find(target => compareFsPath(target.data.ids.uri, resource.data.ids.uri))) {
         targets.push(resource);
     }
 

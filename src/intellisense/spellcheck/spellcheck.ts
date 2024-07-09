@@ -5,6 +5,7 @@ import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
 import { WordRange } from '../../intellisense/common';
 import { WorkBible } from '../../workBible/workBible';
+import { compareFsPath } from '../../help';
 
 
 export class Spellcheck implements Timed {
@@ -88,7 +89,7 @@ export class Spellcheck implements Timed {
                     const matchedNotes = worldNotes.matchedNotes;
                     if (
                         matchedNotes 
-                        && matchedNotes.docUri.fsPath === document.uri.fsPath
+                        && compareFsPath(matchedNotes.docUri, document.uri)
                         && matchedNotes.matches.find(note => note.range.contains(range))
                     ) {
                         continue;

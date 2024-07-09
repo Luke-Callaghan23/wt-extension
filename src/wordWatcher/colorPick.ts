@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { WordWatcher } from './wordWatcher';
 import * as extension from './../extension';
 import { getUsableFileName } from '../outline/impl/createNodes';
+import { compareFsPath } from '../help';
 
 
 export type Color = { r: number, g: number, b: number, a: number };
@@ -83,7 +84,7 @@ NOTE: please don't edit anything in this document besides the color.  You'll pro
                 else {
                     for (const group of vscode.window.tabGroups.all) {
                         const ind = group.tabs.findIndex(tab => {
-                            return tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === exampleSentenceUri.fsPath;
+                            return tab.input instanceof vscode.TabInputText && compareFsPath(tab.input.uri, exampleSentenceUri);
                         });
                         if (ind === -1) continue;
                         const tab = group.tabs[ind];
@@ -112,8 +113,8 @@ NOTE: please don't edit anything in this document besides the color.  You'll pro
                 for (const group of vscode.window.tabGroups.all) {
                     const ind = group.tabs.findIndex(tab => {
                         return tab.input instanceof vscode.TabInputText && (
-                            tab.input.uri.fsPath === exampleSentenceUri.fsPath || 
-                            tab.input.uri.fsPath === colorPickerDocUri.fsPath
+                            compareFsPath(tab.input.uri, exampleSentenceUri) || 
+                            compareFsPath(tab.input.uri, colorPickerDocUri)
                         )
                     });
                     if (ind === -1) continue;

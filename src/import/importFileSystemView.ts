@@ -7,6 +7,7 @@ import { ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
 import * as extension from './../extension';
 import {sep} from 'path';
+import { compareFsPath } from '../help';
 
 export interface Entry {
 	uri: vscode.Uri;
@@ -60,7 +61,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		);
 		treeItem.label = vscodeUris.Utils.basename(<vscodeUris.URI>treeItem.resourceUri);
 
-		const isRootFolder: boolean = treeItem.resourceUri?.fsPath === this.importFolder.fsPath;
+		const isRootFolder: boolean = treeItem.resourceUri ? compareFsPath(treeItem.resourceUri, this.importFolder) : false;
 
 		// Add a highlight to the label of the node, if it is excluded
 		let excluded = false;
