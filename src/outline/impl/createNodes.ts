@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig } from '../../help';
+import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig, compareFsPath } from '../../help';
 import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 // import * as console from '../../vsconsole';
@@ -260,13 +260,13 @@ export async function newSnip (
 
                         // Check the id of the chapters container and the work snips container of the root node against
                         //		the id of the selected resource
-                        if (resource.data.ids.uri.toString() === (root.chapters as OutlineNode).data.ids.uri.toString()) {
+                        if (compareFsPath(resource.data.ids.uri, (root.chapters as OutlineNode).data.ids.uri)) {
                             // If the id matches against the chapters container, then there's nothing we can do
                             // Cannot add snips to the chapters container
                             vscode.window.showErrorMessage('Error: cannot add a new snip directly to the chapters container.  Select a specific chapter to add the new snip to.');
                             return null;
                         }
-                        else if (resource.data.ids.uri.toString() === (root.snips as OutlineNode).data.ids.uri.toString()) {
+                        else if (compareFsPath(resource.data.ids.uri, (root.snips as OutlineNode).data.ids.uri)) {
                             // If the id matches the work snips container, add the new snip to that container
                             parentNode = root.snips as OutlineNode;
                         }

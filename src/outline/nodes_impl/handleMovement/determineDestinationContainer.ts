@@ -3,6 +3,7 @@ import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineT
 import { ChapterNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../outlineNode";
 import { OutlineView } from "../../outlineView";
 import { DestinationResult } from './common';
+import { compareFsPath } from '../../../help';
 
 
 
@@ -92,7 +93,7 @@ export async function determineDestinationContainer (
             }
             else if (
                 newParentOutline.data.ids.parentTypeId === 'chapter' 
-                || outlineView.workspace.workSnipsFolder.fsPath === newParentOutline.data.ids.uri.fsPath
+                || compareFsPath(outlineView.workspace.workSnipsFolder, newParentOutline.data.ids.uri)
             ) {
                 // If this is a chapter snip container or the work snip container, then
                 //      create a new snip for the fragments to move to

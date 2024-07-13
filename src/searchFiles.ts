@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { OutlineView } from './outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from './outline/nodes_impl/outlineNode';
 import { ExtensionGlobals } from './extension';
+import { compareFsPath } from './help';
 
 
 export interface IFragmentPick {
@@ -92,7 +93,7 @@ export function getFilesQPOptions (outlineView: OutlineView, filterGeneric: bool
                 });
                 
                 // If this fragment is the currently open document in the editor, then set `currentNode` and `currentPick`
-                if (!currentNode && currentDoc && content.data.ids.uri.fsPath === currentDoc.fsPath) {
+                if (!currentNode && currentDoc && compareFsPath(content.data.ids.uri, currentDoc)) {
                     currentNode = content;
                     currentPick = options[options.length - 1];
                 }
@@ -159,7 +160,7 @@ export function getFilesQPOptions (outlineView: OutlineView, filterGeneric: bool
             });
 
             // If this fragment is the currently open document in the editor, then set `currentNode` and `currentPick`
-            if (!currentNode && currentDoc && fragment.data.ids.uri.fsPath === currentDoc.fsPath) {
+            if (!currentNode && currentDoc && compareFsPath(fragment.data.ids.uri, currentDoc)) {
                 currentNode = fragment;
                 currentPick = options[options.length - 1];
             }

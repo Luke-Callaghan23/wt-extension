@@ -12,6 +12,7 @@ import { shiftTrailingNodesDown } from './shiftTrailingNodes';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { generalMoveNode } from './handleMovement/generalMoveNode';
 import { updateChildrenToReflectNewUri } from './updateChildrenToReflectNewUri';
+import { MoveNodeResult } from './handleMovement/common';
 
 export const usedIds: { [index: string]: boolean } = {};
 
@@ -25,7 +26,6 @@ export type ResourceType = fsNodes.ResourceType;
 export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentNode | ContainerNode;
 
 export class OutlineNode extends TreeNode {
-
     updateChildrenToReflectNewUri = updateChildrenToReflectNewUri;
     generalMoveNode = generalMoveNode;
     getChildren = getChildren;

@@ -6,6 +6,7 @@ import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { MoveNodeResult } from '../nodes_impl/handleMovement/common';
 import { ScratchPadView } from '../../scratchPad/scratchPadView';
 import { ExtensionGlobals } from '../../extension';
+import { setFsPathKey } from '../../help';
 
 export async function handleDropController (this: OutlineView, target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
     const targ = target || this.rootNodes[0];
@@ -132,7 +133,7 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
             }
 
             for (const container of effectedContainers) {
-                effectedContainersUriMap[container.getUri().fsPath] = container;
+                setFsPathKey<OutlineNode>(container.getUri(), container, effectedContainersUriMap);
             }
 
             await new Promise(resolve => setTimeout(resolve, 10));

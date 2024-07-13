@@ -6,6 +6,7 @@ import { WordCount } from '../wordCounts/wordCount';
 import { getFilesQPOptions, IFragmentPick } from '../searchFiles';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
 import { lastCommit, setLastCommit } from '../gitTransactions';
+import { compareFsPath } from '../help';
 
 export type InstanceCount = { [index: string]: number };
 
@@ -190,7 +191,7 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
                         //      filter this snip container
                         return !(
                             outlineNode.data.ids.parentTypeId === 'chapter' 
-                            || outlineNode.data.ids.uri.fsPath === (outlineView.rootNodes[0].data as RootNode).snips.data.ids.uri.fsPath
+                            || compareFsPath(outlineNode.data.ids.uri, (outlineView.rootNodes[0].data as RootNode).snips.data.ids.uri)
                         );
                     }
                     return true;

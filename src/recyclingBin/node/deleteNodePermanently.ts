@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { RecycleLog, RecyclingBinView } from "../recyclingBinView";
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { Buff } from '../../Buffer/bufferSource';
-import { writeDotConfig } from '../../help';
+import { compareFsPath, writeDotConfig } from '../../help';
 
 export async function deleteNodePermanently (this: RecyclingBinView, targets: OutlineNode[]) {
     // Do not delete the dummy node
@@ -85,7 +85,7 @@ export async function deleteNodePermanently (this: RecyclingBinView, targets: Ou
             else throw `Unsupported fragment parent type ${fragmentParent.data.ids.type}`;
 
             const targetFragUriStr = removedNodeAbsPath.toString();
-            const targetFragmentIndex = fragmentParentContentNodes.findIndex(frag => frag.data.ids.uri.toString() === targetFragUriStr);
+            const targetFragmentIndex = fragmentParentContentNodes.findIndex(frag => compareFsPath(frag.data.ids.uri, removedNodeAbsPath));
             if (targetFragmentIndex === -1) continue;
             fragmentParentContentNodes.splice(targetFragmentIndex, 1);
 
@@ -112,8 +112,7 @@ export async function deleteNodePermanently (this: RecyclingBinView, targets: Ou
 
             // Find the index of the target fragment
             const nodeParentContents = (removedNodeParent.data as ContainerNode | SnipNode).contents;
-            const targetNodeUriStr = target.getUri().toString();
-            const targetNodeIndex = nodeParentContents.findIndex(node => node.data.ids.uri.toString() === targetNodeUriStr);
+            const targetNodeIndex = nodeParentContents.findIndex(node => compareFsPath(node.data.ids.uri, target.getUri()));
             if (targetNodeIndex === -1) continue;
 
             // Splice that fragment away

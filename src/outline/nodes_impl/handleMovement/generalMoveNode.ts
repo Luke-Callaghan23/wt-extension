@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from "../../../help";
+import { compareFsPath, ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from "../../../help";
 import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineTreeProvider";
 import { ChapterNode, ContainerNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../outlineNode";
 import { OutlineView } from '../../outlineView';
@@ -85,7 +85,7 @@ export async function generalMoveNode (
     // If the container of the destination is the same as the container of the mover, then we're 
     //      not actually moving the node anywhere, we are just changing the internal ordering
     // This is an entirely separate set of logic than moving to a different container
-    if (destinationContainer.getUri().toString() === moverParentUri.toString()) {
+    if (compareFsPath(destinationContainer.getUri(), moverParentUri)) {
         return handleInternalContainerReorder(this, destinationContainer, newParentNode, moveOffset, rememberedMoveDecision);
     }
 

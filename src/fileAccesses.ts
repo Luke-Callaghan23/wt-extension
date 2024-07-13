@@ -10,16 +10,13 @@ import { Workspace } from './workspace/workspaceClass';
 import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { ScratchPadView } from './scratchPad/scratchPadView';
 import { WorkBible } from './workBible/workBible';
-import { vagueNodeSearch } from './help';
+import { getFsPathKey, setFsPathKey, vagueNodeSearch } from './help';
 
 export class FileAccessManager implements Packageable {
 
     static lastAccessedFragment: vscode.Uri | undefined;
     static lastAccessedChapter: vscode.Uri | undefined;
     static lastAccessedSnip: vscode.Uri | undefined;
-
-    // container uri -> uri of last accessed fragment of that container
-    // private static fileAccesses: { [ index: string ]: vscode.Uri };
 
     // Logs the latest accessed fragment for a given uri
     private static latestFragmentForUri: { [index: string]: vscode.Uri };
@@ -56,7 +53,7 @@ export class FileAccessManager implements Packageable {
             }
 
             // Set the latest accessed fragment for the current uri to the fragment document which was just opened
-            FileAccessManager.latestFragmentForUri[currentUri.fsPath] = openedUri;
+            setFsPathKey<vscode.Uri>(currentUri, openedUri, FileAccessManager.latestFragmentForUri);
 
             if (currentNode.data.ids.type === 'root') {
                 break;
@@ -74,7 +71,7 @@ export class FileAccessManager implements Packageable {
     }
 
     static lastAccessedFragmentForUri (targetUri: vscode.Uri): vscode.Uri | undefined {
-        return FileAccessManager.latestFragmentForUri[targetUri.fsPath];
+        return getFsPathKey<vscode.Uri>(targetUri, FileAccessManager.latestFragmentForUri);
     }
 
     static lastEditor: vscode.TextEditor | undefined = undefined;

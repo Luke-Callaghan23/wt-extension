@@ -192,3 +192,32 @@ export async function determineAuxViewColumn <T>(getter: ((uri: vscode.Uri)=>Pro
     }
     return vscode.ViewColumn.Beside;
 }
+
+export const formatFsPathForCompare = (path: vscode.Uri): string => {
+    let fsPath = path.fsPath;
+    if (fsPath.endsWith("\\") || fsPath.endsWith("/")) {
+        fsPath = fsPath.substring(0, fsPath.length-1);
+    }
+    return fsPath;
+};
+
+export const compareFsPath = (self: vscode.Uri, other: vscode.Uri): boolean => {
+    const selfPath = formatFsPathForCompare(self);
+    const otherPath = formatFsPathForCompare(other);
+    return selfPath === otherPath;
+}
+
+export const getFsPathKey = <T>(path: vscode.Uri, obj: { [index: string]: T }): T | undefined => {
+    const fsPath = formatFsPathForCompare(path);
+    if (fsPath in obj) {
+        return obj[fsPath];
+    }
+    else return undefined;
+}
+
+
+export const setFsPathKey = <T>(path: vscode.Uri, value: T, obj: { [index: string]: T }) => {
+    const fsPath = formatFsPathForCompare(path);
+    obj[fsPath] = value;
+}
+

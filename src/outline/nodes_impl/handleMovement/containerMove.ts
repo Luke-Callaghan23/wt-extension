@@ -3,6 +3,7 @@ import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineT
 import { ContainerNode, OutlineNode, ResourceType } from "../outlineNode";
 import { MoveNodeResult } from "./common";
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
+import { setFsPathKey } from '../../../help';
 
 
 
@@ -51,7 +52,7 @@ export async function containerMove (
         acc += moveOffset;
 
         for (const container of effectedContainers) {
-            effectedContainersUriMap[container.getUri().fsPath] = container;
+            setFsPathKey<OutlineNode>(container.getUri(), container, effectedContainersUriMap);
         }
     }
     
