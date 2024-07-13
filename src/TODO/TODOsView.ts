@@ -58,12 +58,13 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 		currentUri: vscode.Uri | undefined,
 		currentNode: TODONode | null | undefined
 	) {
+		const pathsToInvalidate: vscode.Uri[] = [];
 	
 		// Traverse upwards from the current node and invalidate it as well as all of its
 		//		parents
 		while (currentNode && currentUri) {
 			// Invalidate the current node
-			setFsPathKey<Validation>(currentUri, { type: 'invalid' }, TODOsView.todo);
+			pathsToInvalidate.push(currentUri);
 			
 			// Break once the root node's records have been removed
 			if (currentNode.data.ids.type === 'root') {
@@ -75,6 +76,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 			currentNode = await this.getTreeElementByUri(parentUri);
 			currentUri = currentNode?.getUri();
 		};
+		pathsToInvalidate.forEach(currentUri => setFsPathKey<Validation>(currentUri, { type: 'invalid' }, TODOsView.todo));
 	}
 	
 	enabled: boolean = false;

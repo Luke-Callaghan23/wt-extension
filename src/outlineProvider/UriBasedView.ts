@@ -89,7 +89,7 @@ export class UriBasedView<T extends HasGetUri> {
 		for (const currentNode of currentNodes) {
 			if (!currentNode) throw 'unreachable';
 			if (!currentNode.getChildren) return null;
-			if (!isSubdirectory(currentNode.getUri(), targetUri)) return null;
+			if (!isSubdirectory(currentNode.getUri(), targetUri)) continue;
 			const currentChildren = await currentNode.getChildren(!!filter, insertIntoNodeMap);
 	
 			if (compareFsPath(currentNode.getUri(), targetUri)) {

@@ -21,9 +21,7 @@ export async function scanFragment(uri: vscode.Uri, fragmentNode: FragmentNode):
         fragmentBuffer = await vscode.workspace.fs.readFile(uri);
     }
     catch {
-        return [
-            { type: 'invalid' },0
-        ]
+        return [ { type: 'invalid' }, 0 ];
     }
     const fragmentDecoded = extension.decoder.decode(fragmentBuffer);
     const fragmentStream = fragmentDecoded.split(/\r?\n/);
