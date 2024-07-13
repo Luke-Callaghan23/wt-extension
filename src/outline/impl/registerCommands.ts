@@ -4,6 +4,7 @@ import { ContainerNode, OutlineNode, RootNode } from '../nodes_impl/outlineNode'
 import * as extension from '../../extension';
 import { CopiedSelection } from './copyPaste';
 import { DiskContextType } from '../../workspace/workspace';
+import { setFsPathKey } from '../../help';
 
 
 // Register all the commands needed for the outline view to work
@@ -153,7 +154,7 @@ export function registerCommands (this: OutlineView) {
             }
 
             // Add the destination of the laste paste into the paste log
-            pasteLog[pasted.fsPath] = 1;
+            setFsPathKey<1>(pasted, 1, pasteLog);
             pastedCount += 1;
         }
 

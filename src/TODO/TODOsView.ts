@@ -14,6 +14,7 @@ import { disable } from '../wordWatcher/timer';
 import { registerCommands } from './impl/registerCommands';
 import { getTODOCounts } from './nodes_impl/getTODOCounts';
 import { ExtensionGlobals } from '../extension';
+import { getFsPathKey, setFsPathKey } from '../help';
 
 export type TODO = {
 	rowStart: number,
@@ -39,13 +40,13 @@ type TODOInfo = { [index: string]: Validation };
 export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 	
 	static todo: TODOInfo = {};
-	isInvalidated = (uri: string): boolean => {
-		const todoLog =TODOsView.todo[uri];
+	isInvalidated = (uri: vscode.Uri): boolean => {
+		const todoLog = getFsPathKey<Validation>(uri, TODOsView.todo);;
 		return !todoLog || todoLog.type === 'invalid';
 	};
 	
-	static getTODO = (uri: string): Validation => {
-		const data = this.todo[uri];
+	static getTODO = (uri: vscode.Uri): Validation => {
+		const data = getFsPathKey<Validation>(uri, this.todo)!;
 		if (data.type === 'invalid') {
 			vscode.window.showWarningMessage(`Error: uri was not validated before calling getTODO.  This is my fault.  Please message me and call me and idiot if you see this.`);
 			throw new Error('Make sure to validate your uri before calling getTODO!');
@@ -62,7 +63,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 		//		parents
 		while (currentNode && currentUri) {
 			// Invalidate the current node
-			TODOsView.todo[currentUri.fsPath] = { type: 'invalid' };
+			setFsPathKey<Validation>(currentUri, { type: 'invalid' }, TODOsView.todo);
 			
 			// Break once the root node's records have been removed
 			if (currentNode.data.ids.type === 'root') {

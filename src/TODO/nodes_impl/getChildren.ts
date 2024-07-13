@@ -1,10 +1,11 @@
+import * as vscode from 'vscode';
 import { TreeNode } from "../../outlineProvider/outlineTreeProvider";
 import { ChapterNode, ContainerNode, RootNode, SnipNode, TODONode } from "../node";
 
 export async function getChildren(
     this: TODONode,
     filter: boolean,
-    insertIntoNodeMap: (node: TreeNode, uri: string) => void
+    insertIntoNodeMap: (node: TreeNode, uri: vscode.Uri) => void
 ): Promise<TreeNode[]> {
 
     const data = this.data;
@@ -105,7 +106,7 @@ export async function getChildren(
     for (const n of ret) {
         const todoNode = n as TODONode;
         if (todoNode.data.ids.type === 'fragment' && todoNode.data.ids.parentTypeId === 'fragment') continue;
-        insertIntoNodeMap(n, n.getUri().fsPath);
+        insertIntoNodeMap(n, n.getUri());
     }
     return ret;
 }

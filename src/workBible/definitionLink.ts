@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { WorkBible } from './workBible';
+import { compareFsPath } from '../help';
 
 export function provideDefinition(
     this: WorkBible, 
@@ -8,7 +9,7 @@ export function provideDefinition(
     token: vscode.CancellationToken
 ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
     if (!this.matchedNotes) return null;
-    if (this.matchedNotes.docUri.fsPath !== document.uri.fsPath) return null;
+    if (!compareFsPath(this.matchedNotes.docUri, document.uri)) return null;
 
     const matchedNote = this.matchedNotes.matches.find(match => match.range.contains(position));
     if (!matchedNote) return null;

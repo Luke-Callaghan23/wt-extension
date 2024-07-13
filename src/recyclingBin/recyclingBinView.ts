@@ -5,7 +5,7 @@ import * as extension from './../extension';
 import { InitializeNode, initializeChapter, initializeFragment, initializeOutline, initializeSnip } from '../outlineProvider/initialize';
 // import { OutlineNode, ResourceType } from '../outline/node';
 import { NodeTypes, ResourceType } from '../outlineProvider/fsNodes';
-import { ConfigFileInfo } from '../help';
+import { ConfigFileInfo, setFsPathKey } from '../help';
 import { v4 as uuidv4 } from 'uuid';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { deleteNodePermanently } from './node/deleteNodePermanently';
@@ -146,8 +146,8 @@ implements
             }), ...this.rootNodes];
         }
         
-        const insertIntoNodeMap = (node: OutlineNode, uri: string) => {
-            this.nodeMap[uri] = node as OutlineNode;
+        const insertIntoNodeMap = (node: OutlineNode, uri: vscode.Uri) => {
+            setFsPathKey<OutlineNode>(uri, node as OutlineNode, this.nodeMap);
         }
         //@ts-ignore
         return element.getChildren(true, insertIntoNodeMap);

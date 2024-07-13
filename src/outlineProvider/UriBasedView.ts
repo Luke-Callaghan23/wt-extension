@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 import * as extension from '../extension';
 import * as vsconsole from './../vsconsole';
-import { compareFsPath } from '../help';
+import { compareFsPath, getFsPathKey, setFsPathKey } from '../help';
 
 export interface HasGetUri {
     getUri(): vscode.Uri;
 	getParentUri(): vscode.Uri;
-	getChildren(filter: boolean, insertIntoNodeMap: (node: HasGetUri, uri: string)=>void): Promise<HasGetUri[]>;
+	getChildren(filter: boolean, insertIntoNodeMap: (node: HasGetUri, uri: vscode.Uri)=>void): Promise<HasGetUri[]>;
 }
 
 export class UriBasedView<T extends HasGetUri> {
@@ -73,19 +73,15 @@ export class UriBasedView<T extends HasGetUri> {
 		}
 	
 
-		
-		let targetPathFormatted = targetUri.fsPath;
-		if (targetPathFormatted.endsWith("\\") || targetPathFormatted.endsWith("/")) {
-			targetPathFormatted = targetPathFormatted.substring(0, targetPathFormatted.length-1);
-		}
-		if (targetPathFormatted in this.nodeMap) {
+		const cachedNode = getFsPathKey<T>(targetUri, this.nodeMap);
+		if (cachedNode) {
 			vsconsole.log(`[${this.constructor.name}] Node map hit!`);
-			return this.nodeMap[targetPathFormatted];
+			return cachedNode;
 		}
-		vsconsole.log(`[${this.constructor.name}] Node map miss for target uri: ${targetPathFormatted}`);
+		vsconsole.log(`[${this.constructor.name}] Node map miss for target uri: ${targetUri}`);
 		
-		const insertIntoNodeMap = (node: HasGetUri, uri: string) => {
-			this.nodeMap[uri] = node as T;
+		const insertIntoNodeMap = (node: HasGetUri, uri: vscode.Uri) => {
+			setFsPathKey<T>(uri, node as T, this.nodeMap);
 		}
 		
 		// If there is no provided tree, use the whole tree as the search space
@@ -96,7 +92,7 @@ export class UriBasedView<T extends HasGetUri> {
 			const currentChildren = await currentNode.getChildren(!!filter, insertIntoNodeMap);
 	
 			if (compareFsPath(currentNode.getUri(), targetUri)) {
-				this.nodeMap[targetUri.fsPath] = currentNode;
+				setFsPathKey(targetUri, currentNode, this.nodeMap);
 				return currentNode as T;
 			}
 			// Iterate over all keys-value mappings in the current node
@@ -105,7 +101,7 @@ export class UriBasedView<T extends HasGetUri> {
 	
 				// If the current key matches the targeted key, return the value mapping
 				if (compareFsPath(subtreeId, targetUri)) {
-					this.nodeMap[targetUri.fsPath] = subtree as T;
+					setFsPathKey(targetUri, subtree, this.nodeMap);
 					return subtree as T;
 				} 
 				// Otherwise, recurse into this function again, using the current
@@ -115,7 +111,7 @@ export class UriBasedView<T extends HasGetUri> {
 					
 					// If the tree was found, return it
 					if (treeElement) {
-						this.nodeMap[targetUri.fsPath] = treeElement;
+						setFsPathKey(targetUri, treeElement, this.nodeMap);
 						return treeElement;
 					}
 				}

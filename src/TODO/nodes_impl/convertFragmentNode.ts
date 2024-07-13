@@ -4,15 +4,12 @@ import * as vscode from 'vscode';
 import { Ids } from '../../outlineProvider/fsNodes';
 import { TODOData, TODONode } from '../node';
 import { v4 as uuidv4 } from 'uuid';
-import { TODOsView } from '../TODOsView';
+import { TODOsView, Validation } from '../TODOsView';
 import { ExtensionGlobals } from '../../extension';
+import { getFsPathKey } from '../../help';
 
 export async function convertToTODOData (this: TODONode): Promise<TODONode[]> {
-    const uri = this.getUri().fsPath;
-
-    const todosView: TODOsView = ExtensionGlobals.todoView;
-
-    const todos = TODOsView.todo[uri];
+    const todos = getFsPathKey<Validation>(this.getUri(), TODOsView.todo)!;
     if (todos.type !== 'todos') throw new Error('Not possible');
     
     // Convert each of this fragment's TODOs into a TODOData struct

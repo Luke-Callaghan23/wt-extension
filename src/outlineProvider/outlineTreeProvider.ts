@@ -9,13 +9,14 @@ import { UriBasedView } from './UriBasedView';
 import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { MoveNodeResult } from '../outline/nodes_impl/handleMovement/common';
+import { setFsPathKey } from '../help';
 
 export abstract class TreeNode {
 	abstract getParentUri(): vscode.Uri;
 	abstract getTooltip(): string | vscode.MarkdownString;
 	abstract getUri(): vscode.Uri;
 	abstract getDisplayString(): string;
-	abstract getChildren(filter: boolean, insertIntoNodeMap: (node: TreeNode, uri: string)=>void): Promise<TreeNode[]>;
+	abstract getChildren(filter: boolean, insertIntoNodeMap: (node: TreeNode, uri: vscode.Uri)=>void): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
 	abstract getDroppableUris(): vscode.Uri[];
 	abstract generalMoveNode (
@@ -104,8 +105,8 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	public async getChildren (element: T): Promise<T[]> {
 		if (!this.rootNodes) throw `unreachable`;
 
-		const insertIntoNodeMap = (node: TreeNode, uri: string) => {
-			this.nodeMap[uri] = node as T;
+		const insertIntoNodeMap = (node: TreeNode, uri: vscode.Uri) => {
+			setFsPathKey<T>(uri, node as T, this.nodeMap);
 		}
 
 		if (!element) {

@@ -3,6 +3,7 @@ import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode, TODONode 
 import { TODOsView, Validation } from "../TODOsView";
 import { scanFragment } from "../impl/scanFragment";
 import { ExtensionGlobals } from '../../extension';
+import { getFsPathKey, setFsPathKey } from '../../help';
 
 export async function getTODOCounts (
     this: TODONode
@@ -19,10 +20,10 @@ export async function getTODOCounts (
     const todosView: TODOsView = ExtensionGlobals.todoView;
 
     const uri = this.getUri();
-    if (!todosView.isInvalidated(uri.fsPath)) {
+    if (!todosView.isInvalidated(uri)) {
         // If the TODO count for the uri is validated, then use the validated TODO 
         //      count of this node
-        const thisTodo = TODOsView.todo[uri.fsPath];
+        const thisTodo = getFsPathKey<Validation>(uri, TODOsView.todo)!;
         
         if (thisTodo.type === 'count') {
             // type == count -> a 'folder' of todos, .data is a sum of all the todo counts of all the children
@@ -62,10 +63,10 @@ export async function getTODOCounts (
             const rootTODOs = chaptersTODOs + snipsTODOs;
 
             // Set the count for the root node in the todo tree and return the new count
-            TODOsView.todo[uri.fsPath] = {
+            setFsPathKey<Validation>(uri, {
                 type: 'count',
                 data: rootTODOs
-            };
+            }, TODOsView.todo);
             return rootTODOs;
         }
         case 'container': {
@@ -87,10 +88,10 @@ export async function getTODOCounts (
 
             // Set the count of TODOs for this container to the sum of the TODOs for all of
             //      its contents and return the new count
-            TODOsView.todo[uri.fsPath] = {
+            setFsPathKey<Validation>(uri, {
                 type: 'count',
                 data: containerTODOs
-            };
+            }, TODOsView.todo);
             return containerTODOs;
         }
         case 'chapter': {
@@ -116,10 +117,10 @@ export async function getTODOCounts (
             ])).reduce(((acc, cur) => acc + cur), 0);
 
             // Store the todo counts for the chapter, and return
-            TODOsView.todo[uri.fsPath] = {
+            setFsPathKey<Validation>(uri, {
                 type: 'count',
                 data: chapterTODOs
-            };
+            }, TODOsView.todo);
             return chapterTODOs;
         }
         case 'snip': {
@@ -143,10 +144,10 @@ export async function getTODOCounts (
                 snipsTODOs+=containerTODOsLst[n];
             }
 
-            TODOsView.todo[uri.fsPath] = {
+            setFsPathKey<Validation>(uri, {
                 type: 'count',
                 data: snipsTODOs
-            };
+            }, TODOsView.todo);
             return snipsTODOs;
         }
         case 'fragment': {
@@ -159,7 +160,7 @@ export async function getTODOCounts (
             const [ fragmentTODOs, count ]: [ Validation, number ] = await scanFragment(uri, fragmentNode);
 
             // Insert the new fragment TODOs into todo object
-            TODOsView.todo[uri.fsPath] = fragmentTODOs;
+            setFsPathKey<Validation>(uri, fragmentTODOs, TODOsView.todo);
             return count;
         }
     }

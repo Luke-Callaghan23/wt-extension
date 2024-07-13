@@ -3,7 +3,7 @@ import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNo
 import { OutlineView } from '../outlineView';
 import { FileAccessManager } from '../../fileAccesses';
 import { getUsableFileName } from './createNodes';
-import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../help';
+import { ConfigFileInfo, getFsPathKey, getLatestOrdering, readDotConfig, setFsPathKey, writeDotConfig } from '../../help';
 
 export type CopiedSelection = {
     count: number;
@@ -713,7 +713,7 @@ export async function paste (
 
     // If the destination for this paste has already been used during this current
     //      paste, then skip the current paste
-    if (pasteLog[pasteData.destination.data.ids.uri.fsPath] === 1) return null;
+    if (getFsPathKey<1>(pasteData.destination.data.ids.uri, pasteLog) === 1) return null;
     
     let pasteFunction: (src: OutlineNode, dest: OutlineNode, ordering: number) => Promise<PasteResult>;
     switch (pasteData.pasteType) {

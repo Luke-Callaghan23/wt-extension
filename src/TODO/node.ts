@@ -103,7 +103,7 @@ export class TODONode extends TreeNode {
                 }
                 else {
                     // Otherwise, if the fragment itself is dropped:
-                    const children = TODOsView.getTODO(this.getUri().fsPath);
+                    const children = TODOsView.getTODO(this.getUri());
                     if (children.type === 'todos' && children.data.length === 1) {
                         // If there is only one TODO child, open that
                         const child = children.data[0];

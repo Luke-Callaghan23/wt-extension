@@ -1,8 +1,9 @@
+import * as vscode from 'vscode';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from "./outlineNode";
 import * as console from "./../../vsconsole";
 import { TreeNode } from "../../outlineProvider/outlineTreeProvider";
 
-export async function getChildren (this: OutlineNode, filter: boolean, insertIntoNodeMap: (node: TreeNode, uri: string)=>void): Promise<OutlineNode[]> {
+export async function getChildren (this: OutlineNode, filter: boolean, insertIntoNodeMap: (node: TreeNode, uri: vscode.Uri)=>void): Promise<OutlineNode[]> {
     const data = this.data;
     const ret: OutlineNode[] = (() => {
         if (data.ids.type === 'chapter') {
@@ -49,7 +50,7 @@ export async function getChildren (this: OutlineNode, filter: boolean, insertInt
         }
     })();
     for (const n of ret) {
-        insertIntoNodeMap(n, n.getUri().fsPath);
+        insertIntoNodeMap(n, n.getUri());
     }
     return ret;
 }
