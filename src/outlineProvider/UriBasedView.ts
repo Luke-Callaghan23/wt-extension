@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as extension from '../extension';
 import * as vsconsole from './../vsconsole';
-import { compareFsPath, getFsPathKey, setFsPathKey } from '../help';
+import { compareFsPath, getFsPathKey, isSubdirectory, setFsPathKey } from '../help';
 
 export interface HasGetUri {
     getUri(): vscode.Uri;
@@ -89,6 +89,7 @@ export class UriBasedView<T extends HasGetUri> {
 		for (const currentNode of currentNodes) {
 			if (!currentNode) throw 'unreachable';
 			if (!currentNode.getChildren) return null;
+			if (!isSubdirectory(currentNode.getUri(), targetUri)) return null;
 			const currentChildren = await currentNode.getChildren(!!filter, insertIntoNodeMap);
 	
 			if (compareFsPath(currentNode.getUri(), targetUri)) {
@@ -98,22 +99,21 @@ export class UriBasedView<T extends HasGetUri> {
 			// Iterate over all keys-value mappings in the current node
 			for (const subtree of currentChildren) {
 				const subtreeId = subtree.getUri();
-	
+				
 				// If the current key matches the targeted key, return the value mapping
 				if (compareFsPath(subtreeId, targetUri)) {
 					setFsPathKey(targetUri, subtree, this.nodeMap);
 					return subtree as T;
-				} 
+				}
 				// Otherwise, recurse into this function again, using the current
 				//		subtree as the search space
-				else {
-					const treeElement = await this.getTreeElementByUri(targetUri, subtree as T, filter);
-					
-					// If the tree was found, return it
-					if (treeElement) {
-						setFsPathKey(targetUri, treeElement, this.nodeMap);
-						return treeElement;
-					}
+				if (!isSubdirectory(subtree.getUri(), targetUri)) continue;
+				const treeElement = await this.getTreeElementByUri(targetUri, subtree as T, filter);
+				
+				// If the tree was found, return it
+				if (treeElement) {
+					setFsPathKey(targetUri, treeElement, this.nodeMap);
+					return treeElement;
 				}
 			}
 		}

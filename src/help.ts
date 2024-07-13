@@ -221,3 +221,19 @@ export const setFsPathKey = <T>(path: vscode.Uri, value: T, obj: { [index: strin
     obj[fsPath] = value;
 }
 
+
+
+export const isSubdirectory = (sub: vscode.Uri, full: vscode.Uri): boolean => {
+
+    const normalizedRoot = extension.rootPath.fsPath.toLowerCase().replaceAll("\\", "/");
+
+    const subPath = sub.fsPath;
+    const fullPath = full.fsPath;
+
+    // Normalize paths to handle different OS conventions (e.g., slashes vs. backslashes)
+    const normalizedSub = subPath.toLowerCase().replaceAll("\\", "/").replaceAll(normalizedRoot, "");
+    const normalizedFull = fullPath.toLowerCase().replaceAll("\\", "/").replaceAll(normalizedRoot, "");
+
+    // Check if path2 starts with path1
+    return normalizedFull.startsWith(normalizedSub);
+};
