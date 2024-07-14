@@ -79,8 +79,8 @@ export async function renameResource (this: OutlineView, overrideNode?: OutlineN
     setTimeout(async () => {
         const todoNode: TODONode | null = await todoView.getTreeElementByUri(resource.data.ids.uri);
         if (!todoNode) return;
-        await todoView.invalidateNode(todoNode.data.ids.uri, todoNode);
-        todoView.refresh(false, []);
+        await todoView.invalidateNode(todoNode.data.ids.uri);
+        todoView.refresh(false, [ todoNode ]);
     }, 0);
 
 

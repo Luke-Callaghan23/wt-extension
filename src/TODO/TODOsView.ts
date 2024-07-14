@@ -15,6 +15,7 @@ import { registerCommands } from './impl/registerCommands';
 import { getTODOCounts } from './nodes_impl/getTODOCounts';
 import { ExtensionGlobals } from '../extension';
 import { getFsPathKey, setFsPathKey } from '../help';
+import * as extension from './../extension';
 
 export type TODO = {
 	rowStart: number,
@@ -55,28 +56,25 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 	};
 	
 	async invalidateNode (
-		currentUri: vscode.Uri | undefined,
-		currentNode: TODONode | null | undefined
+		invalidate: vscode.Uri
 	) {
 		const pathsToInvalidate: vscode.Uri[] = [];
 	
-		// Traverse upwards from the current node and invalidate it as well as all of its
-		//		parents
-		while (currentNode && currentUri) {
-			// Invalidate the current node
-			pathsToInvalidate.push(currentUri);
-			
-			// Break once the root node's records have been removed
-			if (currentNode.data.ids.type === 'root') {
-				break;
-			}
-	
-			// Traverse upwards
-			const parentUri: vscode.Uri = currentNode.data.ids.parentUri;
-			currentNode = await this.getTreeElementByUri(parentUri);
-			currentUri = currentNode?.getUri();
-		};
+		const root = extension.rootPath;
+		const relativePath = invalidate.fsPath.replace(root.fsPath, '');
+		const elets = relativePath.split(/\\|\//).filter(s => s.length > 0);
+		let running = root;
+		for (const elt of elets) {
+			running = vscode.Uri.joinPath(running, elt);
+			setFsPathKey<Validation>(running, { type: 'invalid' }, TODOsView.todo);
+		}
 		pathsToInvalidate.forEach(currentUri => setFsPathKey<Validation>(currentUri, { type: 'invalid' }, TODOsView.todo));
+	}
+
+	static async clearTodos () {
+		for (const key of Object.keys(TODOsView.todo)) {
+			delete TODOsView.todo[key];
+		}
 	}
 	
 	enabled: boolean = false;
@@ -94,6 +92,8 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 		if (reload) {
 			this.rootNodes = [await this.initializeTree()];
 		}
+		const todo = TODOsView.todo;
+		console.log(todo);
 		await this.rootNodes[0].getTODOCounts();
 		return this._onDidChangeTreeData.fire(undefined);
 	}

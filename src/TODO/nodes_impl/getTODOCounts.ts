@@ -39,6 +39,8 @@ export async function getTODOCounts (
         }
     }
     
+    console.log(`${uri.fsPath} . . . `);
+    
     // Otherwise, if this node has been invalidated, then get the TODOs for this node
     // Depends on what kind of node this is
     switch (this.data.ids.type) {

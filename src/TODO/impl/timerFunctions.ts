@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
-import { TODOsView } from "../TODOsView";
+import { TODOsView, Validation } from "../TODOsView";
 import { TODONode } from '../node';
 import { initializeOutline } from '../../outlineProvider/initialize';
+import * as extension from '../../extension';
+import { setFsPathKey } from '../../help';
 
 export async function update (
     this: TODOsView,
@@ -16,20 +18,7 @@ export async function update (
     if (editedFragmentUri.fsPath.includes("tmp/")) return;
     if (editedFragmentUri.fsPath.includes("tmp\\")) return;
     
-    const editedFragmentNode: TODONode | null = await this.getTreeElementByUri(editedFragmentUri, undefined, false);
-    if (!editedFragmentNode) {
-        this.rootNodes = [await initializeOutline((e) => new TODONode(e), true)];
-        Object.keys(TODOsView.todo).forEach(key => delete TODOsView.todo[key]);
-        this.refresh(false, []);
-        return;
-    }
-
-    let currentUri: vscode.Uri | undefined = editedFragmentUri;
-    let currentNode: TODONode | null | undefined = editedFragmentNode;
-    this.invalidateNode(currentUri, currentNode);
-
-    // // Refresh all invalidated nodes on the tree
-    // this.tree = await initializeOutline((e) => new TODONode(e));
+    this.invalidateNode(editedFragmentUri);
     this.refresh(false, []);
 }
 

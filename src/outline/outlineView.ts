@@ -19,6 +19,7 @@ import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { MoveNodeResult } from './nodes_impl/handleMovement/common';
 import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { handleDragController, handleDropController } from './impl/dragDropController';
+import { TODOsView } from '../TODO/TODOsView';
 
 export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Renamable<OutlineNode> {
     // Deleting nodes
@@ -52,13 +53,16 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 		//		completely from disk
 		if (reload) {
 			this.rootNodes = [await this.initializeTree()];
+			TODOsView.clearTodos();
 		}
 
-		// Because of all the various edits that the outline view does on the internal structure 
-		//		and because we want to avoid uneeded reading of the disk file structure, we
-		//		send over the outline node to the todo view whenever their is updates
-		//		to the outline view tree
-		vscode.commands.executeCommand('wt.todo.updateTree', this.rootNodes);
+		if (updates.length !== 0) {
+			// Because of all the various edits that the outline view does on the internal structure 
+			//		and because we want to avoid uneeded reading of the disk file structure, we
+			//		send over the outline node to the todo view whenever their is updates
+			//		to the outline view tree
+			vscode.commands.executeCommand('wt.todo.updateTree', this.rootNodes, updates);
+		}
 
 		// If there are specific nodes to update from the callee, then fire tree data updates
 		//		on those one at a time
