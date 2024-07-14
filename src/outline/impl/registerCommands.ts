@@ -31,7 +31,7 @@ export function registerCommands (this: OutlineView) {
             };
         }
 
-
+        
         this.refresh(true, []);
         return;
     });
