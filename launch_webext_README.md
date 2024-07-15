@@ -1,5 +1,5 @@
 1. Make sure you have a cert for vscode.dev installed at `$HOME/certs`
-  * Review instructions for this here
+     * Review instructions for this [here](https://code.visualstudio.com/api/extension-guides/web-extensions#test-your-web-extension-in-vscode.dev)
 2. Run `./scripts/swap.sh` or `python3 ./scripts/swap.py` or `. ./scripts/swap.ps1`
 3. Run `npx serve --cors -l 5000 --ssl-cert $HOME/certs/localhost.pem --ssl-key $HOME/certs/localhost-key.pem`
 4. Open `vscode.dev` in a browser
