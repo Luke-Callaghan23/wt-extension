@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.115",
+	"version": "0.0.116",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
 	"private": false,
