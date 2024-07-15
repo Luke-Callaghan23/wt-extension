@@ -13,7 +13,13 @@ import { NodeTypes } from '../../outlineProvider/fsNodes';
 
 export function getUsableFileName (fileTypePrefix: string, wt?: boolean): string {
     const fileTypePostfix = wt ? '.wt' : '';
-    const nano = process.hrtime.bigint();
+    let nano;
+    try {
+        nano = process.hrtime.bigint();
+    }
+    catch (err: any) {
+        nano = window.performance.now() + window.performance.timeOrigin;
+    }
     const nanoB36 = nano.toString(36);
     return `${fileTypePrefix}-${nanoB36}${fileTypePostfix}`;
 }
