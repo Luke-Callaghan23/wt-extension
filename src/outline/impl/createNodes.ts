@@ -1,6 +1,5 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig, compareFsPath } from '../../help';
 import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
@@ -18,7 +17,7 @@ export function getUsableFileName (fileTypePrefix: string, wt?: boolean): string
         nano = process.hrtime.bigint();
     }
     catch (err: any) {
-        nano = window.performance.now() + window.performance.timeOrigin;
+        nano = parseInt(Date.now() + (Math.random() * 10000) + "");
     }
     const nanoB36 = nano.toString(36);
     return `${fileTypePrefix}-${nanoB36}${fileTypePostfix}`;
@@ -44,7 +43,7 @@ export async function newChapter (
     const chaptersContainer = (this.rootNodes[0].data as RootNode).chapters;
     const chaptersContainerUri = chaptersContainer.getUri();
 
-    const chaptersContainerDotConfigUri = vscodeUris.Utils.joinPath(chaptersContainerUri, '.config');
+    const chaptersContainerDotConfigUri = vscode.Uri.joinPath(chaptersContainerUri, '.config');
     const chaptersContainerDotConfig = await readDotConfig(chaptersContainerDotConfigUri);
     if (!chaptersContainerDotConfig) return null; 
     
@@ -53,8 +52,8 @@ export async function newChapter (
     const chapterNumber = latestChapter + 1;
     const chapterTitle = options?.defaultName ?? `New Chapter (${chapterNumber})`;
     const chapterFileName = getUsableFileName(`chapter`);
-    const chapterUri = vscodeUris.Utils.joinPath(chaptersContainerUri, chapterFileName);
-    const chapterFragmentsDotConfigUri = vscodeUris.Utils.joinPath(chapterUri, '.config');
+    const chapterUri = vscode.Uri.joinPath(chaptersContainerUri, chapterFileName);
+    const chapterFragmentsDotConfigUri = vscode.Uri.joinPath(chapterUri, '.config');
     const chapterRelativePath = `${chaptersContainer.data.ids.relativePath}/${chaptersContainer.data.ids.fileName}`;
 
     // Store the chapter name and write it to disk
@@ -70,8 +69,8 @@ export async function newChapter (
 
     // Information about the container of this chapter's snip nodes
     const snipsContainerFileName = 'snips';
-    const snipsContainerUri = vscodeUris.Utils.joinPath(chapterUri, snipsContainerFileName);
-    const snipsContainerDotConfigUri = vscodeUris.Utils.joinPath(snipsContainerUri, `.config`);
+    const snipsContainerUri = vscode.Uri.joinPath(chapterUri, snipsContainerFileName);
+    const snipsContainerDotConfigUri = vscode.Uri.joinPath(snipsContainerUri, `.config`);
 
     const snipContainerNode = <ContainerNode> {
         ids: {
@@ -121,7 +120,7 @@ export async function newChapter (
             
             // New fragment's file name and path
             const fragmentFileName = getUsableFileName(`fragment`, true);
-            const fragmentUri = vscodeUris.Utils.joinPath(chapterUri, fragmentFileName);
+            const fragmentUri = vscode.Uri.joinPath(chapterUri, fragmentFileName);
             const fragmentTitle = 'New Fragment';
 
             // Write an empty fragment inside of the chapter's root folder
@@ -302,7 +301,7 @@ export async function newSnip (
     
     // Get the snips container that holds all the sibling snips of the new snip
     const parentUri = parentNode.getUri();
-    const parentDotConfigUri = vscodeUris.Utils.joinPath(parentUri, '.config');
+    const parentDotConfigUri = vscode.Uri.joinPath(parentUri, '.config');
     if (!parentDotConfigUri) return null;
 
     const parentDotConfig = await readDotConfig(parentDotConfigUri);
@@ -480,7 +479,7 @@ export async function newFragment (
 
     const fileName = getUsableFileName('fragment', true);
 
-    const parentDotConfigUri = vscodeUris.Utils.joinPath(parentUri, `.config`);
+    const parentDotConfigUri = vscode.Uri.joinPath(parentUri, `.config`);
     if (!parentDotConfigUri) return null;
 
     const parentDotConfig = await readDotConfig(parentDotConfigUri);
@@ -496,7 +495,7 @@ export async function newFragment (
     const title = options?.defaultName ?? `New Fragment (${newFragmentNumber})`;
 
     // Write the fragment file
-    const fragmentUri = vscodeUris.Utils.joinPath(parentUri, fileName);
+    const fragmentUri = vscode.Uri.joinPath(parentUri, fileName);
     const fragment = <FragmentNode> {
         ids: {
             display: title,

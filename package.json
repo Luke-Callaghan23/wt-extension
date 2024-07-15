@@ -130,7 +130,7 @@
 					"description": "Enable the 'Search Word' button in the editor toolbar",
 					"type": "boolean",
 					"default": true
-				}, 
+				},
 				"wt.editor.showItalisize": {
 					"description": "Enable the 'Italisize' button in the editor toolbar",
 					"type": "boolean",
@@ -2117,6 +2117,6 @@
 		"turndown": "^7.1.2",
 		"uuid": "^9.0.0",
 		"vscode-debugadapter": "^1.51.0",
-		"vscode-uri": "^3.0.7"
+		"vscode-uri": "^3.0.8"
 	}
 }
