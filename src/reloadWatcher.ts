@@ -185,9 +185,10 @@ export class ReloadWatcher implements Packageable {
             const currentGroupTabs: { [index:string]: PositionInfo } = currentTabState[viewCol];
             const contextGroupTabs: { [index:string]: PositionInfo } = contextTabState[viewCol];
 
-            const currentTabGroupKeys = Object.keys(currentGroupTabs);
-            const contextTabGroupKeys = Object.keys(contextGroupTabs);
-            if (currentTabGroupKeys.length !== contextTabGroupsKeys.length || !currentTabGroupKeys.every(curr => contextTabGroupKeys.includes(curr))) {
+            const thisCurrentTabGroupKeys = Object.keys(currentGroupTabs);
+            const thisContextTabGroupKeys = Object.keys(contextGroupTabs);
+
+            if (thisCurrentTabGroupKeys.length !== thisContextTabGroupKeys.length || !thisCurrentTabGroupKeys.every(curr => thisContextTabGroupKeys.includes(curr))) {
                 return this.askForRestoreTabs(contextTabState);
             }
         }
