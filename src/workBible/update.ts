@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import { SubNote, Note, WorkBible, AppearanceContainer } from "./workBible";
-import { determineAuxViewColumn } from '../help';
+import { determineAuxViewColumn } from '../miscTools/help';
 
 
 export async function addNote (this: WorkBible, resource: Note | undefined): Promise<string | null> {

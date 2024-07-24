@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { WordWatcher } from './wordWatcher';
 import * as extension from './../extension';
 import { getUsableFileName } from '../outline/impl/createNodes';
-import { compareFsPath } from '../help';
+import { compareFsPath } from '../miscTools/help';
 
 
 export type Color = { r: number, g: number, b: number, a: number };

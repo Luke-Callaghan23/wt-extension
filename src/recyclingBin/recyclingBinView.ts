@@ -5,7 +5,7 @@ import * as extension from './../extension';
 import { InitializeNode, initializeChapter, initializeFragment, initializeOutline, initializeSnip } from '../outlineProvider/initialize';
 // import { OutlineNode, ResourceType } from '../outline/node';
 import { NodeTypes, ResourceType } from '../outlineProvider/fsNodes';
-import { ConfigFileInfo, setFsPathKey } from '../help';
+import { ConfigFileInfo, setFsPathKey } from '../miscTools/help';
 import { v4 as uuidv4 } from 'uuid';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { deleteNodePermanently } from './node/deleteNodePermanently';

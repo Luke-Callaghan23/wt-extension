@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { CoderModer } from './codeMode';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { OutlineView } from '../outline/outlineView';
-import { compareFsPath } from '../help';
+import { compareFsPath } from '../miscTools/help';
 
 export async function exit (this: CoderModer): Promise<void> {
     if (!this.repoUris) return;

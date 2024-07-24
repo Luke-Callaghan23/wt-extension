@@ -26,7 +26,7 @@ import { TextStyles } from './textStyles/textStyles';
 import { WorkBible } from './workBible/workBible';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { TabLabels } from './tabLabels/tabLabels';
-import { searchFiles } from './searchFiles';
+import { searchFiles } from './miscTools/searchFiles';
 import { ReloadWatcher } from './reloadWatcher';
 import { convertFileNames } from './miscTools/convertFileNames';
 import { ScratchPadView } from './scratchPad/scratchPadView';

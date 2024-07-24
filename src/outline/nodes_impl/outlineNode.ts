@@ -1,9 +1,9 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import * as console from '../../vsconsole';
+import * as console from '../../miscTools/vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../../outlineProvider/outlineTreeProvider';
-import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../help';
+import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../miscTools/help';
 import { OutlineView } from '../outlineView';
 import * as fsNodes from '../../outlineProvider/fsNodes';
 import * as extension from '../../extension';

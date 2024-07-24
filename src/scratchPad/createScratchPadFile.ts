@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as extension from './../extension';
 import { FragmentNode, OutlineNode } from "../outline/nodes_impl/outlineNode";
 import { ScratchPadView } from "./scratchPadView";
-import { determineAuxViewColumn, getLatestOrdering, readDotConfig, writeDotConfig } from '../help';
+import { determineAuxViewColumn, getLatestOrdering, readDotConfig, writeDotConfig } from '../miscTools/help';
 import { getUsableFileName } from '../outline/impl/createNodes';
 
 export async function newScratchPadFile (

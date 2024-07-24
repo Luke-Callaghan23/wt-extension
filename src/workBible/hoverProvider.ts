@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { WorkBible } from './workBible';
-import * as console from '../vsconsole';
-import { compareFsPath } from '../help';
+import * as console from '../miscTools/vsconsole';
+import { compareFsPath } from '../miscTools/help';
 
 export function provideHover(
     this: WorkBible,

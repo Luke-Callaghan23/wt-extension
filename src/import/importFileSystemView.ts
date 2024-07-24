@@ -2,12 +2,12 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri'
 import { Workspace } from '../workspace/workspaceClass';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import { ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
 import * as extension from './../extension';
 import {sep} from 'path';
-import { compareFsPath } from '../help';
+import { compareFsPath } from '../miscTools/help';
 
 export interface Entry {
 	uri: vscode.Uri;

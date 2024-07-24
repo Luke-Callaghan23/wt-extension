@@ -6,7 +6,7 @@ import { TODOData, TODONode } from '../node';
 import { v4 as uuidv4 } from 'uuid';
 import { TODOsView, Validation } from '../TODOsView';
 import { ExtensionGlobals } from '../../extension';
-import { getFsPathKey } from '../../help';
+import { getFsPathKey } from '../../miscTools/help';
 
 export async function convertToTODOData (this: TODONode): Promise<TODONode[]> {
     const todos = getFsPathKey<Validation>(this.getUri(), TODOsView.todo)!;

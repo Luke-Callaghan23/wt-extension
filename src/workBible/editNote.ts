@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { AppearanceContainer, Note, SubNote, WorkBible } from './workBible';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { determineAuxViewColumn } from '../help';
+import { determineAuxViewColumn } from '../miscTools/help';
 
 export async function editNote (this: WorkBible, resource: Note | SubNote | AppearanceContainer) {
     

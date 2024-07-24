@@ -3,7 +3,7 @@ import { TODOsView, Validation } from "../TODOsView";
 import { TODONode } from '../node';
 import { initializeOutline } from '../../outlineProvider/initialize';
 import * as extension from '../../extension';
-import { setFsPathKey } from '../../help';
+import { setFsPathKey } from '../../miscTools/help';
 
 export async function update (
     this: TODOsView,

@@ -2,14 +2,14 @@ import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import * as extension from '../extension';
 import { Packageable } from '../packageable';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import { v4 as uuidv4 } from 'uuid';
 import { ResourceType } from './fsNodes';
 import { UriBasedView } from './UriBasedView';
 import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { MoveNodeResult } from '../outline/nodes_impl/handleMovement/common';
-import { setFsPathKey } from '../help';
+import { setFsPathKey } from '../miscTools/help';
 
 export abstract class TreeNode {
 	abstract getParentUri(): vscode.Uri;

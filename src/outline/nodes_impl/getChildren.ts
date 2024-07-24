@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from "./outlineNode";
-import * as console from "./../../vsconsole";
+import * as console from "../../miscTools/vsconsole";
 import { TreeNode } from "../../outlineProvider/outlineTreeProvider";
 
 export async function getChildren (this: OutlineNode, filter: boolean, insertIntoNodeMap: (node: TreeNode, uri: vscode.Uri)=>void): Promise<OutlineNode[]> {

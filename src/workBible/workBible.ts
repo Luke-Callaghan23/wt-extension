@@ -13,7 +13,7 @@ import { editNote } from './editNote';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { compareFsPath } from '../help';
+import { compareFsPath } from '../miscTools/help';
 
 export interface Note {
     kind: 'note';

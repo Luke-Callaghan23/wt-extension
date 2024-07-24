@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ConfigurationTarget, workspace } from 'vscode';
-import * as console from './../vsconsole'
+import * as console from '../miscTools/vsconsole'
 import { OutlineView } from '../outline/outlineView';
 import * as extension from './../extension';
 import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
@@ -9,7 +9,7 @@ import { Ids } from '../outlineProvider/fsNodes';
 import { CodeModeState } from '../codeMode/codeMode';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
 import { Note, WorkBible } from '../workBible/workBible';
-import { vagueNodeSearch } from '../help';
+import { vagueNodeSearch } from '../miscTools/help';
 
 export class TabLabels {
     public static enabled: boolean = true;

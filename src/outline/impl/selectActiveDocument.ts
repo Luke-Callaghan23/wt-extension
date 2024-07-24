@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
 import { OutlineNode } from '../nodes_impl/outlineNode';
-import { vagueNodeSearch } from '../../help';
+import { vagueNodeSearch } from '../../miscTools/help';
 import { ExtensionGlobals } from '../../extension';
 import { Note } from '../../workBible/workBible';
 import { TabLabels } from '../../tabLabels/tabLabels';

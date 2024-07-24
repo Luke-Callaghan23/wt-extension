@@ -4,7 +4,7 @@ import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../
 import * as extension from '../../extension';
 import { CopiedSelection } from './copyPaste';
 import { DiskContextType } from '../../workspace/workspace';
-import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey } from '../../help';
+import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey } from '../../miscTools/help';
 
 
 // Register all the commands needed for the outline view to work

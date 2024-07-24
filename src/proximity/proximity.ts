@@ -1,6 +1,6 @@
 import { clear } from 'console';
 import * as vscode from 'vscode';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import { Workspace } from '../workspace/workspaceClass';
 import { Timed } from '../timedView';
 import { Packageable } from '../packageable';

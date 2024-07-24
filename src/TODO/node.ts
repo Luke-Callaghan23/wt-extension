@@ -2,7 +2,7 @@
 
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
 import * as fsNodes from '../outlineProvider/fsNodes';
 import { Validation, TODO, TODOsView } from './TODOsView';

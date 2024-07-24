@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as extension from '../extension';
-import * as vsconsole from './../vsconsole';
-import { compareFsPath, getFsPathKey, isSubdirectory, setFsPathKey } from '../help';
+import * as vsconsole from '../miscTools/vsconsole';
+import { compareFsPath, getFsPathKey, isSubdirectory, setFsPathKey } from '../miscTools/help';
 
 export interface HasGetUri {
     getUri(): vscode.Uri;

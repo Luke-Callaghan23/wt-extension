@@ -3,10 +3,10 @@ import * as extension from './../extension';
 import { WordWatcher } from "./wordWatcher";
 import { OutlineView } from '../outline/outlineView';
 import { WordCount } from '../wordCounts/wordCount';
-import { getFilesQPOptions, IFragmentPick } from '../searchFiles';
+import { getFilesQPOptions, IFragmentPick } from '../miscTools/searchFiles';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
-import { lastCommit, setLastCommit } from '../gitTransactions';
-import { compareFsPath } from '../help';
+import { lastCommit, setLastCommit } from '../miscTools/gitTransactions';
+import { compareFsPath } from '../miscTools/help';
 
 export type InstanceCount = { [index: string]: number };
 

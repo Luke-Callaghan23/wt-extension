@@ -1,4 +1,4 @@
-import * as console from '../../vsconsole';
+import * as console from '../../miscTools/vsconsole';
 // const fetch = require('node-fetch-commonjs');
 import { Fetch } from '../../Fetch/fetchSource';
 import { queryVery } from '../very/veryQuery';

@@ -3,7 +3,7 @@ import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode, TODONode 
 import { TODOsView, Validation } from "../TODOsView";
 import { scanFragment } from "../impl/scanFragment";
 import { ExtensionGlobals } from '../../extension';
-import { getFsPathKey, setFsPathKey } from '../../help';
+import { getFsPathKey, setFsPathKey } from '../../miscTools/help';
 
 export async function getTODOCounts (
     this: TODONode

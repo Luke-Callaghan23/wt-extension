@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import * as extension from './../extension';
 import { OutlineView } from '../outline/outlineView';
 import * as vscodeUri from 'vscode-uri';

@@ -3,7 +3,7 @@ import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineT
 import { ChapterNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../outlineNode";
 import { OutlineView } from "../../outlineView";
 import { DestinationResult } from './common';
-import { compareFsPath } from '../../../help';
+import { compareFsPath } from '../../../miscTools/help';
 
 
 

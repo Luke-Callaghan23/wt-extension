@@ -1,6 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { gitCommit, gitiniter } from '../gitTransactions';
+import { gitCommit, gitiniter } from '../miscTools/gitTransactions';
 import { Workspace } from '../workspace/workspaceClass';
 import { JumpType, defaultJumpFragmentOptions, jumpParagraph, jumpSentence, jumpWord } from './jumps';
 import { bold, commasize, emDash, emDashes, italisize, strikethrough, underline } from './surroundSelection';

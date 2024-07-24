@@ -3,7 +3,7 @@ import * as extension from './../extension';
 import { WordWatcher } from './wordWatcher';
 import { TimedView } from '../timedView';
 import { Workspace } from '../workspace/workspaceClass';
-import { setLastCommit } from '../gitTransactions';
+import { setLastCommit } from '../miscTools/gitTransactions';
 
 export function addOrDeleteTargetedWord (
     this: WordWatcher,

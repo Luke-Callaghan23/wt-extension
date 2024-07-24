@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { RecycleLog, ScratchPadView } from "./scratchPadView";
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from '../outline/nodes_impl/outlineNode';
 import { Buff } from '../Buffer/bufferSource';
-import { readDotConfig, writeDotConfig } from '../help';
+import { readDotConfig, writeDotConfig } from '../miscTools/help';
 
 export async function deleteNodePermanently (this: ScratchPadView, targets: OutlineNode[]) {
     if (targets.length === 0) {

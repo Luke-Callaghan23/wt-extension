@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import { ConfigFileInfo, getLatestOrdering, readDotConfig } from '../help';
+import { ConfigFileInfo, getLatestOrdering, readDotConfig } from '../miscTools/help';
 import { TreeNode } from './outlineTreeProvider';
 import { ChapterNode, ContainerNode, FragmentNode, NodeTypes, ResourceType, RootNode, SnipNode } from './fsNodes';
 import * as extension from '../extension';

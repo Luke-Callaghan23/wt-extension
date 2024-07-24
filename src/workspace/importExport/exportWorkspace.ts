@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as extension from './../../extension';
-import * as console from '../../vsconsole';
+import * as console from '../../miscTools/vsconsole';
 import { Workspace } from '../workspaceClass';
 import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../../outline/outlineView';

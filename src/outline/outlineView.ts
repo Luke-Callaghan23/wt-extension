@@ -11,7 +11,7 @@ import * as createFunctions from './impl/createNodes';
 import * as renameFunctions from './impl/renameNodes';
 import { Workspace } from '../workspace/workspaceClass';
 import { NodeTypes } from '../outlineProvider/fsNodes';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import * as commands from './impl/registerCommands';
 import * as activeDocuments from './impl/selectActiveDocument';
 import * as  copyPaste from './impl/copyPaste';

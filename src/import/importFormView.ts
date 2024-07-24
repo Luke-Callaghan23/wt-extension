@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import  * as extension from '../extension';
-import { getNonce } from '../help';
+import { getNonce } from '../miscTools/help';
 import { handleImport, ImportDocumentInfo } from './importFiles';
 
 type RequestDocuments = {

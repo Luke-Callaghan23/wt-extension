@@ -14,7 +14,7 @@ import { disable } from '../wordWatcher/timer';
 import { registerCommands } from './impl/registerCommands';
 import { getTODOCounts } from './nodes_impl/getTODOCounts';
 import { ExtensionGlobals } from '../extension';
-import { getFsPathKey, setFsPathKey } from '../help';
+import { getFsPathKey, setFsPathKey } from '../miscTools/help';
 import * as extension from './../extension';
 
 export type TODO = {

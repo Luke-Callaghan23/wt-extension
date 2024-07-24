@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { RecycleLog, RecyclingBinView } from "../recyclingBinView";
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { Buff } from '../../Buffer/bufferSource';
-import { compareFsPath, writeDotConfig } from '../../help';
+import { compareFsPath, writeDotConfig } from '../../miscTools/help';
 
 export async function deleteNodePermanently (this: RecyclingBinView, targets: OutlineNode[]) {
     // Do not delete the dummy node

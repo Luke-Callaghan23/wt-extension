@@ -1,16 +1,16 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from './outline/nodes_impl/outlineNode';
-import { OutlineView } from './outline/outlineView';
+import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from './../outline/nodes_impl/outlineNode';
+import { OutlineView } from './../outline/outlineView';
 import * as console from './vsconsole';
-import * as extension from './extension';
-import { Packageable } from './packageable';
-import { TabLabels } from './tabLabels/tabLabels';
-import { Workspace } from './workspace/workspaceClass';
-import { RecyclingBinView } from './recyclingBin/recyclingBinView';
-import { ScratchPadView } from './scratchPad/scratchPadView';
-import { WorkBible } from './workBible/workBible';
-import { getFsPathKey, setFsPathKey, vagueNodeSearch } from './help';
+import * as extension from './../extension';
+import { Packageable } from './../packageable';
+import { TabLabels } from './../tabLabels/tabLabels';
+import { Workspace } from './../workspace/workspaceClass';
+import { RecyclingBinView } from './../recyclingBin/recyclingBinView';
+import { ScratchPadView } from './../scratchPad/scratchPadView';
+import { WorkBible } from './../workBible/workBible';
+import { getFsPathKey, setFsPathKey, vagueNodeSearch } from './../miscTools/help';
 
 export class FileAccessManager implements Packageable {
 

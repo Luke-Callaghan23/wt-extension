@@ -1,8 +1,8 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import  * as extension from '../extension';
-import { getNonce } from '../help';
+import { getNonce } from '../miscTools/help';
 import { handleDocumentExport, ExportDocumentInfo } from './exportDocuments';
 import { handleWorkspaceExport } from '../workspace/importExport/exportWorkspace';
 import { Workspace } from '../workspace/workspaceClass';

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import { compareFsPath, ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from "../../../help";
+import { compareFsPath, ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from "../../../miscTools/help";
 import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineTreeProvider";
 import { ChapterNode, ContainerNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../outlineNode";
 import { OutlineView } from '../../outlineView';

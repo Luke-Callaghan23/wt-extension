@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
-import * as console from '../vsconsole';
-import { prompt } from '../help';
-import * as vsconsole from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
+import { prompt } from '../miscTools/help';
+import * as vsconsole from '../miscTools/vsconsole';
 import * as extension from '../extension';
-import { gitiniter } from '../gitTransactions';
+import { gitiniter } from '../miscTools/gitTransactions';
 import { Buff } from '../Buffer/bufferSource';
 import { Workspace } from './workspaceClass';
-import { TabPositions } from '../reloadWatcher';
 
 
 export type Config = {
@@ -218,6 +217,31 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
     }
 }
 
+export type PositionInfo = {
+    anchorLine: number,
+    anchorChar: number,
+    activeLine: number,
+    activeChar: number,
+    active: boolean,
+};
+
+export type VscodeViewCol = string;
+export type RelativeUri = string;
+export type TabPositions = { 
+    [index: VscodeViewCol]: {
+        [index: RelativeUri]: PositionInfo
+    } 
+};
+
+export type SavedTabStateName = string;
+export type SavedTabState = {
+    [index: SavedTabStateName]: {
+        positions: TabPositions,
+        created: number,
+    }
+};
+
+
 export type DiskContextType = {
     "wt.outline.collapseState": {
         [index: string]: boolean,
@@ -237,19 +261,13 @@ export type DiskContextType = {
     "wt.wordWatcher.unwatchedWords": string[],
     "wt.wordWatcher.rgbaColors": {
         [index: string]: boolean;
-
     },
     "wt.spellcheck.enabled": boolean,
     "wt.very.enabled": boolean,
     "wt.colors.enabled": boolean,
     "wt.textStyle.enabled": boolean,
     "wt.fileAccesses.positions": {
-        [index: string]: {
-            "anchorLine": 0,
-            "anchorChar": 0,
-            "activeLine": 0,
-            "activeChar": 0
-        };
+        [index: string]: Omit<PositionInfo, 'active'>
     },
     "wt.personalDictionary": {
         [index: string]: 1
@@ -260,7 +278,8 @@ export type DiskContextType = {
         }
     },
     "wt.wh.synonyms": string[],
-    "wt.reloadWatcher.openedTabs": TabPositions
+    "wt.reloadWatcher.openedTabs": TabPositions,
+    "wt.tabStates.savedTabStates": SavedTabState
 }
 
 export async function loadWorkspaceContext (

@@ -5,7 +5,7 @@ import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
 import { WordRange } from '../../intellisense/common';
 import { WorkBible } from '../../workBible/workBible';
-import { compareFsPath } from '../../help';
+import { compareFsPath } from '../../miscTools/help';
 
 
 export class Spellcheck implements Timed {

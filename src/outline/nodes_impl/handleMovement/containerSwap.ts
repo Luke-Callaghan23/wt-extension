@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from "../outlineNode";
 import { OutlineTreeProvider, TreeNode } from '../../../outlineProvider/outlineTreeProvider';
 import { MoveNodeResult } from './common';
-import { compareFsPath, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../help';
+import { compareFsPath, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../miscTools/help';
 import { RecyclingBinView } from '../../../recyclingBin/recyclingBinView';
 import { getUsableFileName } from '../../impl/createNodes';
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';

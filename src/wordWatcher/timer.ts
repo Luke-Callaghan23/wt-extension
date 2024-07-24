@@ -1,9 +1,9 @@
 
 import * as vscode from 'vscode';
 import * as extension from './../extension';
-import * as console from './../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import { WordEnrty, WordWatcher } from './wordWatcher';
-import { clamp, hexToRgb } from '../help';
+import { clamp, hexToRgb } from '../miscTools/help';
 import { addWordToWatchedWords } from './engine';
 import { TimedView } from '../timedView';
 import { Color, parseForColor } from './colorPick';

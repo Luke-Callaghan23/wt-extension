@@ -25,7 +25,7 @@ import { TTSRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout,
 //@ts-ignore
 import { Subject } from 'await-notify';
 import { stopSpeaking } from '../tts/tts';
-import * as console from '../../vsconsole';
+import * as console from '../../miscTools/vsconsole';
 import * as vscode from 'vscode';
 import { threadId } from 'worker_threads';
 

@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
-import * as console from '../../vsconsole';
+import * as console from '../../miscTools/vsconsole';
 import { capitalize, getHoverText, getHoveredWord } from '../common';
 import { WorkBible } from '../../workBible/workBible';
-import { compareFsPath } from '../../help';
+import { compareFsPath } from '../../miscTools/help';
 
 export class HoverProvider implements vscode.HoverProvider {
     constructor (

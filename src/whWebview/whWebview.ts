@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import * as console from '../vsconsole';
-import { getNonce } from '../help';
+import * as console from '../miscTools/vsconsole';
+import { getNonce } from '../miscTools/help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';

@@ -1,12 +1,12 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig, compareFsPath } from '../../help';
+import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig, compareFsPath } from '../../miscTools/help';
 import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 // import * as console from '../../vsconsole';
 import * as extension from '../../extension';
 import { v4 as uuidv4 } from 'uuid';
-import { FileAccessManager } from '../../fileAccesses';
+import { FileAccessManager } from '../../miscTools/fileAccesses';
 import { InitializeNode, initializeChapter, initializeFragment, initializeSnip } from '../../outlineProvider/initialize';
 import { NodeTypes } from '../../outlineProvider/fsNodes';
 

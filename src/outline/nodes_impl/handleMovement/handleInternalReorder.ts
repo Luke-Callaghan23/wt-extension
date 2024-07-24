@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 // Handles the case when a node is moved (dragged and dropped) within its own container
 
-import { ConfigFileInfo, readDotConfig, writeDotConfig } from "../../../help";
+import { ConfigFileInfo, readDotConfig, writeDotConfig } from "../../../miscTools/help";
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "../outlineNode";
 import { MoveNodeResult } from './common';
 

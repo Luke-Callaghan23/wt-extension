@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
-import * as extension from './extension';
-import { Buff } from './Buffer/bufferSource';
-import { TreeNode } from './outlineProvider/outlineTreeProvider';
-import { OutlineNode } from './outline/nodes_impl/outlineNode';
-import { RecyclingBinView } from './recyclingBin/recyclingBinView';
-import { OutlineView } from './outline/outlineView';
-import { ScratchPadView } from './scratchPad/scratchPadView';
-import { Note, WorkBible } from './workBible/workBible';
-import { TabLabels } from './tabLabels/tabLabels';
+import * as extension from '../extension';
+import { Buff } from '../Buffer/bufferSource';
+import { TreeNode } from '../outlineProvider/outlineTreeProvider';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
+import { OutlineView } from '../outline/outlineView';
+import { ScratchPadView } from '../scratchPad/scratchPadView';
+import { Note, WorkBible } from '../workBible/workBible';
+import { TabLabels } from '../tabLabels/tabLabels';
 
 export type PromptOptions = {
     placeholder: string,

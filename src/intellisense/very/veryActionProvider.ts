@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as console from '../../vsconsole';
+import * as console from '../../miscTools/vsconsole';
 import * as extension from '../../extension';
 import { capitalize, getHoverText, getHoveredWord } from '../common';
 import { Workspace } from '../../workspace/workspaceClass';

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { OutlineTreeProvider } from "../../outlineProvider/outlineTreeProvider";
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from "./outlineNode";
-import { readDotConfig, writeDotConfig } from '../../help';
+import { readDotConfig, writeDotConfig } from '../../miscTools/help';
 import { HasGetUri, UriBasedView } from '../../outlineProvider/UriBasedView';
 
 // Shifts all the nodes that 

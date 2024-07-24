@@ -1,8 +1,8 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../help';
-import * as console from '../../vsconsole';
+import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../miscTools/help';
+import * as console from '../../miscTools/vsconsole';
 import * as extension from '../../extension';
 import { RecyclingBinView } from '../recyclingBinView';
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';

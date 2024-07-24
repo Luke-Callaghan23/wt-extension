@@ -1,14 +1,14 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import { Workspace } from '../workspace/workspaceClass';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import { Packageable } from '../packageable';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
 import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, changePattern, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString } from './timer';
 import { getChildren, getTreeItem } from './tree';
 import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';
-import { hexToRgb } from '../help';
+import { hexToRgb } from '../miscTools/help';
 import { gatherPaths, commonWordsPrompt } from './commonWords';
 import { colorPick } from './colorPick';
 

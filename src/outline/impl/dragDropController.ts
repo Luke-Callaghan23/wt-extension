@@ -6,7 +6,7 @@ import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { MoveNodeResult } from '../nodes_impl/handleMovement/common';
 import { ScratchPadView } from '../../scratchPad/scratchPadView';
 import { ExtensionGlobals } from '../../extension';
-import { setFsPathKey } from '../../help';
+import { setFsPathKey } from '../../miscTools/help';
 
 export async function handleDropController (this: OutlineView, target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
     const targ = target || this.rootNodes[0];

@@ -2,9 +2,9 @@ import { ChapterNode, ContainerNode, OutlineNode, ResourceType, SnipNode } from 
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
 import * as extension from '../../extension';
-import * as console from '../../vsconsole';
+import * as console from '../../miscTools/vsconsole';
 import { Buff } from "../../Buffer/bufferSource";
-import { compareFsPath, writeDotConfig } from "../../help";
+import { compareFsPath, writeDotConfig } from "../../miscTools/help";
 import { RecycleLog } from "../../recyclingBin/recyclingBinView";
 import { TabLabels } from "../../tabLabels/tabLabels";
 

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../workspace/workspaceClass';
-import * as console from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
 import { CompletionItemProvider } from './synonyms/completionItemProvider';
 import { HoverProvider } from './synonyms/hoverProvider';
 import { CodeActionProvider } from './synonyms/codeActionProvider';

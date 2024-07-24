@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
-import * as console from '../../vsconsole';
+import * as console from '../../miscTools/vsconsole';
 import { Capitalization, capitalize, getHoveredWord, getTextCapitalization, transformToCapitalization } from '../common';
 import { dictionary } from './../spellcheck/dictionary';
 import { PersonalDictionary } from './../spellcheck/personalDictionary';

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { OutlineView } from './outline/outlineView';
-import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from './outline/nodes_impl/outlineNode';
-import { ExtensionGlobals } from './extension';
+import { OutlineView } from './../outline/outlineView';
+import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from './../outline/nodes_impl/outlineNode';
+import { ExtensionGlobals } from './../extension';
 import { compareFsPath } from './help';
 
 

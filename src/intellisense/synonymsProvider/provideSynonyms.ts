@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { SynonymsApi } from "./synonymsApi";
 import * as extension from './../../extension';
 import { Workspace } from '../../workspace/workspaceClass';
-import * as console from './../../vsconsole';
+import * as console from '../../miscTools/vsconsole';
 import * as fs from 'fs';
 
 export type Definition = {

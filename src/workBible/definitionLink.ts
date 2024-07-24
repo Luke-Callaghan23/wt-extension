@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { WorkBible } from './workBible';
-import { compareFsPath } from '../help';
+import { compareFsPath } from '../miscTools/help';
 
 export function provideDefinition(
     this: WorkBible, 
