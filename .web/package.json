@@ -755,6 +755,22 @@
 			{
 				"command": "wt.reloadWatcher.reloadWorkspace",
 				"title": "Writing Tool: Refresh Workspace"
+			},
+			{
+				"command": "wt.tabStates.saveCurrentState",
+				"title": "Writing Tool: Save Current Tab State"
+			},
+			{
+				"command": "wt.tabStates.overwriteTabState",
+				"title": "Writing Tool: Overwrite Existing Tab State with Current"
+			},
+			{
+				"command": "wt.tabStates.restoreState",
+				"title": "Writing Tool: Restore to previous Tab State"
+			},
+			{
+				"command": "wt.tabStates.renameState",
+				"title": "Writing Tool: Rename a previous Tab State"
 			}
 		],
 		"menus": {

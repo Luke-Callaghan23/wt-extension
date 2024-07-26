@@ -38,6 +38,7 @@ import { searchFiles } from './miscTools/searchFiles';
 import { ReloadWatcher } from './miscTools/reloadWatcher';
 import { convertFileNames } from './miscTools/convertFileNames';
 import { ScratchPadView } from './scratchPad/scratchPadView';
+import { TabStates } from './miscTools/tabStates';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -97,6 +98,9 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const reloadWatcher = new ReloadWatcher(workspace, context);
 		const scratchPad = new ScratchPadView(context, workspace);
 		await scratchPad.init();
+		
+		const tabStates = new TabStates(context, workspace);
+
 
 		new CoderModer(context);
 
@@ -135,7 +139,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(),
-			personalDictionary, colorGroups, wh, reloadWatcher
+			personalDictionary, colorGroups, wh, reloadWatcher, tabStates
 		]));
 
 		// Lastly, clear the 'tmp' folder

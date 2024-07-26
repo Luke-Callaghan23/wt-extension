@@ -12,6 +12,7 @@ export class TabStates implements Packageable {
     private savedTabStates: SavedTabState;
     constructor (private context: vscode.ExtensionContext, private workspace: Workspace) {
         this.savedTabStates = context.workspaceState.get('wt.tabStates.savedTabStates') || {};
+        this.registerCommands();
     }
     
     public static packageCurrentTabState (): TabPositions {
@@ -199,13 +200,12 @@ export class TabStates implements Packageable {
     }
 
     private async runCommand (command: TabStateCommand) {
-        const commands: { [index: string]: ()=>Promise<any> } = {
-            'wt.tabStates.saveCurrentState': this.saveCurrentState,
-            'wt.tabStates.overwriteTabState': this.overwriteTabState,
-            'wt.tabStates.restoreState': this.restoreState,
-            'wt.tabStates.renameState': this.renameState,
+        switch (command) {
+            case 'wt.tabStates.saveCurrentState': await this.saveCurrentState(); break;
+            case 'wt.tabStates.overwriteTabState': await this.overwriteTabState(); break;
+            case 'wt.tabStates.restoreState': await this.restoreState(); break;
+            case 'wt.tabStates.renameState': await this.renameState(); break;
         }
-        await commands[command]();
         this.context.workspaceState.update('wt.tabStates.savedTabStates', this.savedTabStates);
     }
     
