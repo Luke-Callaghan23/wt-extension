@@ -771,6 +771,10 @@
 			{
 				"command": "wt.tabStates.renameState",
 				"title": "Writing Tool: Rename a previous Tab State"
+			},
+			{
+				"command": "wt.outline.manualMove",
+				"title": "Writing Tool: Move Node"
 			}
 		],
 		"menus": {
@@ -1227,6 +1231,10 @@
 				},
 				{
 					"command": "wt.outline.renameFile",
+					"when": "view == wt.outline"
+				},
+				{
+					"command": "wt.outline.manualMove",
 					"when": "view == wt.outline"
 				},
 				{
