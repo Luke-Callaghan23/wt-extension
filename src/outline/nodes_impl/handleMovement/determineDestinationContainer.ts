@@ -97,8 +97,9 @@ export async function determineDestinationContainer (
             ) {
                 // If this is a chapter snip container or the work snip container, then
                 //      create a new snip for the fragments to move to
+                const fragmentName = (mover as OutlineNode).data.ids.display;
                 const snipUri = await outlineView.newSnip(newParentOutline, {
-                    defaultName: `Created Snip`,
+                    defaultName: `(snip) ${fragmentName}`,
                     skipFragment: true,
                     preventRefresh: true,
                 });
