@@ -5,7 +5,7 @@ import * as vsconsole from '../miscTools/vsconsole';
 import * as extension from '../extension';
 import { Config, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
-import { setLastCommit } from '../miscTools/gitTransactions';
+import { setLastCommit } from '../gitTransactions';
 import { ReloadWatcher } from '../miscTools/reloadWatcher';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 import * as fs from 'fs';

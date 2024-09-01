@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import * as console from '../vsconsole';
-import { prompt } from '../help';
-import * as vsconsole from '../vsconsole';
+import * as console from '../miscTools/vsconsole';
+import { prompt } from '../miscTools/help';
+import * as vsconsole from '../miscTools/vsconsole';
 import * as extension from '../extension';
 import { Config, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
 import { setLastCommit } from '../gitTransactions';
-import { ReloadWatcher } from '../reloadWatcher';
+import { ReloadWatcher } from '../miscTools/reloadWatcher';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 
 export class Workspace {

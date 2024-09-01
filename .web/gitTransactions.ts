@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as console from './vsconsole';
+import * as console from './miscTools/vsconsole';
 
 
 export async function gitiniter () {

@@ -3,7 +3,7 @@ import * as console from '../miscTools/vsconsole';
 import { prompt } from '../miscTools/help';
 import * as vsconsole from '../miscTools/vsconsole';
 import * as extension from '../extension';
-import { gitiniter } from '../miscTools/gitTransactions';
+import { gitiniter } from '../gitTransactions';
 import { Buff } from '../Buffer/bufferSource';
 import { Workspace } from './workspaceClass';
 

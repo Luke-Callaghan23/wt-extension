@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as extension from './../extension';
-import { lastCommit as _lastCommit, setLastCommit } from './../miscTools/gitTransactions';
+import { lastCommit as _lastCommit, setLastCommit } from './../gitTransactions';
 import { Packageable } from './../packageable';
 import { FileAccessManager } from './fileAccesses';
 import { DiskContextType, loadWorkspaceContext, PositionInfo, TabPositions } from './../workspace/workspace';

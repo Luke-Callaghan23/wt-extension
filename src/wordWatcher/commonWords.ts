@@ -5,7 +5,7 @@ import { OutlineView } from '../outline/outlineView';
 import { WordCount } from '../wordCounts/wordCount';
 import { getFilesQPOptions, IFragmentPick } from '../miscTools/searchFiles';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
-import { lastCommit, setLastCommit } from '../miscTools/gitTransactions';
+import { lastCommit, setLastCommit } from '../gitTransactions';
 import { compareFsPath } from '../miscTools/help';
 
 export type InstanceCount = { [index: string]: number };

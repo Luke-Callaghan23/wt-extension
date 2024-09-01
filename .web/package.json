@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.117",
+	"version": "0.0.118",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
 	"private": false,
@@ -120,7 +120,7 @@
 					"description": "Enable the 'Search Word' button in the editor toolbar",
 					"type": "boolean",
 					"default": true
-				}, 
+				},
 				"wt.editor.showItalisize": {
 					"description": "Enable the 'Italisize' button in the editor toolbar",
 					"type": "boolean",
@@ -1914,12 +1914,12 @@
 			}
 		],
 		"themes": [
-            {
+			{
 				"id": "wtNoteTheme",
-                "label": "WT Note",
-                "uiTheme": "vs-dark",
-                "path": "./themes/wtNoteTheme.json"
-            }
+				"label": "WT Note",
+				"uiTheme": "vs-dark",
+				"path": "./themes/wtNoteTheme.json"
+			}
 		]
 	},
 	"scripts": {
@@ -1967,6 +1967,6 @@
 		"node-fetch-commonjs": "^3.2.4",
 		"turndown": "^7.1.2",
 		"uuid": "^9.0.0",
-		"vscode-uri": "^3.0.7"
+		"vscode-uri": "^3.0.8"
 	}
 }
