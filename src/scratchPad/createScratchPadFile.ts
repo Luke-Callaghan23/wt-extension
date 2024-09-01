@@ -4,6 +4,7 @@ import { FragmentNode, OutlineNode } from "../outline/nodes_impl/outlineNode";
 import { ScratchPadView } from "./scratchPadView";
 import { determineAuxViewColumn, getLatestOrdering, readDotConfig, writeDotConfig } from '../miscTools/help';
 import { getUsableFileName } from '../outline/impl/createNodes';
+import { TabLabels } from '../tabLabels/tabLabels';
 
 export async function newScratchPadFile (
     this: ScratchPadView, 
@@ -74,7 +75,9 @@ export async function newScratchPadFile (
 
     vscode.window.showTextDocument(showUri, {
         viewColumn: await determineAuxViewColumn((uri) => this.getTreeElementByUri(uri))
+    }).then(() => {
+        TabLabels.assignNamesForOpenTabs();
     });
-    this.refresh(false, []);
+    this.refresh(false, [])
     return showUri;
 }
