@@ -86,7 +86,16 @@ export async function generalMoveNode (
     //      not actually moving the node anywhere, we are just changing the internal ordering
     // This is an entirely separate set of logic than moving to a different container
     if (compareFsPath(destinationContainer.getUri(), moverParentUri)) {
-        return handleInternalContainerReorder(this, destinationContainer, newParentNode, moveOffset, rememberedMoveDecision);
+        let finalParentNode: OutlineNode = newParentNode;
+        if (moverType === 'snip' && newParentType === 'chapter') {
+            const neighbors = (((newParent as OutlineNode).data as ChapterNode).snips.data as ContainerNode).contents;
+            const lastNeighbor = neighbors[neighbors.length - 1];
+            if (compareFsPath(lastNeighbor.data.ids.uri, this.data.ids.uri)) {
+                return { moveOffset: moveOffset, createdDestination: newOverride || null, effectedContainers: [], rememberedMoveDecision: moveDecision };
+            }
+            finalParentNode = lastNeighbor;
+        }
+        return handleInternalContainerReorder(this, destinationContainer, finalParentNode, moveOffset, rememberedMoveDecision);
     }
 
     try {

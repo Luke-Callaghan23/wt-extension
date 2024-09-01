@@ -5,6 +5,7 @@ import * as extension from '../../extension';
 import { CopiedSelection } from './copyPaste';
 import { DiskContextType } from '../../workspace/workspace';
 import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey } from '../../miscTools/help';
+import { searchFiles, selectFile } from '../../miscTools/searchFiles';
 
 
 // Register all the commands needed for the outline view to work
@@ -278,5 +279,19 @@ export function registerCommands (this: OutlineView) {
 
     vscode.commands.registerCommand('wt.outline.copyRelativePath', (resource: OutlineNode) => {
         vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/'));
+    });
+
+    vscode.commands.registerCommand('wt.outline.manualMove', async (resource: OutlineNode) => {
+        const chose = await selectFile([ (node) => {
+            return node.data.ids.type !== 'fragment'
+        } ]);
+        if (chose === null) return;
+        if (chose.data.ids.type === 'root') return;
+        
+        const moveResult = await resource.generalMoveNode("move", chose, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.outlineView, 0, null, "Insert");
+        if (moveResult.moveOffset === -1) return;
+        const effectedContainers = moveResult.effectedContainers;
+        const outline =  extension.ExtensionGlobals.outlineView;
+        return outline.refresh(false, effectedContainers);
     });
 }

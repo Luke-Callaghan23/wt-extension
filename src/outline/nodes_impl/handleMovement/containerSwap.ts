@@ -169,8 +169,8 @@ export async function handleContainerSwap (
     if (operation === 'move' || spliceFromContainer) {
         if (!oldParentContents) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
         // Get the index of the mover in the parent's contents
-        const moverUri = node.getUri().toString();
-        const oldParentIndex = oldParentContents.findIndex(node => compareFsPath(node.getUri(), node.getUri()));
+        const moverUri = node.getUri();
+        const oldParentIndex = oldParentContents.findIndex(node => compareFsPath(node.getUri(), moverUri));
         if (oldParentIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
     
         // Remove this from parent

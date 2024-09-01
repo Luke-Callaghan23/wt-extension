@@ -19,7 +19,9 @@ export interface IButton extends vscode.QuickInputButton {
     id: 'filterButton' | 'clearFilters'
 }
 
-export function getFilesQPOptions (outlineView: OutlineView, filterGeneric: boolean, predicateFilters?: ((node: OutlineNode)=>boolean)[]): {
+export type Predicate = ((node: OutlineNode)=>boolean);
+
+export function getFilesQPOptions (outlineView: OutlineView, filterGeneric: boolean, predicateFilters?: Predicate[]): {
     options: IFragmentPick[],
     currentNode: OutlineNode | undefined,
     currentPick: IFragmentPick | undefined
@@ -254,9 +256,8 @@ export async function searchFiles () {
 
     qp.show();
 
-    
     const outlineView: OutlineView = ExtensionGlobals.outlineView;
-    const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, true);
+    const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, false);
     
     qp.busy = false;
     qp.items = options;
@@ -318,5 +319,81 @@ export async function searchFiles () {
             qp.value = `${selected.description?.slice(1, selected.description.length - 1)}/${selected.node.data.ids.display}`;
             qp.busy = false;
         }
+    });
+}
+
+
+export async function selectFile (predicateFilters?: Predicate[]): Promise<OutlineNode | null> {
+    
+    return new Promise((accept, reject) => {
+        const qp = vscode.window.createQuickPick<IFragmentPick>();
+        qp.canSelectMany = false;
+        qp.ignoreFocusOut = true;
+        qp.matchOnDescription = true;
+        qp.busy = true;
+
+        qp.show();
+        
+        const outlineView: OutlineView = ExtensionGlobals.outlineView;
+        const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, false, predicateFilters);
+        
+        qp.busy = false;
+        qp.items = options;
+        if (currentPick) {
+            qp.activeItems = [ currentPick ];
+            qp.value = `${currentPick.description?.slice(1, currentPick.description.length-1)}`
+        } 
+
+        const buttons: IButton[] = [ {
+            iconPath: new vscode.ThemeIcon("filter"),
+            tooltip: "Toggle Generic Fragment Names",
+            id: 'filterButton',
+        }, {
+            iconPath: new vscode.ThemeIcon(""),
+            tooltip: "Clear Filters",
+            id: 'clearFilters'
+        } ];
+        qp.buttons = buttons;
+
+
+        let isFiltering = true;
+        //@ts-ignore
+        qp.onDidTriggerButton((button: IButton) => {
+            if (button.id === 'filterButton') {
+                isFiltering = !isFiltering;
+                qp.busy = true;
+                const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, isFiltering, predicateFilters);
+                qp.items = options;
+                if (currentPick) {
+                    qp.activeItems = [ currentPick ];
+                    qp.value = `${currentPick.description?.slice(1, currentPick.description.length-1)}`
+                }
+                qp.busy = false;
+            }
+            else if (button.id === 'clearFilters') {
+                isFiltering = false;
+                qp.busy = true;
+                const { options } = getFilesQPOptions(outlineView, isFiltering, predicateFilters);
+                qp.items = options;
+                qp.value = ``
+                qp.busy = false;
+            }
+        });
+
+        qp.onDidAccept(async () => {
+            if (qp.selectedItems.length === 0) {
+                accept(null);
+                qp.dispose();
+                return;
+            }
+            const [ selected ] = qp.selectedItems;
+            const outline: OutlineView = ExtensionGlobals.outlineView;
+            outline.view.reveal(selected.node, {
+                expand: true,
+                select: true,
+            });
+            accept(selected.node);
+            qp.dispose();
+        });
     });
 }
