@@ -3,6 +3,7 @@ import { OutlineView } from './../outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from './../outline/nodes_impl/outlineNode';
 import { ExtensionGlobals } from './../extension';
 import { compareFsPath } from './help';
+import { UriBasedView } from '../outlineProvider/UriBasedView';
 
 
 export interface IFragmentPick {
@@ -21,7 +22,7 @@ export interface IButton extends vscode.QuickInputButton {
 
 export type Predicate = ((node: OutlineNode)=>boolean);
 
-export function getFilesQPOptions (outlineView: OutlineView, filterGeneric: boolean, predicateFilters?: Predicate[]): {
+export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean, predicateFilters?: Predicate[]): {
     options: IFragmentPick[],
     currentNode: OutlineNode | undefined,
     currentPick: IFragmentPick | undefined
@@ -126,14 +127,18 @@ export function getFilesQPOptions (outlineView: OutlineView, filterGeneric: bool
 
         const chapter = chapterNode.data as ChapterNode;
 
-        // Create "fake" spacing
-        // Basically, we want all chapters to always have the first space to be a line instead of a space
-        //      even the last chapter
-        // To do this, just copy the existing spacing and set the first index to false 
-        // In reality this is equivalent to `const fakeMarkers = [ false ];`
-        const fakeMarkers = [...lastItemMarkers];
-        fakeMarkers[0] = false;
-        const fakeSpace = giveMeSomeSpace(fakeMarkers);        
+        let fakeSpace = '';
+        let fakeMarkers: boolean[] = [];
+        if (path !== 'Base') {
+            // Create "fake" spacing
+            // Basically, we want all chapters to always have the first space to be a line instead of a space
+            //      even the last chapter
+            // To do this, just copy the existing spacing and set the first index to false 
+            // In reality this is equivalent to `const fakeMarkers = [ false ];`
+            fakeMarkers = [...lastItemMarkers];
+            fakeMarkers[0] = false;
+            fakeSpace = giveMeSomeSpace(fakeMarkers);        
+        }
 
         // Also want to use the real spacing for the child items of this chapter, so get actual spacing
         const realSpace = giveMeSomeSpace(lastItemMarkers);
@@ -195,48 +200,86 @@ export function getFilesQPOptions (outlineView: OutlineView, filterGeneric: bool
         })
     }
 
-    const root = outlineView.rootNodes[0].data as RootNode;
+    const processRoot = (
+        rootNode: OutlineNode, 
+    ) => {
+        const root = rootNode.data as RootNode;
 
-    // =========================== CHAPTERS SECTION =========================== 
-    /* Chapters Folder */ 
-    if (!predicateFilters || predicateFilters.every(p => p(root.chapters))) {
-        options.push({
-            label: "$(folder) Chapters:",
-            description: ``,
-            node: root.chapters
-        })
-        // Sort and create options for chapters 
-        const chapters = (root.chapters.data as ContainerNode).contents;
-        chapters.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
-        chapters.forEach((chapter, chapterIndex) => {
-            processChapter(
-                chapter, 
-                'Chapters',
-                [ chapterIndex === chapters.length - 1 ]
-            );
-        });
+        // =========================== CHAPTERS SECTION =========================== 
+        /* Chapters Folder */ 
+        if (!predicateFilters || predicateFilters.every(p => p(root.chapters))) {
+            options.push({
+                label: "$(folder) Chapters:",
+                description: ``,
+                node: root.chapters
+            })
+            // Sort and create options for chapters 
+            const chapters = (root.chapters.data as ContainerNode).contents;
+            chapters.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+            chapters.forEach((chapter, chapterIndex) => {
+                processChapter(
+                    chapter, 
+                    'Chapters',
+                    [ chapterIndex === chapters.length - 1 ]
+                );
+            });
+        }
+        
+        // =========================== WORK SNIPS SECTIONS =========================== 
+        /* Work Snips Folder */ 
+        if (!predicateFilters || predicateFilters.every(p => p(root.snips))) {
+            options.push({
+                label: "$(folder) Work Snips:",
+                description: ``,
+                node: root.snips
+            });
+            // Sort and create options for work snips
+            const snips = (root.snips.data as ContainerNode).contents;
+            snips.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+            snips.forEach((snip, snipIndex) => {
+                processSnip(
+                    snip, 
+                    'Work Snips',
+                    [ snipIndex === snips.length - 1 ]
+                );
+            });
+        }
+        // ===========================================================================
     }
-    
-    // =========================== WORK SNIPS SECTIONS =========================== 
-    /* Work Snips Folder */ 
-    if (!predicateFilters || predicateFilters.every(p => p(root.snips))) {
-        options.push({
-            label: "$(folder) Work Snips:",
-            description: ``,
-            node: root.snips
-        });
-        // Sort and create options for work snips
-        const snips = (root.snips.data as ContainerNode).contents;
-        snips.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
-        snips.forEach((snip, snipIndex) => {
-            processSnip(
-                snip, 
-                'Work Snips',
-                [ snipIndex === snips.length - 1 ]
-            );
-        });
+
+    for (let baseIndex = 0; baseIndex < bases.length; baseIndex++) {
+        const base = bases[baseIndex];
+        if (base.data.ids.type === 'root') {
+            processRoot(base);
+        }
+        else if (base.data.ids.type === 'chapter') {
+            processChapter(base, "Base", [ baseIndex === bases.length - 1 ]);
+        }
+        else if (base.data.ids.type === 'snip') {
+            processSnip(base, "Base", [ baseIndex === bases.length - 1 ]);
+        }
+        else if (base.data.ids.type === 'fragment') {
+            // Create option for this fragment
+            options.push({
+                // Fake space followed by real space, because we always want the first column to be a line, but we want the second column to be 
+                //      empty if this is the last chapter
+                label: `${getTreeChar(baseIndex === bases.length - 1)}─$(edit) ${base.data.ids.display}`,
+                description: ``,
+                node: base
+            });
+
+            // If this fragment is the currently open document in the editor, then set `currentNode` and `currentPick`
+            if (!currentNode && currentDoc && compareFsPath(base.data.ids.uri, currentDoc)) {
+                currentNode = base;
+                currentPick = options[options.length - 1];
+            }
+            // Otherwise, if we're filtering generic files (and this is a generic file), then pop the option from the queue
+            else if (filterGeneric && base.data.ids.display.startsWith("Imported Fragment (") || base.data.ids.display.startsWith("New Fragment (")) {
+                options.pop();
+            }
+        }
+        else throw `Get QP Options not implemented for '${base.data.ids.type}' data type`;
     }
-    // ===========================================================================
 
     return {
         options,
@@ -246,7 +289,7 @@ export function getFilesQPOptions (outlineView: OutlineView, filterGeneric: bool
 }
 
 const TAB_SIZE: number = 4;
-export async function searchFiles () {
+export async function searchFiles (this: UriBasedView<OutlineNode>) {
     
     const qp = vscode.window.createQuickPick<IFragmentPick>();
     qp.canSelectMany = false;
@@ -256,8 +299,7 @@ export async function searchFiles () {
 
     qp.show();
 
-    const outlineView: OutlineView = ExtensionGlobals.outlineView;
-    const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, false);
+    const { options, currentNode, currentPick } = getFilesQPOptions(this.rootNodes, false);
     
     qp.busy = false;
     qp.items = options;
@@ -284,7 +326,7 @@ export async function searchFiles () {
         if (button.id === 'filterButton') {
             isFiltering = !isFiltering;
             qp.busy = true;
-            const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, isFiltering);
+            const { options, currentNode, currentPick } = getFilesQPOptions(this.rootNodes, isFiltering);
             qp.items = options;
             if (currentPick) {
                 qp.activeItems = [ currentPick ];
@@ -295,7 +337,7 @@ export async function searchFiles () {
         else if (button.id === 'clearFilters') {
             isFiltering = false;
             qp.busy = true;
-            const { options } = getFilesQPOptions(outlineView, isFiltering);
+            const { options } = getFilesQPOptions(this.rootNodes, isFiltering);
             qp.items = options;
             qp.value = ``
             qp.busy = false;
@@ -304,7 +346,7 @@ export async function searchFiles () {
 
     qp.onDidAccept(async () => {
         const [ selected ] = qp.selectedItems;
-        outlineView.view.reveal(selected.node);
+        this.view.reveal(selected.node);
         if (selected.node.data.ids.type === 'fragment') {
             await vscode.window.showTextDocument(selected.node.data.ids.uri);
             const outline: OutlineView = ExtensionGlobals.outlineView;
@@ -323,19 +365,19 @@ export async function searchFiles () {
 }
 
 
-export async function selectFiles (predicateFilters?: Predicate[]): Promise<OutlineNode[] | null> {
-    return select(predicateFilters || [], true);
+export async function selectFiles (this: UriBasedView<OutlineNode>, predicateFilters?: Predicate[]): Promise<OutlineNode[] | null> {
+    return select(this, predicateFilters || [], true);
 }
 
-export async function selectFile (predicateFilters?: Predicate[]): Promise<OutlineNode | null> {
-    const result = await select(predicateFilters || [], false);
+export async function selectFile (this: UriBasedView<OutlineNode>, predicateFilters?: Predicate[]): Promise<OutlineNode | null> {
+    const result = await select(this, predicateFilters || [], false);
     if (result) {
         return result[0];
     }
     return null;
 }
 
-async function select (predicateFilters: Predicate[], allowMultiple: boolean): Promise<OutlineNode[] | null> {
+async function select (view: UriBasedView<OutlineNode>, predicateFilters: Predicate[], allowMultiple: boolean): Promise<OutlineNode[] | null> {
     return new Promise((accept, reject) => {
         const qp = vscode.window.createQuickPick<IFragmentPick>();
         qp.canSelectMany = allowMultiple;
@@ -346,7 +388,7 @@ async function select (predicateFilters: Predicate[], allowMultiple: boolean): P
         qp.show();
         
         const outlineView: OutlineView = ExtensionGlobals.outlineView;
-        const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, false, predicateFilters);
+        const { options, currentNode, currentPick } = getFilesQPOptions(view.rootNodes, false, predicateFilters);
         
         qp.busy = false;
         qp.items = options;
@@ -373,7 +415,7 @@ async function select (predicateFilters: Predicate[], allowMultiple: boolean): P
             if (button.id === 'filterButton') {
                 isFiltering = !isFiltering;
                 qp.busy = true;
-                const { options, currentNode, currentPick } = getFilesQPOptions(outlineView, isFiltering, predicateFilters);
+                const { options, currentNode, currentPick } = getFilesQPOptions(view.rootNodes, isFiltering, predicateFilters);
                 qp.items = options;
                 if (currentPick) {
                     qp.activeItems = [ currentPick ];
@@ -384,7 +426,7 @@ async function select (predicateFilters: Predicate[], allowMultiple: boolean): P
             else if (button.id === 'clearFilters') {
                 isFiltering = false;
                 qp.busy = true;
-                const { options } = getFilesQPOptions(outlineView, isFiltering, predicateFilters);
+                const { options } = getFilesQPOptions(view.rootNodes, isFiltering, predicateFilters);
                 qp.items = options;
                 qp.value = ``
                 qp.busy = false;
@@ -400,8 +442,7 @@ async function select (predicateFilters: Predicate[], allowMultiple: boolean): P
 
             // Reveal the first node in the outline explorer
             const [ selected ] = qp.selectedItems;
-            const outline: OutlineView = ExtensionGlobals.outlineView;
-            outline.view.reveal(selected.node, {
+            view.view.reveal(selected.node, {
                 expand: true,
                 select: true,
             });

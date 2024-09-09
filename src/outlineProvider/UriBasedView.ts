@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as extension from '../extension';
 import * as vsconsole from '../miscTools/vsconsole';
 import { compareFsPath, getFsPathKey, isSubdirectory, setFsPathKey } from '../miscTools/help';
+import * as search from './../miscTools/searchFiles';
 
 export interface HasGetUri {
     getUri(): vscode.Uri;
@@ -14,8 +15,11 @@ export class UriBasedView<T extends HasGetUri> {
 	public nodeMap: { [index: string]: T } = {};
     public rootNodes: T[];
 
+	public view: vscode.TreeView<T>;
+
 	constructor () {
 		this.rootNodes = [];
+		this.view = {} as vscode.TreeView<T>;
 	}
 
     protected async initUriExpansion (viewName: string, view: vscode.TreeView<T>, context: vscode.ExtensionContext): Promise<void> {
@@ -120,4 +124,7 @@ export class UriBasedView<T extends HasGetUri> {
 
 		return null;
 	}
+
+	selectFile = search.selectFile;
+	selectFiles = search.selectFiles;
 }

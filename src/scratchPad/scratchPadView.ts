@@ -15,8 +15,7 @@ import { TreeNode } from '../outlineProvider/outlineTreeProvider';
 import { Buff } from '../Buffer/bufferSource';
 import { newScratchPadFile } from './createScratchPadFile';
 import { Renamable } from '../recyclingBin/recyclingBinView';
-import * as commandPalette from './contextMenuCommandPalletteImpls';
-import * as misc from './misc';
+import * as search from '../miscTools/searchFiles';
 
 export type RecycleLog = {
     oldUri: string,
@@ -134,10 +133,31 @@ implements
             });
         });
 
-        vscode.commands.registerCommand('wt.scratchPad.manualMove', (resource: OutlineNode) => misc.manualMove(resource));
-        vscode.commands.registerCommand("wt.scratchPad.commandPalette.deleteNode", () => commandPalette.deleteNode());
-        vscode.commands.registerCommand("wt.scratchPad.commandPalette.renameNode", () => commandPalette.renameNode());
-        vscode.commands.registerCommand("wt.scratchPad.commandPalette.moveNode", () => commandPalette.moveNode());
+        vscode.commands.registerCommand('wt.scratchPad.manualMove', (resource: OutlineNode) => this.manualMove(resource));
+
+        vscode.commands.registerCommand("wt.scratchPad.commandPalette.deleteNode", async () => {
+            const deletes = await this.selectFiles();
+            if (deletes === null) {
+                return null;
+            }
+            return this.deleteNodePermanently(deletes);
+        });
+
+        vscode.commands.registerCommand("wt.scratchPad.commandPalette.renameNode", async () => {
+            const renamer = await this.selectFile();
+            if (renamer === null) {
+                return null;
+            }
+            return this.renameResource(renamer);
+        });
+
+        vscode.commands.registerCommand("wt.scratchPad.commandPalette.moveNode", async () => {
+            const mover = await this.selectFile();
+            if (mover === null) {
+                return null;
+            }
+            return this.manualMove(mover);
+        });
     }
 
     static scratchPadContainerUri: vscode.Uri;
@@ -219,5 +239,22 @@ implements
     async getParent (element: OutlineNode): Promise<OutlineNode> {
         //@ts-ignore
         return null;
+    }
+
+    async manualMove (resource: OutlineNode) {
+        const outline =  extension.ExtensionGlobals.outlineView;
+        const chose = await outline.selectFile([ (node) => {
+            return node.data.ids.type !== 'fragment'
+        } ]);
+        if (chose === null) return;
+        if (chose.data.ids.type === 'root') return;
+        
+        const moveResult = await resource.generalMoveNode("scratch", chose, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.outlineView, 0, null, "Insert");
+        if (moveResult.moveOffset === -1) return;
+        const effectedContainers = moveResult.effectedContainers;
+        return Promise.all([
+            outline.refresh(false, effectedContainers),
+            this.refresh(true, []),
+        ]);
     }
 }

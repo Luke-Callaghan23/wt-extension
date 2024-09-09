@@ -91,6 +91,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const proximity = new Proximity(context, workspace);
 		const textStyles = new TextStyles(context, workspace);	
 		const recycleBin = new RecyclingBinView(context, workspace);		
+		await recycleBin.initialize();
 
 		const personalDictionary = new PersonalDictionary(context, workspace);
 		const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, true);

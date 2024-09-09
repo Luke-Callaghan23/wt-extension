@@ -20,6 +20,7 @@ import { MoveNodeResult } from './nodes_impl/handleMovement/common';
 import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { handleDragController, handleDropController } from './impl/dragDropController';
 import { TODOsView } from '../TODO/TODOsView';
+import * as search from '../miscTools/searchFiles';
 
 export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Renamable<OutlineNode> {
     // Deleting nodes
@@ -149,4 +150,65 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 		if (!target) return;
 		return this.dropController(target, dataTransfer, token);
 	}
+
+	
+	copyRelativePath (resource: OutlineNode) {
+		vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/'));
+		vscode.window.showInformationMessage(`[INFO] Successfully copied relative path for '${resource.data.ids.display}'`);
+	}
+
+	copyPath (resource: OutlineNode) {
+		vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath);
+		vscode.window.showInformationMessage(`[INFO] Successfully copied path for '${resource.data.ids.display}'`);
+	}
+
+	async manualMove (resource: OutlineNode) {
+		const chose = await this.selectFile([ (node) => {
+			return node.data.ids.type !== 'fragment'
+		} ]);
+		if (chose === null) return;
+		if (chose.data.ids.type === 'root') return;
+		
+		const moveResult = await resource.generalMoveNode("move", chose, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.outlineView, 0, null, "Insert");
+		if (moveResult.moveOffset === -1) return;
+		const effectedContainers = moveResult.effectedContainers;
+		const outline =  extension.ExtensionGlobals.outlineView;
+		return outline.refresh(false, effectedContainers);
+	}
+
+	async copyNode () {
+		const result = await this.selectFiles();
+		if (result === null) {
+			return;
+		}
+		const nodes = result as readonly OutlineNode[];
+		return extension.ExtensionGlobals.outlineView.copy(nodes);
+	};
+	
+	async pasteNode () {
+		const result = await this.selectFiles();
+		if (result === null) {
+			return null;
+		}
+		const destinations = result;
+		return copyPaste.genericPaste(destinations);
+	};
+	
+	async duplicateNode () {
+		const result = await this.selectFiles();
+		if (result === null) {
+			return null;
+		}
+		const destinations = result;
+		const outlineView = extension.ExtensionGlobals.outlineView;
+		for (const dest of destinations) {
+			await outlineView.copy([dest] as readonly OutlineNode[]);
+	
+			const parentUri = dest.getParentUri();
+			const parentNode = await outlineView.getTreeElementByUri(parentUri);
+			if (parentNode !== null) {
+				await copyPaste.genericPaste([parentNode]);
+			}
+		}
+	};
 }

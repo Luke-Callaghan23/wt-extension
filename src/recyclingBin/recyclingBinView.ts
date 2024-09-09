@@ -13,6 +13,7 @@ import { renameResource as _renameResource } from './node/renameNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../outline/outlineView';
 import { TreeNode } from '../outlineProvider/outlineTreeProvider';
+import { selectFile } from '../miscTools/searchFiles';
 
 export type RecycleLog = {
     oldUri: string,
@@ -261,7 +262,31 @@ implements
         vscode.commands.registerCommand('wt.recyclingBin.getRecyclingBinView', () => this);
         vscode.commands.registerCommand('wt.recyclingBin.deleteAll', () => {
             this.deleteNodePermanently(this.rootNodes);
-        })
+        });
+
+        vscode.commands.registerCommand('wt.recyclingBin.recoverNode', (resource: OutlineNode) => this.recoverNode(resource));
+
+        vscode.commands.registerCommand("wt.recyclingBin.commandPalette.deleteNode", async () => {
+            const deletes = await this.selectFiles();
+            if (deletes === null) {
+                return null;
+            }
+            return this.deleteNodePermanently(deletes);
+        });
+        vscode.commands.registerCommand("wt.recyclingBin.commandPalette.renameNode", async () => {
+            const renamer = await this.selectFile();
+            if (renamer === null) {
+                return null;
+            }
+            return this.renameResource(renamer);
+        });
+        vscode.commands.registerCommand("wt.recyclingBin.commandPalette.recoverNode", async () => {
+            const mover = await this.selectFile();
+            if (mover === null) {
+                return null;
+            }
+            return this.recoverNode(mover);
+        });
     }
 
     public view: vscode.TreeView<OutlineNode>;
@@ -272,23 +297,24 @@ implements
         super();
         this.view = {} as vscode.TreeView<OutlineNode>;
         RecyclingBinView.recyclingUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
-        (async () => {
-            const rootNodes = await this.initializeTree();
-            if (rootNodes === null) return;
-            this.rootNodes = rootNodes;
-            
-            const view = vscode.window.createTreeView('wt.recyclingBin', { 
-                treeDataProvider: this,
-                showCollapseAll: true, 
-                canSelectMany: true,
-                dragAndDropController: this,
-            });
-            context.subscriptions.push();
-            this.registerCommands();
+    }
 
-            this.view = view;
-            this.initUriExpansion('wt.recyclingBin', this.view, this.context);
-        })()
+    async initialize () {
+        const rootNodes = await this.initializeTree();
+        if (rootNodes === null) return;
+        this.rootNodes = rootNodes;
+        
+        const view = vscode.window.createTreeView('wt.recyclingBin', { 
+            treeDataProvider: this,
+            showCollapseAll: true, 
+            canSelectMany: true,
+            dragAndDropController: this,
+        });
+        this.context.subscriptions.push();
+        this.registerCommands();
+
+        this.view = view;
+        this.initUriExpansion('wt.recyclingBin', this.view, this.context);
     }
 
     dropMimeTypes = ['application/vnd.code.tree.outline', 'text/uri-list'];
@@ -335,5 +361,22 @@ implements
         const parent = await this.getTreeElementByUri(parentUri);
         if (!parent) return this.rootNodes[0];
         return parent;
+    }
+
+    async recoverNode (resource: OutlineNode) {
+        const outline =  extension.ExtensionGlobals.outlineView;
+        const chose = await outline.selectFile([ (node) => {
+            return node.data.ids.type !== 'fragment'
+        } ]);
+        if (chose === null) return;
+        if (chose.data.ids.type === 'root') return;
+        
+        const moveResult = await resource.generalMoveNode("recover", chose, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.outlineView, 0, null, "Insert");
+        if (moveResult.moveOffset === -1) return;
+        const effectedContainers = moveResult.effectedContainers;
+        return Promise.all([
+            outline.refresh(false, effectedContainers),
+            this.refresh(true, []),
+        ]);
     }
 }

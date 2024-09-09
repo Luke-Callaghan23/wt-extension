@@ -5,9 +5,7 @@ import * as extension from '../../extension';
 import { CopiedSelection, genericPaste } from './copyPaste';
 import { DiskContextType } from '../../workspace/workspace';
 import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey } from '../../miscTools/help';
-import { searchFiles, selectFile } from '../../miscTools/searchFiles';
-import * as commandPaletteCommands from './contextMenuCommandPalletteImpls';
-import * as misc from './misc';
+import { searchFiles, selectFile, selectFiles } from '../../miscTools/searchFiles';
 
 
 // Register all the commands needed for the outline view to work
@@ -225,16 +223,75 @@ export function registerCommands (this: OutlineView) {
         await vscode.commands.executeCommand('wt.outline.pasteItems', 'duplicated');
     });
 
-    vscode.commands.registerCommand('wt.outline.copyPath', (resource: OutlineNode) => misc.copyPath(resource));
-    vscode.commands.registerCommand('wt.outline.copyRelativePath', (resource: OutlineNode) => misc.copyRelativePath(resource));
-    vscode.commands.registerCommand('wt.outline.manualMove', (resource: OutlineNode) => misc.manualMove(resource));
+    vscode.commands.registerCommand('wt.outline.copyPath', (resource: OutlineNode) => this.copyPath(resource));
+    vscode.commands.registerCommand('wt.outline.copyRelativePath', (resource: OutlineNode) => this.copyRelativePath(resource));
+    vscode.commands.registerCommand('wt.outline.manualMove', (resource: OutlineNode) => this.manualMove(resource));
 
-    vscode.commands.registerCommand("wt.outline.commandPalette.copyNode", () => commandPaletteCommands.copyNode());
-    vscode.commands.registerCommand("wt.outline.commandPalette.pasteNode", () => commandPaletteCommands.pasteNode());
-    vscode.commands.registerCommand("wt.outline.commandPalette.duplicateNode", () => commandPaletteCommands.duplicateNode());
-    vscode.commands.registerCommand("wt.outline.commandPalette.copyRelativePath", () => commandPaletteCommands.copyRelativePath());
-    vscode.commands.registerCommand("wt.outline.commandPalette.copyPath", () => commandPaletteCommands.copyPath());
-    vscode.commands.registerCommand("wt.outline.commandPalette.deleteNode", () => commandPaletteCommands.deleteNode());
-    vscode.commands.registerCommand("wt.outline.commandPalette.moveNode", () => commandPaletteCommands.moveNode());
-    vscode.commands.registerCommand("wt.outline.commandPalette.renameNode", () => commandPaletteCommands.renameNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.copyNode", async () => {
+        const result = await this.selectFiles();
+        if (result === null) {
+            return null;
+        }
+        const deletes = result;
+        return this.removeResource(deletes);
+    });
+    
+    vscode.commands.registerCommand("wt.outline.commandPalette.pasteNode", async () => {
+        const result = await this.selectFile();
+        if (result === null) {
+            return null;
+        }
+        return this.manualMove(result);
+    });
+    
+    vscode.commands.registerCommand("wt.outline.commandPalette.duplicateNode", async () => {
+        const result = await this.selectFile();
+        if (result === null) {
+            return null;
+        }
+        const renamer = result;
+        return this.renameResource(renamer);
+    });
+    
+    vscode.commands.registerCommand("wt.outline.commandPalette.copyRelativePath", async  () => {
+        const result = await this.selectFile();
+        if (result === null) {
+            return null;
+        }
+        this.copyRelativePath(result);
+    });
+    
+    vscode.commands.registerCommand("wt.outline.commandPalette.copyPath", async () => {
+        const result = await this.selectFile();
+        if (result === null) {
+            return null;
+        }
+        this.copyPath(result);
+    });
+    
+    vscode.commands.registerCommand("wt.outline.commandPalette.deleteNode", async () => {
+        const result = await this.selectFiles();
+        if (result === null) {
+            return null;
+        }
+        const deletes = result;
+        return this.removeResource(deletes);
+    });
+    
+    vscode.commands.registerCommand("wt.outline.commandPalette.moveNode", async () => {
+        const result = await this.selectFile();
+        if (result === null) {
+            return null;
+        }
+        return this.manualMove(result);
+    });
+    
+    vscode.commands.registerCommand("wt.outline.commandPalette.renameNode", async () => {
+        const result = await this.selectFile();
+        if (result === null) {
+            return null;
+        }
+        const renamer = result;
+        return this.renameResource(renamer);
+    });
 }
