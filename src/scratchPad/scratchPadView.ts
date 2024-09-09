@@ -15,6 +15,8 @@ import { TreeNode } from '../outlineProvider/outlineTreeProvider';
 import { Buff } from '../Buffer/bufferSource';
 import { newScratchPadFile } from './createScratchPadFile';
 import { Renamable } from '../recyclingBin/recyclingBinView';
+import * as commandPalette from './contextMenuCommandPalletteImpls';
+import * as misc from './misc';
 
 export type RecycleLog = {
     oldUri: string,
@@ -131,6 +133,11 @@ implements
                 viewColumn: await determineAuxViewColumn((uri) => this.getTreeElementByUri(uri)),
             });
         });
+
+        vscode.commands.registerCommand('wt.scratchPad.manualMove', (resource: OutlineNode) => misc.manualMove(resource));
+        vscode.commands.registerCommand("wt.scratchPad.commandPalette.deleteNode", () => commandPalette.deleteNode());
+        vscode.commands.registerCommand("wt.scratchPad.commandPalette.renameNode", () => commandPalette.renameNode());
+        vscode.commands.registerCommand("wt.scratchPad.commandPalette.moveNode", () => commandPalette.moveNode());
     }
 
     static scratchPadContainerUri: vscode.Uri;

@@ -833,6 +833,10 @@
 				"title": "Writing Tool: Move Node"
 			},
 			{
+				"title": "Writing Tool: Move Node",
+				"command": "wt.scratchPad.manualMove"
+			},
+			{
 				"command": "wt.outline.commandPalette.copyNode",
 				"title": "Writing Tool: Outline: Copy Resource"
 			},
@@ -863,10 +867,30 @@
 			{	
 				"command": "wt.outline.commandPalette.renameNode",
 				"title": "Writing Tool: Outline: Rename Node"
+			},
+			{
+				"title": "Writing Tool: Scratch Pad: Pemanently Delete Resource",
+				"command": "wt.scratchPad.commandPalette.deleteNode"
+			},
+			{
+				"title": "Writing Tool: Scratch Pad: Rename Resource",
+				"command": "wt.scratchPad.commandPalette.renameNode"
+			},
+			{
+				"title": "Writing Tool: Scratch Pad: Move Node",
+				"command": "wt.scratchPad.commandPalette.moveNode"
 			}
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "wt.outline.manualMove",
+					"when": "false"
+				},
+				{
+					"command": "wt.scratchPad.manualMove",
+					"when": "false"
+				},
 				{
 					"command": "wt.editor.accent.insertAccent",
 					"when": "editorLangId == wt || editorLangId == wtNote"
