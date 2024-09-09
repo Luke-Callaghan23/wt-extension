@@ -45,7 +45,12 @@ export function addOrDeleteTargetedWord (
         targetArray.splice(targetIndex, 1);
     }
     else if (operation === 'replace' && replaceIndex >= 0) {
+        const originalWord = targetArray[replaceIndex];
         targetArray[replaceIndex] = target;
+        if (this.wordColors[originalWord]) {
+            this.wordColors[target] = this.wordColors[originalWord];
+            delete this.wordColors[originalWord];
+        }
     }
     else {
         throw new Error(`Not possible -- operation '${operation}' is invalid`);

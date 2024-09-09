@@ -195,7 +195,77 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         vscode.commands.registerCommand("wt.colorPicker.pick", async () => {
             // this.colorPick('maybe|perhaps', 'maybe')
         })
+
+        vscode.commands.registerCommand("wt.wordWatcher.commandPalette.changeColor", async () => {
+            const change = await this.selectWatchedWord();
+            if (!change) return null;
+            return this.changeColor({
+                type: 'watchedWord',
+                uri: change
+            });
+        });
+
+        vscode.commands.registerCommand("wt.wordWatcher.commandPalette.changePattern", async () => {
+            const change = await this.selectWatchedWord();
+            if (!change) return null;
+            return this.changePattern({
+                type: 'watchedWord',
+                uri: change
+            });
+        });
+
+        vscode.commands.registerCommand("wt.wordWatcher.commandPalette.deleteWord", async () => {
+            const del = await this.selectWatchedWord();
+            if (!del) return null;
+            return this.updateWords('delete', del, 'wt.wordWatcher.watchedWords');
+        });
+
+        vscode.commands.registerCommand("wt.wordWatcher.commandPalette.deleteUnwatchedWord", async () => {
+            const del = await this.selectUnwatchedWord();
+            if (!del) return null;
+            return this.updateWords('delete', del, 'wt.wordWatcher.unwatchedWords');
+        });
+
 	}
+
+    private async selectWatchedWord (): Promise<string | null> {
+        
+        interface WordEntryItem extends vscode.QuickPickItem {
+            label: string;
+            word: string;
+        }
+        const wei: WordEntryItem[] = this.watchedWords.map(word => ({
+            label: `$(edit) ${word}`,
+            word: word,
+        }));
+
+        const word = await vscode.window.showQuickPick(wei, {
+            canPickMany: false,
+            ignoreFocusOut: false,
+            title: "Select a watched word"
+        });
+        if (!word) return null;
+        return word.word;
+    }
+
+    private async selectUnwatchedWord () {
+        interface WordEntryItem extends vscode.QuickPickItem {
+            label: string;
+            word: string;
+        }
+        const wei: WordEntryItem[] = this.unwatchedWords.map(word => ({
+            label: `$(edit) ${word}`,
+            word: word,
+        }));
+
+        const word = await vscode.window.showQuickPick(wei, {
+            canPickMany: false,
+            ignoreFocusOut: false,
+            title: "Select an unwatched word"
+        });
+        if (!word) return null;
+        return word.word;
+    }
 
     getPackageItems(): { [index: string]: any; } {
         return {
