@@ -35,7 +35,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 
 	// Copy and pasting files
 	copy = copyPaste.copy;
-	paste = copyPaste.paste;
+	paste = copyPaste.pasteNew;
 
 	// Misc
 	registerCommands = commands.registerCommands;

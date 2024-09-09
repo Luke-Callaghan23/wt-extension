@@ -10,7 +10,7 @@ import { OutlineView } from '../../outlineView';
 
 
 export async function chapterMove (
-    operation: 'move' | 'recover',
+    operation: 'move' | 'recover' | 'paste',
     node: OutlineNode,
     recycleView: UriBasedView<OutlineNode>,
     outlineView: OutlineTreeProvider<TreeNode>,
@@ -127,15 +127,17 @@ export async function chapterMove (
         if (moveOffset === -1) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
     }
 
-    // Remove the trace of the old chapter from the file system
-    // Remove it from the config file
-    await node.shiftTrailingNodesDown(outlineView);
-    const chapterNodeUri = node.getUri();
-    // Remove it from the file system itself
-    await vscode.workspace.fs.delete(chapterNodeUri, {
-        recursive: true,
-        useTrash: false
-    });
+    if (operation !== 'paste') {
+        // Remove the trace of the old chapter from the file system
+        // Remove it from the config file
+        await node.shiftTrailingNodesDown(outlineView);
+        const chapterNodeUri = node.getUri();
+        // Remove it from the file system itself
+        await vscode.workspace.fs.delete(chapterNodeUri, {
+            recursive: true,
+            useTrash: false
+        });
+    }
 
     return { 
         kind: 'move',

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from "../outlineNode";
+import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from "../outlineNode";
 import { OutlineTreeProvider, TreeNode } from '../../../outlineProvider/outlineTreeProvider';
 import { MoveNodeResult } from './common';
-import { compareFsPath, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../miscTools/help';
+import { compareFsPath, ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../miscTools/help';
 import { RecyclingBinView } from '../../../recyclingBin/recyclingBinView';
 import { getUsableFileName } from '../../impl/createNodes';
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
@@ -13,7 +13,7 @@ import { updateChapterTextFragments, updateSnipContent } from '../updateChildren
 // In this case we need to shift internal contents of the outline tree as well as the
 //      config files for both the destination and the original parent containers
 export async function handleContainerSwap (
-    operation: 'move' | 'recover' | 'scratch',
+    operation: 'move' | 'recover' | 'scratch' | 'paste',
     node: OutlineNode,
     destinationProvider: OutlineTreeProvider<TreeNode>,
     sourceProvider: UriBasedView<OutlineNode>,
@@ -74,7 +74,8 @@ export async function handleContainerSwap (
     }
     // Update the internal container and .config file for the removed node, if the moved node is not a root
     //      item in the recycling bin
-    else {
+    // Only do this if this is a non-paste operation -- as paste operations do not require splicing from the original container
+    else if (operation !== 'paste') {
         const movedRecordTitle = await node.shiftTrailingNodesDown(sourceProvider);
         if (movedRecordTitle === '') {
             return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
@@ -85,23 +86,32 @@ export async function handleContainerSwap (
             spliceFromContainer = true;
         }
     }
-    // Update internal 
-
-    // Rename (move) the node on disk
-    await vscode.workspace.fs.rename(moverOriginalUri, moverDestinationUri);
-
+    
     // Store old parental information before update
     const oldParentUri = node.data.ids.parentUri;
     const oldParentNode: OutlineNode | null = await sourceProvider.getTreeElementByUri(oldParentUri);
     let oldParentContents: OutlineNode[] | undefined;
 
-    // Alter the internal data of the moving node to reflect its new ordering and parent
-    node.data.ids.fileName = newFileName;
-    node.data.ids.parentUri = destinationContainer.data.ids.uri;
-    node.data.ids.parentTypeId = destinationContainer.data.ids.type;
-    node.data.ids.uri = moverDestinationUri;
-    node.data.ids.relativePath = `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}`;
-    node.data.ids.ordering = movedFragmentNumber;
+
+    // Update internal 
+    if (operation !== 'paste') {
+        // Rename (move) the node on disk
+        await vscode.workspace.fs.rename(moverOriginalUri, moverDestinationUri);
+
+        // Alter the internal data of the moving node to reflect its new ordering and parent
+        node.data.ids.fileName = newFileName;
+        node.data.ids.parentUri = destinationContainer.data.ids.uri;
+        node.data.ids.parentTypeId = destinationContainer.data.ids.type;
+        node.data.ids.uri = moverDestinationUri;
+        node.data.ids.relativePath = `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}`;
+        node.data.ids.ordering = movedFragmentNumber;
+    }
+    else {
+        // Paste all contents of `node` into the new destination and return a new OutlineNode
+        //      to represent a copy of `node`
+        node = await handlePaste(node, movedFragmentNumber, destinationContainer, newFileName);
+    }
+
 
     // Move the node inside of the actual outline tree
     // Operation is performed differently for moving a snip and moving a 
@@ -184,3 +194,94 @@ export async function handleContainerSwap (
 
     return { moveOffset: 0, createdDestination: null, effectedContainers: containers, rememberedMoveDecision: rememberedMoveDecision };
 }
+
+const handlePaste = async (
+    src: OutlineNode,
+    originalNewOrdering: number,
+    originalDestination: OutlineNode,
+    destName: string,               // Name already created for the outer-most node being copied
+): Promise<OutlineNode> => {
+
+    // Should be called under the assumption that the snip has been added to .config of destination already
+    const snipPaste = async (
+        snip: OutlineNode, 
+        ordering: number,
+        destinationContainer: OutlineNode, 
+        fn: string
+    ): Promise<OutlineNode> => {
+        const snipDestinationPath = vscode.Uri.joinPath(destinationContainer.data.ids.uri, fn);
+        await vscode.workspace.fs.createDirectory(snipDestinationPath);
+
+        const snipContent: OutlineNode[] = [];
+        const copiedSnip = new OutlineNode({
+            contents: snipContent,
+            ids: {
+                fileName: fn,
+                parentUri: destinationContainer.data.ids.uri,
+                parentTypeId: destinationContainer.data.ids.type,
+                uri: snipDestinationPath,
+                relativePath: `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}`,
+                ordering: ordering,
+                display: snip.data.ids.display,
+                type: 'snip'
+            }
+        });
+
+        const newConfig: { [index: string]: ConfigFileInfo } = {};
+        for (const content of (snip.data as SnipNode).contents) {
+            const contentType = content.data.ids.type;
+            const destinationFileName = getUsableFileName(contentType, contentType === 'fragment');
+            const contentOrdering = content.data.ids.ordering;
+            newConfig[destinationFileName] = {
+                ordering: contentOrdering,
+                title: content.data.ids.display,
+            };
+
+            if (contentType === 'fragment') {
+                const copied = await fragmentPaste(content, contentOrdering, copiedSnip, destinationFileName);
+                snipContent.push(copied);
+            }
+            else if (contentType === 'snip') {
+                const copied = await snipPaste(content, contentOrdering, copiedSnip, destinationFileName);
+                snipContent.push(copied);
+            }
+            else throw `Unexpected inner-snip content type: ${contentType}`;
+        }
+
+        const newConfigLocation = vscode.Uri.joinPath(snipDestinationPath, '.config');
+        await writeDotConfig(newConfigLocation, newConfig);
+        return copiedSnip;
+    };
+
+    // Should be called under the assumption that the fragment has been added to .config of destination already
+    const fragmentPaste = async (
+        fragment: OutlineNode, 
+        ordering: number,
+        destinationContainer: OutlineNode,
+        fn: string
+    ): Promise<OutlineNode> => {
+        const destinationPath = vscode.Uri.joinPath(destinationContainer.data.ids.uri, fn);
+        await vscode.workspace.fs.copy(fragment.data.ids.uri, destinationPath);
+        return new OutlineNode({
+            md: (fragment.data as FragmentNode).md,
+            ids: {
+                fileName: fn,
+                parentUri: destinationContainer.data.ids.uri,
+                parentTypeId: destinationContainer.data.ids.type,
+                uri: destinationPath,
+                relativePath: `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}`,
+                ordering: ordering,
+                display: fragment.data.ids.display,
+                type: 'fragment'
+            }
+        })
+    };
+
+    if (src.data.ids.type === 'fragment') {
+        return fragmentPaste (src, originalNewOrdering, originalDestination, destName);
+    }
+    else if (src.data.ids.type === 'snip') {
+        return snipPaste(src, originalNewOrdering, originalDestination, destName);
+    }
+    else throw `Unexpected paste type: ${src.data.ids.type}`;
+};

@@ -55,6 +55,7 @@ export class ExtensionGlobals {
     public static workBible: WorkBible;
 	public static todoView: TODOsView;
 	public static workspace: Workspace;
+	public static context: vscode.ExtensionContext;
 
     public static initialize (
 		outlineView: OutlineView, 
@@ -62,7 +63,8 @@ export class ExtensionGlobals {
 		scratchPadView: ScratchPadView, 
 		workBible: WorkBible,
 		todoView: TODOsView,
-		workspace: Workspace
+		workspace: Workspace,
+		context: vscode.ExtensionContext
 	) {
         ExtensionGlobals.outlineView = outlineView;
         ExtensionGlobals.recyclingBinView = recyclingBinView;
@@ -70,6 +72,7 @@ export class ExtensionGlobals {
         ExtensionGlobals.workBible = workBible;
 		ExtensionGlobals.todoView = todoView;
 		ExtensionGlobals.workspace = workspace;
+		ExtensionGlobals.context = context;
 	}
 }
 
@@ -107,7 +110,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const workBible = new WorkBible(workspace, context);
 		await workBible.initialize()
 		
-		ExtensionGlobals.initialize(outline, recycleBin, scratchPad, workBible, todo, workspace);
+		ExtensionGlobals.initialize(outline, recycleBin, scratchPad, workBible, todo, workspace, context);
 		
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);

@@ -23,7 +23,7 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
 
     const moveOperations: { 
         dataTransferType: string, 
-        operation: 'move' | 'recover' | 'scratch',
+        operation: 'move' | 'recover' | 'scratch' | 'paste',
         sourceProvider: UriBasedView<OutlineNode>
     }[] = [{
         dataTransferType: 'application/vnd.code.tree.outline',
@@ -37,6 +37,10 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
         dataTransferType: 'application/vnd.code.tree.scratch',
         operation: 'scratch',
         sourceProvider: scratchPadView
+    }, {
+        dataTransferType: 'application/vnd.code.copied',
+        operation: 'paste',
+        sourceProvider: this,
     }];
 
     for (const{ dataTransferType, operation, sourceProvider } of moveOperations) {
@@ -94,7 +98,7 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
         let offset = 0;
         for (const mover of filteredOutlineParents) {
 
-            let actualOperation: 'recover' | 'move' | 'scratch';
+            let actualOperation: 'recover' | 'move' | 'scratch' | 'paste';
             let sourceView: OutlineView | ScratchPadView | RecyclingBinView;
             switch (operation) {
                 case 'scratch': {
@@ -104,6 +108,10 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
                 case 'recover': {
                     actualOperation = 'recover';
                     sourceView = recyclingView;
+                } break;
+                case 'paste': {
+                    actualOperation = 'paste';
+                    sourceView = this;
                 } break;
                 case 'move': 
                 default: {

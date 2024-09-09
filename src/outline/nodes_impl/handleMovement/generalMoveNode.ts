@@ -18,7 +18,7 @@ import { chapterMove } from './chapterMove';
 
 export async function generalMoveNode (
     this: OutlineNode,
-    operation: 'move' | 'recover' | 'scratch',
+    operation: 'move' | 'recover' | 'scratch' | 'paste',
     newParent: TreeNode, 
     recycleView: UriBasedView<OutlineNode>,
     outlineView: OutlineTreeProvider<TreeNode>,
@@ -85,7 +85,7 @@ export async function generalMoveNode (
     // If the container of the destination is the same as the container of the mover, then we're 
     //      not actually moving the node anywhere, we are just changing the internal ordering
     // This is an entirely separate set of logic than moving to a different container
-    if (compareFsPath(destinationContainer.getUri(), moverParentUri)) {
+    if (operation !== 'paste' && compareFsPath(destinationContainer.getUri(), moverParentUri)) {
         let finalParentNode: OutlineNode = newParentNode;
         if (moverType === 'snip' && newParentType === 'chapter') {
             const neighbors = (((newParent as OutlineNode).data as ChapterNode).snips.data as ContainerNode).contents;

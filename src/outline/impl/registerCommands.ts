@@ -2,10 +2,11 @@ import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
-import { CopiedSelection } from './copyPaste';
+import { CopiedSelection, genericPaste } from './copyPaste';
 import { DiskContextType } from '../../workspace/workspace';
 import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey } from '../../miscTools/help';
 import { searchFiles, selectFile } from '../../miscTools/searchFiles';
+import { copyNode, copyPath, copyRelativePath, deleteNode, duplicateNode, moveNode, pasteNode, renameNode } from './contextMenuCommandPalletteImpls';
 
 
 // Register all the commands needed for the outline view to work
@@ -209,63 +210,13 @@ export function registerCommands (this: OutlineView) {
     });
 
     vscode.commands.registerCommand('wt.outline.pasteItems', async (nameModifier: string | undefined) => {
-        
-        // Ensure that there are items to paste currently stored in workspace state
-        const copied: CopiedSelection | undefined = this.context.workspaceState.get<CopiedSelection>('copied');
-        if (!copied) return;
-
-        // Find all copied items that still exist in the tree in the same location
-        const copies: (OutlineNode | undefined | null)[] = await Promise.all(copied.nodes.map(copy => {
-            return this.getTreeElementByUri(copy.data.ids.uri) as Promise<OutlineNode | null | undefined>;
-        }));
-        const validCopiedNodes = copies.filter(copy => copy) as OutlineNode[];
-
-        // Ensure that there still exists some valid nodes to paste
-        if (validCopiedNodes.length === 0) return;
-
-        // Create a new copied object for the copied data
-        const validCopied: CopiedSelection = validCopiedNodes.length === copied.nodes.length
-            ? copied : {
-                count: validCopiedNodes.length,
-                nodes: validCopiedNodes,
-                type: copied.type
-            };
-
         // If there is no selected detination for the paste in the outline
         //      view, then default to using the tree as the paste destination
         let selected = this.view.selection;
         if (selected.length === 0) selected = [ ...this.rootNodes ];
 
-        const pasteLog: { [index: string]: 1 } = {};
-
-        const copiedCount = validCopied.count;
-        let pastedCount = 0;
-        let pasteErrors = 0;
-
-        // Now, for each node currently selected in the outline view, paste all
-        //      copied content into that destination
-        for (const destination of selected) {
-            const pasted = await this.paste(destination, validCopied, pasteLog, nameModifier);
-            if (!pasted) {
-                vscode.window.showWarningMessage(`WARN: Skipped paste to '${destination.data.ids.display}': unknown error`);
-                pasteErrors++;
-                continue;
-            }
-
-            // Add the destination of the laste paste into the paste log
-            setFsPathKey<1>(pasted, 1, pasteLog);
-            pastedCount += 1;
-        }
-
-        if (pasteErrors === 0) {
-            vscode.window.showInformationMessage(`INFO: Successfully pasted (${copiedCount}) resources into (${pastedCount}) destinations`);
-        }
-        else if (pastedCount > 0) {
-            vscode.window.showWarningMessage(`WARN: Pasted (${copiedCount}) resources to only (${pastedCount}) of (${pasteErrors + pastedCount}) destinations`)
-        }
-        else {
-            vscode.window.showErrorMessage(`ERROR: Pasted to 0 destination`)
-        }
+        const destinations: OutlineNode[] = [ ...selected ];
+        return genericPaste(destinations);
     });
 
     vscode.commands.registerCommand('wt.outline.duplicateItems', async () => {
@@ -294,4 +245,13 @@ export function registerCommands (this: OutlineView) {
         const outline =  extension.ExtensionGlobals.outlineView;
         return outline.refresh(false, effectedContainers);
     });
+
+    vscode.commands.registerCommand("wt.outline.commandPalette.copyNode", () => copyNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.pasteNode", () => pasteNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.duplicateNode", () => duplicateNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.copyRelativePath", () => copyRelativePath());
+    vscode.commands.registerCommand("wt.outline.commandPalette.copyPath", () => copyPath());
+    vscode.commands.registerCommand("wt.outline.commandPalette.deleteNode", () => deleteNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.moveNode", () => moveNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.renameNode", () => renameNode());
 }

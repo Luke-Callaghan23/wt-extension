@@ -8,7 +8,7 @@ import { setFsPathKey } from '../../../miscTools/help';
 
 
 export async function containerMove (
-    operation: 'move' | 'recover',
+    operation: 'move' | 'recover' | 'paste',
     node: OutlineNode,
     recycleView: UriBasedView<OutlineNode>,
     outlineView: OutlineTreeProvider<TreeNode>,

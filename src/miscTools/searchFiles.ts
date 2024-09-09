@@ -323,11 +323,22 @@ export async function searchFiles () {
 }
 
 
+export async function selectFiles (predicateFilters?: Predicate[]): Promise<OutlineNode[] | null> {
+    return select(predicateFilters || [], true);
+}
+
 export async function selectFile (predicateFilters?: Predicate[]): Promise<OutlineNode | null> {
-    
+    const result = await select(predicateFilters || [], false);
+    if (result) {
+        return result[0];
+    }
+    return null;
+}
+
+async function select (predicateFilters: Predicate[], allowMultiple: boolean): Promise<OutlineNode[] | null> {
     return new Promise((accept, reject) => {
         const qp = vscode.window.createQuickPick<IFragmentPick>();
-        qp.canSelectMany = false;
+        qp.canSelectMany = allowMultiple;
         qp.ignoreFocusOut = true;
         qp.matchOnDescription = true;
         qp.busy = true;
@@ -386,13 +397,16 @@ export async function selectFile (predicateFilters?: Predicate[]): Promise<Outli
                 qp.dispose();
                 return;
             }
+
+            // Reveal the first node in the outline explorer
             const [ selected ] = qp.selectedItems;
             const outline: OutlineView = ExtensionGlobals.outlineView;
             outline.view.reveal(selected.node, {
                 expand: true,
                 select: true,
             });
-            accept(selected.node);
+
+            accept(qp.selectedItems.map(si => si.node));
             qp.dispose();
         });
     });
