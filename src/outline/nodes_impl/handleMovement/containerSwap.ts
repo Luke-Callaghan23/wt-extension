@@ -222,7 +222,7 @@ const handlePaste = async (
                 uri: snipDestinationPath,
                 relativePath: `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}`,
                 ordering: ordering,
-                display: snip.data.ids.display,
+                display: `${snip.data.ids.display} (copy)`,
                 type: 'snip'
             }
         });
@@ -234,7 +234,7 @@ const handlePaste = async (
             const contentOrdering = content.data.ids.ordering;
             newConfig[destinationFileName] = {
                 ordering: contentOrdering,
-                title: content.data.ids.display,
+                title: `${content.data.ids.display} (copy)`,
             };
 
             if (contentType === 'fragment') {
@@ -271,7 +271,7 @@ const handlePaste = async (
                 uri: destinationPath,
                 relativePath: `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}`,
                 ordering: ordering,
-                display: fragment.data.ids.display,
+                display: `${fragment.data.ids.display} (copy)`,
                 type: 'fragment'
             }
         })

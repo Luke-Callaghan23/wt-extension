@@ -84,7 +84,9 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
 
         // Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
         const uniqueRoots = await this.getLocalRoots(movedOutlineItems);
-        const filteredOutlineParents = uniqueRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString());
+        const filteredOutlineParents = operation !== 'paste'
+            ? uniqueRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString())
+            : uniqueRoots;
 
         // Move all the valid nodes into the target
         if (filteredOutlineParents.length <= 0) continue;
@@ -119,6 +121,8 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
                     sourceView = this;
                 }
             }
+
+            if (actualOperation === 'paste') rememberedMoveDecision = 'Insert';
 
             // Do the move on the target destination with the selected operation
             const res: MoveNodeResult = await mover.generalMoveNode(

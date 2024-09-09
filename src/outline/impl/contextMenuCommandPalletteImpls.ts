@@ -25,7 +25,21 @@ export const pasteNode = async () => {
 };
 
 export const duplicateNode = async () => {
+    const result = await selectFiles();
+    if (result === null) {
+        return null;
+    }
+    const destinations = result;
+    const outlineView = extension.ExtensionGlobals.outlineView;
+    for (const dest of destinations) {
+        await outlineView.copy([dest] as readonly OutlineNode[]);
 
+        const parentUri = dest.getParentUri();
+        const parentNode = await outlineView.getTreeElementByUri(parentUri);
+        if (parentNode !== null) {
+            await genericPaste([parentNode]);
+        }
+    }
 };
 
 export const copyRelativePath = async () => {
