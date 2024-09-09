@@ -6,7 +6,8 @@ import { CopiedSelection, genericPaste } from './copyPaste';
 import { DiskContextType } from '../../workspace/workspace';
 import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey } from '../../miscTools/help';
 import { searchFiles, selectFile } from '../../miscTools/searchFiles';
-import { copyNode, copyPath, copyRelativePath, deleteNode, duplicateNode, moveNode, pasteNode, renameNode } from './contextMenuCommandPalletteImpls';
+import * as commandPaletteCommands from './contextMenuCommandPalletteImpls';
+import * as misc from './misc';
 
 
 // Register all the commands needed for the outline view to work
@@ -224,34 +225,16 @@ export function registerCommands (this: OutlineView) {
         await vscode.commands.executeCommand('wt.outline.pasteItems', 'duplicated');
     });
 
-    vscode.commands.registerCommand('wt.outline.copyPath', (resource: OutlineNode) => {
-        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath);
-    });
+    vscode.commands.registerCommand('wt.outline.copyPath', (resource: OutlineNode) => misc.copyPath(resource));
+    vscode.commands.registerCommand('wt.outline.copyRelativePath', (resource: OutlineNode) => misc.copyRelativePath(resource));
+    vscode.commands.registerCommand('wt.outline.manualMove', (resource: OutlineNode) => misc.manualMove(resource));
 
-    vscode.commands.registerCommand('wt.outline.copyRelativePath', (resource: OutlineNode) => {
-        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/'));
-    });
-
-    vscode.commands.registerCommand('wt.outline.manualMove', async (resource: OutlineNode) => {
-        const chose = await selectFile([ (node) => {
-            return node.data.ids.type !== 'fragment'
-        } ]);
-        if (chose === null) return;
-        if (chose.data.ids.type === 'root') return;
-        
-        const moveResult = await resource.generalMoveNode("move", chose, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.outlineView, 0, null, "Insert");
-        if (moveResult.moveOffset === -1) return;
-        const effectedContainers = moveResult.effectedContainers;
-        const outline =  extension.ExtensionGlobals.outlineView;
-        return outline.refresh(false, effectedContainers);
-    });
-
-    vscode.commands.registerCommand("wt.outline.commandPalette.copyNode", () => copyNode());
-    vscode.commands.registerCommand("wt.outline.commandPalette.pasteNode", () => pasteNode());
-    vscode.commands.registerCommand("wt.outline.commandPalette.duplicateNode", () => duplicateNode());
-    vscode.commands.registerCommand("wt.outline.commandPalette.copyRelativePath", () => copyRelativePath());
-    vscode.commands.registerCommand("wt.outline.commandPalette.copyPath", () => copyPath());
-    vscode.commands.registerCommand("wt.outline.commandPalette.deleteNode", () => deleteNode());
-    vscode.commands.registerCommand("wt.outline.commandPalette.moveNode", () => moveNode());
-    vscode.commands.registerCommand("wt.outline.commandPalette.renameNode", () => renameNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.copyNode", () => commandPaletteCommands.copyNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.pasteNode", () => commandPaletteCommands.pasteNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.duplicateNode", () => commandPaletteCommands.duplicateNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.copyRelativePath", () => commandPaletteCommands.copyRelativePath());
+    vscode.commands.registerCommand("wt.outline.commandPalette.copyPath", () => commandPaletteCommands.copyPath());
+    vscode.commands.registerCommand("wt.outline.commandPalette.deleteNode", () => commandPaletteCommands.deleteNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.moveNode", () => commandPaletteCommands.moveNode());
+    vscode.commands.registerCommand("wt.outline.commandPalette.renameNode", () => commandPaletteCommands.renameNode());
 }

@@ -2,9 +2,8 @@ import * as vscode from 'vscode';
 import { selectFile, selectFiles } from '../../miscTools/searchFiles';
 import { OutlineNode } from '../nodes_impl/outlineNode';
 import * as extension from './../../extension';
-import { CopiedSelection, genericPaste } from './copyPaste';
-import { OutlineView } from '../outlineView';
-import { setFsPathKey } from '../../miscTools/help';
+import { genericPaste } from './copyPaste';
+import * as misc from './misc';
 
 export const copyNode = async () => {
     const result = await selectFiles();
@@ -43,21 +42,43 @@ export const duplicateNode = async () => {
 };
 
 export const copyRelativePath = async () => {
-
+    const result = await selectFile();
+    if (result === null) {
+        return null;
+    }
+    misc.copyRelativePath(result);
 };
 
 export const copyPath = async () => {
-
+    const result = await selectFile();
+    if (result === null) {
+        return null;
+    }
+    misc.copyPath(result);
 };
 
 export const deleteNode = async () => {
-
+    const result = await selectFiles();
+    if (result === null) {
+        return null;
+    }
+    const deletes = result;
+    return extension.ExtensionGlobals.outlineView.removeResource(deletes);
 };
 
 export const moveNode = async () => {
-
+    const result = await selectFile();
+    if (result === null) {
+        return null;
+    }
+    return misc.manualMove(result);
 };
 
 export const renameNode = async () => {
-
+    const result = await selectFile();
+    if (result === null) {
+        return null;
+    }
+    const renamer = result;
+    return extension.ExtensionGlobals.outlineView.renameResource(renamer);
 };
