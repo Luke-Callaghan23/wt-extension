@@ -237,7 +237,7 @@ export async function emDashes () {
         const beforeEmDash = text.substring(endOffset, endOffset+4) === ' -- ';
         if (beforeEmDash) {
             // Check if the character before the cursor is a space
-            // If so, then insert only insert ' -- ' instead of ', '
+            // If so, then insert only insert ' --' instead of ' -- '
             diff = 1;
             while (text[endOffset - diff] === ' ') {
                 const prev = document.positionAt(endOffset - diff);
@@ -246,6 +246,7 @@ export async function emDashes () {
                 diff++;
             }
             if (text[endOffset] === ' ') endStr = ' --';
+            if (text[endOffset + 4] === undefined || /\s/.test(text[endOffset + 4])) endStr = ' -- ';
         }
     
         newSelections.push(new vscode.Selection(startPos, endPos));
