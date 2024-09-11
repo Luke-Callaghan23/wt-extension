@@ -42,8 +42,8 @@ export async function surroundSelectionWith (startRanges: string | string[], end
                 afterSelection = new vscode.Selection(newStart, selection.end);
             }
             else {
-                const newEnd = new vscode.Position(selection.end.line, selection.end.character + end.length);
-                afterSelection = new vscode.Selection(selection.end, newEnd);
+                const newEnd = new vscode.Position(selection.end.line, (selection.end.character) + end.length);
+                afterSelection = new vscode.Selection(new vscode.Position(selection.end.line, selection.end.character), newEnd);
                 const afterText = document.getText(afterSelection);
                 if (afterText !== end) afterSelection = undefined;
             }
@@ -217,25 +217,29 @@ export async function emDashes () {
     
         let diff: number = 1;
 
-        
         // Check if the character before the cursor is a space
         // If so, then move the cursor back to before the space and only insert ',' instead of ', '
         const startOffset = document.offsetAt(selection.start);
-        while (text[startOffset - diff] === ' ') {
-            const prev = document.positionAt(startOffset - diff);
-            startPos = prev;
-            startStr = !selection.isEmpty ? ' --' : ' -- ';
-            diff++;
-        }
-        if (text[startOffset] === ' ') startStr = !selection.isEmpty ? ' --' : ' -- ';
+        const afterEmDash = startOffset - 4 >= 0 && text.substring(startOffset-4, startOffset) === ' -- ';
         
         const endOffset = document.offsetAt(selection.end);
+        const beforeEmDash = text.substring(endOffset, endOffset+4) === ' -- ';
+
+        if (!afterEmDash || !beforeEmDash) {
+            while (text[startOffset - diff] === ' ') {
+                const prev = document.positionAt(startOffset - diff);
+                startPos = prev;
+                startStr = !selection.isEmpty ? ' --' : ' -- ';
+                diff++;
+            }
+            if (text[startOffset] === ' ') startStr = !selection.isEmpty ? ' --' : ' -- ';
+        }
+        
 
         // If the substring after the cursor is an emdash, then the surroundSelectionWith function will be moving
         //      the cursor to after the em dash.  In which case we don't want to move or edit the 
         //      end selection at all
-        const beforeEmDash = text.substring(endOffset, endOffset+4) === ' -- ';
-        if (beforeEmDash) {
+        if (!beforeEmDash) {
             // Check if the character before the cursor is a space
             // If so, then insert only insert ' --' instead of ' -- '
             diff = 1;
@@ -246,7 +250,9 @@ export async function emDashes () {
                 diff++;
             }
             if (text[endOffset] === ' ') endStr = ' --';
-            if (text[endOffset + 4] === undefined || /\s/.test(text[endOffset + 4])) endStr = ' -- ';
+            
+            // If the rest of the text on the line is whitespace then use ' -- ' as the actual end string
+            if ((text[endOffset + 4] === undefined || /\s/.test(text[endOffset + 4])) && selection.isEmpty) endStr = ' -- ';
         }
     
         newSelections.push(new vscode.Selection(startPos, endPos));
