@@ -775,10 +775,102 @@
 			{
 				"command": "wt.outline.manualMove",
 				"title": "Writing Tool: Move Node"
+			},
+			{
+				"title": "Writing Tool: Move Node",
+				"command": "wt.scratchPad.manualMove"
+			},
+			{
+				"title": "Writing Tool: Recover Node",
+				"command": "wt.recyclingBin.manualMove"
+			},
+			{
+				"command": "wt.outline.commandPalette.copyNode",
+				"title": "Writing Tool: Outline: Copy Resource"
+			},
+			{	
+				"command": "wt.outline.commandPalette.pasteNode",
+				"title": "Writing Tool: Outline: Paste Resource"
+			},
+			{	
+				"command": "wt.outline.commandPalette.duplicateNode",
+				"title": "Writing Tool: Outline: Duplicate Node"
+			},
+			{	
+				"command": "wt.outline.commandPalette.copyRelativePath",
+				"title": "Writing Tool: Outline: Copy Relative Path"
+			},
+			{	
+				"command": "wt.outline.commandPalette.copyPath",
+				"title": "Writing Tool: Outline: Copy Path"
+			},
+			{	
+				"command": "wt.outline.commandPalette.deleteNode",
+				"title": "Writing Tool: Outline: Delete Node"
+			},
+			{	
+				"command": "wt.outline.commandPalette.moveNode",
+				"title": "Writing Tool: Outline: Move Node"
+			},
+			{	
+				"command": "wt.outline.commandPalette.renameNode",
+				"title": "Writing Tool: Outline: Rename Node"
+			},
+			{
+				"title": "Writing Tool: Scratch Pad: Pemanently Delete Resource",
+				"command": "wt.scratchPad.commandPalette.deleteNode"
+			},
+			{
+				"title": "Writing Tool: Scratch Pad: Rename Resource",
+				"command": "wt.scratchPad.commandPalette.renameNode"
+			},
+			{
+				"title": "Writing Tool: Scratch Pad: Move Node",
+				"command": "wt.scratchPad.commandPalette.moveNode"
+			},
+			{
+				"title": "Writing Tool: Recycling Bin: Pemanently Delete Resource",
+				"command": "wt.recyclingBin.commandPalette.deleteNode"
+			},
+			{
+				"title": "Writing Tool: Recycling Bin: Rename Recycled Resource",
+				"command": "wt.recyclingBin.commandPalette.renameNode"
+			},
+			{
+				"title": "Writing Tool: Recycling Bin: Recover Node",
+				"command": "wt.recyclingBin.commandPalette.recoverNode"
+			},
+			{
+				"title": "Writing Tool: Word Watcher: Change watched word color",
+				"command": "wt.wordWatcher.commandPalette.changeColor"
+			},
+			{
+				"title": "Writing Tool: Word Watcher: Change watched word pattern",
+				"command": "wt.wordWatcher.commandPalette.changePattern"
+			},
+			{
+				"title": "Writing Tool: Word Watcher: Delete Watched Word",
+				"command": "wt.wordWatcher.commandPalette.deleteWord"
+			},
+			{
+				"command": "wt.wordWatcher.commandPalette.deleteUnwatchedWord",
+				"title": "Writing Tool: Word Watcher: Delete Unwatched Word"
 			}
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "wt.outline.manualMove",
+					"when": "false"
+				},
+				{
+					"command": "wt.scratchPad.manualMove",
+					"when": "false"
+				},
+				{
+					"command": "wt.recyclingBin.manualMove",
+					"when": "false"
+				},
 				{
 					"command": "wt.editor.accent.insertAccent",
 					"when": "editorLangId == wt || editorLangId == wtNote"

@@ -924,6 +924,10 @@
 					"when": "false"
 				},
 				{
+					"command": "wt.recyclingBin.manualMove",
+					"when": "false"
+				},
+				{
 					"command": "wt.editor.accent.insertAccent",
 					"when": "editorLangId == wt || editorLangId == wtNote"
 				},
