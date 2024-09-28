@@ -18,8 +18,13 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onLanguage:json",
-		"onLanguage:jsonc"
+		"onView:wt.outline",
+		"onView:wt.wordWatcher",
+		"onView:wt.todo",
+		"onView:wt.synonyms",
+		"onView:wt.scratchPad",
+		"onView:wt.recyclingBin",
+		"onView:wt.workBible.tree"
 	],
 	"browser": "./dist/web/extension.js",
 	"contributes": {
