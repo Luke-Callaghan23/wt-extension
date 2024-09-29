@@ -24,7 +24,7 @@ export async function surroundSelectionWith (startRanges: string | string[], end
     //          editor.selections[n].start.character > editor.selections[n - 1].start.character
     //          AND editor.selections[n].end.character > editor.selections[n - 1].end.character
     //      Which I BELIEVE is pretty often the case
-    //      If not, you're SOL
+    //      If not, you're SoL
     const offsetsMap: {
         [index: number]:  number ;
     } = {}
@@ -37,7 +37,7 @@ export async function surroundSelectionWith (startRanges: string | string[], end
         for (let selIndex = 0; selIndex < editor.selections.length; selIndex++) {
             const selection = editor.selections[selIndex];
             const start = Array.isArray(startRanges) ? startRanges[selIndex % startRanges.length] : startRanges;
-            const end = Array.isArray(endRanges) ? endRanges[selIndex % endRanges.length] : endRanges;
+            const end = (Array.isArray(endRanges) ? endRanges[selIndex % endRanges.length] : endRanges) || start;
 
             // Get the selected text within the selection
             const selected = document.getText(selection);
