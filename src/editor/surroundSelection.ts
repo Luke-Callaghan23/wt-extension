@@ -7,100 +7,137 @@ export async function surroundSelectionWith (startRanges: string | string[], end
     if (!editor) return;
     
     endRanges = endRanges || startRanges;
-    const document = editor.document;
-    for (let selIndex = 0; selIndex < editor.selections.length; selIndex++) {
-        const selection = editor.selections[selIndex];
 
-        const start = Array.isArray(startRanges) ? startRanges[selIndex % startRanges.length] : startRanges;
-        const end = Array.isArray(endRanges) ? endRanges[selIndex % endRanges.length] : endRanges;
-
-        // Get the selected text within the selection
-        const selected = document.getText(selection);
     
-        // Check if the string immediately before the selection is the same as the surround string
-        let beforeSelection: vscode.Selection | undefined = undefined;
-        {
-            if (selected.startsWith(start)) {
-                const newEnd = new vscode.Position(selection.start.line, selection.start.character + start.length);
-                beforeSelection = new vscode.Selection(selection.start, newEnd);
-            }
-            else {
-                if (selection.start.character >= start.length) {
-                    const newStart = new vscode.Position(selection.start.line, selection.start.character - start.length);
-                    beforeSelection = new vscode.Selection(newStart, selection.start);
-                    const beforeText = document.getText(beforeSelection);
-                    if (beforeText !== start) beforeSelection = undefined;
+    // Maps the current offset for each line
+    // Offset is found by the amount of characters that have been added/removed in the process of the edit build below
+    // Basics is document.getText() is not updated as the loop rolls through -- document.getText only gets updated
+    //      after the edit build is finished
+    // document.getText() and editor.selections STAY COMPLETELY STATIC THROUGHOUT THE LOOP BELOW
+    // Because of this, we do all string evaluation as if no edits have yet occured, but when we store selections in
+    //      the `selectionEdits` map below those ***new*** selections will be updated according to the offset
+    // The `selectionEdits` map stores indeces into `editor.selections` and the ***new*** selections to replace them
+    //      so, whenever a new selection is stored in selection edits, we need to take into account the current offset
+    //      of new/removed characters in the line, currently and add that offset to the new selection
+    // NOTE: probably does not work when `editor.selections` is out of order
+    //      This algorithm requires:
+    //          editor.selections[n].start.character > editor.selections[n - 1].start.character
+    //          AND editor.selections[n].end.character > editor.selections[n - 1].end.character
+    //      Which I BELIEVE is pretty often the case
+    //      If not, you're SOL
+    const offsetsMap: {
+        [index: number]:  number ;
+    } = {}
+
+    const selectionEdits: { [index: number]: vscode.Selection } = {};
+
+    await editor.edit((editBuilder: vscode.TextEditorEdit) => {
+
+        const document = editor.document;
+        for (let selIndex = 0; selIndex < editor.selections.length; selIndex++) {
+            const selection = editor.selections[selIndex];
+            const start = Array.isArray(startRanges) ? startRanges[selIndex % startRanges.length] : startRanges;
+            const end = Array.isArray(endRanges) ? endRanges[selIndex % endRanges.length] : endRanges;
+
+            // Get the selected text within the selection
+            const selected = document.getText(selection);
+        
+            // Check if the string immediately before the selection is the same as the surround string
+            let beforeSelection: vscode.Selection | undefined = undefined;
+            {
+                if (selected.startsWith(start)) {
+                    const newEnd = new vscode.Position(selection.start.line, selection.start.character + start.length);
+                    beforeSelection = new vscode.Selection(selection.start, newEnd);
+                }
+                else {
+                    if (selection.start.character >= start.length) {
+                        const newStart = new vscode.Position(selection.start.line, selection.start.character - start.length);
+                        beforeSelection = new vscode.Selection(newStart, selection.start);
+                        const beforeText = document.getText(beforeSelection);
+                        if (beforeText !== start) beforeSelection = undefined;
+                    }
                 }
             }
-        }
-    
-        // Check if the string immediately after the selection is the same as the surround string
-        let afterSelection: vscode.Selection | undefined = undefined;
-        {
-            if (selected.endsWith(end)) {
-                const newStart = new vscode.Position(selection.end.line, selection.end.character - end.length);
-                afterSelection = new vscode.Selection(newStart, selection.end);
+        
+            // Check if the string immediately after the selection is the same as the surround string
+            let afterSelection: vscode.Selection | undefined = undefined;
+            {
+                if (selected.endsWith(end)) {
+                    const newStart = new vscode.Position(selection.end.line, selection.end.character - end.length);
+                    afterSelection = new vscode.Selection(newStart, selection.end);
+                }
+                else {
+                    const newEnd = new vscode.Position(selection.end.line, (selection.end.character) + end.length);
+                    afterSelection = new vscode.Selection(new vscode.Position(selection.end.line, selection.end.character), newEnd);
+                    const afterText = document.getText(afterSelection);
+                    if (afterText !== end) afterSelection = undefined;
+                }
             }
-            else {
-                const newEnd = new vscode.Position(selection.end.line, (selection.end.character) + end.length);
-                afterSelection = new vscode.Selection(new vscode.Position(selection.end.line, selection.end.character), newEnd);
-                const afterText = document.getText(afterSelection);
-                if (afterText !== end) afterSelection = undefined;
+        
+            if (afterSelection && !beforeSelection && selection.isEmpty) {
+                // If only the substring after the selection is the surround string, then we're going to want
+                //      to move the cursor outside of the the surround string
+                // Simply shift the current editor's selection
+                const currentOffset = editor.document.offsetAt(selection.end);
+                const afterSurroundString = currentOffset + end.length;
+                const afterSurroundPosition = editor.document.positionAt(afterSurroundString);
+                selectionEdits[selIndex] = new vscode.Selection(afterSurroundPosition, afterSurroundPosition);
             }
-        }
-    
-        if (afterSelection && !beforeSelection && selection.isEmpty) {
-            // If only the substring after the selection is the surround string, then we're going to want
-            //      to move the cursor outside of the the surround string
-            // Simply shift the current editor's selection
-            const currentOffset = editor.document.offsetAt(selection.end);
-            const afterSurroundString = currentOffset + end.length;
-            const afterSurroundPosition = editor.document.positionAt(afterSurroundString);
-            const ns = [ ...editor.selections ];
-            ns[selIndex] = new vscode.Selection(afterSurroundPosition, afterSurroundPosition);
-            editor.selections = ns;
-        }
-        else if (beforeSelection && afterSelection) {
-            const before = beforeSelection as vscode.Selection;
-            const after = afterSelection as vscode.Selection;
-            // If both the before and after the selection are already equal to the surround string, then
-            //      remove those strings
-            await editor.edit((editBuilder: vscode.TextEditorEdit) => {
+            else if (beforeSelection && afterSelection) {
+                const before = beforeSelection as vscode.Selection;
+                const after = afterSelection as vscode.Selection;
+                // If both the before and after the selection are already equal to the surround string, then
+                //      remove those strings
                 editBuilder.delete(before);
                 editBuilder.delete(after);
-            });
-        }
-        else {
-            // If before and after the selection is not already the surround string, add the surround string
-        
-            // Surround the selected text with the surround string
-            const surrounded = `${start}${selected}${end}`;
-        
-            // Replace selected text with the surrounded text
-            await editor.edit((editBuilder: vscode.TextEditorEdit) => {
+
+                // Removed characters ***reduce*** the character offset of the current line
+                offsetsMap[beforeSelection.start.line] = (offsetsMap[beforeSelection.start.line] || 0) + (start.length * -1);
+                offsetsMap[afterSelection.start.line] = (offsetsMap[afterSelection.start.line] || 0) + (end.length * -1);
+            }
+            else {
+                // If before and after the selection is not already the surround string, add the surround string
+            
+                // Surround the selected text with the surround string
+                const surrounded = `${start}${selected}${end}`;
+            
+                // Replace selected text with the surrounded text
                 editBuilder.replace(selection, surrounded);
-            });
 
-            if (!selection.isEmpty) continue;
+                if (!selection.isEmpty) continue;
 
-            // If the selection is empty, then move the cursor into the middle of the surround strings
-            //      that were added
-            // After the edits, the current position of the cursor is at the end of the surround string
-            const endPos = selection.end;
-            const startSequenceLength = start.length;
+                // If the selection is empty, then move the cursor into the middle of the surround strings
+                //      that were added
+                // After the edits, the current position of the cursor is at the end of the surround string
+                const endPos = selection.end;
+                const startSequenceLength = start.length;
 
-            // The new position is the same as the current position, minus the amount of characters in the 
-            //      surround string
-            const newPosition = new vscode.Position(endPos.line, endPos.character + startSequenceLength);
+                // The new position is the same as the current position, minus the amount of characters in the 
+                //      surround string
+                const newPosition = new vscode.Position(
+                    endPos.line, 
+                    endPos.character + startSequenceLength + (offsetsMap[endPos.line] || 0)
+                );
 
-            // New selection is the desired position of the cursor (provided to the constructor twice, to
-            //      get an empty selection)
-            const replaceSelection = new vscode.Selection(newPosition, newPosition);
-            const sels = [ ...editor.selections ];
-            sels[selIndex] = replaceSelection;
-            editor.selections = sels;
+                // New selection is the desired position of the cursor (provided to the constructor twice, to
+                //      get an empty selection)
+                const replaceSelection = new vscode.Selection(newPosition, newPosition);
+                selectionEdits[selIndex] = replaceSelection;
+
+                // Added characters ***add*** to the current offset of the current line
+                offsetsMap[selection.start.line] = (offsetsMap[selection.start.line] || 0) + start.length;
+                offsetsMap[selection.end.line] = (offsetsMap[selection.end.line] || 0) + end.length;
+            }
         }
+    });
+
+    // Replace each new selection over the old one
+    const newSelections = [ ...editor.selections ];
+    for (const [ selIndex, selection] of Object.entries(selectionEdits)) {
+        newSelections[parseInt(selIndex)] = selection;
     }
+    editor.selections = newSelections;
+
 }
 
 export function italisize () {
@@ -175,23 +212,28 @@ export function commasize () {
 
 export async function emDash () {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
-    for (const selection of editor.selections) {
-        await editor.edit((editBuilder: vscode.TextEditorEdit) => {
+    if (!editor) return; 
+    await editor.edit((editBuilder: vscode.TextEditorEdit) => {
+        for (let selIndex = 0; selIndex < editor.selections.length; selIndex++) {
+            const selection = editor.selections[selIndex];
             let replace = ' -- ';
             
             // If the cursor is on a whitespace character, then insert only '-- ' instead of ' -- '
             const document = editor.document;
             if (selection.isEmpty && document) {
                 const offset = document.offsetAt(selection.start);
-                if (document.getText()[offset - 1] === ' ') {
+                const text = document.getText();
+                if (text[offset - 1] === ' ') {
                     replace = '-- ';
+                }
+                if (text[offset] === ' ') {
+                    replace = ' --';
                 }
             }
             
             editBuilder.replace(selection, replace);
-        });
-    }
+        }
+    });
 }
 
 export async function emDashes () {
