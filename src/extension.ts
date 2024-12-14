@@ -40,6 +40,7 @@ import { convertFileNames } from './miscTools/convertFileNames';
 import { ScratchPadView } from './scratchPad/scratchPadView';
 import { TabStates } from './miscTools/tabStates';
 import { Autocorrect } from './autocorrect/autocorrect';
+import { FileLinker } from './miscTools/fileLinker';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -117,6 +118,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);
+		new FileLinker(context, workspace);
 
 		const timedViews = new TimedView(context, [
 			['wt.workBible.tree', 'workBible', workBible],

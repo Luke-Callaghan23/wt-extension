@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as vscodeUri from 'vscode-uri';
 import { Timed } from '../timedView';
 import { Workspace } from '../workspace/workspaceClass';
 import { PersonalDictionary } from '../intellisense/spellcheck/personalDictionary';
@@ -81,7 +82,9 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
     }
 
 
-    private async createUnderliner (uri: vscode.Uri, fileName: string, original: string, replacement: string, replacedRange: vscode.Range, correctionKind: CorrectionKind='correction') {
+    private async createUnderliner (uri: vscode.Uri, original: string, replacement: string, replacedRange: vscode.Range, correctionKind: CorrectionKind='correction') {
+
+        const fileName = vscodeUri.Utils.basename(uri);
 
         // Query for the node representing this document to get its label
         // Label is used in the diagnostic to show where it came from
@@ -130,12 +133,13 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         if (!replacement) return false;
         if (!this.enabled) return false;
 
-        if (this.exclusions[editor.document.fileName]?.[original]) {
+        const documentFileName = vscodeUri.Utils.basename(editor.document.uri);
+        if (this.exclusions[documentFileName]?.[original]) {
             const instancesOfOriginal = getAllIndices(editor.document.getText(), original);
             for (let index = 0; index < instancesOfOriginal.length; index++) {
                 const instanceStartIndex = instancesOfOriginal[index];
                 if (instanceStartIndex === editor.document.offsetAt(range.start)) {
-                    if (index < this.exclusions[editor.document.fileName][original]) {
+                    if (index < this.exclusions[documentFileName][original]) {
                         return false;
                     }
                 }
@@ -155,7 +159,6 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         );
         this.createUnderliner(
             editor.document.uri, 
-            editor.document.fileName, 
             original, replacement, 
             replacedRange,
 
@@ -215,7 +218,6 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
 
             this.createUnderliner(
                 editor.document.uri, 
-                editor.document.fileName, 
                 original, replacement, 
                 replacementRange, 
                 'specialCharacterSwap'
@@ -232,7 +234,7 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         
         let diagnostics : vscode.Diagnostic[] = [];
         const results = editor.setDecorations(Autocorrect.BlueUnderline,  Object.entries(this.allCorrections).map(([ filename, corrections ]) => {
-            if (filename !== editor.document.fileName) return [];
+            if (filename !== vscodeUri.Utils.basename(editor.document.uri)) return [];
             return Object.entries(corrections).map(([ _, data ]) => {
                 if (!data.active) return [];
 
@@ -290,7 +292,7 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         context: vscode.CodeActionContext, token: vscode.CancellationToken
     ): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
         return Object.entries(this.allCorrections).map(([ fileName, corrections ]) => {
-            if (document.fileName !== fileName) return []
+            if (vscodeUri.Utils.basename(document.uri) !== fileName) return []
             return Object.entries(corrections).map(([ _, data ]) => {
                 if (data.kind === 'specialCharacterSwap' || !range.intersection(data.range)) return [];
 

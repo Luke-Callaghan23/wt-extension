@@ -252,3 +252,15 @@ export function getAllIndices (str: string, subStr: string): number[] {
     return indices;
 }
 
+export async function statFile (uri: vscode.Uri): Promise<vscode.FileStat | null> {
+    try {
+        return vscode.workspace.fs.stat(uri);
+    }
+    catch (err) {
+        return null;
+    }
+}
+
+export function getRelativePath (uri: vscode.Uri): string {
+    return uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
+}

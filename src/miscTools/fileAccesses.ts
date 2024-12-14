@@ -10,7 +10,7 @@ import { Workspace } from './../workspace/workspaceClass';
 import { RecyclingBinView } from './../recyclingBin/recyclingBinView';
 import { ScratchPadView } from './../scratchPad/scratchPadView';
 import { WorkBible } from './../workBible/workBible';
-import { getFsPathKey, setFsPathKey, vagueNodeSearch } from './../miscTools/help';
+import { getFsPathKey, getRelativePath, setFsPathKey, vagueNodeSearch } from './../miscTools/help';
 
 export class FileAccessManager implements Packageable {
 
@@ -24,7 +24,7 @@ export class FileAccessManager implements Packageable {
     private static positions: { [ index: string ]: vscode.Selection };
 
     static getPosition (uri: vscode.Uri): vscode.Selection | null {
-        const relativePath = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
+        const relativePath = getRelativePath(uri);
         if (relativePath in FileAccessManager.positions) {
             return FileAccessManager.positions[relativePath];
         }

@@ -114,7 +114,15 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		return (await element.getChildren(true, insertIntoNodeMap)).map(on => on as T);
 	}
 
-	public async getParent?(element: T): Promise<T> {
+	public async getParent?(element: T): Promise<T | null> {
+		try {
+			const node = element as unknown as OutlineNode;
+			if (node.data.ids.type === 'root' && node.data.ids.parentTypeId === 'root') {
+				return null;
+			}
+		}
+		catch (err) {}
+		
 		const parentUri = element.getParentUri();
 		const node = await this.getTreeElementByUri(parentUri);
 		if (!node) return this.rootNodes[0];

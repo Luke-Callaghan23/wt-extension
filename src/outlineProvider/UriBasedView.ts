@@ -75,7 +75,6 @@ export class UriBasedView<T extends HasGetUri> {
 		if (!targetUri.fsPath.includes(extension.rootPath.fsPath)) {
 			return null;
 		}
-	
 
 		const cachedNode = getFsPathKey<T>(targetUri, this.nodeMap);
 		if (cachedNode) {
