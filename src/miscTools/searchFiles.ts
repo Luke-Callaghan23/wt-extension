@@ -172,7 +172,12 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
                 currentPick = options[options.length - 1];
             }
             // Otherwise, if we're filtering generic files (and this is a generic file), then pop the option from the queue
-            else if (filterGeneric && fragment.data.ids.display.startsWith("Imported Fragment (") || fragment.data.ids.display.startsWith("New Fragment (")) {
+            else if (filterGeneric && (
+                fragment.data.ids.display.startsWith("Imported Fragment (") 
+                || fragment.data.ids.display.startsWith("Imported Fragment (")
+                || fragment.data.ids.display.startsWith("New Fragment (")
+                || fragment.data.ids.display.startsWith("New Fragment")
+            )) {
                 options.pop();
             }
         });
@@ -289,7 +294,7 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
 }
 
 const TAB_SIZE: number = 4;
-export async function searchFiles (this: UriBasedView<OutlineNode>) {
+export async function searchFiles () {
     
     const qp = vscode.window.createQuickPick<IFragmentPick>();
     qp.canSelectMany = false;
@@ -299,7 +304,7 @@ export async function searchFiles (this: UriBasedView<OutlineNode>) {
 
     qp.show();
 
-    const { options, currentNode, currentPick } = getFilesQPOptions(this.rootNodes, false);
+    const { options, currentNode, currentPick } = getFilesQPOptions(ExtensionGlobals.outlineView.rootNodes, false);
     
     qp.busy = false;
     qp.items = options;
@@ -326,7 +331,7 @@ export async function searchFiles (this: UriBasedView<OutlineNode>) {
         if (button.id === 'filterButton') {
             isFiltering = !isFiltering;
             qp.busy = true;
-            const { options, currentNode, currentPick } = getFilesQPOptions(this.rootNodes, isFiltering);
+            const { options, currentNode, currentPick } = getFilesQPOptions(ExtensionGlobals.outlineView.rootNodes, isFiltering);
             qp.items = options;
             if (currentPick) {
                 qp.activeItems = [ currentPick ];
@@ -337,7 +342,7 @@ export async function searchFiles (this: UriBasedView<OutlineNode>) {
         else if (button.id === 'clearFilters') {
             isFiltering = false;
             qp.busy = true;
-            const { options } = getFilesQPOptions(this.rootNodes, isFiltering);
+            const { options } = getFilesQPOptions(ExtensionGlobals.outlineView.rootNodes, isFiltering);
             qp.items = options;
             qp.value = ``
             qp.busy = false;
@@ -346,7 +351,7 @@ export async function searchFiles (this: UriBasedView<OutlineNode>) {
 
     qp.onDidAccept(async () => {
         const [ selected ] = qp.selectedItems;
-        this.view.reveal(selected.node);
+        ExtensionGlobals.outlineView.view.reveal(selected.node);
         if (selected.node.data.ids.type === 'fragment') {
             await vscode.window.showTextDocument(selected.node.data.ids.uri);
             const outline: OutlineView = ExtensionGlobals.outlineView;

@@ -203,10 +203,16 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
                 editor.document.positionAt(m.index + original.length)
             );
             specialCharacterEdits.push([ specialCharacterRange, replacement ]);
+
+            // KNOWN ISSUE:
+            // Multiple autocorrections on the same line where one of the corrections
+            //      is ' -- ' will result in this `replacementRange` appear
+            //      visually incorrect with the blue underline
             const replacementRange = new vscode.Range(
                 editor.document.positionAt(m.index),
                 editor.document.positionAt(m.index + replacement.length)
             );
+
             this.createUnderliner(
                 editor.document.uri, 
                 editor.document.fileName, 
