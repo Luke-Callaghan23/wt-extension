@@ -102,7 +102,7 @@ export class FileAccessManager implements Packageable {
                     FileAccessManager.documentOpened(editor.document.uri);
                 }
                 FileAccessManager.savePosition(editor);
-                if (Date.now() - FileAccessManager.lastContextUpdate > 1000 * 60 * 5) {
+                if (Date.now() - FileAccessManager.lastContextUpdate > 1000) {
                     Workspace.packageContextItems();
                     FileAccessManager.lastContextUpdate = Date.now();
                 }
@@ -110,10 +110,8 @@ export class FileAccessManager implements Packageable {
         };
 
         vscode.window.onDidChangeActiveTextEditor(cb);
-        vscode.workspace.onDidSaveTextDocument(() => {
-            const editor = vscode.window.activeTextEditor;
-            return cb(editor);
-        });
+        vscode.workspace.onDidSaveTextDocument(() => cb(vscode.window.activeTextEditor));
+        vscode.window.onDidChangeTextEditorSelection((e) => cb(e.textEditor));
     }
 
     
