@@ -7,14 +7,17 @@ import { DiskContextType } from '../workspace/workspace';
 import { getAllIndices, vagueNodeSearch } from '../miscTools/help';
 import { ExtensionGlobals } from '../extension';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { commonReplacements } from '../import/importFiles';
 
 const UNDERLINE_TIMER = 20 * 1000; // ms
 
 type UriFileName = string;
 type IncorrectWord = string;
 type CorrectedWord = string;
-type UndelineIdentifier = string;
+type UnderlineIdentifier = string;
 type HowMany = number;
+
+type CorrectionKind = 'correction' | 'specialCharacterSwap';
 
 export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvider<vscode.CodeAction> {
     private static BlueUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
@@ -29,13 +32,15 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
     private exclusions:  { [index: UriFileName]: {
         [index: IncorrectWord]: HowMany;            // Tells us how many times we should ignore 
     } };
+    private replacementsRegex: RegExp;
 
     private diagnosticCollection: vscode.DiagnosticCollection;
 
     // Use the file name as the main identifier for files -- as we want to maintain this
     //      collection even when files are moved
     private allCorrections: { [index: UriFileName]: {
-        [index: UndelineIdentifier]: {
+        [index: UnderlineIdentifier]: {
+            kind: CorrectionKind
             range: vscode.Range;
             original: string; 
             corrected: string;
@@ -76,6 +81,50 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
     }
 
 
+    private async createUnderliner (uri: vscode.Uri, fileName: string, original: string, replacement: string, replacedRange: vscode.Range, correctionKind: CorrectionKind='correction') {
+
+        // Query for the node representing this document to get its label
+        // Label is used in the diagnostic to show where it came from
+        let label: string;
+        const { node: nodeOrNote, source } = await vagueNodeSearch(uri, ExtensionGlobals.outlineView, ExtensionGlobals.recyclingBinView, ExtensionGlobals.scratchPadView, ExtensionGlobals.workBible);
+        if (!nodeOrNote || !source) {
+            label = fileName;
+        }
+        else {
+            const node: { data: { ids: { display: string } } } = nodeOrNote instanceof OutlineNode ?
+                nodeOrNote : { data: { ids: { display: nodeOrNote!.noun } } };
+            label = node.data.ids.display;
+        }
+        
+        const id = Math.random().toString(); 
+        if (!this.allCorrections[fileName]) {
+            this.allCorrections[fileName] = {};
+        }
+        
+        this.allCorrections[fileName][id] = {
+            kind: correctionKind,
+            active: true,
+            corrected: replacement,
+            original: original,
+            range: replacedRange,
+            nodeLabel: label
+        };
+
+        setTimeout(() => {
+            // After the under line timer elapses, remove the underline and set `active` to false
+            this.allCorrections[fileName][id].active = false;
+
+            // If a visible text editor exists for this document, then update it to remove the blue
+            //      underline visually
+            for (const visible of vscode.window.visibleTextEditors) {
+                if (visible.document.uri.fsPath === uri.fsPath) {
+                    this.update(visible, []);
+                    break;
+                }
+            }
+        }, UNDERLINE_TIMER);
+    }
+
     async tryCorrection (original: string, editor: vscode.TextEditor, range: vscode.Range): Promise<boolean> {
         const replacement = this.corrections[original];
         if (!replacement) return false;
@@ -104,49 +153,14 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
             range.start,
             new vscode.Position(range.start.line, range.start.character + replacement.length)
         );
-        
-        const fileName = editor.document.fileName;
+        this.createUnderliner(
+            editor.document.uri, 
+            editor.document.fileName, 
+            original, replacement, 
+            replacedRange,
 
-        const id = Math.random().toString(); 
-        if (!this.allCorrections[fileName]) {
-            this.allCorrections[fileName] = {};
-        }
-        
+        );
 
-        // Query for the node representing this document to get its label
-        // Label is used in the diagnostic to show where it came from
-        let label: string;
-        const { node: nodeOrNote, source } = await vagueNodeSearch(editor.document.uri, ExtensionGlobals.outlineView, ExtensionGlobals.recyclingBinView, ExtensionGlobals.scratchPadView, ExtensionGlobals.workBible);
-        if (!nodeOrNote || !source) {
-            label = editor.document.fileName;
-        }
-        else {
-            const node: { data: { ids: { display: string } } } = nodeOrNote instanceof OutlineNode ?
-                nodeOrNote : { data: { ids: { display: nodeOrNote!.noun } } };
-            label = node.data.ids.display;
-        }
-
-        this.allCorrections[fileName][id] = {
-            active: true,
-            corrected: replacement,
-            original: original,
-            range: replacedRange,
-            nodeLabel: label
-        };
-
-        setTimeout(() => {
-            // After the under line timer elapses, remove the underline and set `active` to false
-            this.allCorrections[fileName][id].active = false;
-
-            // If a visible text editor exists for this document, then update it to remove the blue
-            //      underline visually
-            for (const visible of vscode.window.visibleTextEditors) {
-                if (visible.document.uri.fsPath === editor.document.uri.fsPath) {
-                    this.update(visible, []);
-                    break;
-                }
-            }
-        }, UNDERLINE_TIMER);
         this.update(editor, [])
         return true;
     }
@@ -175,6 +189,41 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
     
     enabled: boolean;
     async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
+
+        const docText = editor.document.getText();
+        
+        const specialCharacterEdits: [ vscode.Range, CorrectedWord ][] = [];
+
+        let m: RegExpExecArray | null;
+        while ((m = this.replacementsRegex.exec(docText)) !== null) {
+            const original = m[0];
+            const replacement = commonReplacements[m[0] as keyof typeof commonReplacements];
+            const specialCharacterRange = new vscode.Range(
+                editor.document.positionAt(m.index),
+                editor.document.positionAt(m.index + original.length)
+            );
+            specialCharacterEdits.push([ specialCharacterRange, replacement ]);
+            const replacementRange = new vscode.Range(
+                editor.document.positionAt(m.index),
+                editor.document.positionAt(m.index + replacement.length)
+            );
+            this.createUnderliner(
+                editor.document.uri, 
+                editor.document.fileName, 
+                original, replacement, 
+                replacementRange, 
+                'specialCharacterSwap'
+            );
+        }
+
+        if (specialCharacterEdits.length > 0) {
+            editor.edit(eb => {
+                for (const [ range, replacement ] of specialCharacterEdits) {
+                    eb.replace(range, replacement);
+                }
+            });
+        }
+        
         let diagnostics : vscode.Diagnostic[] = [];
         const results = editor.setDecorations(Autocorrect.BlueUnderline,  Object.entries(this.allCorrections).map(([ filename, corrections ]) => {
             if (filename !== editor.document.fileName) return [];
@@ -224,6 +273,7 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         );
 
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection("stuff");
+        this.replacementsRegex = new RegExp(`(${Object.keys(commonReplacements).join("|")})`, 'g');
     }
 
     // recieve 
@@ -236,7 +286,7 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         return Object.entries(this.allCorrections).map(([ fileName, corrections ]) => {
             if (document.fileName !== fileName) return []
             return Object.entries(corrections).map(([ _, data ]) => {
-                if (!range.intersection(data.range)) return [];
+                if (data.kind === 'specialCharacterSwap' || !range.intersection(data.range)) return [];
 
                 const edit = new vscode.WorkspaceEdit();
                 edit.replace(document.uri, data.range, data.original);
