@@ -39,6 +39,7 @@ import { ReloadWatcher } from './miscTools/reloadWatcher';
 import { convertFileNames } from './miscTools/convertFileNames';
 import { ScratchPadView } from './scratchPad/scratchPadView';
 import { TabStates } from './miscTools/tabStates';
+import { Autocorrect } from './autocorrect/autocorrect';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -93,9 +94,10 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const recycleBin = new RecyclingBinView(context, workspace);		
 		await recycleBin.initialize();
 
+		const autocorrection = new Autocorrect(context, workspace);
 		const personalDictionary = new PersonalDictionary(context, workspace);
 		const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, true);
-		const spellcheck = new Spellcheck(context, workspace, personalDictionary);
+		const spellcheck = new Spellcheck(context, workspace, personalDictionary, autocorrection);
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
 		const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
@@ -125,6 +127,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.very', 'very', veryIntellisense],  
 			['wt.colors', 'colors', colorIntellisense],
 			['wt.textStyle', 'textStyle', textStyles],
+			['wt.autocorrections', 'autocorrections', autocorrection]
 		]);
 
 		const tabLabels = new TabLabels();
@@ -143,7 +146,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(),
-			personalDictionary, colorGroups, wh, reloadWatcher, tabStates
+			personalDictionary, colorGroups, wh, reloadWatcher, tabStates,
+			autocorrection
 		]));
 
 		// Lastly, clear the 'tmp' folder

@@ -237,3 +237,18 @@ export const isSubdirectory = (sub: vscode.Uri, full: vscode.Uri): boolean => {
     // Check if path2 starts with path1
     return normalizedFull.startsWith(normalizedSub);
 };
+
+export function getAllIndices (str: string, subStr: string): number[] {
+    const indices: number[] = [];
+    let startIndex = 0;
+
+    while (true) {
+        const index = str.indexOf(subStr, startIndex);
+        if (index === -1) break;
+        indices.push(index);
+        startIndex = index + 1; // Move to the next position after the found substring
+    }
+
+    return indices;
+}
+

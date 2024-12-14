@@ -324,7 +324,6 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         }).flat();
     }
 
-
     async resolveCompletionItem (
         item: vscode.CompletionItem, 
         token: vscode.CancellationToken
@@ -476,7 +475,11 @@ const getMisspellCorrections = (res: SynonymError, hoverRange: vscode.Range, wor
             label: suggest,
             range: hoverRange,
             filterText: wordText,
-            sortText: indexStr
+            sortText: indexStr,
+            command: {
+                command: "wt.autocorrections.wordReplaced",
+                arguments: [ wordText, suggest ]
+            }
         }
     }) || [];
 }

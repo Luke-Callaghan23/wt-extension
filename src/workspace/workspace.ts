@@ -6,6 +6,7 @@ import * as extension from '../extension';
 import { gitiniter } from '../gitTransactions';
 import { Buff } from '../Buffer/bufferSource';
 import { Workspace } from './workspaceClass';
+import { Autocorrect } from '../autocorrect/autocorrect';
 
 
 export type Config = {
@@ -279,7 +280,11 @@ export type DiskContextType = {
     },
     "wt.wh.synonyms": string[],
     "wt.reloadWatcher.openedTabs": TabPositions,
-    "wt.tabStates.savedTabStates": SavedTabState
+    "wt.tabStates.savedTabStates": SavedTabState,
+    "wt.autocorrections.enabled": Autocorrect['enabled'];
+    "wt.autocorrections.corrections": Autocorrect['corrections'];
+    "wt.autocorrections.dontCorrect": Autocorrect['dontCorrect'];
+    "wt.autocorrections.exclusions": Autocorrect['exclusions'];
 }
 
 export async function loadWorkspaceContext (
@@ -299,9 +304,5 @@ export async function loadWorkspaceContext (
             context.workspaceState.update(contextKey, contextValue),
         ];
     }).flat());
-    
-    context.workspaceState.update('wt.todo.enabled', contextValues['wt.todo.enabled']);
-    context.workspaceState.update('wt.wordWatcher.enabled', contextValues['wt.wordWatcher.enabled']);
-    // context.workspaceState.update('wt.proximity.enabled', contextValues['wt.proximity.enabled']);
     return contextValues;
 }

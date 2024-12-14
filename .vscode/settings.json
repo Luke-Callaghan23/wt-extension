@@ -28,5 +28,5 @@
     "terminal.integrated.defaultProfile.windows": "PowerShell",
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.autoImportCompletions": true,
-    
+    // "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }

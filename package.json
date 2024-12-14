@@ -129,6 +129,11 @@
 					"type": "boolean",
 					"default": true
 				},
+				"wt.timedSearches.autocorrections": {
+					"description": "Enable Autocorrections",
+					"type": "boolean",
+					"default": true
+				},
 				"wt.editor.showSaveAll": {
 					"description": "Enable the 'Save All' button in the editor toolbar",
 					"type": "boolean",
@@ -919,10 +924,18 @@
 			{
 				"command": "wt.wordWatcher.commandPalette.deleteUnwatchedWord",
 				"title": "Writing Tool: Word Watcher: Delete Unwatched Word"
+			},
+			{
+				"command": "wt.autocorrections.wordReplaced",
+				"title": "Writing Tool: Called when a word is replaced through spellcheck"
 			}
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "wt.autocorrections.wordReplaced",
+					"when": "false"
+				},
 				{
 					"command": "wt.outline.manualMove",
 					"when": "false"

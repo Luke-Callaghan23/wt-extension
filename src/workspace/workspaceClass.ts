@@ -3,7 +3,7 @@ import * as console from '../miscTools/vsconsole';
 import { prompt } from '../miscTools/help';
 import * as vsconsole from '../miscTools/vsconsole';
 import * as extension from '../extension';
-import { Config, loadWorkspaceContext } from './workspace';
+import { Config, DiskContextType, loadWorkspaceContext } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
 import { setLastCommit } from '../gitTransactions';
 import { ReloadWatcher } from '../miscTools/reloadWatcher';
@@ -102,7 +102,7 @@ export class Workspace {
         const saveCache = SynonymsProvider.writeCacheToDisk(useDefaultFS);
         this.allowReload = 100;
         // Write context items to the file system before git save
-        const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
+        const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
         const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         
@@ -124,6 +124,15 @@ export class Workspace {
             }, 10);
         }
         return saveCache;
+    }
+
+    static async updateContext <K extends keyof DiskContextType> (context: vscode.ExtensionContext, key: K, value: DiskContextType[K], options?: { isSetting: boolean }) {
+        await context.globalState.update(key, value);
+        if (options?.isSetting) {
+            const configuration = vscode.workspace.getConfiguration();
+            await configuration.update(key, value, vscode.ConfigurationTarget.Workspace);
+        }
+        return Workspace.packageContextItems();
     }
     
 

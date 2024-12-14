@@ -49,6 +49,10 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
                 title: `Replace with: '${replaceText}'`,
                 edit: edit,
                 kind: vscode.CodeActionKind.QuickFix,
+                command: {
+                    command: "wt.autocorrections.wordReplaced",
+                    arguments: [ hoverPosition.text, replaceText ]
+                }
             }
         }) || [];
 

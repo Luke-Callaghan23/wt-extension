@@ -6,6 +6,7 @@ import { PersonalDictionary } from './personalDictionary';
 import { WordRange } from '../../intellisense/common';
 import { WorkBible } from '../../workBible/workBible';
 import { compareFsPath } from '../../miscTools/help';
+import { Autocorrect } from '../../autocorrect/autocorrect';
 
 
 export class Spellcheck implements Timed {
@@ -82,6 +83,12 @@ export class Spellcheck implements Timed {
                 if (/\d+/.test(text)) continue;                                                         // do not make red if the word is made up entirely of numbers
                 if (dictionary[text]) continue;                                                         // do not make red if the dictionary contains this word
                 if (this.personalDictionary.search(text)) continue;                                     // do not make red if the personal dictionary contains this word
+                
+                // Do not make red if the autocorrector can replace the word
+                if (await this.autocorrect.tryCorrection(text, editor, range)) {
+                    continue;
+                }
+
 
                 // Do not add red decorations to words that have been matched by world notes
                 const worldNotes: WorkBible = WorkBible.singleton;
@@ -119,7 +126,8 @@ export class Spellcheck implements Timed {
     constructor (
         private context: vscode.ExtensionContext,
         workspace: Workspace,
-        private personalDictionary: PersonalDictionary
+        private personalDictionary: PersonalDictionary,
+        private autocorrect: Autocorrect,
     ) {
         this.enabled = true;
         this.lastUpdate = [];

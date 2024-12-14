@@ -6,7 +6,7 @@ import { Dict } from './dictionary';
 export class PersonalDictionary implements Packageable {
     private dict: Dict;
 
-    getPackageItems(): { [index: string]: any; } {
+    getPackageItems() {
         return {
             'wt.personalDictionary': this.dict
         }
@@ -73,6 +73,7 @@ export class PersonalDictionary implements Packageable {
         this.context.workspaceState.update('wt.personalDictionary', this.dict);
         Workspace.packageContextItems();
     }
+
 
     registerCommands () {
         vscode.commands.registerCommand('wt.personalDictionary.add', (word: string | undefined | null) => this.addWordCommand(word));
