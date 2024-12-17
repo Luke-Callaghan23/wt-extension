@@ -15,10 +15,11 @@ import { containerMove } from './containerMove';
 import { chapterMove } from './chapterMove';
 
 
+export type NodeMoveKind = 'move' | 'recover' | 'scratch' | 'paste';
 
 export async function generalMoveNode (
     this: OutlineNode,
-    operation: 'move' | 'recover' | 'scratch' | 'paste',
+    operation: NodeMoveKind,
     newParent: TreeNode, 
     recycleView: UriBasedView<OutlineNode>,
     outlineView: OutlineTreeProvider<TreeNode>,

@@ -6,6 +6,7 @@ import { CopiedSelection, genericPaste } from './copyPaste';
 import { DiskContextType } from '../../workspace/workspace';
 import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey, vagueNodeSearch } from '../../miscTools/help';
 import { searchFiles, selectFile, selectFiles } from '../../miscTools/searchFiles';
+import { NodeMoveKind } from '../nodes_impl/handleMovement/generalMoveNode';
 
 
 // Register all the commands needed for the outline view to work
@@ -299,8 +300,25 @@ export function registerCommands (this: OutlineView) {
             return;
         }
         
+        // Source for manual move is dependant on where the vague node search originally found the node above
+        let nodeMoveKind: NodeMoveKind;
+        switch (result.source) {
+            case 'scratch': nodeMoveKind = 'scratch'; break;
+            case 'recycle': nodeMoveKind = 'recover'; break;
+            default: nodeMoveKind = 'move'; break;
+        }
+
         const node = result.node as OutlineNode;
-        return this.manualMove(node);
+        await this.manualMove(node, nodeMoveKind);
+
+        // `manualMove` does not update non-Outline views, so if the source of the node was not outline
+        //      then we have to manually update it
+        if (result.source === 'scratch') {
+            extension.ExtensionGlobals.scratchPadView.refresh(true, []);
+        }
+        else if (result.source === 'recycle') {
+            extension.ExtensionGlobals.recyclingBinView.refresh(true, []);
+        }
     });
     
     vscode.commands.registerCommand("wt.outline.commandPalette.renameNode", async () => {

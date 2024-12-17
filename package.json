@@ -1934,10 +1934,10 @@
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
-				"command": "wt.outline.commandPalette.moveNode",
-				"win": "ctrl+f6",
-				"linux": "ctrl+f6",
-				"mac": "ctrl+f6",
+				"command": "wt.outline.commandPalette.moveCurrentNode",
+				"win": "shift+f1",
+				"linux": "shift+f1",
+				"mac": "shift+f1",
 				"when": "editorLangId == wt || editorLangId == wtNote"
 			}
 		],

@@ -21,6 +21,7 @@ import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { handleDragController, handleDropController } from './impl/dragDropController';
 import { TODOsView } from '../TODO/TODOsView';
 import * as search from '../miscTools/searchFiles';
+import { NodeMoveKind } from './nodes_impl/handleMovement/generalMoveNode';
 
 export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Renamable<OutlineNode> {
     // Deleting nodes
@@ -162,14 +163,14 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 		vscode.window.showInformationMessage(`[INFO] Successfully copied path for '${resource.data.ids.display}'`);
 	}
 
-	async manualMove (resource: OutlineNode) {
+	async manualMove (resource: OutlineNode, nodeMoveKind: NodeMoveKind='move') {
 		const chose = await this.selectFile([ (node) => {
 			return node.data.ids.type !== 'fragment'
 		} ]);
 		if (chose === null) return;
 		if (chose.data.ids.type === 'root') return;
 		
-		const moveResult = await resource.generalMoveNode("move", chose, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.outlineView, 0, null, "Insert");
+		const moveResult = await resource.generalMoveNode(nodeMoveKind, chose, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.outlineView, 0, null, "Insert");
 		if (moveResult.moveOffset === -1) return;
 		const effectedContainers = moveResult.effectedContainers;
 		const outline =  extension.ExtensionGlobals.outlineView;
