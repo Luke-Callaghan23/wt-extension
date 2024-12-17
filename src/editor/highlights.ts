@@ -92,11 +92,10 @@ export async function highlightExpand () {
     const newSelections = editor.selections.map(selection => {
         const selectionText = document.getText(new vscode.Selection(selection.anchor, selection.active));
         
-        const anchOff = document.offsetAt(selection.anchor);
-        const actOff = document.offsetAt(selection.active);
-
-        const startOff = Math.min(anchOff, actOff);
-        const endOff = Math.max(anchOff, actOff);
+        const start = selection.start;
+        const startOff = document.offsetAt(start);
+        const end = selection.end;
+        const endOff = document.offsetAt(end);
 
         const prevChar = docText[startOff - 1];
         const nextChar = docText[endOff + 1];
@@ -110,39 +109,45 @@ export async function highlightExpand () {
             return highlightWordSingleSelection(selection, document, docText);
         }
 
-        // Check if it includes any of the fragment stops
-        if (fragmentStopReg.exec(selectionText) === null) {
-            // Check if it includes any of the sentence stops
-            if (punctuationStopsReg.exec(selectionText) !== null) {
-                if (newlineReg.exec(nextChar) === null) {
-                    return highlightParagraphSingleSelection(selection, document, docText);
-                }
-                return new vscode.Selection(
-                    document.positionAt(0),
-                    document.positionAt(100000000000000)
-                );
+        // Iterate forward and backward in the current paragraph to expand
+
+        const beginningOfParagraph = document.offsetAt(new vscode.Position(start.line, 0));
+        const endOfParagraph = document.offsetAt(new vscode.Position(start.line + 1, 0)) - 1;
+
+        let stopAtForward: number | null = null;
+        for (let iterateForward = 0; iterateForward >= beginningOfParagraph; iterateForward--) {
+            const char = docText[iterateForward];
+            if (punctuationStopsReg.test(char) || fragmentStopReg.test(char) || newlineReg.test(char)) {
+                stopAtForward = iterateForward;
+                break;
+            } 
+        }
+        if (stopAtForward === null) stopAtForward = beginningOfParagraph;
+
+        let stopAtBackward: number | null = null;
+        for (let iterateBackwards = 0; iterateBackwards <= endOfParagraph; iterateBackwards++) {
+            const char = docText[iterateBackwards];
+            if (punctuationStopsReg.test(char) || fragmentStopReg.test(char) || newlineReg.test(char)) {
+                stopAtForward = stopAtBackward;
+                break;
             }
-            return highlightFragmentSingleSelection(undefined, selection, document, docText);
         }
-
-        // Check if it includes any of the sentence stops
-        if (punctuationStopsReg.exec(selectionText) === null) {
-            return highlightSentenceSingleSelection(undefined, selection, document, docText);
-        }
-
-        // Check if it includes any of the paragraph stops
-        if (
-            (newlineReg.exec(selectionText) === null)
-            && (newlineReg.exec(prevChar) === null)
-            && (newlineReg.exec(nextChar) === null)
-        ) {
-            return highlightParagraphSingleSelection(selection, document, docText);
-        }
+        if (stopAtBackward === null) stopAtBackward = endOfParagraph;
 
         return new vscode.Selection(
-            document.positionAt(0),
-            document.positionAt(100000000000000)
+            document.positionAt(stopAtForward!),
+            document.positionAt(stopAtBackward!)
         );
     });
     editor.selections = newSelections;
 }
+
+
+/*
+
+Example sentence
+
+Here is a sentence who -- happens so -- have, by chance, a ton of -- *clever* -- asides, and twists, and, of course, some turns -- as well.  Here is a ^bold^ sentence, with no shortage of _underlined words_; no doubt, you -- dear reader -- will appreciate the ~scratch that~, never mind.  I think most paragraphs, of course, need to have third sentences in them for them to make sense.
+
+
+*/

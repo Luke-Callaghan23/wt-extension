@@ -1915,27 +1915,6 @@
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
-				"command": "wt.editor.highlightSentence",
-				"win": "ctrl+shift+h",
-				"linux": "ctrl+shift+h",
-				"mac": "cmd+shift+h",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
-			},
-			{
-				"command": "wt.editor.highlightFragment",
-				"win": "alt+shift+h",
-				"linux": "alt+shift+h",
-				"mac": "alt+shift+h",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
-			},
-			{
-				"command": "wt.editor.highlightParagraph",
-				"win": "ctrl+alt+shift+h",
-				"linux": "ctrl+alt+shift+h",
-				"mac": "cmd+alt+shift+h",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
-			},
-			{
 				"command": "wt.editor.highlightExpand",
 				"win": "ctrl+alt+h",
 				"linux": "ctrl+alt+h",

@@ -72,11 +72,6 @@ export class Toolbar {
         vscode.commands.registerCommand("wt.editor.todo.commentFragment", commentFragment);
         vscode.commands.registerCommand("wt.editor.todo.commentParagraph", commentParagraph);
 
-        vscode.commands.registerCommand("wt.editor.highlightSentence", highlightSentence);
-        vscode.commands.registerCommand("wt.editor.highlightFragment", highlightFragment);
-        vscode.commands.registerCommand("wt.editor.highlightParagraph", highlightParagraph);
-        vscode.commands.registerCommand("wt.editor.highlightExpand", highlightExpand);
-
         vscode.commands.registerCommand('wt.editor.delete.forward', () => deleteSelection('forward'));
         vscode.commands.registerCommand('wt.editor.delete.backward', () => deleteSelection('backward'));
 
