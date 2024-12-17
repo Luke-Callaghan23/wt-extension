@@ -1937,9 +1937,7 @@
 				],
 				"aliases": [
 					"writingTool",
-					"fragment",
-					"markdown",
-					"Markdown"
+					"fragment"
 				],
 				"configuration": "./language-configuration.json",
 				"icon": {
@@ -1953,9 +1951,7 @@
 					".wtnote"
 				],
 				"aliases": [
-					"writingToolNotes",
-					"markdown",
-					"Markdown"
+					"writingToolNotes"
 				],
 				"configuration": "./language-configuration.json",
 				"icon": {
