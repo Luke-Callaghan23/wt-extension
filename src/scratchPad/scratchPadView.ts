@@ -204,36 +204,11 @@ implements
     dragMimeTypes = ['text/uri-list'];
 
     async handleDrop (target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-        const targ = target || this.rootNodes[0];
-        if (!targ) throw 'unreachable';
-        
-        const outlineTransferItem = dataTransfer.get('application/vnd.code.tree.outline');
-        if (!outlineTransferItem) return;
-        
-        const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
-        const movedItemsJSON: OutlineNode[] = JSON.parse(outlineTransferItem.value);
-        const movedItems: OutlineNode[] = await Promise.all(
-            movedItemsJSON.map(mij => {
-                const uri = vscode.Uri.file(mij.data.ids.uri.fsPath);
-                return outlineView.getTreeElementByUri(uri) as Promise<OutlineNode>;
-            })
-        );
-
-        // Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
-        const uniqueRoots = await outlineView.getLocalRoots(movedItems);
-        const filteredParents = uniqueRoots.filter(root => root.getParentUri().toString() !== targ.getUri().toString());
-        await outlineView.removeResource(filteredParents);
+        throw "Drag and drop not available for scratch pad view";
     }
 
     async handleDrag (source: readonly OutlineNode[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-        dataTransfer.set('application/vnd.code.tree.scratch', new vscode.DataTransferItem(source));
-        
-        const uris: vscode.Uri[] = source.map(src => src.getDroppableUris()).flat();
-        const uriStrings = uris.map(uri => uri.toString());
-        
-        // Combine all collected uris into a single string
-        const sourceUriList = uriStrings.join('\r\n');
-        dataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
+        throw "Drag and drop not available for scratch pad view";
     }
 
     async getParent (element: OutlineNode): Promise<OutlineNode> {
