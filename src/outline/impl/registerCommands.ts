@@ -4,7 +4,7 @@ import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../
 import * as extension from '../../extension';
 import { CopiedSelection, genericPaste } from './copyPaste';
 import { DiskContextType } from '../../workspace/workspace';
-import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey } from '../../miscTools/help';
+import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey, vagueNodeSearch } from '../../miscTools/help';
 import { searchFiles, selectFile, selectFiles } from '../../miscTools/searchFiles';
 
 
@@ -284,6 +284,23 @@ export function registerCommands (this: OutlineView) {
             return null;
         }
         return this.manualMove(result);
+    });
+
+    vscode.commands.registerCommand("wt.outline.commandPalette.moveCurrentNode", async () => {
+        const uri = vscode.window.activeTextEditor?.document.uri;
+        if  (!uri) {
+            vscode.window.showWarningMessage("Could not find active document in Outline, Scratch Pad, or Recycling Bin");
+            return;
+        }
+
+        const result = await vagueNodeSearch(uri, extension.ExtensionGlobals.outlineView, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.scratchPadView, extension.ExtensionGlobals.workBible);
+        if (!result || result.source === 'workBible') {
+            vscode.window.showWarningMessage("Could not find active document in Outline, Scratch Pad, or Recycling Bin");
+            return;
+        }
+        
+        const node = result.node as OutlineNode;
+        return this.manualMove(node);
     });
     
     vscode.commands.registerCommand("wt.outline.commandPalette.renameNode", async () => {

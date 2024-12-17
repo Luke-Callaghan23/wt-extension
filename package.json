@@ -879,7 +879,12 @@
 			},
 			{	
 				"command": "wt.outline.commandPalette.moveNode",
-				"title": "Writing Tool: Outline: Move Node"
+				"title": "Writing Tool: Outline: Move Node",
+				"enablement": "editorLangId == wt"
+			},
+			{	
+				"command": "wt.outline.commandPalette.moveCurrentNode",
+				"title": "Writing Tool: Outline: Move Current Fragment"
 			},
 			{	
 				"command": "wt.outline.commandPalette.renameNode",
@@ -1927,6 +1932,13 @@
 				"linux": "ctrl+alt+shift+h",
 				"mac": "cmd+alt+shift+h",
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+			},
+			{
+				"command": "wt.outline.commandPalette.moveNode",
+				"win": "ctrl+f6",
+				"linux": "ctrl+f6",
+				"mac": "ctrl+f6",
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			}
 		],
 		"languages": [
