@@ -57,7 +57,11 @@ export async function jumpSentence (
     });
     
     editor.selections = newSelections;
-    vscode.window.activeTextEditor?.revealRange(newSelections[0]);
+
+    // For some reason, VSCode does not reveal the "active" part of the selection passed into here, so we need to remake
+    //      a new selection object made of *only* the active part of the selection in order to always follow the cursoe
+    //      after a jump
+    vscode.window.activeTextEditor?.revealRange(new vscode.Selection(newSelections[0].active, newSelections[0].active));
     return newSelections[0];
 }
 
@@ -349,7 +353,11 @@ export async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise
         )
     })
     editor.selections = newSelections;
-    vscode.window.activeTextEditor?.revealRange(newSelections[0]);
+    
+    // For some reason, VSCode does not reveal the "active" part of the selection passed into here, so we need to remake
+    //      a new selection object made of *only* the active part of the selection in order to always follow the cursoe
+    //      after a jump
+    vscode.window.activeTextEditor?.revealRange(new vscode.Selection(newSelections[0].active, newSelections[0].active));
     return newSelections[0];
 }
 
@@ -472,7 +480,11 @@ export async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vsco
         );
     })
     editor.selections = newSelections;
-    vscode.window.activeTextEditor?.revealRange(newSelections[0]);
+    
+    // For some reason, VSCode does not reveal the "active" part of the selection passed into here, so we need to remake
+    //      a new selection object made of *only* the active part of the selection in order to always follow the cursoe
+    //      after a jump
+    vscode.window.activeTextEditor?.revealRange(new vscode.Selection(newSelections[0].active, newSelections[0].active));
     return newSelections[0];
 }
 
