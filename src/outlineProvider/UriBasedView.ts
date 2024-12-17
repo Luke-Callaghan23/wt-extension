@@ -65,6 +65,10 @@ export class UriBasedView<T extends HasGetUri> {
 	}
 
 	async getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: T, filter?: boolean): Promise<T | null> {
+		if (this.rootNodes.length === 0) {
+			return null;
+		}
+		
 		// If there is not targeted key, then assume that the caller is targeting
 		//		the entire tree
 		if (!targetUri || compareFsPath(targetUri, this.rootNodes[0].getUri())) {

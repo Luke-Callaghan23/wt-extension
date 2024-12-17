@@ -933,6 +933,10 @@
 			{
 				"command": "wt.autocorrections.wordReplaced",
 				"title": "Writing Tool: Called when a word is replaced through spellcheck"
+			},
+			{
+				"title": "Writing Tool: Recover Node",
+				"command": "wt.recyclingBin.recoverNode"
 			}
 		],
 		"menus": {
@@ -1453,6 +1457,10 @@
 					"when": "view == wt.scratchPad"
 				},
 				{
+					"command": "wt.scratchPad.manualMove",
+					"when": "view == wt.scratchPad"
+				},
+				{
 					"command": "wt.recyclingBin.renameFile",
 					"when": "view == wt.recyclingBin"
 				},
@@ -1462,6 +1470,10 @@
 				},
 				{
 					"command": "wt.recyclingBin.deleteAll",
+					"when": "view == wt.recyclingBin"
+				},
+				{
+					"command": "wt.recyclingBin.recoverNode",
 					"when": "view == wt.recyclingBin"
 				},
 				{

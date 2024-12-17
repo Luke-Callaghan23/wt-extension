@@ -860,6 +860,14 @@
 			{
 				"command": "wt.wordWatcher.commandPalette.deleteUnwatchedWord",
 				"title": "Writing Tool: Word Watcher: Delete Unwatched Word"
+			},
+			{
+				"title": "Writing Tool: Move Node into Outline",
+				"command": "wt.scratchPad.moveNode"
+			},
+			{
+				"title": "Writing Tool: Recover Node into Outline",
+				"command": "wt.recyclingBin.recoverNode"
 			}
 		],
 		"menus": {
@@ -1372,6 +1380,10 @@
 					"when": "view == wt.scratchPad"
 				},
 				{
+					"command": "wt.scratchPad.moveNode",
+					"when": "view == wt.scratchPad"
+				},
+				{
 					"command": "wt.scratchPad.deleteAll",
 					"when": "view == wt.scratchPad"
 				},
@@ -1385,6 +1397,10 @@
 				},
 				{
 					"command": "wt.recyclingBin.deleteAll",
+					"when": "view == wt.recyclingBin"
+				},
+				{
+					"command": "wt.recyclingBin.recoverNode",
 					"when": "view == wt.recyclingBin"
 				},
 				{
