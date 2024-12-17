@@ -5,7 +5,7 @@ import { Workspace } from '../workspace/workspaceClass';
 import { JumpType, defaultJumpFragmentOptions, jumpParagraph, jumpSentence, jumpWord } from './jumps';
 import { bold, commasize, emDash, emDashes, italisize, strikethrough, underline } from './surroundSelection';
 import { commentFragment, commentParagraph, commentSentence } from './comment';
-import { highlightExpand, highlightFragment, highlightParagraph, highlightSentence } from './highlights';
+import { highlightExpand } from './highlights';
 import { addQuotes } from './addQuotes';
 import { addAccent as insertAccent } from './accents';
 
@@ -74,6 +74,8 @@ export class Toolbar {
 
         vscode.commands.registerCommand('wt.editor.delete.forward', () => deleteSelection('forward'));
         vscode.commands.registerCommand('wt.editor.delete.backward', () => deleteSelection('backward'));
+
+        vscode.commands.registerCommand('wt.editor.highlightExpand', highlightExpand);
 
         // Jump commands
         vscode.commands.registerCommand('wt.editor.jump.word.forward', () => jumpWord('forward'));

@@ -82,6 +82,101 @@ export function highlightFragmentSingleSelection (
 }
 
 const newlineReg = /\n|\r\n/;
+function expandSingleHighlight (
+    selection: vscode.Selection, 
+    editor: vscode.TextEditor, 
+    document: vscode.TextDocument, 
+    docText: string
+): vscode.Selection {
+    const selectionText = document.getText(new vscode.Selection(selection.anchor, selection.active));
+        
+    const start = selection.start;
+    const startOff = document.offsetAt(start);
+    const end = selection.end;
+    const endOff = document.offsetAt(end);
+
+    const prevChar = docText[startOff - 1];
+    const nextChar = docText[endOff + 1];
+
+    if (selectionText.length === docText.length) {
+        return selection;
+    }
+
+    // First check if it includes a space
+    if (
+        selectionText.length === 0 ||
+        (/\s/.exec(selectionText) === null
+        && (prevChar !== ' ' || prevChar === undefined)
+        && (nextChar !== ' ' || nextChar === undefined))
+    ) {
+        return highlightWordSingleSelection(selection, document, docText);
+    }
+
+    // Iterate forward and backward in the current paragraph to expand
+
+    const beginningOfParagraph = document.offsetAt(new vscode.Position(start.line, 0));
+    let endOfParagraph = document.offsetAt(new vscode.Position(end.line + 1, 0));
+    if (endOfParagraph !== docText.length) {
+        endOfParagraph -= document.eol;
+    }
+
+    if (beginningOfParagraph === startOff && endOfParagraph === endOff) {
+        // Skip over whitespace forwards and backwards to continue onto the next paragraph
+
+        let forward = startOff - 1;
+        let backward = endOff + 1;
+        for (; /\s/.test(docText[forward]) && forward >= 0; forward--) {}
+        for (; /\s/.test(docText[backward]) && backward < docText.length; backward++) {}
+
+        return expandSingleHighlight(new vscode.Selection(
+            document.positionAt(forward),
+            document.positionAt(backward)
+        ), editor, document, docText);
+    }
+
+    let stopAtForward: number | null = null;
+    for (let iterateForward = startOff - 1; iterateForward >= beginningOfParagraph; iterateForward--) {
+        let found = false;
+
+        // If we ever do hit a stopping character, then keep iterating over the stopping characters until we reach the end
+        let char = docText[iterateForward];
+        while ((punctuationStopsReg.test(char) || fragmentStopReg.test(char) || newlineReg.test(char)) && iterateForward >= 0) {
+            found = true;
+            iterateForward--;
+            char = docText[iterateForward];
+        } 
+
+        if (found) {
+            stopAtForward = iterateForward;
+            break;
+        }
+    }
+
+    // Same as above, but in the other direction
+    let stopAtBackward: number | null = null;
+    for (let iterateBackwards = endOff + 1; iterateBackwards <= endOfParagraph; iterateBackwards++) {
+        
+        let found = false;
+        let char = docText[iterateBackwards];
+        while ((punctuationStopsReg.test(char) || fragmentStopReg.test(char) || newlineReg.test(char)) && iterateBackwards <= endOfParagraph) {
+            found = true;
+            iterateBackwards++;
+            char = docText[iterateBackwards];
+        }
+
+        if (found) {
+            stopAtBackward = iterateBackwards;
+            break;
+        }
+    }
+
+    return new vscode.Selection(
+        document.positionAt(stopAtForward || beginningOfParagraph),
+        document.positionAt(stopAtBackward || endOfParagraph)
+    );
+}
+
+
 export async function highlightExpand () {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
@@ -90,54 +185,7 @@ export async function highlightExpand () {
     const docText = document.getText();
 
     const newSelections = editor.selections.map(selection => {
-        const selectionText = document.getText(new vscode.Selection(selection.anchor, selection.active));
-        
-        const start = selection.start;
-        const startOff = document.offsetAt(start);
-        const end = selection.end;
-        const endOff = document.offsetAt(end);
-
-        const prevChar = docText[startOff - 1];
-        const nextChar = docText[endOff + 1];
-
-        // First check if it includes a space
-        if (
-            (selectionText.length === 0 || /\s/.exec(selectionText) === null)
-            && (prevChar !== ' ' || prevChar === undefined)
-            && (nextChar !== ' ' || nextChar === undefined)
-        ) {
-            return highlightWordSingleSelection(selection, document, docText);
-        }
-
-        // Iterate forward and backward in the current paragraph to expand
-
-        const beginningOfParagraph = document.offsetAt(new vscode.Position(start.line, 0));
-        const endOfParagraph = document.offsetAt(new vscode.Position(start.line + 1, 0)) - 1;
-
-        let stopAtForward: number | null = null;
-        for (let iterateForward = 0; iterateForward >= beginningOfParagraph; iterateForward--) {
-            const char = docText[iterateForward];
-            if (punctuationStopsReg.test(char) || fragmentStopReg.test(char) || newlineReg.test(char)) {
-                stopAtForward = iterateForward;
-                break;
-            } 
-        }
-        if (stopAtForward === null) stopAtForward = beginningOfParagraph;
-
-        let stopAtBackward: number | null = null;
-        for (let iterateBackwards = 0; iterateBackwards <= endOfParagraph; iterateBackwards++) {
-            const char = docText[iterateBackwards];
-            if (punctuationStopsReg.test(char) || fragmentStopReg.test(char) || newlineReg.test(char)) {
-                stopAtForward = stopAtBackward;
-                break;
-            }
-        }
-        if (stopAtBackward === null) stopAtBackward = endOfParagraph;
-
-        return new vscode.Selection(
-            document.positionAt(stopAtForward!),
-            document.positionAt(stopAtBackward!)
-        );
+        return expandSingleHighlight(selection, editor, document, docText);
     });
     editor.selections = newSelections;
 }

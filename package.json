@@ -1238,7 +1238,7 @@
 				},
 				{
 					"command": "wt.editor.highlightExpand",
-					"when": "fals"
+					"when": "false"
 				},
 				{
 					"command": "wt.wordWatcher.refresh",
@@ -1919,6 +1919,13 @@
 				"win": "ctrl+alt+h",
 				"linux": "ctrl+alt+h",
 				"mac": "cmd+alt+h",
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+			},
+			{
+				"command": "wt.editor.highlightCollapse",
+				"win": "ctrl+alt+shift+h",
+				"linux": "ctrl+alt+shift+h",
+				"mac": "cmd+alt+shift+h",
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			}
 		],
