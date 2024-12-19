@@ -1,19 +1,15 @@
 import * as vscode from 'vscode';
 import { Packageable } from '../packageable';
-import { readNotes, readSingleNote, writeNotes, writeSingleNote } from './fs';
+import { readNotes, readSingleNote, writeNotes, writeSingleNote } from './readWriteNotes';
 import { Workspace } from '../workspace/workspaceClass';
-import { addNote, removeNote } from './update';
 import { Timed } from '../timedView';
-import { disable, update } from './timer';
+import { disable, update } from './createMatchedNotes';
 import { v4 as uuidv4 } from 'uuid';
-import { provideHover } from './hoverProvider';
-import { searchNote } from './search';
-import { provideDefinition } from './definitionLink';
-import { editNote } from './editNote';
+import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { compareFsPath } from '../miscTools/help';
+import { compareFsPath, executeGitGrep } from '../miscTools/help';
 
 export interface Note {
     kind: 'note';
@@ -50,7 +46,8 @@ export interface UriNoteMatch {
 export class WorkBible 
 implements 
     vscode.TreeDataProvider<Note | SubNote | AppearanceContainer>, 
-    vscode.HoverProvider, Timed, Renamable<Note>
+    vscode.HoverProvider, Timed, Renamable<Note>,
+    vscode.ReferenceProvider
 {
 
     readNotes = readNotes;
@@ -62,17 +59,13 @@ implements
     removeNote = removeNote;
     editNote = editNote;
 
-    searchNote = searchNote;
-    provideHover = provideHover;
-    provideDefinition = provideDefinition;
-    
     enabled: boolean;
     update = update;
     disable = disable;
 
     static singleton: WorkBible;
 
-    public matchedNotes: UriNoteMatch | undefined;
+    public matchedNotes: UriNoteMatch[];
     protected nounsRegex: RegExp | undefined;
 
     protected notes: Note[];
@@ -84,6 +77,8 @@ implements
     ) {
         this.workBibleFolderPath = workspace.workBibleFolder;
         
+        this.matchedNotes = [];
+
         // Will be modified by TimedView
         this.enabled = true;
 
@@ -164,6 +159,13 @@ implements
             language: 'wtNote',
         }, this);
 
+        vscode.languages.registerReferenceProvider({
+            language: "wt",
+        }, this);
+        vscode.languages.registerReferenceProvider({
+            language: "wtNote",
+        }, this);
+
         this.registerCommands();
     }
 
@@ -206,11 +208,11 @@ implements
         return `(${idAddition}${note.noun}${aliasesAddition})`
     }
 
-    private getNounsRegex (): RegExp {
+    private getNounsRegex (withId: boolean=true, subset?: Note[]): RegExp {
         if (this.notes.length === 0) {
             return /^_^/
         }
-        const nounFragments = this.notes.map(note => this.getNounPattern(note))
+        const nounFragments = (subset || this.notes).map(note => this.getNounPattern(note, withId))
         const regexString = '[^a-zA-Z0-9]?' + `(${nounFragments.join('|')})` + '[^a-zA-Z0-9]?';
         const nounsRegex = new RegExp(regexString, 'gi');
         return nounsRegex;
@@ -230,7 +232,7 @@ implements
 
         vscode.commands.registerCommand("wt.workBible.addNote", (resource: Note | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) });
         vscode.commands.registerCommand("wt.workBible.removeNote", (resource: Note) => { doTheThingAndWrite(() => this.removeNote(resource)) });
-        vscode.commands.registerCommand('wt.workBible.search', (resource: Note) => { this.searchNote(resource) });
+        vscode.commands.registerCommand('wt.workBible.search', (resource: Note) => { this.searchInSearchPanel(resource) });
         vscode.commands.registerCommand('wt.workBible.editNote', (resource: Note | AppearanceContainer | SubNote) => { this.editNote(resource) });
         vscode.commands.registerCommand('wt.workBible.getWorkBible', () => this);
         vscode.commands.registerCommand('wt.workBible.refresh', () => {
@@ -326,5 +328,83 @@ implements
         return this.notes.find(note => {
             return compareFsPath(note.uri, noteUri);
         }) || null;
+    }
+
+    async searchInSearchPanel (resource: Note) {
+        vscode.commands.executeCommand('workbench.action.findInFiles', {
+            query: this.getNounPattern(resource, false),
+            triggerSearch: true,
+            filesToInclude: 'data/chapters/**, data/snips/**',
+            isRegex: true,
+            isCaseSensitive: false,
+            matchWholeWord: true,
+        });
+    }
+
+
+    provideHover(
+        document: vscode.TextDocument, 
+        position: vscode.Position, 
+        token: vscode.CancellationToken
+    ): vscode.ProviderResult<vscode.Hover> {
+        if (!this.matchedNotes) return null;
+
+        const thisDocMatches = this.matchedNotes.find(match => compareFsPath(match.docUri, document.uri));
+        if (!thisDocMatches) return null;
+    
+        const matchedNote = thisDocMatches.matches.find(match => match.range.contains(position));
+        if (!matchedNote) return null;
+        this.view.reveal(matchedNote.note, {
+            select: true,
+            expand: true,
+        })
+        return null;
+    }
+
+    provideDefinition (
+        document: vscode.TextDocument, 
+        position: vscode.Position, 
+        token: vscode.CancellationToken
+    ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
+        if (!this.matchedNotes) return null;
+
+        const thisDocMatches = this.matchedNotes.find(match => compareFsPath(match.docUri, document.uri));
+        if (!thisDocMatches) return null;
+    
+        const matchedNote = thisDocMatches.matches.find(match => match.range.contains(position));
+        if (!matchedNote) return null;
+    
+        this.view.reveal(matchedNote.note, {
+            select: true,
+            expand: true,
+        });
+    
+        const fileName = `${matchedNote.note.noteId}.wtnote`;
+        const filePath = vscode.Uri.joinPath(this.workBibleFolderPath, fileName);
+        return <vscode.Definition>{
+            uri: filePath,
+            range: new vscode.Range(position, position),
+        };
+    }
+
+    async provideReferences(
+        document: vscode.TextDocument, 
+        position: vscode.Position, 
+        context: vscode.ReferenceContext, 
+        token: vscode.CancellationToken
+    ): Promise<vscode.Location[] | null> {
+        if (!this.matchedNotes) return null;
+
+        const thisDocMatches = this.matchedNotes.find(match => compareFsPath(match.docUri, document.uri));
+        if (!thisDocMatches) return null;
+    
+        const matchedNote = thisDocMatches.matches.find(match => match.range.contains(position));
+        if (!matchedNote) return null;
+    
+        const subsetNounsRegex = this.getNounsRegex(false, [ matchedNote.note ]);
+        const grepLocations = await executeGitGrep(subsetNounsRegex);
+        if (!grepLocations) return null;
+
+        return grepLocations;
     }
 }

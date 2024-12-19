@@ -91,15 +91,14 @@ export class Spellcheck implements Timed {
 
 
                 // Do not add red decorations to words that have been matched by world notes
-                const worldNotes: WorkBible = WorkBible.singleton;
+                const worldNotes = WorkBible.singleton;
                 if (worldNotes) {
                     const matchedNotes = worldNotes.matchedNotes;
-                    if (
-                        matchedNotes 
-                        && compareFsPath(matchedNotes.docUri, document.uri)
-                        && matchedNotes.matches.find(note => note.range.contains(range))
-                    ) {
-                        continue;
+                    if (matchedNotes) {
+                        const note = matchedNotes.find(match => compareFsPath(match.docUri, document.uri));
+                        if (note && note.matches.find(note => note.range.contains(range))) {
+                            continue;
+                        }
                     }
                 }
 

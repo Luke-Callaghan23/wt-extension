@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Note, WorkBible } from './workBible';
 import * as extension from '../extension';
 import { v4 as uuidv4 } from 'uuid';
-import { getNoteText } from './editNote';
+import { getNoteText } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 
 

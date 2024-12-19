@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import { Note, NoteMatch, WorkBible } from './workBible';
+import { compareFsPath } from '../miscTools/help';
 
 const decorationsOptions: vscode.DecorationRenderOptions = {
-    color: '#9f66d1',
+    color: '#006eff',
     fontStyle: 'oblique',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
 };
@@ -15,7 +16,12 @@ export async function update (this: WorkBible, editor: vscode.TextEditor): Promi
     
     const decorationLocations: vscode.DecorationOptions[] = [];
 
-    this.matchedNotes = undefined;
+    const thisDocIndex = this.matchedNotes?.findIndex(note => compareFsPath(note.docUri, editor.document.uri));
+    if (thisDocIndex && thisDocIndex !== -1) {
+        this.matchedNotes?.splice(thisDocIndex, 1);
+    }
+
+
     const matches: NoteMatch[] = [];
     let text = editor.document.getText();
 
@@ -86,7 +92,7 @@ export async function update (this: WorkBible, editor: vscode.TextEditor): Promi
 
         let start: number = match.index;
         if (match.index !== 0) {
-            start += 1;
+            // start += 1;
         }
         let end: number = match.index + match[0].length;
         if (match.index + match[0].length !== text.length) {
@@ -109,10 +115,10 @@ export async function update (this: WorkBible, editor: vscode.TextEditor): Promi
         decorationLocations.push(decorationOptions);
     }
     if (matches.length > 0) {
-        this.matchedNotes = {
+        this.matchedNotes?.push({
             docUri: editor.document.uri,
             matches: matches
-        };
+        });
     }
     editor.setDecorations(decorations, decorationLocations);
 }

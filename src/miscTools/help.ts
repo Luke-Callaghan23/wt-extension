@@ -8,6 +8,8 @@ import { OutlineView } from '../outline/outlineView';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
 import { Note, WorkBible } from '../workBible/workBible';
 import { TabLabels } from '../tabLabels/tabLabels';
+import * as childProcess from 'child_process'
+import * as vscodeUri from 'vscode-uri';
 
 export type PromptOptions = {
     placeholder: string,
@@ -263,4 +265,126 @@ export async function statFile (uri: vscode.Uri): Promise<vscode.FileStat | null
 
 export function getRelativePath (uri: vscode.Uri): string {
     return uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
+}
+
+
+export type FileSystemFormat = {
+    results: number,
+    folders: Folder
+}
+
+export type NodeTreeFormat = {
+    results: number;
+    tabLabels: vscode.Uri[];
+    data: Exclude<VagueSearchSource, null>
+}
+
+export type FileName = string;
+export type FileResult = {
+    ext: string;
+    locations: vscode.Location[];
+}
+
+
+export type Folder = {
+    [index: FileName]: Folder | FileResult;
+};
+
+export async function executeGitGrep (regex: RegExp): Promise<vscode.Location[] | null>  {
+    let results: string[];
+    try {
+        results = await new Promise<string[]>((resolve, reject) => {
+            childProcess.exec(`git grep -i -r -H -o -n -E --column "${regex.source}"`, {
+                cwd: extension.rootPath.fsPath
+            }, (error, stdout, stderr) => {
+                if (error) {
+                    reject(stderr);
+                    return;
+                }
+                resolve(stdout.split('\n'));
+            });
+        });
+    }
+    catch (err: any) {
+        vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}' regex.  Error: ${err}`);
+        return null;
+    }
+
+    const locations: vscode.Location[] = [];
+
+    const parseOutput = /(?<path>.+):(?<lineOneIndexed>\d+):(?<characterOneIndexed>\d+):(?<matched>.+)/;
+    for (const result of results) {
+        const match = parseOutput.exec(result);
+        if (!match || match.length === 0 || !match.groups) continue;
+
+
+        const groups = match.groups as { path: string, lineOneIndexed: string, characterOneIndexed: string, matched: string };
+        const { path, matched } = groups;
+        const line = parseInt(groups.lineOneIndexed) - 1;
+        let character = parseInt(groups.characterOneIndexed) - 1;
+        if (/[^a-zA-Z0-9]/.exec(matched[0])) {
+            character = character + 1;
+        }
+        let endCharacter = character + matched.length;
+        if (/[^a-zA-Z0-9]/.exec(matched[matched.length - 1])) {
+            endCharacter = endCharacter - 1;
+        }
+
+        const startPosition = new vscode.Position(line, character);
+        const endPosition = new vscode.Position(line, endCharacter);
+        const foundRange = new vscode.Selection(startPosition, endPosition);
+
+        const uri = vscode.Uri.joinPath(extension.rootPath, path);
+        locations.push(new vscode.Location(uri, foundRange));
+    }
+    return locations;
+}
+
+export async function createFileSystemTree (locations: vscode.Location[]): Promise<FileSystemFormat> {
+    
+    const root: FileSystemFormat = {
+        results: locations.length,
+        folders: {}
+    };
+
+    for (const location of locations) {
+        const path = getRelativePath(location.uri);
+        let current: Folder = root.folders;
+        let relativePath: string[] = [];
+
+        const pathSegments = path.split("/");
+        for (let index = 0; index < pathSegments.length; index++) {
+            const segment = pathSegments[index];
+            relativePath.push(segment);
+
+            const uri = vscode.Uri.joinPath(extension.rootPath, ...relativePath);
+            const isLeaf = index === pathSegments.length - 1;
+
+            if (current[segment]) {
+                if (isLeaf) {
+                    (current[segment] as FileResult).locations.push(location);
+                }
+                else {
+                    current = (current[segment] as Folder);
+                }
+            }
+            else {
+                if (isLeaf) {
+                    current[segment] = <FileResult> {
+                        ext: vscodeUri.Utils.extname(uri),
+                        locations: [ location ]
+                    };
+                }
+                else {
+                    current[segment] = {} as Folder;
+                    current = current[segment] as Folder
+                }
+            }
+        }
+    }
+    return root;
+}
+
+export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat): Promise<NodeTreeFormat | null> {
+    throw new Error("Not implemented")
 }
