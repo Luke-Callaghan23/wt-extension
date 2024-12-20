@@ -293,8 +293,10 @@ export type Folder = {
 export async function executeGitGrep (regex: RegExp): Promise<vscode.Location[] | null>  {
     let results: string[];
     try {
-        results = await new Promise<string[]>((resolve, reject) => {
-            childProcess.exec(`git grep -i -r -H -o -n -E --column "${regex.source}"`, {
+
+        // Temporarily add all unchecked files to git (so git grep will operate on them)
+        const uncheckedFiles = await new Promise<string[]>((resolve, reject) => {
+            childProcess.exec(`git ls-files --others --exclude-standard`, {
                 cwd: extension.rootPath.fsPath
             }, (error, stdout, stderr) => {
                 if (error) {
@@ -304,6 +306,32 @@ export async function executeGitGrep (regex: RegExp): Promise<vscode.Location[] 
                 resolve(stdout.split('\n'));
             });
         });
+        
+        await new Promise<void>((resolve, reject) => {
+            childProcess.exec(`git add ${uncheckedFiles.join(' ')}`, {
+                cwd: extension.rootPath.fsPath
+            }, (error, stdout, stderr) => resolve());
+        });
+
+        // Perform git grep
+        results = await new Promise<string[]>((resolve, reject) => {
+            childProcess.exec(`git grep -i -r -H -n -E "${regex.source}"`, {
+                cwd: extension.rootPath.fsPath
+            }, (error, stdout, stderr) => {
+                if (error) {
+                    reject(stderr);
+                    return;
+                }
+                resolve(stdout.split('\n'));
+            });
+        });
+
+        // Reset all the previously unchecked files
+        await new Promise<void>((resolve, reject) => {
+            childProcess.exec(`git reset ${uncheckedFiles.join(' ')}`, {
+                cwd: extension.rootPath.fsPath
+            }, (error, stdout, stderr) => resolve());
+        });
     }
     catch (err: any) {
         vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}' regex.  Error: ${err}`);
@@ -312,30 +340,38 @@ export async function executeGitGrep (regex: RegExp): Promise<vscode.Location[] 
 
     const locations: vscode.Location[] = [];
 
-    const parseOutput = /(?<path>.+):(?<lineOneIndexed>\d+):(?<characterOneIndexed>\d+):(?<matched>.+)/;
-    for (const result of results) {
-        const match = parseOutput.exec(result);
-        if (!match || match.length === 0 || !match.groups) continue;
+    const parseOutput = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
+    try {
+        for (const result of results) {
+            const match = parseOutput.exec(result);
+            if (!match || match.length === 0 || !match.groups) continue;
+    
+            const captureGroup = match.groups as { path: string, lineOneIndexed: string, lineContents: string };
+            const { path, lineContents, lineOneIndexed } = captureGroup;
+            const line = parseInt(lineOneIndexed) - 1;
+    
+            const parseLineReg = new RegExp(regex.source, 'ig');
+            let lineMatch: RegExpExecArray | null;
+            while ((lineMatch = parseLineReg.exec(lineContents)) !== null) {
+                let characterStart = lineMatch.index;
+                if (characterStart !== 0) {
+                    characterStart += 1;
+                }
 
-
-        const groups = match.groups as { path: string, lineOneIndexed: string, characterOneIndexed: string, matched: string };
-        const { path, matched } = groups;
-        const line = parseInt(groups.lineOneIndexed) - 1;
-        let character = parseInt(groups.characterOneIndexed) - 1;
-        if (/[^a-zA-Z0-9]/.exec(matched[0])) {
-            character = character + 1;
+                const characterEnd = characterStart + lineMatch[lineMatch.length - 1].length;
+    
+                const startPosition = new vscode.Position(line, characterStart);
+                const endPosition = new vscode.Position(line, characterEnd);
+                const foundRange = new vscode.Selection(startPosition, endPosition);
+        
+                const uri = vscode.Uri.joinPath(extension.rootPath, path);
+                locations.push(new vscode.Location(uri, foundRange));
+            }
         }
-        let endCharacter = character + matched.length;
-        if (/[^a-zA-Z0-9]/.exec(matched[matched.length - 1])) {
-            endCharacter = endCharacter - 1;
-        }
 
-        const startPosition = new vscode.Position(line, character);
-        const endPosition = new vscode.Position(line, endCharacter);
-        const foundRange = new vscode.Selection(startPosition, endPosition);
-
-        const uri = vscode.Uri.joinPath(extension.rootPath, path);
-        locations.push(new vscode.Location(uri, foundRange));
+    }
+    catch (err: any) {
+        console.log(err);
     }
     return locations;
 }

@@ -3,13 +3,13 @@ import { Packageable } from '../packageable';
 import { readNotes, readSingleNote, writeNotes, writeSingleNote } from './readWriteNotes';
 import { Workspace } from '../workspace/workspaceClass';
 import { Timed } from '../timedView';
-import { disable, update } from './createMatchedNotes';
+import { disable, update } from './timedViewUpdate';
 import { v4 as uuidv4 } from 'uuid';
 import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { compareFsPath, executeGitGrep } from '../miscTools/help';
+import { compareFsPath, executeGitGrep, formatFsPathForCompare } from '../miscTools/help';
 
 export interface Note {
     kind: 'note';
@@ -38,10 +38,7 @@ export interface NoteMatch {
     range: vscode.Range;
     note: Note;
 }
-export interface UriNoteMatch {
-    docUri: vscode.Uri,
-    matches: NoteMatch[]
-}
+
 
 export class WorkBible 
 implements 
@@ -65,7 +62,7 @@ implements
 
     static singleton: WorkBible;
 
-    public matchedNotes: UriNoteMatch[];
+    public matchedNotes: { [index: string]: NoteMatch[] };
     protected nounsRegex: RegExp | undefined;
 
     protected notes: Note[];
@@ -77,7 +74,7 @@ implements
     ) {
         this.workBibleFolderPath = workspace.workBibleFolder;
         
-        this.matchedNotes = [];
+        this.matchedNotes = {};
 
         // Will be modified by TimedView
         this.enabled = true;
@@ -349,10 +346,10 @@ implements
     ): vscode.ProviderResult<vscode.Hover> {
         if (!this.matchedNotes) return null;
 
-        const thisDocMatches = this.matchedNotes.find(match => compareFsPath(match.docUri, document.uri));
-        if (!thisDocMatches) return null;
-    
-        const matchedNote = thisDocMatches.matches.find(match => match.range.contains(position));
+        const documentMatches = this.matchedNotes[formatFsPathForCompare(document.uri)];
+        if (!documentMatches) return null;
+
+        const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
         this.view.reveal(matchedNote.note, {
             select: true,
@@ -368,10 +365,10 @@ implements
     ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
         if (!this.matchedNotes) return null;
 
-        const thisDocMatches = this.matchedNotes.find(match => compareFsPath(match.docUri, document.uri));
-        if (!thisDocMatches) return null;
-    
-        const matchedNote = thisDocMatches.matches.find(match => match.range.contains(position));
+        const documentMatches = this.matchedNotes[formatFsPathForCompare(document.uri)];
+        if (!documentMatches) return null;
+
+        const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
     
         this.view.reveal(matchedNote.note, {
@@ -395,10 +392,10 @@ implements
     ): Promise<vscode.Location[] | null> {
         if (!this.matchedNotes) return null;
 
-        const thisDocMatches = this.matchedNotes.find(match => compareFsPath(match.docUri, document.uri));
-        if (!thisDocMatches) return null;
-    
-        const matchedNote = thisDocMatches.matches.find(match => match.range.contains(position));
+        const documentMatches = this.matchedNotes[formatFsPathForCompare(document.uri)];
+        if (!documentMatches) return null;
+
+        const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
     
         const subsetNounsRegex = this.getNounsRegex(false, [ matchedNote.note ]);

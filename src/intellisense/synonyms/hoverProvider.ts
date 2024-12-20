@@ -3,7 +3,7 @@ import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
 import { capitalize, getHoverText, getHoveredWord } from '../common';
 import { WorkBible } from '../../workBible/workBible';
-import { compareFsPath } from '../../miscTools/help';
+import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
 
 export class HoverProvider implements vscode.HoverProvider {
     constructor (
@@ -18,10 +18,9 @@ export class HoverProvider implements vscode.HoverProvider {
         // Don't give hover on words that have a matched world notes Note
         const worldNotes = WorkBible.singleton;
         if (worldNotes) {
-            const matchedNotes = worldNotes.matchedNotes;
-            if (matchedNotes) {
-                const note = matchedNotes.find(match => compareFsPath(match.docUri, document.uri));
-                if (note && note.matches.find(note => note.range.contains(position))) {
+            if (worldNotes.matchedNotes) {
+                const matches = worldNotes.matchedNotes[formatFsPathForCompare(document.uri)];
+                if (matches && matches.find(note => note.range.contains(position))) {
                     return new vscode.Hover('');
                 }
             }

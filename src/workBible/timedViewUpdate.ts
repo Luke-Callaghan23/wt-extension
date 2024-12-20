@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Note, NoteMatch, WorkBible } from './workBible';
-import { compareFsPath } from '../miscTools/help';
+import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
 
 const decorationsOptions: vscode.DecorationRenderOptions = {
     color: '#006eff',
@@ -16,36 +16,8 @@ export async function update (this: WorkBible, editor: vscode.TextEditor): Promi
     
     const decorationLocations: vscode.DecorationOptions[] = [];
 
-    const thisDocIndex = this.matchedNotes?.findIndex(note => compareFsPath(note.docUri, editor.document.uri));
-    if (thisDocIndex && thisDocIndex !== -1) {
-        this.matchedNotes?.splice(thisDocIndex, 1);
-    }
-
-
     const matches: NoteMatch[] = [];
     let text = editor.document.getText();
-
-    // If the document is a wtnote document itself we want to avoid highlighting our OWN note names, because there 
-    //      will be too much purple highlighting everywhere
-    // But we do want to continue highlighting other notes, because one note can reference another and we want
-    //      to click between them
-    // To achieve this, replace any reference that matches this noun or its aliases with something generic that won't
-    //      likely be matched '#'
-    const uri = editor.document.uri;
-    const ownNote = this.getNote(uri);
-    if (ownNote) {
-        const ownNotePattern = this.getNounPattern(ownNote);
-        const ownNoteGlobal = new RegExp(ownNotePattern, 'gi');
-        text = text.replaceAll(ownNoteGlobal, (replace) => {
-            // Using a replacer function which recieves the substring to replace and returns a string of '#'s
-            //      with the same length as the replacing string
-            let hashStr = '';
-            for (let idx = 0; idx < replace.length; idx++) {
-                hashStr += '#';
-            }
-            return hashStr;
-        })
-    }
 
     while ((match = this.nounsRegex.exec(text))) {
         const matchReal: RegExpExecArray = match;
@@ -90,13 +62,17 @@ export async function update (this: WorkBible, editor: vscode.TextEditor): Promi
             catch (err: any) {}
         }
 
+
+
         let start: number = match.index;
         if (match.index !== 0) {
-            // start += 1;
+            start += 1;
         }
-        let end: number = match.index + match[0].length;
-        if (match.index + match[0].length !== text.length) {
-            end -= 1;
+
+        const len = ((match.groups?.[matchedNote?.noteId || ''] || '').length + 1) || match[0].length;
+        let end: number = match.index + len;
+        if (match.index + len !== text.length) {
+            // end -= 1;
         }
         const startPos = editor.document.positionAt(start);
         const endPos = editor.document.positionAt(end);
@@ -107,19 +83,26 @@ export async function update (this: WorkBible, editor: vscode.TextEditor): Promi
                 range: range,
                 note: matchedNote
             });
+
+            // Do not add stylization to the note document of the note's note thingy
+            // Too much blue everywhere
+            // Still want stylization for other note's note thingies, just not your own
+            if (!compareFsPath(matchedNote.uri, editor.document.uri)) {
+                const decorationOptions: vscode.DecorationOptions = { 
+                    range: range, 
+                    hoverMessage: new vscode.MarkdownString(tag)
+                };
+                decorationLocations.push(decorationOptions);
+            }
         }
-        const decorationOptions: vscode.DecorationOptions = { 
-            range: range, 
-            hoverMessage: new vscode.MarkdownString(tag)
-        };
-        decorationLocations.push(decorationOptions);
     }
     if (matches.length > 0) {
-        this.matchedNotes?.push({
-            docUri: editor.document.uri,
-            matches: matches
-        });
+        this.matchedNotes[formatFsPathForCompare(editor.document.uri)] = matches;
     }
+    else {
+        delete this.matchedNotes[formatFsPathForCompare(editor.document.uri)];
+    }
+
     editor.setDecorations(decorations, decorationLocations);
 }
 

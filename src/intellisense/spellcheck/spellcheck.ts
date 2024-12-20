@@ -5,7 +5,7 @@ import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
 import { WordRange } from '../../intellisense/common';
 import { WorkBible } from '../../workBible/workBible';
-import { compareFsPath } from '../../miscTools/help';
+import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
 import { Autocorrect } from '../../autocorrect/autocorrect';
 
 
@@ -93,10 +93,9 @@ export class Spellcheck implements Timed {
                 // Do not add red decorations to words that have been matched by world notes
                 const worldNotes = WorkBible.singleton;
                 if (worldNotes) {
-                    const matchedNotes = worldNotes.matchedNotes;
-                    if (matchedNotes) {
-                        const note = matchedNotes.find(match => compareFsPath(match.docUri, document.uri));
-                        if (note && note.matches.find(note => note.range.contains(range))) {
+                    if (worldNotes.matchedNotes) {
+                        const matches = worldNotes.matchedNotes[formatFsPathForCompare(document.uri)];
+                        if (matches && matches.find(note => note.range.contains(range))) {
                             continue;
                         }
                     }
