@@ -314,7 +314,7 @@ implements
         this.registerCommands();
 
         this.view = view;
-        this.initUriExpansion('wt.recyclingBin', this.view, this.context);
+        await this.initUriExpansion('wt.recyclingBin', this.view, this.context);
     }
 
     dropMimeTypes = ['application/vnd.code.tree.outline', 'text/uri-list'];

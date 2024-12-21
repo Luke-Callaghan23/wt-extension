@@ -6,7 +6,7 @@ import * as search from './../miscTools/searchFiles';
 
 export interface HasGetUri {
     getUri(): vscode.Uri;
-	getParentUri(): vscode.Uri;
+	getParentUri(): vscode.Uri | null;
 	getChildren(filter: boolean, insertIntoNodeMap: (node: HasGetUri, uri: vscode.Uri)=>void): Promise<HasGetUri[]>;
 }
 
@@ -51,6 +51,7 @@ export class UriBasedView<T extends HasGetUri> {
 		const localRoots: T[] = [];
 		for (let i = 0; i < nodes.length; i++) {
 			const parentId = nodes[i].getParentUri();
+			if (!parentId) continue;
 			const parent = await this.getTreeElementByUri(parentId);
 			if (parent) {
 				const isInList = nodes.find(n => compareFsPath(n.getUri(), parent.getUri()));

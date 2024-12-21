@@ -41,6 +41,7 @@ import { ScratchPadView } from './scratchPad/scratchPadView';
 import { TabStates } from './miscTools/tabStates';
 import { Autocorrect } from './autocorrect/autocorrect';
 import { FileLinker } from './miscTools/fileLinker';
+import { SearchResultsView } from './search/searchResultsView';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -108,6 +109,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		
 		const tabStates = new TabStates(context, workspace);
 
+		const searchResultsView = new SearchResultsView(workspace, context);
+		searchResultsView.initialize();
 
 		new CoderModer(context);
 

@@ -10,6 +10,7 @@ import { Note, WorkBible } from '../workBible/workBible';
 import { TabLabels } from '../tabLabels/tabLabels';
 import * as childProcess from 'child_process'
 import * as vscodeUri from 'vscode-uri';
+import { HasGetUri, UriBasedView } from '../outlineProvider/UriBasedView';
 
 export type PromptOptions = {
     placeholder: string,
@@ -268,27 +269,7 @@ export function getRelativePath (uri: vscode.Uri): string {
 }
 
 
-export type FileSystemFormat = {
-    results: number,
-    folders: Folder
-}
 
-export type NodeTreeFormat = {
-    results: number;
-    tabLabels: vscode.Uri[];
-    data: Exclude<VagueSearchSource, null>
-}
-
-export type FileName = string;
-export type FileResult = {
-    ext: string;
-    locations: vscode.Location[];
-}
-
-
-export type Folder = {
-    [index: FileName]: Folder | FileResult;
-};
 
 export async function executeGitGrep (regex: RegExp): Promise<vscode.Location[] | null>  {
     let results: string[];
@@ -374,53 +355,4 @@ export async function executeGitGrep (regex: RegExp): Promise<vscode.Location[] 
         console.log(err);
     }
     return locations;
-}
-
-export async function createFileSystemTree (locations: vscode.Location[]): Promise<FileSystemFormat> {
-    
-    const root: FileSystemFormat = {
-        results: locations.length,
-        folders: {}
-    };
-
-    for (const location of locations) {
-        const path = getRelativePath(location.uri);
-        let current: Folder = root.folders;
-        let relativePath: string[] = [];
-
-        const pathSegments = path.split("/");
-        for (let index = 0; index < pathSegments.length; index++) {
-            const segment = pathSegments[index];
-            relativePath.push(segment);
-
-            const uri = vscode.Uri.joinPath(extension.rootPath, ...relativePath);
-            const isLeaf = index === pathSegments.length - 1;
-
-            if (current[segment]) {
-                if (isLeaf) {
-                    (current[segment] as FileResult).locations.push(location);
-                }
-                else {
-                    current = (current[segment] as Folder);
-                }
-            }
-            else {
-                if (isLeaf) {
-                    current[segment] = <FileResult> {
-                        ext: vscodeUri.Utils.extname(uri),
-                        locations: [ location ]
-                    };
-                }
-                else {
-                    current[segment] = {} as Folder;
-                    current = current[segment] as Folder
-                }
-            }
-        }
-    }
-    return root;
-}
-
-export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat): Promise<NodeTreeFormat | null> {
-    throw new Error("Not implemented")
 }

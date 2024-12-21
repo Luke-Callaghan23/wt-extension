@@ -188,6 +188,11 @@
 					"id": "wt",
 					"title": "Writing Tool",
 					"icon": "$(bookmark)"
+				},
+				{
+					"id": "wtSearch",
+					"title": "Writing Tool: Search",
+					"icon": "$(search)"
 				}
 			],
 			"panel": [
@@ -270,6 +275,23 @@
 					"icon": "media/dep.svg",
 					"contextualTitle": "Notes",
 					"when": "wt.valid && config.wt.showPanels.workBible"
+				}
+			],
+			"wtSearch": [
+				{
+					"type": "webview",
+					"id": "wt.wtSearch.search",
+					"name": "Writing Tool Search: Search",
+					"icon": "media/dep.svg",
+					"contextualTitle": "Writing Tool Search: Search",
+					"when": "wt.valid"
+				},
+				{
+					"id": "wt.wtSearch.results",
+					"name": "Writing Tool Search: Results",
+					"icon": "media/dep.svg",
+					"contextualTitle": "Writing Tool Search: Results",
+					"when": "wt.valid"
 				}
 			]
 		},
@@ -937,6 +959,10 @@
 			{
 				"title": "Writing Tool: Recover Node",
 				"command": "wt.recyclingBin.recoverNode"
+			},
+			{
+				"title": "Writing Tool Search: Search",
+				"command": "wt.wtSearch.results.search"
 			}
 		],
 		"menus": {

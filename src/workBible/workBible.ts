@@ -401,7 +401,6 @@ implements
         const subsetNounsRegex = this.getNounsRegex(false, [ matchedNote.note ]);
         const grepLocations = await executeGitGrep(subsetNounsRegex);
         if (!grepLocations) return null;
-
         return grepLocations;
     }
 }
