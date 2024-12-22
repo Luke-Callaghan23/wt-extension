@@ -154,7 +154,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(),
 			personalDictionary, colorGroups, wh, reloadWatcher, tabStates,
-			autocorrection
+			autocorrection, searchBarView
 		]));
 
 		// Lastly, clear the 'tmp' folder

@@ -1,13 +1,15 @@
 import * as vscode from 'vscode';
 import { HasGetUri, UriBasedView } from '../outlineProvider/UriBasedView';
-import { SearchContainerNode, FileResultNode, SearchNode, createFileSystemTree, recreateNodeTree, FileResultLocationNode, cleanNodeTree } from './processGrepResults';
+import { createFileSystemTree } from './processGrepResults/createFileSystemTree';
 import { Workspace } from '../workspace/workspaceClass';
-import { executeGitGrep } from '../miscTools/help';
 import * as extension from '../extension';
 import { randomUUID } from 'crypto';
+import { executeGitGrep } from '../miscTools/executeGitGrep';
+import { FileResultLocationNode, FileResultNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
+import { cleanNodeTree, recreateNodeTree } from './processGrepResults/createNodeTree';
 
 
-export type SearchNodeKind = SearchContainerNode | FileResultNode | FileResultLocationNode;
+export type SearchNodeKind = SearchContainerNode | FileResultNode | FileResultLocationNode | SearchNodeTemporaryText;
 
 export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
     implements vscode.TreeDataProvider<SearchNode<SearchNodeKind>> {
@@ -75,9 +77,17 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
         });
     }
 
-    public async updateSearchBar (searchRegex: RegExp) {
-        const grepResults = await executeGitGrep(searchRegex);
+    public async searchBarValueWasUpdated (searchRegex: RegExp, inLineSearch?: {
+        regexWithIdGroup: RegExp,
+        captureGroupId: string,
+    }) {
+        const grepResults = await executeGitGrep(searchRegex, inLineSearch);
         if (!grepResults) return;
+        if (grepResults.length === 0) {
+            this.rootNodes = [];
+            this.refresh();
+            return;
+        }
         const fsTree = await createFileSystemTree(grepResults);
         const searchResults = await recreateNodeTree(fsTree);
         if (!searchResults) return;
@@ -108,20 +118,41 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
             }
         }
         
+        let icon: vscode.ThemeIcon | undefined;
+        let collapseState: vscode.TreeItemCollapsibleState;
+        if (element.node.kind === 'searchTemp') {
+            collapseState = vscode.TreeItemCollapsibleState.Expanded;
+            icon = new vscode.ThemeIcon('notebook-state-error', new vscode.ThemeColor('errorForeground'));
+        }
+        else {
+            collapseState = vscode.TreeItemCollapsibleState.Expanded;
+        }
+
         return {
             id: randomUUID(),
             label: element.getLabel(),
-            collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
             resourceUri: element.getUri(),
             tooltip: element.getTooltip(),
-            description: element.description
+            description: element.description,
+            iconPath: icon,
+            collapsibleState: collapseState
         }
     }
 
     async getChildren (
         element?: SearchNode<SearchNodeKind> | undefined
     ): Promise<SearchNode<SearchNodeKind>[]> {
-        if (!element) return this.rootNodes;
+        if (!element) {
+            if (this.rootNodes.length === 0) {
+                return [ new SearchNode<SearchNodeTemporaryText>({
+                    kind: 'searchTemp',
+                    label: 'No results found.',
+                    parentUri: null,
+                    uri: extension.rootPath
+                }) ];
+            }
+            return this.rootNodes;
+        }
         return element.getChildren(false, ()=>{});
     }
 

@@ -9,7 +9,8 @@ import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { compareFsPath, executeGitGrep, formatFsPathForCompare } from '../miscTools/help';
+import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
+import { executeGitGrep } from '../miscTools/executeGitGrep';
 
 export interface Note {
     kind: 'note';

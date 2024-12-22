@@ -53,11 +53,16 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
             console.log(`${e}`);
         }
 
+        if (this.latestSearchBarValue.length > 0) {
+            this.triggerUpdates(this.latestSearchBarValue);
+        }
+
         this.registerCommands();
     }
 
     getPackageItems (): Partial<DiskContextType> {
         return {
+            'wt.wtSearch.search.latestSearchBarValue': this.latestSearchBarValue,
             'wt.wtSearch.search.wholeWord': this.wholeWord,
             'wt.wtSearch.search.regex': this.regex,
             'wt.wtSearch.search.caseInsensitive': this.caseInsensitive,
@@ -68,16 +73,22 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
     private registerCommands () {
     }
 
-    private applyModifiers (searchBarValue: string): RegExp {
+    private async triggerUpdates (searchBarValue: string) {
         const flags = 'g' + this.caseInsensitive ? 'i' : '';
         if (!this.regex) {
             searchBarValue = searchBarValue.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
         if (this.wholeWord) {
             const shellWordSeparator = '(\\s|-|[.?:;,()\\!\\&+n\\"\'^_*~])';
-            searchBarValue = `${shellWordSeparator}${searchBarValue}${shellWordSeparator}`;
+            return this.searchResults.searchBarValueWasUpdated(
+                new RegExp(`${shellWordSeparator}(${searchBarValue})${shellWordSeparator}`, flags),
+                {
+                    regexWithIdGroup: new RegExp(`${shellWordSeparator}(?<searchTerm>${searchBarValue})${shellWordSeparator}`, 'gi'),
+                    captureGroupId: 'searchTerm',
+                }
+            );
         }
-        return new RegExp(searchBarValue, flags);
+        return this.searchResults.searchBarValueWasUpdated(new RegExp(searchBarValue, flags));
     }
 
     private lastRequest: number = 0;
@@ -106,7 +117,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
                         case 'matchTitles': Workspace.updateContext(this.context, 'wt.wtSearch.search.matchTitles', this.matchTitles); break;
                     }
                     if (this.latestSearchBarValue.length !== 0) {
-                        this.searchResults.updateSearchBar(this.applyModifiers(this.latestSearchBarValue));
+                        this.triggerUpdates(this.latestSearchBarValue);
                     }
                     break;
                 case 'textBoxChange': 
@@ -117,7 +128,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
                         this.searchResults.searchCleared();
                         return;
                     }
-                    this.searchResults.updateSearchBar(this.applyModifiers(textbox));
+                    this.triggerUpdates(textbox);
                     break;
             }
         });
@@ -162,7 +173,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
                             <div class="float" id="scroll-header">
                                 <div class="bar"></div>
                                 <div class="color-entry">
-                                    <input class="color-input" type="text" placeholder="Search . . ." id="search-bar">
+                                    <input class="color-input" type="text" placeholder="Search . . ." id="search-bar" value="${this.latestSearchBarValue}">
                                     <div class="icon" id="search-icon"><i class="codicon codicon-search"></i></div>
                                 </div>
                             </div>
@@ -179,6 +190,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
                                         label="Whole Word"
                                         id="checkbox-whole-word" 
                                         name="whole-word" 
+                                        ${this.wholeWord ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
                                 
@@ -188,6 +200,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
                                         label="Regex"
                                         id="checkbox-regex" 
                                         name="regex" 
+                                        ${this.regex ? "checked" : ""}
                                         class="checkbox"
                                         tooltip=""
                                     ></vscode-checkbox>
@@ -199,6 +212,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
                                         label="Case Insensitive"
                                         id="checkbox-case-insensitive" 
                                         name="case-insensitive" 
+                                        ${this.caseInsensitive ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
 
@@ -208,6 +222,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
                                         label="Match Titles"
                                         id="checkbox-match-titles" 
                                         name="match-titles" 
+                                        ${this.matchTitles ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
                                 </div>

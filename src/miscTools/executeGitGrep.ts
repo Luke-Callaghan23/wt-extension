@@ -1,0 +1,126 @@
+import * as vscode from 'vscode';
+import * as childProcess from 'child_process';
+import * as extension from '../extension';
+
+
+export async function executeGitGrep (regex: RegExp, inLineSearch?: {
+    regexWithIdGroup: RegExp,
+    captureGroupId: string,
+}): Promise<vscode.Location[] | null>  {
+    let results: string[];
+    try {
+
+        // Temporarily add all unchecked files to git (so git grep will operate on them)
+        const uncheckedFiles = await new Promise<string[]>((resolve, reject) => {
+            childProcess.exec(`git ls-files --others --exclude-standard`, {
+                cwd: extension.rootPath.fsPath
+            }, (error, stdout, stderr) => {
+                if (error) {
+                    reject(stderr);
+                    return;
+                }
+                resolve(stdout.split('\n'));
+            });
+        });
+        
+        await new Promise<void>((resolve, reject) => {
+            childProcess.exec(`git add ${uncheckedFiles.join(' ')}`, {
+                cwd: extension.rootPath.fsPath
+            }, (error, stdout, stderr) => resolve());
+        });
+
+        // Perform git grep
+        results = await new Promise<string[]>((resolve, reject) => {
+            childProcess.exec(`git grep -i -r -H -n -E "${regex.source}"`, {
+                cwd: extension.rootPath.fsPath
+            }, (error, stdout, stderr) => {
+                console.log(`querying: ${`git grep -i -r -H -n -E "${regex.source}"`}`);
+                console.error("error: ", error);
+                console.info("stdout: ", stdout)
+                console.error("stderr: ", stderr)
+                if (error) {
+                    if (stderr.length === 0) {
+                        resolve([]);
+                    }
+                    else {
+                        reject(stderr);
+                    }
+                    return;
+                }
+                resolve(stdout.split('\n'));
+            });
+        });
+
+        console.log("results: ", results);
+
+        /*
+
+        Consider doing this to stream results from git grep
+
+        const ps = childProcess.spawn('', {
+        })
+
+        addListener(event: 'error', listener: (err: Error) => void): this;
+        addListener(event: 'close', listener: (code: number | null, signal: NodeJS.Signals | null) => void): this;
+        addListener(event: 'message', listener: (message: Serializable, sendHandle: SendHandle) => void): this;
+        */
+
+
+        // Reset all the previously unchecked files
+        await new Promise<void>((resolve, reject) => {
+            childProcess.exec(`git reset ${uncheckedFiles.join(' ')}`, {
+                cwd: extension.rootPath.fsPath
+            }, (error, stdout, stderr) => resolve());
+        });
+    }
+    catch (err: any) {
+        vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}' regex.  Error: ${err}`);
+        return null;
+    }
+
+    const locations: vscode.Location[] = [];
+
+    const parseOutput = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
+    try {
+        for (const result of results) {
+            const match = parseOutput.exec(result);
+            if (!match || match.length === 0 || !match.groups) continue;
+    
+            const captureGroup = match.groups as { path: string, lineOneIndexed: string, lineContents: string };
+            const { path, lineContents, lineOneIndexed } = captureGroup;
+            const line = parseInt(lineOneIndexed) - 1;
+    
+            const parseLineReg = inLineSearch?.regexWithIdGroup || new RegExp(regex.source, 'ig');
+            let lineMatch: RegExpExecArray | null;
+            while ((lineMatch = parseLineReg.exec(lineContents)) !== null) {
+                let characterStart = lineMatch.index;
+                if (characterStart !== 0) {
+                    characterStart += 1;
+                }
+
+                const searchedText = inLineSearch && lineMatch.groups?.[inLineSearch.captureGroupId]
+                    ? lineMatch.groups[inLineSearch.captureGroupId]
+                    : lineMatch[lineMatch.length - 1];
+
+                if (inLineSearch) {
+                    characterStart += lineMatch[0].indexOf(searchedText);
+                }
+                
+                const characterEnd = characterStart + searchedText.length;
+    
+                const startPosition = new vscode.Position(line, characterStart);
+                const endPosition = new vscode.Position(line, characterEnd);
+                const foundRange = new vscode.Selection(startPosition, endPosition);
+        
+                const uri = vscode.Uri.joinPath(extension.rootPath, path);
+                locations.push(new vscode.Location(uri, foundRange));
+            }
+        }
+
+    }
+    catch (err: any) {
+        console.log(err);
+    }
+    console.log(locations);
+    return locations;
+}
