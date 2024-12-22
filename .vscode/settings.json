@@ -28,5 +28,10 @@
     "terminal.integrated.defaultProfile.windows": "PowerShell",
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.autoImportCompletions": true,
+    "workbench.editor.customLabels.enabled": true,
+    "workbench.editor.customLabels.patterns": {
+        "*/media/search/main.js": "search bar webview",
+        "*/media/search/main.css": "search bar css"
+    },
     // "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }

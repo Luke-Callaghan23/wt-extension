@@ -75,6 +75,21 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
         });
     }
 
+    public async updateSearchBar (searchRegex: RegExp) {
+        const grepResults = await executeGitGrep(searchRegex);
+        if (!grepResults) return;
+        const fsTree = await createFileSystemTree(grepResults);
+        const searchResults = await recreateNodeTree(fsTree);
+        if (!searchResults) return;
+        const filteredTree = cleanNodeTree(searchResults);
+        this.rootNodes = filteredTree;
+        this.refresh();
+    }
+
+    public async searchCleared () {
+        this.rootNodes = [];
+        this.refresh();
+    }
     
     getTreeItem (element: SearchNode<SearchNodeKind>): vscode.TreeItem | Thenable<vscode.TreeItem> {
         if (element.node.kind === 'fileLocation') {

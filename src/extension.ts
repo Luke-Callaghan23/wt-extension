@@ -42,6 +42,7 @@ import { TabStates } from './miscTools/tabStates';
 import { Autocorrect } from './autocorrect/autocorrect';
 import { FileLinker } from './miscTools/fileLinker';
 import { SearchResultsView } from './search/searchResultsView';
+import { SearchBarView } from './search/searchBarView';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -110,6 +111,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const tabStates = new TabStates(context, workspace);
 
 		const searchResultsView = new SearchResultsView(workspace, context);
+		const searchBarView = new SearchBarView(context, workspace, searchResultsView);
 		searchResultsView.initialize();
 
 		new CoderModer(context);

@@ -307,6 +307,19 @@ export async function executeGitGrep (regex: RegExp): Promise<vscode.Location[] 
             });
         });
 
+        /*
+
+        Consider doing this to stream results from git grep
+
+        const ps = childProcess.spawn('', {
+        })
+
+        addListener(event: 'error', listener: (err: Error) => void): this;
+        addListener(event: 'close', listener: (code: number | null, signal: NodeJS.Signals | null) => void): this;
+        addListener(event: 'message', listener: (message: Serializable, sendHandle: SendHandle) => void): this;
+        */
+
+
         // Reset all the previously unchecked files
         await new Promise<void>((resolve, reject) => {
             childProcess.exec(`git reset ${uncheckedFiles.join(' ')}`, {
