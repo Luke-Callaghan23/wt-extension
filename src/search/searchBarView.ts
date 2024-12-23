@@ -83,13 +83,14 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
             const shellWordSeparatorEnd = '(\\s|-|[.?:;,()\\!\\&+n\\"\'^_*~]|$)';
             return this.searchResults.searchBarValueWasUpdated(
                 new RegExp(`${shellWordSeparatorStart}(${searchBarValue})${shellWordSeparatorEnd}`, flags),
+                this.matchTitles,
                 {
                     regexWithIdGroup: new RegExp(`${shellWordSeparatorStart}(?<searchTerm>${searchBarValue})${shellWordSeparatorEnd}`, 'gi'),
                     captureGroupId: 'searchTerm',
                 }
             );
         }
-        return this.searchResults.searchBarValueWasUpdated(new RegExp(searchBarValue, flags));
+        return this.searchResults.searchBarValueWasUpdated(new RegExp(searchBarValue, flags), this.matchTitles);
     }
 
     private lastRequest: number = 0;

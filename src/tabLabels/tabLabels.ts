@@ -83,7 +83,7 @@ export class TabLabels {
 
                 console.log(`Tab labels: inspecting ${uri.fsPath}`);
 
-                const { node: nodeOrNote, source } = await vagueNodeSearch(uri, extension.ExtensionGlobals.outlineView, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.scratchPadView, extension.ExtensionGlobals.workBible);
+                const { node: nodeOrNote, source } = await vagueNodeSearch(uri);
                 console.log(`Tab labels for ${uri.fsPath}:\n  node=${nodeOrNote}\n  source='${source}'`);
                 if (!nodeOrNote || !source) continue;
 

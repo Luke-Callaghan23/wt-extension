@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 import { HasGetUri } from '../outlineProvider/UriBasedView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { VagueNodeSearchResult } from '../miscTools/help';
+import { start } from 'repl';
+import { createLabelFromTitleAndPrefix } from './processGrepResults/createNodeTree';
 
 export type FileResultNode = {
     kind: 'file';
@@ -8,8 +11,10 @@ export type FileResultNode = {
     uri: vscode.Uri;
     parentLabels: string[];
     parentUri: vscode.Uri;
-    label: string;
-    locations: SearchNode<FileResultLocationNode>[]
+    title: string;
+    prefix: string;
+    locations: SearchNode<FileResultLocationNode>[];
+    pairedMatchedTitleNode?: SearchNode<MatchedTitleNode>;
 }
 
 export type FileResultLocationNode = {
@@ -29,19 +34,23 @@ export type SearchContainerNode = {
     uri: vscode.Uri;
     parentUri: vscode.Uri | null;
     parentLabels: string[];
-    label: string;
+    title: string;
+    prefix: string;
     results: number;
-    contents: SearchNode<SearchContainerNode | FileResultNode>[];
+    contents: SearchNode<SearchContainerNode | FileResultNode | MatchedTitleNode>[];
+    pairedMatchedTitleNode?: SearchNode<MatchedTitleNode>;
 };
 
 
 export type MatchedTitleNode = {
-    kind: 'searchTemp',
+    kind: 'matchedTitle',
     uri: vscode.Uri;
-    parentUri: null;
+    parentUri: vscode.Uri;
     parentLabels: string[];
-    label: string;
-    linkNode: OutlineNode;
+    title: string;
+    prefix: string;
+    labelHighlights: [number, number][];
+    linkNode: Exclude<VagueNodeSearchResult, { node: null, source: null}>,
 }
 
 
@@ -52,7 +61,7 @@ export type SearchNodeTemporaryText = {
     label: string;
 }
 
-export class SearchNode<T extends FileResultNode | SearchContainerNode | FileResultLocationNode | SearchNodeTemporaryText> implements HasGetUri {
+export class SearchNode<T extends FileResultNode | SearchContainerNode | FileResultLocationNode | SearchNodeTemporaryText | MatchedTitleNode> implements HasGetUri {
     node: T;
     description?: string;
     constructor (node: T) {
@@ -67,20 +76,42 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
     }
     
     getLabel (): string | vscode.TreeItemLabel {
-        if (this.node.kind === 'file') {
-            return `(${this.node.locations.length}) ${this.node.label}`
-        }
-        else if (this.node.kind === 'fileLocation') {
+        if (this.node.kind === 'fileLocation') {
             return <vscode.TreeItemLabel> {
                 label: this.node.surroundingText,
                 highlights: [this.node.surroundingTextHighlight]
             }
         }
-        else if (this.node.kind === 'searchContainer') {
-            return `(${this.node.results}) ${this.node.label}`
-        }
         else if (this.node.kind === 'searchTemp') {
             return this.node.label;
+        }
+        else if (this.node.kind === 'file' || this.node.kind === 'searchContainer' || this.node.kind === 'matchedTitle') {
+            let fullPrefix: string = '';
+            if (this.node.kind === 'searchContainer') {
+                fullPrefix += `(${this.node.results}) `;
+            }
+            else if (this.node.kind === 'file') {
+                fullPrefix += `(${this.node.locations.length}) `;
+            }
+
+            if (this.node.prefix.length > 0) {
+                fullPrefix += `(${this.node.prefix}) `
+            }
+
+            const highlightIndeces = this.node.kind === 'matchedTitle' 
+                ? this.node.labelHighlights
+                : this.node.pairedMatchedTitleNode?.node.labelHighlights;
+
+            if (highlightIndeces) {
+                const remappedHighlights = highlightIndeces.map(([ start, end ]) => {
+                    return [ start + fullPrefix.length, end + fullPrefix.length ];
+                });
+                return <vscode.TreeItemLabel> {
+                    label: `${fullPrefix}${this.node.title}`,
+                    highlights: remappedHighlights
+                }
+            }
+            return `${fullPrefix}${this.node.title}`;
         }
         throw 'Not accessible';
     }
@@ -114,7 +145,7 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
                 description += segments[indent];
                 description += ('\n' + Array(indent + 1).fill('|   ').join(''))
             }
-            return description + this.node.label
+            return description + createLabelFromTitleAndPrefix(this.node.title, this.node.prefix);
         }
         else return this.node.label;
     }
@@ -122,7 +153,7 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
     async getChildren (
         filter: boolean, 
         insertIntoNodeMap: (node: HasGetUri, uri: vscode.Uri) => void
-    ): Promise<SearchNode<FileResultNode | SearchContainerNode | FileResultLocationNode>[]> {
+    ): Promise<SearchNode<FileResultNode | SearchContainerNode | MatchedTitleNode | FileResultLocationNode>[]> {
         if (this.node.kind === 'file') {
             return this.node.locations;
         }

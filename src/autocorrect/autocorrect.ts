@@ -89,7 +89,7 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         // Query for the node representing this document to get its label
         // Label is used in the diagnostic to show where it came from
         let label: string;
-        const { node: nodeOrNote, source } = await vagueNodeSearch(uri, ExtensionGlobals.outlineView, ExtensionGlobals.recyclingBinView, ExtensionGlobals.scratchPadView, ExtensionGlobals.workBible);
+        const { node: nodeOrNote, source } = await vagueNodeSearch(uri);
         if (!nodeOrNote || !source) {
             label = fileName;
         }

@@ -294,7 +294,7 @@ export function registerCommands (this: OutlineView) {
             return;
         }
 
-        const result = await vagueNodeSearch(uri, extension.ExtensionGlobals.outlineView, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.scratchPadView, extension.ExtensionGlobals.workBible);
+        const result = await vagueNodeSearch(uri);
         if (!result || result.source === 'workBible') {
             vscode.window.showWarningMessage("Could not find active document in Outline, Scratch Pad, or Recycling Bin");
             return;

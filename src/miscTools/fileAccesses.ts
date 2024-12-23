@@ -35,11 +35,7 @@ export class FileAccessManager implements Packageable {
 
         // Mark the last opened document for each parental node as the document which was just opened
         let currentUri: vscode.Uri | undefined = openedUri;
-        let { node, source } = await vagueNodeSearch (
-            openedUri, 
-            extension.ExtensionGlobals.outlineView, extension.ExtensionGlobals.recyclingBinView, 
-            extension.ExtensionGlobals.scratchPadView, extension.ExtensionGlobals.workBible
-        );
+        let { node, source } = await vagueNodeSearch (openedUri);
         if (!node || !source || source !== 'outline') return;
 
         let currentNode: OutlineNode | null = node as OutlineNode;
@@ -133,7 +129,7 @@ export class FileAccessManager implements Packageable {
             
             // If the uri cannot be found inside of the outline view's structure,
             //      then skip the uri
-            const { node, source } = await vagueNodeSearch(tabUri, extension.ExtensionGlobals.outlineView, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.scratchPadView, extension.ExtensionGlobals.workBible);
+            const { node, source } = await vagueNodeSearch(tabUri);
             if (!node || !source) continue;
 
             // Otherwise, the uri is validated

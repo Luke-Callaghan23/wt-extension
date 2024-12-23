@@ -5,11 +5,12 @@ import { Workspace } from '../workspace/workspaceClass';
 import * as extension from '../extension';
 import { randomUUID } from 'crypto';
 import { executeGitGrep } from '../miscTools/executeGitGrep';
-import { FileResultLocationNode, FileResultNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
-import { cleanNodeTree, recreateNodeTree } from './processGrepResults/createNodeTree';
+import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
+import { cleanNodeTree, pairMatchedTitlesToNeighborNodes, recreateNodeTree } from './processGrepResults/createNodeTree';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 
 
-export type SearchNodeKind = SearchContainerNode | FileResultNode | FileResultLocationNode | SearchNodeTemporaryText;
+export type SearchNodeKind = SearchContainerNode | FileResultNode | FileResultLocationNode | SearchNodeTemporaryText | MatchedTitleNode;
 
 export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
     implements vscode.TreeDataProvider<SearchNode<SearchNodeKind>> {
@@ -55,7 +56,7 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
             });
             if (!response) return;
             const reg = new RegExp(response, 'gi');
-            return this.searchBarValueWasUpdated(reg);
+            return this.searchBarValueWasUpdated(reg, true);
         });
 
         vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {
@@ -65,9 +66,37 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
             editor.selections = [ new vscode.Selection(location.range.start, location.range.end) ];
             return editor.revealRange(location.range);
         });
+
+        vscode.commands.registerCommand('wt.wtSearch.results.showNode', async (node: SearchNode<MatchedTitleNode>) => {
+            // Called when a MatchedTitleNode is clicked in the outline tree,
+            // When the matched title is the title of a fragment, opens that in the editor
+            // Otherwise, reveals that node in the Outline / Scratch Pad / Recycling Bin / Notes view
+            
+            // Work bible or scratch pad or fragment: open in editor
+            if (
+                node.node.linkNode.source === 'workBible' || 
+                node.node.linkNode.source === 'scratch' || 
+                node.node.linkNode.node.data.ids.type === 'fragment'
+            ) {
+                const doc = await vscode.workspace.openTextDocument(node.getUri());
+                return vscode.window.showTextDocument(doc);
+            }
+
+            // Outline or Recycling (when type is not fragment), then reveal the node 
+            //      in its view
+            let provider: UriBasedView<OutlineNode>;
+            switch (node.node.linkNode.source) {
+                case 'outline': provider = extension.ExtensionGlobals.outlineView; break;
+                case 'recycle': provider = extension.ExtensionGlobals.recyclingBinView; break;
+            }
+
+            const treeViewNode = await provider.getTreeElementByUri(node.getUri());
+            if (!treeViewNode) return;
+            provider.view.reveal(treeViewNode);
+        });
     }
 
-    public async searchBarValueWasUpdated (searchRegex: RegExp, inLineSearch?: {
+    public async searchBarValueWasUpdated (searchRegex: RegExp, matchTitles: boolean, inLineSearch?: {
         regexWithIdGroup: RegExp,
         captureGroupId: string,
     }) {
@@ -84,12 +113,15 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
         const fsTree = await createFileSystemTree(grepResults);
 
         // Create a node tree based off the file system tree
-        const searchResults = await recreateNodeTree(fsTree);
+        const searchResults = await recreateNodeTree(fsTree, matchTitles);
         if (!searchResults) return exitWithNoResults();
 
         // Filter empty nodes and nodes with single results
         const filteredTree = cleanNodeTree(searchResults);
-        this.rootNodes = filteredTree;
+
+        // Pair up all MatchedTitleNodes with their paired SearchFileNode or SearchContainerNode, if one exists
+        const finalPairedTree = pairMatchedTitlesToNeighborNodes(filteredTree);
+        this.rootNodes = finalPairedTree;
         this.refresh();
     }
 
@@ -115,6 +147,30 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
                 }
             }
         }
+        else if (element.node.kind === 'matchedTitle') {
+            let icon: vscode.ThemeIcon;
+            if (element.node.linkNode.source === 'workBible' || element.node.linkNode.node.data.ids.type === 'fragment') {
+                icon = new vscode.ThemeIcon('edit');
+            }
+            else {
+                icon = new vscode.ThemeIcon('folder-opened');
+            }
+            return {
+                id: randomUUID(),
+                label: element.getLabel(),
+                collapsibleState: vscode.TreeItemCollapsibleState.None,
+                resourceUri: element.getUri(),
+                tooltip: element.getTooltip(),
+                description: element.description,
+                iconPath: icon,
+                command: {
+                    command: 'wt.wtSearch.results.showNode',
+                    title: 'Show Node in Outline',
+                    arguments: [ element ]
+                }
+            }
+        }
+        
         
         // 'searchTemp' type nodes will have a red (X) icon and no collapse state, where all other 
         //      nodes will have no icon and (by default) an open collapse state

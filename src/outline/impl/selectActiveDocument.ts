@@ -21,7 +21,7 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
     //     return;
     // }
 
-    const { node: nodeOrNote, source } = await vagueNodeSearch(uri, ExtensionGlobals.outlineView, ExtensionGlobals.recyclingBinView, ExtensionGlobals.scratchPadView, ExtensionGlobals.workBible);
+    const { node: nodeOrNote, source } = await vagueNodeSearch(uri);
     if (!nodeOrNote || !source) return;
 
     if (source !== 'workBible' && nodeOrNote instanceof OutlineNode) {

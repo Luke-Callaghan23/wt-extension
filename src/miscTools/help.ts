@@ -124,46 +124,54 @@ export function clamp(num: number, min: number, max: number) {
 
 
 export type VagueSearchSource = 'outline' | 'recycle' | 'scratch' | 'workBible' | null;
+export type VagueNodeSearchResult = {
+    source: 'scratch' | 'recycle' | 'outline',
+    node: OutlineNode,
+} | {
+    source: 'workBible',
+    node: Note,
+} | {
+    source: null,
+    node: null
+};
 
 export async function vagueNodeSearch (
-    target: vscode.Uri,
-    outlineView: OutlineView,
-    recyclingBinView: RecyclingBinView,
-    scratchPadView: ScratchPadView,
-    workBible: WorkBible,
-): Promise<{
-    source: VagueSearchSource,
-    node: OutlineNode | Note | null
-}> {
+    target: vscode.Uri
+): Promise<VagueNodeSearchResult> {
     const relative = target.fsPath.replaceAll(extension.rootPath.fsPath, "");
         
-    if (!(relative.endsWith("wt") || relative.endsWith("wtnote"))) return { node:null, source:null };
+    
+    if (!(
+        relative.endsWith("wt") 
+        || relative.endsWith("wtnote")
+        || relative !== target.fsPath
+    )) return { node:null, source:null };
     if (relative.includes("tmp/") || relative.includes("tmp\\")) return { node:null, source:null };
 
 
     if (relative.includes("recycling")) {
-        const node = await recyclingBinView.getTreeElementByUri(target);
+        const node = await extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(target);
         if (node) return {
             node: node,
             source: 'recycle'
         }
     }
     else if (relative.includes("scratchPad")) {
-        const node = await scratchPadView.getTreeElementByUri(target);
+        const node = await extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(target);
         if (node) return {
             node: node,
             source: 'scratch',
         }
     }
     else if (relative.endsWith(".wtnote")) {
-        const note = workBible.getNote(target);
+        const note = extension.ExtensionGlobals.workBible.getNote(target);
         if (note) return {
             source: 'workBible',
             node: note
         }
     }
     else {
-        const node = await outlineView.getTreeElementByUri(target)
+        const node = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(target)
         if (node) return {
             source: 'outline',
             node: node,
