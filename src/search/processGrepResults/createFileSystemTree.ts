@@ -46,7 +46,7 @@ function getSurroundingTextInRange(
     }
     
     const surroundingTextStart = Math.max(sourceDocument.offsetAt(surroundingLocation.range.start) - surroundingBounds[0], 0);
-    const surroundingTextEnd = Math.min(sourceDocument.offsetAt(surroundingLocation.range.end) + surroundingBounds[1], fullTextSize - 1);
+    const surroundingTextEnd = Math.min(sourceDocument.offsetAt(surroundingLocation.range.end) + surroundingBounds[1], fullTextSize);
     
     let surroundingTextHighlightStart = sourceDocument.offsetAt(surroundingLocation.range.start) - surroundingTextStart;
     let surroundingTextHighlightEnd = surroundingTextHighlightStart + (sourceDocument.offsetAt(surroundingLocation.range.end) - sourceDocument.offsetAt(surroundingLocation.range.start));
@@ -57,7 +57,7 @@ function getSurroundingTextInRange(
         surroundingTextHighlightEnd += 1;
         surroundingTextHighlightStart += 1;
     }
-    if (surroundingTextEnd !== fullTextSize - 1) {
+    if (surroundingTextEnd !== fullTextSize) {
         surroundingText += '…';
     }
     

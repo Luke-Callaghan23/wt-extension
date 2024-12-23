@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
 import { HasGetUri } from '../outlineProvider/UriBasedView';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 
 export type FileResultNode = {
     kind: 'file';
     ext: string;
     uri: vscode.Uri;
+    parentLabels: string[];
     parentUri: vscode.Uri;
     label: string;
     locations: SearchNode<FileResultLocationNode>[]
@@ -14,6 +16,7 @@ export type FileResultLocationNode = {
     kind: 'fileLocation';
     uri: vscode.Uri;
     parentUri: vscode.Uri;
+    parentLabels: string[];
     location: vscode.Location;
     surroundingText: string;
     surroundingTextHighlight: [ number, number ];
@@ -25,10 +28,21 @@ export type SearchContainerNode = {
     kind: 'searchContainer';
     uri: vscode.Uri;
     parentUri: vscode.Uri | null;
+    parentLabels: string[];
     label: string;
     results: number;
     contents: SearchNode<SearchContainerNode | FileResultNode>[];
 };
+
+
+export type MatchedTitleNode = {
+    kind: 'searchTemp',
+    uri: vscode.Uri;
+    parentUri: null;
+    parentLabels: string[];
+    label: string;
+    linkNode: OutlineNode;
+}
 
 
 export type SearchNodeTemporaryText = {
@@ -72,28 +86,37 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
     }
 
     getTooltip (): string | vscode.MarkdownString {
-        if (this.node.kind !== 'fileLocation') {
-            return this.node.label;
+        if (this.node.kind === 'fileLocation') {
+            // TDOD: make a visual tree for the
+            // Split on the highlights for the larger surrounding text
+            const splits = [
+                this.node.largerSurroundingText.substring(0, this.node.largerSurroundingTextHighlight[0]),
+                this.node.largerSurroundingText.substring(this.node.largerSurroundingTextHighlight[0], this.node.largerSurroundingTextHighlight[1]),
+                this.node.largerSurroundingText.substring(this.node.largerSurroundingTextHighlight[1])
+            ]
+            
+            // Clean all the markings from the three sections 
+            // (Need to do cleaning here or else the `this.node.largerSurroundingTextHighlights` indices might get messed up)
+            const cleaned = splits.map(splt => splt.replaceAll(/[#^*_~]/g, ''));
+            
+            const joined = cleaned[0] + '<mark>' + cleaned[1] + '</mark>' + cleaned[2];
+            const finalMarkdown = joined.replaceAll(/\n/g, '\n\n');
+            
+            // Create md and mark it as supporting HTML
+            const md = new vscode.MarkdownString(finalMarkdown);
+            md.supportHtml = true;
+            return md;
         }
-
-        // Split on the highlights for the larger surrounding text
-        const splits = [
-            this.node.largerSurroundingText.substring(0, this.node.largerSurroundingTextHighlight[0]),
-            this.node.largerSurroundingText.substring(this.node.largerSurroundingTextHighlight[0], this.node.largerSurroundingTextHighlight[1]),
-            this.node.largerSurroundingText.substring(this.node.largerSurroundingTextHighlight[1])
-        ]
-
-        // Clean all the markings from the three sections 
-        // (Need to do cleaning here or else the `this.node.largerSurroundingTextHighlights` indices might get messed up)
-        const cleaned = splits.map(splt => splt.replaceAll(/[#^*_~]/g, ''));
-
-        const joined = cleaned[0] + '<mark>' + cleaned[1] + '</mark>' + cleaned[2];
-        const finalMarkdown = joined.replaceAll(/\n/g, '\n\n');
-
-        // Create md and mark it as supporting HTML
-        const md = new vscode.MarkdownString(finalMarkdown);
-        md.supportHtml = true;
-        return md;
+        else if (this.node.kind !== 'searchTemp') {
+            const segments = this.node.parentLabels;
+            let description = '';
+            for (let indent = 0; indent < segments.length; indent++) {
+                description += segments[indent];
+                description += ('\n' + Array(indent + 1).fill('|   ').join(''))
+            }
+            return description + this.node.label
+        }
+        else return this.node.label;
     }
     
     async getChildren (

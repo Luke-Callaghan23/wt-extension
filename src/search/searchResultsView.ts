@@ -28,7 +28,6 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
     
     async initialize() {
         const viewName = 'wt.wtSearch.results';
-        
         const view = vscode.window.createTreeView(viewName, { 
             treeDataProvider: this,
             showCollapseAll: true, 
@@ -50,26 +49,17 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
             const response = await vscode.window.showInputBox({
                 ignoreFocusOut: false,
                 password: false,
-                placeHolder: 'plordamble',
+                placeHolder: 'Search . . . ',
                 prompt: 'Search Term',
                 title: 'Search Term',
-                value: 'plordamble',
-                valueSelection: [0, 'plordamble'.length]
             });
             if (!response) return;
-
             const reg = new RegExp(response, 'gi');
-            const grepResults = await executeGitGrep(reg);
-            if (!grepResults) return;
-            const fsTree = await createFileSystemTree(grepResults);
-            const searchResults = await recreateNodeTree(fsTree);
-            if (!searchResults) return;
-            const filteredTree = cleanNodeTree(searchResults);
-            this.rootNodes = filteredTree;
-            this.refresh();
+            return this.searchBarValueWasUpdated(reg);
         });
 
         vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {
+            // Called when a file location node is clicked in the results tree, opens the location in the editor
             const doc = await vscode.workspace.openTextDocument(location.uri);
             const editor = await vscode.window.showTextDocument(doc);
             editor.selections = [ new vscode.Selection(location.range.start, location.range.end) ];
@@ -81,16 +71,23 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
         regexWithIdGroup: RegExp,
         captureGroupId: string,
     }) {
-        const grepResults = await executeGitGrep(searchRegex, inLineSearch);
-        if (!grepResults) return;
-        if (grepResults.length === 0) {
+        const exitWithNoResults = () => {
             this.rootNodes = [];
             this.refresh();
-            return;
         }
+        
+        // Grep results
+        const grepResults = await executeGitGrep(searchRegex, inLineSearch);
+        if (!grepResults || grepResults.length === 0) return;
+        
+        // Create file system-esque tree from the grep results
         const fsTree = await createFileSystemTree(grepResults);
+
+        // Create a node tree based off the file system tree
         const searchResults = await recreateNodeTree(fsTree);
-        if (!searchResults) return;
+        if (!searchResults) return exitWithNoResults();
+
+        // Filter empty nodes and nodes with single results
         const filteredTree = cleanNodeTree(searchResults);
         this.rootNodes = filteredTree;
         this.refresh();
@@ -102,6 +99,7 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
     }
     
     getTreeItem (element: SearchNode<SearchNodeKind>): vscode.TreeItem | Thenable<vscode.TreeItem> {
+        // File location nodes link to a location in a document, and have more complicated labels and tooltips
         if (element.node.kind === 'fileLocation') {
             return {
                 id: randomUUID(),
@@ -118,6 +116,8 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
             }
         }
         
+        // 'searchTemp' type nodes will have a red (X) icon and no collapse state, where all other 
+        //      nodes will have no icon and (by default) an open collapse state
         let icon: vscode.ThemeIcon | undefined;
         let collapseState: vscode.TreeItemCollapsibleState;
         if (element.node.kind === 'searchTemp') {
@@ -133,7 +133,7 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
             label: element.getLabel(),
             resourceUri: element.getUri(),
             tooltip: element.getTooltip(),
-            description: element.description,
+            description: element.description && `(${element.description})`,
             iconPath: icon,
             collapsibleState: collapseState
         }
@@ -143,6 +143,7 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
         element?: SearchNode<SearchNodeKind> | undefined
     ): Promise<SearchNode<SearchNodeKind>[]> {
         if (!element) {
+            // When there are no results in the node tree, then create a temporary node to indicate the empty results to the user
             if (this.rootNodes.length === 0) {
                 return [ new SearchNode<SearchNodeTemporaryText>({
                     kind: 'searchTemp',
@@ -161,5 +162,4 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
         if (!parentUri) return null;
         return this.getTreeElementByUri(parentUri);
     }
-    
 }
