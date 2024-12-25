@@ -8,19 +8,23 @@ import { executeGitGrep } from '../miscTools/executeGitGrep';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { cleanNodeTree, pairMatchedTitlesToNeighborNodes, recreateNodeTree } from './processGrepResults/createNodeTree';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { compareFsPath, vagueNodeSearch } from '../miscTools/help';
 
 
 export type SearchNodeKind = SearchContainerNode | FileResultNode | FileResultLocationNode | SearchNodeTemporaryText | MatchedTitleNode;
 
-export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
-    implements vscode.TreeDataProvider<SearchNode<SearchNodeKind>> {
-
+export class SearchResultsView 
+    extends UriBasedView<SearchNode<SearchNodeKind>>
+    implements vscode.TreeDataProvider<SearchNode<SearchNodeKind>> 
+{
+    private filteredUris: vscode.Uri[];
     constructor (
         protected workspace: Workspace,
         protected context: vscode.ExtensionContext
     ) {
         super();
         this.rootNodes = [];
+        this.filteredUris = [];
     }
 
     
@@ -41,7 +45,11 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
         await this.initUriExpansion(viewName, this.view, this.context);
     }
 
-    async refresh(): Promise<void> {
+    async refresh(updatedNodes?: typeof this.rootNodes): Promise<void> {
+        if (updatedNodes) {
+            this.rootNodes = updatedNodes;
+            this.filteredUris = [];
+        }
         this._onDidChangeTreeData.fire(undefined);
     }
 
@@ -89,10 +97,35 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
                 case 'outline': provider = extension.ExtensionGlobals.outlineView; break;
                 case 'recycle': provider = extension.ExtensionGlobals.recyclingBinView; break;
             }
+            provider.view.reveal(node.node.linkNode.node);
+        });
 
-            const treeViewNode = await provider.getTreeElementByUri(node.getUri());
-            if (!treeViewNode) return;
-            provider.view.reveal(treeViewNode);
+        vscode.commands.registerCommand("wt.wtSearch.results.revealNodeInOutline", async (node: SearchNode<SearchNodeKind>) => {
+
+            const nodeResult = await vagueNodeSearch(node.getUri());
+            if (nodeResult.node === null || nodeResult.source === null) return;
+
+            if (nodeResult.source === 'workBible') {
+                extension.ExtensionGlobals.workBible.view.reveal(nodeResult.node, {
+                    expand: true,
+                    focus: false,
+                    select: true
+                });
+                return;
+            }
+
+            let provider: UriBasedView<OutlineNode>;
+            switch (nodeResult.source) {
+                case 'outline': provider = extension.ExtensionGlobals.outlineView; break;
+                case 'recycle': provider = extension.ExtensionGlobals.recyclingBinView; break;
+                case 'scratch': provider = extension.ExtensionGlobals.scratchPadView; break;
+            }
+            provider.view.reveal(nodeResult.node);
+        });
+
+        vscode.commands.registerCommand("wt.wtSearch.results.hideNode", (node: SearchNode<SearchNodeKind>) => {
+            this.filteredUris.push(node.getUri());
+            this.refresh();
         });
     }
 
@@ -100,10 +133,6 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
         regexWithIdGroup: RegExp,
         captureGroupId: string,
     }) {
-        const exitWithNoResults = () => {
-            this.rootNodes = [];
-            this.refresh();
-        }
         
         // Grep results
         const grepResults = await executeGitGrep(searchRegex, inLineSearch);
@@ -114,20 +143,18 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
 
         // Create a node tree based off the file system tree
         const searchResults = await recreateNodeTree(fsTree, matchTitles);
-        if (!searchResults) return exitWithNoResults();
+        if (!searchResults) return this.searchCleared();
 
         // Filter empty nodes and nodes with single results
         const filteredTree = cleanNodeTree(searchResults);
 
         // Pair up all MatchedTitleNodes with their paired SearchFileNode or SearchContainerNode, if one exists
         const finalPairedTree = pairMatchedTitlesToNeighborNodes(filteredTree);
-        this.rootNodes = finalPairedTree;
-        this.refresh();
+        this.refresh(finalPairedTree);
     }
 
     public async searchCleared () {
-        this.rootNodes = [];
-        this.refresh();
+        this.refresh([]);
     }
     
     getTreeItem (element: SearchNode<SearchNodeKind>): vscode.TreeItem | Thenable<vscode.TreeItem> {
@@ -208,9 +235,10 @@ export class SearchResultsView extends UriBasedView<SearchNode<SearchNodeKind>>
                     uri: extension.rootPath
                 }) ];
             }
-            return this.rootNodes;
+            return this.rootNodes.filter(root => !this.filteredUris.find(filtered => compareFsPath(root.getUri(), filtered)));
         }
-        return element.getChildren(false, ()=>{});
+        return (await element.getChildren(false, ()=>{}))
+            .filter(child => !this.filteredUris.find(filtered => compareFsPath(child.getUri(), filtered)));
     }
 
     async getParent (element: SearchNode<SearchNodeKind>): Promise<SearchNode<SearchNodeKind> | null> {

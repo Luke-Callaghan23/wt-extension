@@ -963,10 +963,26 @@
 			{
 				"title": "Writing Tool Search: Search",
 				"command": "wt.wtSearch.results.search"
+			},
+			{
+				"title": "Go to Outline Node",
+				"command": "wt.wtSearch.results.revealNodeInOutline"
+			},
+			{
+				"title": "Writing Tool Search: Hide Node",
+				"command": "wt.wtSearch.results.hideNode",
+				"icon": "$(x)"
 			}
+
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "wt.wtSearch.results.revealNodeInOutline"
+				},
+				{
+					"command": "wt.wtSearch.results.hideNode"
+				},
 				{
 					"command": "wt.autocorrections.wordReplaced",
 					"when": "false"
@@ -1559,6 +1575,15 @@
 					"command": "wt.workBible.editNote",
 					"when": "view == wt.workBible.tree",
 					"group": "inline@3"
+				},
+				{
+					"command": "wt.wtSearch.results.hideNode",
+					"when": "view == wt.wtSearch.results",
+					"group": "inline"
+				},
+				{
+					"command": "wt.wtSearch.results.revealNodeInOutline",
+					"when": "view == wt.wtSearch.results"
 				}
 			],
 			"editor/title": [
