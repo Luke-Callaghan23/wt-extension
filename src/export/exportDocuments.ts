@@ -17,6 +17,7 @@ import { Workspace } from '../workspace/workspaceClass';
 import { OutlineView } from '../outline/outlineView';
 import { wtToHtml } from './wtToHtml';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
+import { wtToMd } from './wtToMd';
 
 // Data provided by the export form webview
 export type ExportDocumentInfo = {
@@ -488,25 +489,16 @@ async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | Proc
 // Exporting a txt file is simply treated the same as exporting an md file, which is the same as a generic export
 const exportMd = async (fullyProcessed: ProcessedMd) => {
     
-    const processText = (text: string) => {
-        // Replace all "^" with "**"
-        text = text.replaceAll("^", "**");
     
-        // Replace all "~" with "~~"
-        text = text.replaceAll("~", "~~");
-        text = text.replaceAll("~~~~", "~~");
-
-        return text;
-    }
 
     if (fullyProcessed.type === 'multiple') {
         for (const cci of fullyProcessed.cleanedChapterInfo) {
             const dataStr = cci.data.toString();
-            cci.data = processText(dataStr);
+            cci.data = wtToMd(dataStr);
         }
     }
     else {
-        fullyProcessed.fullData = processText(fullyProcessed.fullData.toString())
+        fullyProcessed.fullData = wtToMd(fullyProcessed.fullData.toString())
     }
 
     await exportGeneric(fullyProcessed, 'md');
