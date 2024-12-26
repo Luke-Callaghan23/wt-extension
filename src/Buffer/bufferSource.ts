@@ -1,3 +1,1 @@
-import { Buffer } from 'buffer'
-
-export const Buff = Buffer;
+export const Buff = Buffer

@@ -17,19 +17,7 @@ export const setLastCommit = () => lastCommit = Date.now();
 export async function gitCommit () {
     try {
         lastCommit = Date.now();
-        await vscode.commands.executeCommand('git.commitAll');
-    }
-    catch (e) {
-        vscode.window.showErrorMessage(`ERROR: An error occurred while making commit: ${e}`);
-        console.log(`${e}`);
-    }
-}
-
-export async function gitCommitFile () {
-    try {
-        lastCommit = Date.now();
-        await vscode.commands.executeCommand('git.stage');
-        await vscode.commands.executeCommand('git.commit');
+        await vscode.commands.executeCommand('workbench.view.scm');
     }
     catch (e) {
         vscode.window.showErrorMessage(`ERROR: An error occurred while making commit: ${e}`);

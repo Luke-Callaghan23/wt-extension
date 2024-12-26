@@ -5,29 +5,24 @@
 	"tasks": [
 		{
 			"type": "npm",
-			"script": "compile-web",
+			"script": "watch",
+			"problemMatcher": "$tsc-watch",
+			"isBackground": true,
+			"presentation": {
+				"reveal": "never"
+			},
 			"group": {
 				"kind": "build",
 				"isDefault": true
-			},
-			"problemMatcher": [
-				"$ts-webpack",
-				"$tslint-webpack"
-			]
+			}
 		},
 		{
 			"type": "npm",
-			"script": "watch-web",
+			"script": "compile",
 			"group": "build",
-			"isBackground": true,
-			"problemMatcher": [
-				"$ts-webpack-watch",
-				"$tslint-webpack-watch"
-			]
+			"problemMatcher": [],
+			"label": "npm: compile",
+			"detail": "tsc -p ./"
 		}
-	],
-	"resolveSourceMapLocations": [
-		"${workspaceFolder}/**",
-		"!**/node_modules/**"
 	]
 }

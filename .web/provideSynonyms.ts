@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 import { SynonymsApi } from "./synonymsApi";
 import * as extension from './../../extension';
 import { Workspace } from '../../workspace/workspaceClass';
-import * as console from '../../miscTools/vsconsole';
-import * as fs from 'fs';
+import * as console from './../../miscTools/vsconsole';
 
 export type Definition = {
     definitions :  string[],
@@ -202,12 +201,7 @@ export class SynonymsProvider {
             const cachePath = extension.ExtensionGlobals.workspace.synonymsCachePath;
             const cacheBuffer = extension.encoder.encode(JSON.stringify(this.cache));
             
-            if (!useDefaultFS) {
-                await vscode.workspace.fs.writeFile(cachePath, cacheBuffer);
-            }
-            else {
-                fs.writeFileSync(cachePath.fsPath, cacheBuffer);
-            }
+            await vscode.workspace.fs.writeFile(cachePath, cacheBuffer);
             console.log("Saving cache to disk");
         }
         catch (err: any) {

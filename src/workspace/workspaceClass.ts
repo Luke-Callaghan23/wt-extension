@@ -8,9 +8,9 @@ import { Buff } from './../Buffer/bufferSource';
 import { setLastCommit } from '../gitTransactions';
 import { ReloadWatcher } from '../miscTools/reloadWatcher';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
+import * as fs from 'fs';
 import { Autocorrect } from '../autocorrect/autocorrect';
-
-
+import { SearchBarView } from '../search/searchBarView';
 
 export type DiskContextType = {
     "wt.outline.collapseState": {
@@ -54,8 +54,12 @@ export type DiskContextType = {
     "wt.autocorrections.corrections": Autocorrect['corrections'];
     "wt.autocorrections.dontCorrect": Autocorrect['dontCorrect'];
     "wt.autocorrections.exclusions": Autocorrect['exclusions'];
+    'wt.wtSearch.search.latestSearchBarValue': SearchBarView['latestSearchBarValue'];
+    'wt.wtSearch.search.wholeWord': SearchBarView['wholeWord'];
+    'wt.wtSearch.search.regex': SearchBarView['regex'];
+    'wt.wtSearch.search.caseInsensitive': SearchBarView['caseInsensitive'];
+    'wt.wtSearch.search.matchTitles': SearchBarView['matchTitles'];
 }
-
 
 export class Workspace {
     // Basic configuration information about the workspace
@@ -71,6 +75,8 @@ export class Workspace {
     // Path to all the necessary folders for a workspace to function
     public chaptersFolder: vscode.Uri;
     public workSnipsFolder: vscode.Uri;
+    public importFolder: vscode.Uri;
+    public exportFolder: vscode.Uri;
     public recyclingBin: vscode.Uri;
     public contextValuesFilePath: vscode.Uri;
     public worldNotesPath: vscode.Uri;
@@ -85,6 +91,8 @@ export class Workspace {
         return [
             this.chaptersFolder, 
             this.workSnipsFolder, 
+            this.importFolder, 
+            this.exportFolder,
             this.recyclingBin,
             this.workBibleFolder,
             this.scratchPadFolder
@@ -142,13 +150,19 @@ export class Workspace {
     private static allowReload: number = 0;
     static async packageContextItems (useDefaultFS: boolean = false) {
         ReloadWatcher.disableReloadWatch();
-        const saveCache = SynonymsProvider.writeCacheToDisk(false);
+        const saveCache = SynonymsProvider.writeCacheToDisk(useDefaultFS);
         this.allowReload = 100;
         // Write context items to the file system before git save
-        const contextItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
+        const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
         const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-        await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+        
+        if (!useDefaultFS) {
+            await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+        }
+        else {
+            fs.writeFileSync(contextUri.fsPath, contextJSON);
+        }
         if (!this.interval) {
             this.interval = setInterval(() => {
                 this.allowReload--;
@@ -171,13 +185,15 @@ export class Workspace {
         }
         return Workspace.packageContextItems();
     }
-
     
+
     // Simply initializes all the paths of necessary 
     constructor(context: vscode.ExtensionContext) {
         this.dotWtconfigPath = vscode.Uri.joinPath(extension.rootPath, `.wtconfig`);
         this.chaptersFolder = vscode.Uri.joinPath(extension.rootPath, `data/chapters`);
         this.workSnipsFolder = vscode.Uri.joinPath(extension.rootPath, `data/snips`);
+        this.importFolder = vscode.Uri.joinPath(extension.rootPath, `data/import`);
+        this.exportFolder = vscode.Uri.joinPath(extension.rootPath, `data/export`);
         this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         this.worldNotesPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotes.json');
