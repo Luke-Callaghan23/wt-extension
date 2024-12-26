@@ -4,7 +4,7 @@ import { getNonce } from '../miscTools/help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 import { SearchResultsView } from './searchResultsView';
-import { DiskContextType } from '../workspace/workspace';
+import { DiskContextType } from '../workspace/workspaceClass';
 import { wordSeparator } from '../extension';
 
 

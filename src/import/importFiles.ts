@@ -198,7 +198,18 @@ function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
 }
 
 
-
+export const commonReplacements = {
+    '”': '"',
+    '“': '"',
+    '‘': "'",
+    '’': "'",
+    '‛': "'",
+    '‟': '"',
+    '…': '...',
+    '—': ' -- ',
+    '–': ' -- ',
+    '­': '',
+};
 function replaceCommonUnicode (content: string): string {
     return Object.entries(commonReplacements).reduce((acc, [ from, to ]) => {
         return acc.replaceAll(from , to);
