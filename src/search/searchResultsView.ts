@@ -247,3 +247,12 @@ export class SearchResultsView
         return this.getTreeElementByUri(parentUri);
     }
 }
+
+
+/*
+
+overwrite ctrl+shift+h to open in writing tool search
+
+do highlighting in the editor equivalent to vscode search
+
+*/

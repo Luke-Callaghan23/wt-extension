@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { formatFsPathForCompare, getRelativePath, VagueSearchSource } from '../../miscTools/help';
+import { formatFsPathForCompare, getRelativePath, getSurroundingTextInRange, VagueSearchSource } from '../../miscTools/help';
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import * as vscodeUri from 'vscode-uri';
@@ -30,42 +30,6 @@ export type ResultFolder = {
         [index: FileName]: ResultFolder | ResultFile;
     }
 };
-
-
-function getSurroundingTextInRange(
-    sourceDocument: vscode.TextDocument, 
-    fullTextSize: number, 
-    surroundingLocation: vscode.Location,
-    surroundingBounds: number | [ number, number ]
-): {
-    surroundingText: string,
-    highlight: [ number, number ]
-} {
-    if (typeof surroundingBounds === 'number') {
-        surroundingBounds = [ surroundingBounds, surroundingBounds ];
-    }
-    
-    const surroundingTextStart = Math.max(sourceDocument.offsetAt(surroundingLocation.range.start) - surroundingBounds[0], 0);
-    const surroundingTextEnd = Math.min(sourceDocument.offsetAt(surroundingLocation.range.end) + surroundingBounds[1], fullTextSize);
-    
-    let surroundingTextHighlightStart = sourceDocument.offsetAt(surroundingLocation.range.start) - surroundingTextStart;
-    let surroundingTextHighlightEnd = surroundingTextHighlightStart + (sourceDocument.offsetAt(surroundingLocation.range.end) - sourceDocument.offsetAt(surroundingLocation.range.start));
-    
-    let surroundingText = sourceDocument.getText(new vscode.Selection(sourceDocument.positionAt(surroundingTextStart), sourceDocument.positionAt(surroundingTextEnd)));
-    if (surroundingTextStart !== 0) {
-        surroundingText = '…' + surroundingText;
-        surroundingTextHighlightEnd += 1;
-        surroundingTextHighlightStart += 1;
-    }
-    if (surroundingTextEnd !== fullTextSize) {
-        surroundingText += '…';
-    }
-    
-    return {
-        surroundingText: surroundingText,
-        highlight: [ surroundingTextHighlightStart, surroundingTextHighlightEnd ],
-    }
-}
 
 
 export async function createFileSystemTree (locations: vscode.Location[]): Promise<FileSystemFormat> {

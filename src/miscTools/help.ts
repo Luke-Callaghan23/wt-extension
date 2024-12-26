@@ -275,3 +275,54 @@ export async function statFile (uri: vscode.Uri): Promise<vscode.FileStat | null
 export function getRelativePath (uri: vscode.Uri): string {
     return uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
 }
+
+
+export function getSurroundingTextInRange(
+    sourceDocument: vscode.TextDocument, 
+    fullTextSize: number, 
+    surroundingLocation: vscode.Location,
+    surroundingBounds: number | [ number, number ],
+    stopAtEol: boolean = false
+): {
+    surroundingText: string,
+    highlight: [ number, number ]
+} {
+    if (typeof surroundingBounds === 'number') {
+        surroundingBounds = [ surroundingBounds, surroundingBounds ];
+    }
+    
+    
+    let eolOffset = Number.MAX_VALUE;
+    if (stopAtEol) {
+        const eolPosition = new vscode.Position(surroundingLocation.range.end.line + 1, 0);
+        eolOffset = sourceDocument.offsetAt(eolPosition) - sourceDocument.eol;
+    }
+
+    const surroundingTextStart = Math.max(sourceDocument.offsetAt(surroundingLocation.range.start) - surroundingBounds[0], 0);
+    const surroundingTextEnd = Math.min(sourceDocument.offsetAt(surroundingLocation.range.end) + surroundingBounds[1], fullTextSize, eolOffset);
+    
+    let surroundingTextHighlightStart = sourceDocument.offsetAt(surroundingLocation.range.start) - surroundingTextStart;
+    let surroundingTextHighlightEnd = surroundingTextHighlightStart + (sourceDocument.offsetAt(surroundingLocation.range.end) - sourceDocument.offsetAt(surroundingLocation.range.start));
+    
+    let surroundingText = sourceDocument.getText(new vscode.Selection(sourceDocument.positionAt(surroundingTextStart), sourceDocument.positionAt(surroundingTextEnd)));
+    if (surroundingTextStart !== 0 && surroundingBounds[0] !== 0) {
+        surroundingText = '…' + surroundingText;
+        surroundingTextHighlightEnd += 1;
+        surroundingTextHighlightStart += 1;
+    }
+    if (surroundingTextEnd !== fullTextSize) {
+        if (stopAtEol) {
+            if (surroundingTextEnd !== eolOffset) {
+                surroundingText += '…';
+            }
+        }
+        else {
+            surroundingText += '…';
+        }
+    }
+    
+    return {
+        surroundingText: surroundingText,
+        highlight: [ surroundingTextHighlightStart, surroundingTextHighlightEnd ],
+    }
+}

@@ -43,6 +43,7 @@ import { Autocorrect } from './autocorrect/autocorrect';
 import { FileLinker } from './miscTools/fileLinker';
 import { SearchResultsView } from './search/searchResultsView';
 import { SearchBarView } from './search/searchBarView';
+import { FragmentOverviewView } from './fragmentOverview/fragmentOverview';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -107,6 +108,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const reloadWatcher = new ReloadWatcher(workspace, context);
 		const scratchPad = new ScratchPadView(context, workspace);
 		await scratchPad.init();
+
+		const fragmentOverview = new FragmentOverviewView(context, workspace);
 		
 		const tabStates = new TabStates(context, workspace);
 
@@ -134,7 +137,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.very', 'very', veryIntellisense],  
 			['wt.colors', 'colors', colorIntellisense],
 			['wt.textStyle', 'textStyle', textStyles],
-			['wt.autocorrections', 'autocorrections', autocorrection]
+			['wt.autocorrections', 'autocorrections', autocorrection],
+			['wt.overview', 'overview', fragmentOverview]
 		]);
 
 		const tabLabels = new TabLabels();

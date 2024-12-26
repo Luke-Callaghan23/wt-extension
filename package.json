@@ -44,6 +44,11 @@
 					"default": true,
 					"description": "Determines whether you want to show the 'Word Watcher' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
 				},
+				"wt.showPanels.overview": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'Text Overview' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
 				"wt.showPanels.TODO": {
 					"type": "boolean",
 					"default": true,
@@ -93,6 +98,11 @@
 					"type": "number",
 					"default": 1,
 					"description": "Speech rate speed multiplier."
+				},
+				"wt.timedSearches.overview": {
+					"description": "Enable automatic Overview Querying",
+					"type": "boolean",
+					"default": true
 				},
 				"wt.timedSearches.todo": {
 					"description": "Enable automatic TODO querying",
@@ -192,7 +202,7 @@
 				{
 					"id": "wtSearch",
 					"title": "Writing Tool: Search",
-					"icon": "$(search)"
+					"icon": "media/icons/bookmark-search.svg"
 				}
 			],
 			"panel": [
@@ -208,20 +218,23 @@
 				{
 					"id": "wt.outline",
 					"name": "Outline",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Outline"
 				},
 				{
 					"id": "wt.wordWatcher",
 					"name": "Word Watcher",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Word Watcher",
 					"when": "wt.valid && config.wt.showPanels.wordWatcher"
 				},
 				{
+					"id": "wt.overview",
+					"name": "Text Overview",
+					"contextualTitle": "Text Overview",
+					"when": "wt.valid && config.wt.showPanels.overview"
+				},
+				{
 					"id": "wt.todo",
 					"name": "TODOs",
-					"icon": "media/dep.svg",
 					"contextualTitle": "TODOs",
 					"when": "wt.valid && config.wt.showPanels.TODO"
 				},
@@ -229,7 +242,6 @@
 					"type": "webview",
 					"id": "wt.synonyms",
 					"name": "Synonyms",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Synonyms",
 					"when": "wt.valid && config.wt.showPanels.synonyms"
 				},
@@ -237,21 +249,18 @@
 					"type": "webview",
 					"id": "wt.wh",
 					"name": "Wh",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Wh",
 					"when": "wt.valid && config.wt.showPanels.WH"
 				},
 				{
 					"id": "wt.import.fileExplorer",
 					"name": "Import",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Import",
 					"when": "wt.valid && config.wt.showPanels.importFileExplorer"
 				},
 				{
 					"id": "wt.export",
 					"name": "Export",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Export",
 					"when": "wt.valid && config.wt.showPanels.export"
 				},
@@ -272,7 +281,6 @@
 				{
 					"id": "wt.workBible.tree",
 					"name": "Notes",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Notes",
 					"when": "wt.valid && config.wt.showPanels.workBible"
 				}
@@ -282,14 +290,12 @@
 					"type": "webview",
 					"id": "wt.wtSearch.search",
 					"name": "Writing Tool Search: Search",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Writing Tool Search: Search",
 					"when": "wt.valid"
 				},
 				{
 					"id": "wt.wtSearch.results",
 					"name": "Writing Tool Search: Results",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Writing Tool Search: Results",
 					"when": "wt.valid"
 				}
