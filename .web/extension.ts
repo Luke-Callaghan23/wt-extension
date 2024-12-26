@@ -31,6 +31,11 @@ import { ReloadWatcher } from './miscTools/reloadWatcher';
 import { convertFileNames } from './miscTools/convertFileNames';
 import { ScratchPadView } from './scratchPad/scratchPadView';
 import { TabStates } from './miscTools/tabStates';
+import { Autocorrect } from './autocorrect/autocorrect';
+import { FileLinker } from './miscTools/fileLinker';
+import { SearchResultsView } from './search/searchResultsView';
+import { SearchBarView } from './search/searchBarView';
+import { FragmentOverviewView } from './fragmentOverview/fragmentOverview';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -81,7 +86,9 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const proximity = new Proximity(context, workspace);
 		const textStyles = new TextStyles(context, workspace);			
 		const recycleBin = new RecyclingBinView(context, workspace);
+		await recycleBin.initialize();
 
+		const autocorrection = new Autocorrect(context, workspace);
 		const personalDictionary = new PersonalDictionary(context, workspace);
 		const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, false);
 		const spellcheck = new Spellcheck(context, workspace, personalDictionary);
@@ -91,9 +98,14 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const reloadWatcher = new ReloadWatcher(workspace, context);
 		const scratchPad = new ScratchPadView(context, workspace);
 		await scratchPad.init();
+
+		const fragmentOverview = new FragmentOverviewView(context, workspace);
 		
 		const tabStates = new TabStates(context, workspace);
 
+		const searchResultsView = new SearchResultsView(workspace, context);
+		const searchBarView = new SearchBarView(context, workspace, searchResultsView);
+		searchResultsView.initialize();
 
 
 		const workBible = new WorkBible(workspace, context);
@@ -103,6 +115,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);
+		new FileLinker(context, workspace);
 
 		const timedViews = new TimedView(context, [
 			['wt.workBible.tree', 'workBible', workBible],
@@ -113,6 +126,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.very', 'very', veryIntellisense],
 			['wt.colors', 'colors', colorIntellisense],
 			['wt.textStyle', 'textStyle', textStyles],
+			['wt.autocorrections', 'autocorrections', autocorrection],
+			['wt.overview', 'overview', fragmentOverview]
 		]);
 		
 		const tabLabels = new TabLabels();
@@ -128,7 +143,8 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(), 
-			personalDictionary, colorGroups, reloadWatcher, tabStates
+			personalDictionary, colorGroups, reloadWatcher, tabStates,
+			autocorrection, searchBarView
 		]));
 		
 		// Lastly, clear the 'tmp' folder

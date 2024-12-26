@@ -41,6 +41,11 @@
 					"default": true,
 					"description": "Determines whether you want to show the 'Word Watcher' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
 				},
+				"wt.showPanels.overview": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether you want to show the 'Text Overview' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
 				"wt.showPanels.TODO": {
 					"type": "boolean",
 					"default": true,
@@ -116,6 +121,11 @@
 					"type": "boolean",
 					"default": true
 				},
+				"wt.timedSearches.autocorrections": {
+					"description": "Enable Autocorrections",
+					"type": "boolean",
+					"default": true
+				},
 				"wt.editor.showSaveAll": {
 					"description": "Enable the 'Save All' button in the editor toolbar",
 					"type": "boolean",
@@ -170,6 +180,11 @@
 					"id": "wt",
 					"title": "Writing Tool",
 					"icon": "$(bookmark)"
+				},
+				{
+					"id": "wtSearch",
+					"title": "Writing Tool: Search",
+					"icon": "media/icons/bookmark-search.svg"
 				}
 			],
 			"panel": [
@@ -185,20 +200,23 @@
 				{
 					"id": "wt.outline",
 					"name": "Outline",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Outline"
 				},
 				{
 					"id": "wt.wordWatcher",
 					"name": "Word Watcher",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Word Watcher",
 					"when": "wt.valid && config.wt.showPanels.wordWatcher"
 				},
 				{
+					"id": "wt.overview",
+					"name": "Text Overview",
+					"contextualTitle": "Text Overview",
+					"when": "wt.valid && config.wt.showPanels.overview"
+				},
+				{
 					"id": "wt.todo",
 					"name": "TODOs",
-					"icon": "media/dep.svg",
 					"contextualTitle": "TODOs",
 					"when": "wt.valid && config.wt.showPanels.TODO"
 				},
@@ -206,7 +224,6 @@
 					"type": "webview",
 					"id": "wt.synonyms",
 					"name": "Synonyms",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Synonyms",
 					"when": "wt.valid && config.wt.showPanels.synonyms"
 				},
@@ -227,9 +244,23 @@
 				{
 					"id": "wt.workBible.tree",
 					"name": "Notes",
-					"icon": "media/dep.svg",
 					"contextualTitle": "Notes",
 					"when": "wt.valid && config.wt.showPanels.workBible"
+				}
+			],
+			"wtSearch": [
+				{
+					"type": "webview",
+					"id": "wt.wtSearch.search",
+					"name": "Writing Tool Search: Search",
+					"contextualTitle": "Writing Tool Search: Search",
+					"when": "wt.valid"
+				},
+				{
+					"id": "wt.wtSearch.results",
+					"name": "Writing Tool Search: Results",
+					"contextualTitle": "Writing Tool Search: Results",
+					"when": "wt.valid"
 				}
 			]
 		},
@@ -815,7 +846,12 @@
 			},
 			{	
 				"command": "wt.outline.commandPalette.moveNode",
-				"title": "Writing Tool: Outline: Move Node"
+				"title": "Writing Tool: Outline: Move Node",
+				"enablement": "editorLangId == wt"
+			},
+			{	
+				"command": "wt.outline.commandPalette.moveCurrentNode",
+				"title": "Writing Tool: Outline: Move Current Fragment"
 			},
 			{	
 				"command": "wt.outline.commandPalette.renameNode",
@@ -862,16 +898,39 @@
 				"title": "Writing Tool: Word Watcher: Delete Unwatched Word"
 			},
 			{
-				"title": "Writing Tool: Move Node into Outline",
-				"command": "wt.scratchPad.moveNode"
+				"command": "wt.autocorrections.wordReplaced",
+				"title": "Writing Tool: Called when a word is replaced through spellcheck"
 			},
 			{
-				"title": "Writing Tool: Recover Node into Outline",
+				"title": "Writing Tool: Recover Node",
 				"command": "wt.recyclingBin.recoverNode"
+			},
+			{
+				"title": "Writing Tool Search: Search",
+				"command": "wt.wtSearch.results.search"
+			},
+			{
+				"title": "Go to Outline Node",
+				"command": "wt.wtSearch.results.revealNodeInOutline"
+			},
+			{
+				"title": "Writing Tool Search: Hide Node",
+				"command": "wt.wtSearch.results.hideNode",
+				"icon": "$(x)"
 			}
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "wt.wtSearch.results.revealNodeInOutline"
+				},
+				{
+					"command": "wt.wtSearch.results.hideNode"
+				},
+				{
+					"command": "wt.autocorrections.wordReplaced",
+					"when": "false"
+				},
 				{
 					"command": "wt.outline.manualMove",
 					"when": "false"
@@ -1174,7 +1233,7 @@
 				},
 				{
 					"command": "wt.editor.highlightExpand",
-					"when": "fals"
+					"when": "false"
 				},
 				{
 					"command": "wt.wordWatcher.refresh",
@@ -1380,11 +1439,11 @@
 					"when": "view == wt.scratchPad"
 				},
 				{
-					"command": "wt.scratchPad.moveNode",
+					"command": "wt.scratchPad.deleteAll",
 					"when": "view == wt.scratchPad"
 				},
 				{
-					"command": "wt.scratchPad.deleteAll",
+					"command": "wt.scratchPad.manualMove",
 					"when": "view == wt.scratchPad"
 				},
 				{
@@ -1460,6 +1519,15 @@
 					"command": "wt.workBible.editNote",
 					"when": "view == wt.workBible.tree",
 					"group": "inline@3"
+				},
+				{
+					"command": "wt.wtSearch.results.hideNode",
+					"when": "view == wt.wtSearch.results",
+					"group": "inline"
+				},
+				{
+					"command": "wt.wtSearch.results.revealNodeInOutline",
+					"when": "view == wt.wtSearch.results"
 				}
 			],
 			"editor/title": [
@@ -1845,32 +1913,25 @@
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
-				"command": "wt.editor.highlightSentence",
-				"win": "ctrl+shift+h",
-				"linux": "ctrl+shift+h",
-				"mac": "cmd+shift+h",
+				"command": "wt.editor.highlightExpand",
+				"win": "ctrl+alt+h",
+				"linux": "ctrl+alt+h",
+				"mac": "cmd+alt+h",
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
-				"command": "wt.editor.highlightFragment",
-				"win": "alt+shift+h",
-				"linux": "alt+shift+h",
-				"mac": "alt+shift+h",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
-			},
-			{
-				"command": "wt.editor.highlightParagraph",
+				"command": "wt.editor.highlightCollapse",
 				"win": "ctrl+alt+shift+h",
 				"linux": "ctrl+alt+shift+h",
 				"mac": "cmd+alt+shift+h",
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
-				"command": "wt.editor.highlightExpand",
-				"win": "ctrl+alt+h",
-				"linux": "ctrl+alt+h",
-				"mac": "cmd+alt+h",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"command": "wt.outline.commandPalette.moveCurrentNode",
+				"win": "shift+f1",
+				"linux": "shift+f1",
+				"mac": "shift+f1",
+				"when": "editorLangId == wt || editorLangId == wtNote"
 			}
 		],
 		"languages": [
@@ -1881,9 +1942,7 @@
 				],
 				"aliases": [
 					"writingTool",
-					"fragment",
-					"markdown",
-					"Markdown"
+					"fragment"
 				],
 				"configuration": "./language-configuration.json",
 				"icon": {
@@ -1897,9 +1956,7 @@
 					".wtnote"
 				],
 				"aliases": [
-					"writingToolNotes",
-					"markdown",
-					"Markdown"
+					"writingToolNotes"
 				],
 				"configuration": "./language-configuration.json",
 				"icon": {

@@ -979,7 +979,6 @@
 				"command": "wt.wtSearch.results.hideNode",
 				"icon": "$(x)"
 			}
-
 		],
 		"menus": {
 			"commandPalette": [
