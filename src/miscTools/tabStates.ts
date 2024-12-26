@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { Workspace } from "../workspace/workspaceClass";
-import { DiskContextType, SavedTabState, TabPositions } from '../workspace/workspace';
+import { DiskContextType, Workspace } from "../workspace/workspaceClass";
+import { SavedTabState, TabPositions } from '../workspace/workspace';
 import { Packageable } from '../packageable';
 import { FileAccessManager } from './fileAccesses';
 import * as extension from './../extension';

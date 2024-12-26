@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { DiskContextType } from "./workspace/workspace";
+import { DiskContextType } from './workspace/workspaceClass';
 
 export interface Packageable {
     getPackageItems (): Partial<DiskContextType>;
@@ -17,3 +17,4 @@ export async function packageForExport (
     });
     return allPackagedItems;
 }
+

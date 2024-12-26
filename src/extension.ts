@@ -2,14 +2,6 @@
 
 import * as vscode from 'vscode';
 // import * as console from './vsconsole';
-import { ImportFileSystemView } from './import/importFileSystemView';
-import { WHViewPorvider as WHViewProvider } from './whWebview/whWebview';
-import { CoderModer } from './codeMode/codeMode';
-import { activateSpeak } from './ttsDebugger/tts/tts';
-import { activateDebug } from './ttsDebugger/debugger/debugExtention';
-import { ExportForm } from './export/exportFormView';
-import { importWorkspace } from './workspace/importExport/importWorkspace';
-
 import { OutlineView } from './outline/outlineView';
 import { TODOsView } from './TODO/TODOsView';
 import { WordWatcher } from './wordWatcher/wordWatcher';
@@ -41,8 +33,6 @@ import { ScratchPadView } from './scratchPad/scratchPadView';
 import { TabStates } from './miscTools/tabStates';
 import { Autocorrect } from './autocorrect/autocorrect';
 import { FileLinker } from './miscTools/fileLinker';
-import { SearchResultsView } from './search/searchResultsView';
-import { SearchBarView } from './search/searchBarView';
 import { FragmentOverviewView } from './fragmentOverview/fragmentOverview';
 
 export const decoder = new TextDecoder();
@@ -87,20 +77,18 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 	try {
 		const outline = new OutlineView(context, workspace);				// wt.outline
 		await outline.init();
-		const importFS = new ImportFileSystemView(context, workspace);		// wt.import.fileSystem
 		const synonyms = new SynonymViewProvider(context, workspace);		// wt.synonyms
-		const wh = new WHViewProvider(context, workspace);		// wt.synonyms
 		const todo = new TODOsView(context, workspace);						// wt.todo
 		await todo.init();
 		const wordWatcher = new WordWatcher(context, workspace);			// wt.wordWatcher
 		const proximity = new Proximity(context, workspace);
-		const textStyles = new TextStyles(context, workspace);	
-		const recycleBin = new RecyclingBinView(context, workspace);		
+		const textStyles = new TextStyles(context, workspace);			
+		const recycleBin = new RecyclingBinView(context, workspace);
 		await recycleBin.initialize();
 
 		const autocorrection = new Autocorrect(context, workspace);
 		const personalDictionary = new PersonalDictionary(context, workspace);
-		const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, true);
+		const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, false);
 		const spellcheck = new Spellcheck(context, workspace, personalDictionary, autocorrection);
 		const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
@@ -112,12 +100,6 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const fragmentOverview = new FragmentOverviewView(context, workspace);
 		
 		const tabStates = new TabStates(context, workspace);
-
-		const searchResultsView = new SearchResultsView(workspace, context);
-		const searchBarView = new SearchBarView(context, workspace, searchResultsView);
-		searchResultsView.initialize();
-
-		new CoderModer(context);
 
 		const workBible = new WorkBible(workspace, context);
 		await workBible.initialize()
@@ -134,21 +116,18 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 			['wt.wordWatcher', 'wordWatcher', wordWatcher],
 			// ['wt.proximity', 'proximity', proximity],
 			['wt.spellcheck', 'spellcheck', spellcheck],
-			['wt.very', 'very', veryIntellisense],  
+			['wt.very', 'very', veryIntellisense],
 			['wt.colors', 'colors', colorIntellisense],
 			['wt.textStyle', 'textStyle', textStyles],
 			['wt.autocorrections', 'autocorrections', autocorrection],
 			['wt.overview', 'overview', fragmentOverview]
 		]);
-
+		
 		const tabLabels = new TabLabels();
 
 
 		// Register commands for the toolbar (toolbar that appears when editing a .wt file)
 		Toolbar.registerCommands();
-	
-		// Register commands for the export webview form
-		ExportForm.registerCommands(context.extensionUri, context, workspace, outline);
 	
 		// Initialize the file access manager
 		// Manages any accesses of .wt fragments, for various uses such as drag/drop in outline view or creating new
@@ -156,25 +135,23 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		FileAccessManager.initialize();
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
-			outline, synonyms, timedViews, new FileAccessManager(),
-			personalDictionary, colorGroups, wh, reloadWatcher, tabStates,
-			autocorrection, searchBarView
+			outline, synonyms, timedViews, new FileAccessManager(), 
+			personalDictionary, colorGroups, reloadWatcher, tabStates,
+			autocorrection
 		]));
-
+		
 		// Lastly, clear the 'tmp' folder
 		// This is used to store temporary data for a session and should not last between sessions
 		const tmpFolderPath = vscode.Uri.joinPath(rootPath, 'tmp');
 		vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
-
+		
         // Setting to make writing dialogue easier -- always skip past closing dialogue quotes
         const configuration = vscode.workspace.getConfiguration();
         configuration.update("editor.autoClosingOvertype", "always", vscode.ConfigurationTarget.Workspace)
 
 
 		await TabLabels.assignNamesForOpenTabs();
-		activateSpeak(context);
-		activateDebug(context);
-
+		
 		reloadWatcher.checkForRestoreTabs();
 		outline.selectActiveDocument(vscode.window.activeTextEditor);
 	}
@@ -227,37 +204,6 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	const workspace = await loadWorkspace(context);
 	if (workspace !== null) {
 		loadExtensionWorkspace(context, workspace);
-	}
-	else {
-		// If the attempt to load the workspace failed, then register commands both for loading 
-		//		a workspace from a .iwe environment file or for creating a new iwe environment
-		//		at the current location
-		vscode.commands.registerCommand('wt.importWorkspace', () => {
-			importWorkspace(context).then((ws) => {
-				if (ws) {
-					loadExtensionWorkspace(context, ws);
-					return;
-				}
-				// Inform the user of the failed import 
-				vscode.window.showInformationMessage(`Could not import .iwe workspace`, {
-					modal: true,
-					detail: 'Make sure the .iwe file you provided is the exact same as the one created by this extension.'
-				}, 'Okay');
-			})
-			.catch(err => {
-				handleLoadFailure(err);
-				throw err;
-			});
-		});
-		vscode.commands.registerCommand('wt.createWorkspace', () => {
-			createWorkspace(context).then((ws) => {
-				loadExtensionWorkspace(context, ws);
-			})
-			.catch(err => {
-				handleLoadFailure(err);
-				throw err;
-			});
-		});
 	}
 }
 

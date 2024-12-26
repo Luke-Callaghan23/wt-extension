@@ -10,6 +10,7 @@ import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
+import { executeGitGrep } from '../miscTools/executeGitGrep';
 
 export interface Note {
     kind: 'note';
@@ -43,7 +44,8 @@ export interface NoteMatch {
 export class WorkBible 
 implements 
     vscode.TreeDataProvider<Note | SubNote | AppearanceContainer>, 
-    vscode.HoverProvider, Timed, Renamable<Note>
+    vscode.HoverProvider, Timed, Renamable<Note>,
+    vscode.ReferenceProvider
 {
 
     readNotes = readNotes;
@@ -153,6 +155,13 @@ implements
         }, this);
         vscode.languages.registerDefinitionProvider({
             language: 'wtNote',
+        }, this);
+
+        vscode.languages.registerReferenceProvider({
+            language: "wt",
+        }, this);
+        vscode.languages.registerReferenceProvider({
+            language: "wtNote",
         }, this);
 
         this.registerCommands();
@@ -374,5 +383,25 @@ implements
             uri: filePath,
             range: new vscode.Range(position, position),
         };
+    }
+
+    async provideReferences(
+        document: vscode.TextDocument, 
+        position: vscode.Position, 
+        context: vscode.ReferenceContext, 
+        token: vscode.CancellationToken
+    ): Promise<vscode.Location[] | null> {
+        if (!this.matchedNotes) return null;
+
+        const documentMatches = this.matchedNotes[formatFsPathForCompare(document.uri)];
+        if (!documentMatches) return null;
+
+        const matchedNote = documentMatches.find(match => match.range.contains(position));
+        if (!matchedNote) return null;
+    
+        const subsetNounsRegex = this.getNounsRegex(false, [ matchedNote.note ]);
+        const grepLocations = await executeGitGrep(subsetNounsRegex);
+        if (!grepLocations) return null;
+        return grepLocations;
     }
 }

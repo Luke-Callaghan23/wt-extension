@@ -4,7 +4,7 @@ import { initializeOutline } from '../../outlineProvider/initialize';
 import { TODONode } from '../node';
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode } from '../../outlineProvider/fsNodes';
-import { DiskContextType } from '../../workspace/workspace';
+import { DiskContextType } from '../../workspace/workspaceClass';
 
 export function registerCommands(this: TODOsView) {
     vscode.commands.registerCommand('wt.todo.openFile', async (resourceUri: vscode.Uri, todoData: TODO) => {

@@ -5,9 +5,8 @@ import * as vsconsole from '../miscTools/vsconsole';
 import * as extension from '../extension';
 import { gitiniter } from '../gitTransactions';
 import { Buff } from '../Buffer/bufferSource';
-import { Workspace } from './workspaceClass';
+import { DiskContextType, Workspace } from './workspaceClass';
 import { Autocorrect } from '../autocorrect/autocorrect';
-import { SearchBarView } from '../search/searchBarView';
 
 
 export type Config = {
@@ -242,56 +241,6 @@ export type SavedTabState = {
         created: number,
     }
 };
-
-
-export type DiskContextType = {
-    "wt.outline.collapseState": {
-        [index: string]: boolean,
-    },
-    "wt.synonyms.synonyms": string[],
-    "wt.workBible.tree.enabled": boolean,
-    "wt.workBible.dontAskDeleteNote": boolean,
-    "wt.workBible.dontAskDeleteDescription": boolean,
-    "wt.workBible.dontAskDeleteAppearance": boolean,
-    "wt.todo.enabled": boolean,
-    "wt.todo.collapseState": {
-        [index: string]: boolean;
-    },
-    "wt.wordWatcher.enabled": boolean,
-    "wt.wordWatcher.watchedWords": string[],
-    "wt.wordWatcher.disabledWatchedWords": string[],
-    "wt.wordWatcher.unwatchedWords": string[],
-    "wt.wordWatcher.rgbaColors": {
-        [index: string]: boolean;
-    },
-    "wt.spellcheck.enabled": boolean,
-    "wt.very.enabled": boolean,
-    "wt.colors.enabled": boolean,
-    "wt.textStyle.enabled": boolean,
-    "wt.fileAccesses.positions": {
-        [index: string]: Omit<PositionInfo, 'active'>
-    },
-    "wt.personalDictionary": {
-        [index: string]: 1
-    },
-    "wt.colors.extraColors": {
-        [index: string]: {
-            [index: string]: 1
-        }
-    },
-    "wt.wh.synonyms": string[],
-    "wt.reloadWatcher.openedTabs": TabPositions,
-    "wt.tabStates.savedTabStates": SavedTabState,
-    "wt.autocorrections.enabled": Autocorrect['enabled'];
-    "wt.autocorrections.corrections": Autocorrect['corrections'];
-    "wt.autocorrections.dontCorrect": Autocorrect['dontCorrect'];
-    "wt.autocorrections.exclusions": Autocorrect['exclusions'];
-    'wt.wtSearch.search.latestSearchBarValue': SearchBarView['latestSearchBarValue'];
-    'wt.wtSearch.search.wholeWord': SearchBarView['wholeWord'];
-    'wt.wtSearch.search.regex': SearchBarView['regex'];
-    'wt.wtSearch.search.caseInsensitive': SearchBarView['caseInsensitive'];
-    'wt.wtSearch.search.matchTitles': SearchBarView['matchTitles'];
-}
 
 export async function loadWorkspaceContext (
     context: vscode.ExtensionContext, 

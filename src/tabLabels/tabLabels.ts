@@ -1,19 +1,18 @@
 import * as vscode from 'vscode';
 import { ConfigurationTarget, workspace } from 'vscode';
-import * as console from '../miscTools/vsconsole'
+import * as console from './../miscTools/vsconsole'
 import { OutlineView } from '../outline/outlineView';
 import * as extension from './../extension';
 import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
-import { CodeModeState } from '../codeMode/codeMode';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
 import { Note, WorkBible } from '../workBible/workBible';
 import { vagueNodeSearch } from '../miscTools/help';
 
 export class TabLabels {
     public static enabled: boolean = true;
-    constructor () {
+        constructor () {
         this.registerCommands();
 
         vscode.workspace.onDidChangeConfiguration((e) => {
@@ -66,9 +65,6 @@ export class TabLabels {
     }
 
     static async assignNamesForOpenTabs () {
-        if (!TabLabels.enabled) return;
-        const codeModeState: CodeModeState = await vscode.commands.executeCommand('wt.codeMode.getMode');
-        if (codeModeState === 'codeMode') return;
 
         const configuration = workspace.getConfiguration();
         configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
@@ -82,7 +78,7 @@ export class TabLabels {
                 if (!(uri.fsPath.endsWith('.wt') || uri.fsPath.endsWith('.wtnote'))) continue;
 
                 console.log(`Tab labels: inspecting ${uri.fsPath}`);
-
+    
                 const { node: nodeOrNote, source } = await vagueNodeSearch(uri);
                 console.log(`Tab labels for ${uri.fsPath}:\n  node=${nodeOrNote}\n  source='${source}'`);
                 if (!nodeOrNote || !source) continue;
@@ -137,9 +133,9 @@ export class TabLabels {
             const finalPattern = pattern.startsWith('*/')
                 ? pattern
                 : `*/${pattern}`;
-                finalPatterns[finalPattern] = maxTabLabel && maxTabLabel > 3 && finalLabel.length > maxTabLabel
-                    ? finalLabel.substring(0, maxTabLabel) + "..."
-                    : finalLabel;
+            finalPatterns[finalPattern] = maxTabLabel && maxTabLabel > 3 && finalLabel.length > maxTabLabel
+                ? finalLabel.substring(0, maxTabLabel) + "..."
+                : finalLabel;
         });
 
         // Patterns for the color picker

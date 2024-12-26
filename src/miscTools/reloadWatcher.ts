@@ -3,8 +3,8 @@ import * as extension from './../extension';
 import { lastCommit as _lastCommit, setLastCommit } from './../gitTransactions';
 import { Packageable } from './../packageable';
 import { FileAccessManager } from './fileAccesses';
-import { DiskContextType, loadWorkspaceContext, PositionInfo, TabPositions } from './../workspace/workspace';
-import { Workspace } from './../workspace/workspaceClass';
+import { loadWorkspaceContext, PositionInfo, TabPositions } from './../workspace/workspace';
+import { DiskContextType, Workspace } from './../workspace/workspaceClass';
 import { TabLabels } from './../tabLabels/tabLabels';
 import { TabStates } from './tabStates';
 

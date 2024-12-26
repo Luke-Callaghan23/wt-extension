@@ -3,10 +3,10 @@ import { OutlineView } from "../outlineView";
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import { CopiedSelection, genericPaste } from './copyPaste';
-import { DiskContextType } from '../../workspace/workspace';
 import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey, vagueNodeSearch } from '../../miscTools/help';
 import { searchFiles, selectFile, selectFiles } from '../../miscTools/searchFiles';
 import { NodeMoveKind } from '../nodes_impl/handleMovement/generalMoveNode';
+import { DiskContextType } from '../../workspace/workspaceClass';
 
 
 // Register all the commands needed for the outline view to work

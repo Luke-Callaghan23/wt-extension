@@ -1,14 +1,24 @@
 import * as vscode from 'vscode';
 import * as vscodeUri from 'vscode-uri';
 import { Timed } from '../timedView';
-import { Workspace } from '../workspace/workspaceClass';
+import { DiskContextType, Workspace } from '../workspace/workspaceClass';
 import { PersonalDictionary } from '../intellisense/spellcheck/personalDictionary';
 import { Packageable } from '../packageable';
-import { DiskContextType } from '../workspace/workspace';
 import { getAllIndices, vagueNodeSearch } from '../miscTools/help';
 import { ExtensionGlobals } from '../extension';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import { commonReplacements } from '../import/importFiles';
+export const commonReplacements = {
+    '”': '"',
+    '“': '"',
+    '‘': "'",
+    '’': "'",
+    '‛': "'",
+    '‟': '"',
+    '…': '...',
+    '—': ' -- ',
+    '–': ' -- ',
+    '­': '',
+};
 
 const UNDERLINE_TIMER = 20 * 1000; // ms
 

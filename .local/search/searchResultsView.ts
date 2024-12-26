@@ -157,7 +157,7 @@ export class SearchResultsView
         this.refresh([]);
     }
     
-    getTreeItem (element: SearchNode<SearchNodeKind>): vscode.TreeItem | Thenable<vscode.TreeItem> {
+    getTreeItem (element: SearchNode<SearchNodeKind>): vscode.TreeItem | Promise<vscode.TreeItem> {
         // File location nodes link to a location in a document, and have more complicated labels and tooltips
         if (element.node.kind === 'fileLocation') {
             return {

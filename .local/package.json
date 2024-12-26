@@ -1,7 +1,7 @@
 {
-	"name": "wtaniwe-web",
-	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
-	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
+	"name": "wtaniwe",
+	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
+	"description": "Writing Tool, An Integrated Writing Environment",
 	"version": "0.0.121",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
@@ -22,11 +22,14 @@
 		"onView:wt.wordWatcher",
 		"onView:wt.todo",
 		"onView:wt.synonyms",
+		"onView:wt.wh",
+		"onView:wt.import.fileExplorer",
+		"onView:wt.export",
 		"onView:wt.scratchPad",
 		"onView:wt.recyclingBin",
 		"onView:wt.workBible.tree"
 	],
-	"browser": "./dist/web/extension.js",
+	"main": "./out/extension.js",
 	"contributes": {
 		"configuration": {
 			"title": "Writing Tool Configuration",
@@ -85,6 +88,21 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Determines whether you want to show the 'Work Bible' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+				},
+				"wt.speech.voice": {
+					"type": "string",
+					"default": null,
+					"description": "Name of voice used to speak text."
+				},
+				"wt.speech.speed": {
+					"type": "number",
+					"default": 1,
+					"description": "Speech rate speed multiplier."
+				},
+				"wt.timedSearches.overview": {
+					"description": "Enable automatic Overview Querying",
+					"type": "boolean",
+					"default": true
 				},
 				"wt.timedSearches.todo": {
 					"description": "Enable automatic TODO querying",
@@ -226,6 +244,25 @@
 					"name": "Synonyms",
 					"contextualTitle": "Synonyms",
 					"when": "wt.valid && config.wt.showPanels.synonyms"
+				},
+				{
+					"type": "webview",
+					"id": "wt.wh",
+					"name": "Wh",
+					"contextualTitle": "Wh",
+					"when": "wt.valid && config.wt.showPanels.WH"
+				},
+				{
+					"id": "wt.import.fileExplorer",
+					"name": "Import",
+					"contextualTitle": "Import",
+					"when": "wt.valid && config.wt.showPanels.importFileExplorer"
+				},
+				{
+					"id": "wt.export",
+					"name": "Export",
+					"contextualTitle": "Export",
+					"when": "wt.valid && config.wt.showPanels.export"
 				},
 				{
 					"id": "wt.scratchPad",
@@ -541,6 +578,10 @@
 				"icon": "$(search)"
 			},
 			{
+				"command": "wt.intellisense.synonyms.shiftMode",
+				"title": "Writing Tool: Swap Synonyms Mode (between WordHippo (slower but better) and a generic API)"
+			},
+			{
 				"command": "wt.editor.remove",
 				"title": "Writing Tool: Clear Selection",
 				"icon": "$(trash)"
@@ -676,6 +717,26 @@
 			{
 				"command": "wt.colors.removeColor",
 				"title": "Writing Tool: Remove Color from Color Group"
+			},
+			{
+				"title": "Writing Tool: Enter Code Mode",
+				"command": "wt.codeMode.enterCodeMode",
+				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
+				"title": "Writing Tool: Change Code Mode Repo",
+				"command": "wt.codeMode.changeCodeModeRepo",
+				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
+				"title": "Writing Tool: Exit Code Mode",
+				"command": "wt.codeMode.exitCodeMode",
+				"when": "wt.valid && view == wt.wordWatcher"
+			},
+			{
+				"title": "Writing Tool: Toggle Code Mode",
+				"command": "wt.codeMode.swapMode",
+				"when": "wt.valid && view == wt.wordWatcher"
 			},
 			{
 				"title": "Writing Tool: Display Options",
@@ -1753,30 +1814,30 @@
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward",
-				"win": "alt+[",
-				"linux": "alt+[",
-				"mac": "alt+[",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
-			},
-			{
-				"command": "wt.editor.jump.sentence.backward",
-				"win": "alt+]",
-				"linux": "alt+]",
-				"mac": "alt+]",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
-			},
-			{
-				"command": "wt.editor.jump.fragment.forward",
 				"win": "ctrl+[",
 				"linux": "ctrl+[",
 				"mac": "cmd+[",
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
-				"command": "wt.editor.jump.fragment.backward",
+				"command": "wt.editor.jump.sentence.backward",
 				"win": "ctrl+]",
 				"linux": "ctrl+]",
 				"mac": "cmd+]",
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+			},
+			{
+				"command": "wt.editor.jump.fragment.forward",
+				"win": "alt+[",
+				"linux": "alt+[",
+				"mac": "alt+[",
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward",
+				"win": "alt+]",
+				"linux": "alt+]",
+				"mac": "alt+]",
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
@@ -1809,30 +1870,30 @@
 			},
 			{
 				"command": "wt.editor.jump.sentence.forward.shift",
-				"win": "alt+shift+[",
-				"linux": "alt+shift+[",
-				"mac": "alt+shift+[",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
-			},
-			{
-				"command": "wt.editor.jump.sentence.backward.shift",
-				"win": "alt+shift+]",
-				"linux": "alt+shift+]",
-				"mac": "alt+shift+]",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
-			},
-			{
-				"command": "wt.editor.jump.fragment.forward.shift",
 				"win": "ctrl+shift+[",
 				"linux": "ctrl+shift+[",
 				"mac": "cmd+shift+[",
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
-				"command": "wt.editor.jump.fragment.backward.shift",
+				"command": "wt.editor.jump.sentence.backward.shift",
 				"win": "ctrl+shift+]",
 				"linux": "ctrl+shift+]",
 				"mac": "cmd+shift+]",
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+			},
+			{
+				"command": "wt.editor.jump.fragment.forward.shift",
+				"win": "alt+shift+[",
+				"linux": "alt+shift+[",
+				"mac": "alt+shift+[",
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+			},
+			{
+				"command": "wt.editor.jump.fragment.backward.shift",
+				"win": "alt+shift+]",
+				"linux": "alt+shift+]",
+				"mac": "alt+shift+]",
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
@@ -1864,6 +1925,13 @@
 				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
+				"command": "wt.intellisense.synonyms.shiftMode",
+				"win": "ctrl+shift+alt+space",
+				"linux": "ctrl+shift+alt+space",
+				"mac": "cmd+shift+alt+space",
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+			},
+			{
 				"command": "wt.intellisense.synonyms.prevDefinition",
 				"win": "ctrl+up",
 				"linux": "ctrl+up",
@@ -1890,6 +1958,13 @@
 				"linux": "down",
 				"mac": "down",
 				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && (editorLangId == wt || editorLangId == wtNote)"
+			},
+			{
+				"command": "wt.codeMode.swapMode",
+				"win": "ctrl+shift+alt+m",
+				"linux": "ctrl+shift+alt+m",
+				"mac": "cmd+shift+alt+m",
+				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.todo.commentSentence",
@@ -2063,6 +2138,85 @@
 						}
 					}
 				]
+			},
+			{
+				"id": "wt.importsWalkthrough",
+				"title": "Introduction to WTANIWE's Imports",
+				"icon": "media/walkthroughs/icon.png",
+				"description": "An in depth look at WTANIWE's imports feature",
+				"steps": [
+					{
+						"id": "wt.importsWalkthrough.overview",
+						"title": "Overview",
+						"description": "- Overview of the Imports Pane: \n- Hit the folder icon in the imports view to open the folder where all your imported documents should go.\n- Hit the refresh button to update the GUI.\n- Hit the plus button to import all documents in the imports folder.\n- Click on a single file to import just that file (or a folder to import all files in that folder).\n- Before we continue, I recommend you open up some of the generic example docx files to familiarize yourself with the content of this walkthrough.",
+						"media": {
+							"markdown": "media/walkthroughs/imports/overview.md"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importSingleChapter",
+						"title": "Import a Single Chapter",
+						"description": "- The most basic kind of imports are a single chapter, so let's start there.\n- In the imports form, select the 'Chapter' output type.\n- If you would like to separate the text into separate chapters based on scene breaks, then click on the 'Split the document?' checkbox and enter the pattern you use for scene breaks in the new text box.\n- All separators in WTANIWE are based on regex.  Common scene separators may include three tildes (~~~), three newlines (\\n\\n\\n), or a dot on a line (^\\.$).\n- To learn more about regexes, click [here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet).\n- Test out your regexes [here](https://www.regex101.com).\n- Don't forget to name your chapter as well!\n- Test this out by importing the example document 'Example Single Chapter Import.docx' with the options seen here and you should see a new chapter in the outline tree with the title 'Bob 4 (Bob's No Good, Very Bad Day)' with four lorem ipsum-filled text fragments.",
+						"media": {
+							"image": "media/walkthroughs/imports/single_chapter.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importMultipleChapters",
+						"title": "Import Multiple Chapters",
+						"description": "- To split a single document into multiple imported chapters, use the same steps as before but also select the 'Split on chapters?' checkbox.\n- In the new text box that appears, enter the pattern you would like to use to separate your chapters.\n- For example, if you separated your chapters in your imported document with the the text 'CH ###' on a new line between each chapter, enter the regex pattern 'CH \\d+'.\n- ('\\d' indicates a number 0-9, '+' indicates one or more repetitions).\n- To learn more about regexes, click [here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet).\n- Test out your regexes [here](https://www.regex101.com).\n- Don't forget to name your chapter as well!\n- Test this out by importing the example document 'Example Multiple Chapter Import.docx' with the options seen here and you should see three new chapter in the outline tree with the titles 'Wow, so much new (imported) misery for Bob!' with two, one, and three lorem ipsum-filled text fragments respectively.",
+						"media": {
+							"image": "media/walkthroughs/imports/multiple_chapters.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importSingleChapterSnip",
+						"title": "Import a Single Chapter Snippet",
+						"description": "- The other main import type is importing notes or text fragments into existing chapters.\n- To import notes into chapters, select the 'Snip' output type.\n- Check the 'Output into Chapter' checkbox to indicate that the destination of the notes is a chapter (and not uncategorized 'Work Snips').\n- And, finally, in the drop down that appears, select the chapter that you would like to insert the snips into.\n- Test this out by importing the example document 'Example Single Snip Import.docx' with the options seen here and you should see one new snip with four new lorem ipsum filled fragments in the selected chapter.",
+						"media": {
+							"image": "media/walkthroughs/imports/single_snip_into_chapter.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importSingleWorkSnip",
+						"title": "Import a Single Work Snippet",
+						"description": "- To import uncategorized notes -- or text fragments that do not have a chapter placement yet -- follow the same steps as before, but do no select to import into a specific chapter.\n- Test this out by importing the example document 'Example Single Snip Import.docx' with the options seen here and you should see one new snip with four new lorem ipsum filled fragments in the work snips area.",
+						"media": {
+							"image": "media/walkthroughs/imports/single_snip_into_work_snips.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importMultipleSnips",
+						"title": "Import Multiple Text Snippets",
+						"description": "- To import multiple text snippets from a single document, follow the same steps as the multiple chapters import description along with the single snip import instructions.\n- Test this out by importing the example document 'Example Multiple Snip Import.docx' with the options seen here and you should see three new snips in the work snips area.",
+						"media": {
+							"image": "media/walkthroughs/imports/multiple_snips.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importMultipleNamedChapters",
+						"title": "Import Multiple Chapters with Unique Names",
+						"description": "- One issue you may have noticed with the importing system so far is that whenever there are more than one imported item in single document, all the Outline Tree items that get produced have similarly patterned names.\n- To fix this, you can assign names to specific sections of the inner items of split documents by using [regex capture groups](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Capturing_group) for capturing unique a part of the splitter pattern.  The part of the split text that is captured by the rightmost capture group in the splitter regex will be used as the title of the chapter.\n- For example, the multiple chapters split step from earlier used the regex pattern 'CH \\d+' to split the single document into multiple chapters.  But, if we changed the splitting pattern to surround the original pattern with parentheses: '(CH \\d+)', we can utilize this capture group to assign unique names to each imported chapter.\n- Test this out by importing the example document 'Example Single Chapter Import.docx' with the options seen here and you should see three chapters added with the names 'CH 1', 'CH 2', and 'CH 3' from the document.",
+						"media": {
+							"image": "media/walkthroughs/imports/multiple_chapters_named.gif",
+							"altText": "Organize By Chapters"
+						}
+					},
+					{
+						"id": "wt.importsWalkthrough.importMultipleNamedSnipsNamedFragments",
+						"title": "Import Text Snippets with Unique Names and Named Text Fragments",
+						"description": "- A more detailed usage of splitter capture groups can be seen on the right.\n- Use more complicated regex patterns such as the splitter '\\[{3,}([^\\]]*)\\]{3,}' to match pairings of triple (or more) square brackets enclosing some (or none) generic text within.\n- For example '\\\\[{3,}([^\\\\]\\]*)\\\\]{3,}' matches the text '\\[\\[\\[\\[\\[Title of the first snip\\]\\]\\]' and uses 'Title of the first snip' as the title of the snip that follows.  It also matches '\\[\\[\\[\\[\\[\\[\\[More brackets\\]\\]\\]\\]\\]\\]\\]' or '\\[\\[\\[Minimum Brackets\\]\\]\\]' or even '\\[\\[\\[\\[\\[[\\]\\]\\]' with no title.\n- In the example document 'Example Named Snips.docx' you can see two splitter patterns used: First the afformentioned pattern '\\[{3,}([^\\]]*)\\]{3,}' to split snips, and also a new pattern '~{3,}([^~]*])~{3,}' which is very similar to that pattern except replace square brackets with tildes.\n- See how the content of the example document corresponds to the imported Outline Tree items.\n- Fragments without preceding '~~~Title~~~' separators recieve generic names 'Imported Fragment (###)' titles, whereas others get names like 'Title of the first fragment'.  Similarly, all the snips recieved names from between the triple bracket pairs.",
+						"media": {
+							"image": "media/walkthroughs/imports/multiple_snips_named.gif",
+							"altText": "Organize By Chapters"
+						}
+					}
+				]
 			}
 		],
 		"grammars": [
@@ -2083,60 +2237,85 @@
 				]
 			}
 		],
-		"themes": [
+		"debuggers": [
 			{
-				"id": "wtNoteTheme",
-				"label": "WT Note",
-				"uiTheme": "vs-dark",
-				"path": "./themes/wtNoteTheme.json"
+				"type": "tts",
+				"languages": [
+					"markdown",
+					"wt"
+				],
+				"label": "TTS Debug",
+				"program": ".out/ttsDebugger/src/debugAdapter.js",
+				"runtime": "node",
+				"initialConfigurations": [
+					{
+						"type": "tts",
+						"request": "launch",
+						"name": "Ask for file name",
+						"program": "${workspaceFolder}/${command:AskForProgramName}",
+						"stopOnEntry": true
+					}
+				],
+				"configurationSnippets": [
+					{
+						"label": "TTS Debug: Launch",
+						"description": "A new configuration for 'debugging' a user selected markdown file.",
+						"body": {
+							"type": "tts",
+							"request": "launch",
+							"name": "Ask for file name",
+							"program": "^\"\\${workspaceFolder}/\\${command:AskForProgramName}\"",
+							"stopOnEntry": true
+						}
+					}
+				],
+				"variables": {
+					"AskForProgramName": "extension.tts-debug.getProgramName"
+				}
 			}
 		]
 	},
 	"scripts": {
-		"test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
-		"pretest": "npm run compile-web",
-		"vscode:prepublish": "npm run package-web",
-		"compile-web": "webpack",
-		"watch-web": "webpack --watch",
-		"package-web": "webpack --mode production --devtool hidden-source-map",
-		"lint": "eslint src --ext ts",
-		"run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. ."
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"lint": "eslint \"src/**/*.ts\""
 	},
 	"devDependencies": {
-		"@types/fs-extra": "^11.0.1",
-		"@types/ftp": "^0.3.33",
-		"@types/html-pdf": "^3.0.0",
-		"@types/html-pdf-node": "^1.0.0",
+		"@types/he": "^1.2.3",
 		"@types/jsdom": "^21.1.0",
-		"@types/mkdirp": "^0.5.2",
-		"@types/mocha": "^10.0.1",
 		"@types/node": "^16.11.7",
-		"@types/rimraf": "^2.0.2",
-		"@types/showdown": "^2.0.0",
+		"@types/path-browserify": "^1.0.2",
+		"@types/rwlock": "^5.0.6",
+		"@types/turndown": "^5.0.4",
 		"@types/uuid": "^9.0.0",
 		"@types/vscode": "^1.73.0",
-		"@types/webpack-env": "^1.18.0",
 		"@typescript-eslint/eslint-plugin": "^5.42.0",
 		"@typescript-eslint/parser": "^5.42.0",
-		"@vscode/test-web": "^0.0.33",
-		"assert": "^2.0.0",
 		"eslint": "^8.26.0",
-		"mocha": "^10.1.0",
-		"process": "^0.11.10",
-		"ts-loader": "^9.4.1",
-		"typescript": "^4.8.4",
-		"webpack": "^5.75.0",
-		"webpack-cli": "^5.0.0"
+		"typescript": "^4.8.4"
 	},
 	"dependencies": {
 		"@bendera/vscode-webview-elements": "^0.8.1",
 		"@types/markdown-it": "^12.2.3",
+		"@types/nedb": "^1.8.16",
 		"@vscode/codicons": "^0.0.32",
-		"buffer": "^6.0.3",
-		"minimist": "^1.2.6",
+		"@vscode/debugadapter": "^1.65.0",
+		"await-notify": "^1.0.1",
+		"base64-js": "^1.5.1",
+		"file-type": "^18.5.0",
+		"he": "^1.2.0",
+		"html-to-docx": "^1.6.5",
+		"istextorbinary": "^6.0.0",
+		"jsdom": "^21.1.0",
+		"libreoffice-convert": "^1.5.1",
+		"mammoth": "^1.5.1",
+		"node-fetch": "^3.3.1",
 		"node-fetch-commonjs": "^3.2.4",
+		"path-browserify": "^1.0.1",
 		"turndown": "^7.1.2",
 		"uuid": "^9.0.0",
+		"vscode-debugadapter": "^1.51.0",
 		"vscode-uri": "^3.0.8"
 	}
 }
