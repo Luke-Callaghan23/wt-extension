@@ -31,7 +31,6 @@ then
     mv src/ttsDebugger .local/ttsDebugger
     mv src/tabLabels/tabLabels.ts .local/tabLabels.ts
     mv src/intellisense/synonymsProvider/provideSynonyms.ts .local/provideSynonyms.ts
-    mv src/miscTools/grepExtensionDirectory.ts .local/grepExtensionDirectory.ts
 
     mv .web/bufferSource.ts src/Buffer/bufferSource.ts
     mv .web/fetchSource.ts src/Fetch/fetchSource.ts
@@ -109,7 +108,6 @@ then
     mv .local/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .local/tabLabels.ts src/tabLabels/tabLabels.ts
     mv .local/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
-    mv .local/grepExtensionDirectory.ts src/miscTools/grepExtensionDirectory.ts
 
     npm clean-install
 else 

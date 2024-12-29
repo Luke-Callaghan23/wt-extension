@@ -71,11 +71,13 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
                 }
             }
             if (lines.length > 0) {
-                return this.view.reveal(lines[lines.length - 1], {
-                    expand: true,
-                    focus: false,
-                    select: true
-                });
+                if (this.view.visible) {
+                    return this.view.reveal(lines[lines.length - 1], {
+                        expand: true,
+                        focus: false,
+                        select: true
+                    });
+                }
             }
         });
 

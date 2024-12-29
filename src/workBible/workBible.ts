@@ -352,10 +352,12 @@ implements
 
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
-        this.view.reveal(matchedNote.note, {
-            select: true,
-            expand: true,
-        })
+        if (this.view.visible) {
+            this.view.reveal(matchedNote.note, {
+                select: true,
+                expand: true,
+            });
+        }
         return null;
     }
 
@@ -372,10 +374,12 @@ implements
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
     
-        this.view.reveal(matchedNote.note, {
-            select: true,
-            expand: true,
-        });
+        if (this.view.visible) {
+            this.view.reveal(matchedNote.note, {
+                select: true,
+                expand: true,
+            });
+        }
     
         const fileName = `${matchedNote.note.noteId}.wtnote`;
         const filePath = vscode.Uri.joinPath(this.workBibleFolderPath, fileName);

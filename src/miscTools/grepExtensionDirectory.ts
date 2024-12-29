@@ -1,126 +1,66 @@
 import * as vscode from 'vscode';
 import * as childProcess from 'child_process';
 import * as extension from '../extension';
+import * as readline from 'readline';
+import { glob } from 'glob';
+import {promisify} from 'util'
 
+export async function grepExtensionDirectory (regex: RegExp, captureGroupId?: string): Promise<vscode.Location[] | null>  {
 
-export async function grepExtensionDirectory (regex: RegExp, inLineSearch?: {
-    regexWithIdGroup: RegExp,
-    captureGroupId: string,
-}): Promise<vscode.Location[] | null>  {
-    let results: string[];
-    try {
+    const files: string[] = (await Promise.all([
+        glob.glob(`${extension.rootPath.fsPath}/**/*.wt`),
+        glob.glob(`${extension.rootPath.fsPath}/**/*.wtnote`),
+        glob.glob(`${extension.rootPath.fsPath}/**/.config`),
+    ])).flat();;
 
-        // Temporarily add all unchecked files to git (so git grep will operate on them)
-        const uncheckedFiles = await new Promise<string[]>((resolve, reject) => {
-            childProcess.exec(`git ls-files --others --exclude-standard`, {
-                cwd: extension.rootPath.fsPath
-            }, (error, stdout, stderr) => {
-                if (error) {
-                    reject(stderr);
-                    return;
-                }
-                resolve(stdout.split('\n'));
-            });
-        });
-        
-        await new Promise<void>((resolve, reject) => {
-            childProcess.exec(`git add ${uncheckedFiles.join(' ')}`, {
-                cwd: extension.rootPath.fsPath
-            }, (error, stdout, stderr) => resolve());
-        });
+    const documentPromises: Thenable<vscode.TextDocument>[] = files
+        .map(file => vscode.Uri.file(file))
+        .map(uri => vscode.workspace.openTextDocument(uri));
 
-        // Perform git grep
-        results = await new Promise<string[]>((resolve, reject) => {
-            childProcess.exec(`git grep -i -r -H -n -E "${regex.source}"`, {
-                cwd: extension.rootPath.fsPath
-            }, (error, stdout, stderr) => {
-                console.log(`querying: ${`git grep -i -r -H -n -E "${regex.source}"`}`);
-                console.error("error: ", error);
-                console.info("stdout: ", stdout)
-                console.error("stderr: ", stderr)
-                if (error) {
-                    if (stderr.length === 0) {
-                        resolve([]);
-                    }
-                    else {
-                        reject(stderr);
-                    }
-                    return;
-                }
-                resolve(stdout.split('\n'));
-            });
-        });
-
-        console.log("results: ", results);
-
-        /*
-
-        Consider doing this to stream results from git grep
-
-        const ps = childProcess.spawn('', {
-        })
-
-        addListener(event: 'error', listener: (err: Error) => void): this;
-        addListener(event: 'close', listener: (code: number | null, signal: NodeJS.Signals | null) => void): this;
-        addListener(event: 'message', listener: (message: Serializable, sendHandle: SendHandle) => void): this;
-        */
-
-
-        // Reset all the previously unchecked files
-        await new Promise<void>((resolve, reject) => {
-            childProcess.exec(`git reset ${uncheckedFiles.join(' ')}`, {
-                cwd: extension.rootPath.fsPath
-            }, (error, stdout, stderr) => resolve());
-        });
-    }
-    catch (err: any) {
-        vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}' regex.  Error: ${err}`);
-        return null;
-    }
+    const documents: vscode.TextDocument[] = [];
 
     const locations: vscode.Location[] = [];
+    const totalCount = documentPromises.length;
+    let completedFilesCount = 0;
+    while (completedFilesCount < totalCount) {
+        const [ openedDoc, index ] = await Promise.any<[vscode.TextDocument, number]>(documentPromises
+            .map((p, i) => p.then(v => [v, i]))
+        );
 
-    const parseOutput = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
-    try {
-        for (const result of results) {
-            const match = parseOutput.exec(result);
-            if (!match || match.length === 0 || !match.groups) continue;
-    
-            const captureGroup = match.groups as { path: string, lineOneIndexed: string, lineContents: string };
-            const { path, lineContents, lineOneIndexed } = captureGroup;
-            const line = parseInt(lineOneIndexed) - 1;
-    
-            const parseLineReg = inLineSearch?.regexWithIdGroup || new RegExp(regex.source, 'ig');
+        const lines = openedDoc.getText().split('\n');
+        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+            const lineContents = lines[lineIndex];
+
+            const parseLineReg = new RegExp(regex.source, 'ig');
             let lineMatch: RegExpExecArray | null;
             while ((lineMatch = parseLineReg.exec(lineContents)) !== null) {
                 let characterStart = lineMatch.index;
                 if (characterStart !== 0) {
                     characterStart += 1;
                 }
-
-                const searchedText = inLineSearch && lineMatch.groups?.[inLineSearch.captureGroupId]
-                    ? lineMatch.groups[inLineSearch.captureGroupId]
+        
+                const searchedText = lineMatch.groups && captureGroupId
+                    ? lineMatch.groups[captureGroupId]
                     : lineMatch[lineMatch.length - 1];
-
-                if (inLineSearch) {
+        
+                if (captureGroupId) {
                     characterStart += lineMatch[0].indexOf(searchedText);
                 }
                 
                 const characterEnd = characterStart + searchedText.length;
-    
-                const startPosition = new vscode.Position(line, characterStart);
-                const endPosition = new vscode.Position(line, characterEnd);
+        
+                const startPosition = new vscode.Position(lineIndex, characterStart);
+                const endPosition = new vscode.Position(lineIndex, characterEnd);
                 const foundRange = new vscode.Selection(startPosition, endPosition);
         
-                const uri = vscode.Uri.joinPath(extension.rootPath, path);
-                locations.push(new vscode.Location(uri, foundRange));
+                locations.push(new vscode.Location(openedDoc.uri, foundRange));
             }
         }
+        
+        completedFilesCount++;
+        documentPromises.splice(index, 1);
+        documents.push(openedDoc);
+    }
 
-    }
-    catch (err: any) {
-        console.log(err);
-    }
-    console.log(locations);
     return locations;
 }

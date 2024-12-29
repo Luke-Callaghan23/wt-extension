@@ -135,7 +135,7 @@ export class SearchResultsView
     }) {
         
         // Grep results
-        const grepResults = await grepExtensionDirectory(searchRegex, inLineSearch);
+        const grepResults = await grepExtensionDirectory(inLineSearch?.regexWithIdGroup || searchRegex, inLineSearch?.captureGroupId);
         if (!grepResults || grepResults.length === 0) return;
         
         // Create file system-esque tree from the grep results

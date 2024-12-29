@@ -885,36 +885,36 @@
 				"command": "wt.outline.commandPalette.copyNode",
 				"title": "Writing Tool: Outline: Copy Resource"
 			},
-			{	
+			{
 				"command": "wt.outline.commandPalette.pasteNode",
 				"title": "Writing Tool: Outline: Paste Resource"
 			},
-			{	
+			{
 				"command": "wt.outline.commandPalette.duplicateNode",
 				"title": "Writing Tool: Outline: Duplicate Node"
 			},
-			{	
+			{
 				"command": "wt.outline.commandPalette.copyRelativePath",
 				"title": "Writing Tool: Outline: Copy Relative Path"
 			},
-			{	
+			{
 				"command": "wt.outline.commandPalette.copyPath",
 				"title": "Writing Tool: Outline: Copy Path"
 			},
-			{	
+			{
 				"command": "wt.outline.commandPalette.deleteNode",
 				"title": "Writing Tool: Outline: Delete Node"
 			},
-			{	
+			{
 				"command": "wt.outline.commandPalette.moveNode",
 				"title": "Writing Tool: Outline: Move Node",
 				"enablement": "editorLangId == wt"
 			},
-			{	
+			{
 				"command": "wt.outline.commandPalette.moveCurrentNode",
 				"title": "Writing Tool: Outline: Move Current Fragment"
 			},
-			{	
+			{
 				"command": "wt.outline.commandPalette.renameNode",
 				"title": "Writing Tool: Outline: Rename Node"
 			},
@@ -2282,6 +2282,7 @@
 		"lint": "eslint \"src/**/*.ts\""
 	},
 	"devDependencies": {
+		"@types/glob": "^7.2.0",
 		"@types/he": "^1.2.3",
 		"@types/jsdom": "^21.1.0",
 		"@types/node": "^16.11.7",
@@ -2304,6 +2305,7 @@
 		"await-notify": "^1.0.1",
 		"base64-js": "^1.5.1",
 		"file-type": "^18.5.0",
+		"glob": "^11.0.0",
 		"he": "^1.2.0",
 		"html-to-docx": "^1.6.5",
 		"istextorbinary": "^6.0.0",
