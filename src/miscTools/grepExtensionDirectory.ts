@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as extension from '../extension';
 
 
-export async function executeGitGrep (regex: RegExp, inLineSearch?: {
+export async function grepExtensionDirectory (regex: RegExp, inLineSearch?: {
     regexWithIdGroup: RegExp,
     captureGroupId: string,
 }): Promise<vscode.Location[] | null>  {

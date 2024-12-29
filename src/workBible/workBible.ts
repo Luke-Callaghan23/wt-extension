@@ -10,7 +10,7 @@ import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
-import { executeGitGrep } from '../miscTools/executeGitGrep';
+import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 
 export interface Note {
     kind: 'note';
@@ -400,7 +400,7 @@ implements
         if (!matchedNote) return null;
     
         const subsetNounsRegex = this.getNounsRegex(false, [ matchedNote.note ]);
-        const grepLocations = await executeGitGrep(subsetNounsRegex);
+        const grepLocations = await grepExtensionDirectory(subsetNounsRegex);
         if (!grepLocations) return null;
         return grepLocations;
     }

@@ -31,9 +31,7 @@ then
     mv src/ttsDebugger .local/ttsDebugger
     mv src/tabLabels/tabLabels.ts .local/tabLabels.ts
     mv src/intellisense/synonymsProvider/provideSynonyms.ts .local/provideSynonyms.ts
-    mv src/search .local/search
-    mv src/miscTools/executeGitGrep.ts .local/executeGitGrep.ts
-    mv src/workBible/workBible.ts .local/workBible.ts
+    mv src/miscTools/grepExtensionDirectory.ts .local/grepExtensionDirectory.ts
 
     mv .web/bufferSource.ts src/Buffer/bufferSource.ts
     mv .web/fetchSource.ts src/Fetch/fetchSource.ts
@@ -47,7 +45,6 @@ then
     mv .web/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .web/tabLabels.ts src/tabLabels/tabLabels.ts
     mv .web/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
-    mv .web/workBible.ts src/workBible/workBible.ts
 
     npm clean-install
 elif 
@@ -96,7 +93,6 @@ then
     mv src/workspace/workspaceClass.ts .web/workspaceClass.ts 
     mv src/tabLabels/tabLabels.ts .web/tabLabels.ts
     mv src/intellisense/synonymsProvider/provideSynonyms.ts .web/provideSynonyms.ts
-    mv src/workBible/workBible.ts .web/workBible.ts
 
     mv .local/ttsDebugger src/ttsDebugger
     mv .local/bufferSource.ts src/Buffer/bufferSource.ts
@@ -113,9 +109,7 @@ then
     mv .local/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .local/tabLabels.ts src/tabLabels/tabLabels.ts
     mv .local/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
-    mv .local/search src/search
-    mv .local/executeGitGrep.ts src/miscTools/executeGitGrep.ts
-    mv .local/workBible.ts src/workBible/workBible.ts
+    mv .local/grepExtensionDirectory.ts src/miscTools/grepExtensionDirectory.ts
 
     npm clean-install
 else 

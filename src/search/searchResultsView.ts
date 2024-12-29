@@ -4,7 +4,7 @@ import { createFileSystemTree } from './processGrepResults/createFileSystemTree'
 import { Workspace } from '../workspace/workspaceClass';
 import * as extension from '../extension';
 import { randomUUID } from 'crypto';
-import { executeGitGrep } from '../miscTools/executeGitGrep';
+import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { cleanNodeTree, pairMatchedTitlesToNeighborNodes, recreateNodeTree } from './processGrepResults/createNodeTree';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
@@ -135,7 +135,7 @@ export class SearchResultsView
     }) {
         
         // Grep results
-        const grepResults = await executeGitGrep(searchRegex, inLineSearch);
+        const grepResults = await grepExtensionDirectory(searchRegex, inLineSearch);
         if (!grepResults || grepResults.length === 0) return;
         
         // Create file system-esque tree from the grep results
