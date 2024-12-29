@@ -78,14 +78,20 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
     getLabel (): string | vscode.TreeItemLabel {
         if (this.node.kind === 'fileLocation') {
             return <vscode.TreeItemLabel> {
-                label: this.node.surroundingText,
+                label: this.node.surroundingText || '<empty>',
                 highlights: [this.node.surroundingTextHighlight]
             }
         }
         else if (this.node.kind === 'searchTemp') {
-            return this.node.label;
+            return this.node.label  || '<empty>';
         }
         else if (this.node.kind === 'file' || this.node.kind === 'searchContainer' || this.node.kind === 'matchedTitle') {
+
+            // For containers and files, the label needs to be prfixed by a count of the results in that container
+            //      as well as the original prefix (fragment or snip or container, or whatever), which was created
+            //      when this node was originally created
+
+            // For full prefix, first add results count
             let fullPrefix: string = '';
             if (this.node.kind === 'searchContainer') {
                 fullPrefix += `(${this.node.results}) `;
@@ -94,15 +100,21 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
                 fullPrefix += `(${this.node.locations.length}) `;
             }
 
+            // Then the actual prefix
             if (this.node.prefix.length > 0) {
                 fullPrefix += `(${this.node.prefix}) `
             }
 
+            // If this is a matched title or a node with a paired matched title, then store the indeces to highlight
+            //      for below
             const highlightIndeces = this.node.kind === 'matchedTitle' 
                 ? this.node.labelHighlights
                 : this.node.pairedMatchedTitleNode?.node.labelHighlights;
 
             if (highlightIndeces) {
+                // Map the highlights by movinf all of them over by the length of the prefix
+                // (Highlights are originally calculated without a prefix in mind, so we need to adjust all highlights
+                //      to account for prefixes, once the prefixes are calculated)
                 const remappedHighlights = highlightIndeces.map(([ start, end ]) => {
                     return [ start + fullPrefix.length, end + fullPrefix.length ];
                 });
@@ -111,6 +123,8 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
                     highlights: remappedHighlights
                 }
             }
+
+            // If no highlights, then just return the prefix followed immediately by the title of the node
             return `${fullPrefix}${this.node.title}`;
         }
         throw 'Not accessible';

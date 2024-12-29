@@ -211,7 +211,7 @@ implements
             return /^_^/
         }
         const nounFragments = (subset || this.notes).map(note => this.getNounPattern(note, withId))
-        const regexString = '[^a-zA-Z0-9]?' + `(${nounFragments.join('|')})` + '[^a-zA-Z0-9]?';
+        const regexString = '(^|[^a-zA-Z0-9])?' + `(${nounFragments.join('|')})` + '([^a-zA-Z0-9]|$)?';
         const nounsRegex = new RegExp(regexString, 'gi');
         return nounsRegex;
     }
@@ -403,9 +403,16 @@ implements
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
     
-        const subsetNounsRegex = this.getNounsRegex(false, [ matchedNote.note ]);
-        const grepLocations = await grepExtensionDirectory(subsetNounsRegex);
+        const subsetNounsRegex = this.getNounsRegex(true, [ matchedNote.note ]);
+        const grepLocations = await grepExtensionDirectory(subsetNounsRegex, matchedNote.note.noteId);
         if (!grepLocations) return null;
-        return grepLocations;
+
+        // For some reason the reference provider needs the locations to be indexed one less than the results from the 
+        //      grep of the nouns
+        // Not sure why that is -- but subtracting one from each character index works here
+        return grepLocations.map(loc => new vscode.Location(loc.uri, new vscode.Range(
+            new vscode.Position(loc.range.start.line, loc.range.start.character - 1),
+            new vscode.Position(loc.range.end.line, loc.range.end.character - 1)
+        )));
     }
 }

@@ -74,23 +74,17 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
     }
 
     private async triggerUpdates (searchBarValue: string) {
-        const flags = 'g' + this.caseInsensitive ? 'i' : '';
+        const flags = 'g' + (this.caseInsensitive ? 'i' : '');
         if (!this.regex) {
             searchBarValue = searchBarValue.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
         if (this.wholeWord) {
-            const shellWordSeparatorStart = '(^|\\s|-|[.?:;,()\\!\\&+n\\"\'^_*~])';
-            const shellWordSeparatorEnd = '(\\s|-|[.?:;,()\\!\\&+n\\"\'^_*~]|$)';
             return this.searchResults.searchBarValueWasUpdated(
-                new RegExp(`${shellWordSeparatorStart}(${searchBarValue})${shellWordSeparatorEnd}`, flags),
-                this.matchTitles,
-                {
-                    regexWithIdGroup: new RegExp(`${shellWordSeparatorStart}(?<searchTerm>${searchBarValue})${shellWordSeparatorEnd}`, 'gi'),
-                    captureGroupId: 'searchTerm',
-                }
+                new RegExp(`${wordSeparator}(?<searchTerm>${searchBarValue})${wordSeparator}`, flags),
+                this.matchTitles, 'searchTerm'
             );
         }
-        return this.searchResults.searchBarValueWasUpdated(new RegExp(searchBarValue, flags), this.matchTitles);
+        return this.searchResults.searchBarValueWasUpdated(new RegExp(`(?<searchTerm>${searchBarValue})`, flags), this.matchTitles, 'searchTerm');
     }
 
     private lastRequest: number = 0;

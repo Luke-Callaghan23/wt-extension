@@ -33,6 +33,8 @@ import { ScratchPadView } from './scratchPad/scratchPadView';
 import { TabStates } from './miscTools/tabStates';
 import { Autocorrect } from './autocorrect/autocorrect';
 import { FileLinker } from './miscTools/fileLinker';
+import { SearchResultsView } from './search/searchResultsView';
+import { SearchBarView } from './search/searchBarView';
 import { FragmentOverviewView } from './fragmentOverview/fragmentOverview';
 
 export const decoder = new TextDecoder();
@@ -101,6 +103,11 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		
 		const tabStates = new TabStates(context, workspace);
 
+		const searchResultsView = new SearchResultsView(workspace, context);
+		const searchBarView = new SearchBarView(context, workspace, searchResultsView);
+		searchResultsView.initialize();
+
+
 		const workBible = new WorkBible(workspace, context);
 		await workBible.initialize()
 		
@@ -137,7 +144,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(), 
 			personalDictionary, colorGroups, reloadWatcher, tabStates,
-			autocorrection
+			autocorrection, searchBarView
 		]));
 		
 		// Lastly, clear the 'tmp' folder

@@ -9,6 +9,7 @@ import { setLastCommit } from '../gitTransactions';
 import { ReloadWatcher } from '../miscTools/reloadWatcher';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 import { Autocorrect } from '../autocorrect/autocorrect';
+import { SearchBarView } from '../search/searchBarView';
 
 
 
@@ -54,6 +55,11 @@ export type DiskContextType = {
     "wt.autocorrections.corrections": Autocorrect['corrections'];
     "wt.autocorrections.dontCorrect": Autocorrect['dontCorrect'];
     "wt.autocorrections.exclusions": Autocorrect['exclusions'];
+    'wt.wtSearch.search.latestSearchBarValue': SearchBarView['latestSearchBarValue'];
+    'wt.wtSearch.search.wholeWord': SearchBarView['wholeWord'];
+    'wt.wtSearch.search.regex': SearchBarView['regex'];
+    'wt.wtSearch.search.caseInsensitive': SearchBarView['caseInsensitive'];
+    'wt.wtSearch.search.matchTitles': SearchBarView['matchTitles'];
 }
 
 
