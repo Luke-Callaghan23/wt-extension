@@ -185,6 +185,11 @@
 					"id": "wt",
 					"title": "Writing Tool",
 					"icon": "$(bookmark)"
+				},
+				{
+					"id": "wtSearch",
+					"title": "Writing Tool: Search",
+					"icon": "media/icons/bookmark-search.svg"
 				}
 			],
 			"panel": [
@@ -246,6 +251,21 @@
 					"name": "Notes",
 					"contextualTitle": "Notes",
 					"when": "wt.valid && config.wt.showPanels.workBible"
+				}
+			],
+			"wtSearch": [
+				{
+					"type": "webview",
+					"id": "wt.wtSearch.search",
+					"name": "Writing Tool Search: Search",
+					"contextualTitle": "Writing Tool Search: Search",
+					"when": "wt.valid"
+				},
+				{
+					"id": "wt.wtSearch.results",
+					"name": "Writing Tool Search: Results",
+					"contextualTitle": "Writing Tool Search: Results",
+					"when": "wt.valid"
 				}
 			]
 		},
@@ -889,10 +909,29 @@
 			{
 				"title": "Writing Tool: Recover Node",
 				"command": "wt.recyclingBin.recoverNode"
+			},
+			{
+				"title": "Writing Tool Search: Search",
+				"command": "wt.wtSearch.results.search"
+			},
+			{
+				"title": "Go to Outline Node",
+				"command": "wt.wtSearch.results.revealNodeInOutline"
+			},
+			{
+				"title": "Writing Tool Search: Hide Node",
+				"command": "wt.wtSearch.results.hideNode",
+				"icon": "$(x)"
 			}
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "wt.wtSearch.results.revealNodeInOutline"
+				},
+				{
+					"command": "wt.wtSearch.results.hideNode"
+				},
 				{
 					"command": "wt.autocorrections.wordReplaced",
 					"when": "false"
@@ -1485,6 +1524,15 @@
 					"command": "wt.workBible.editNote",
 					"when": "view == wt.workBible.tree",
 					"group": "inline@3"
+				},
+				{
+					"command": "wt.wtSearch.results.hideNode",
+					"when": "view == wt.wtSearch.results",
+					"group": "inline"
+				},
+				{
+					"command": "wt.wtSearch.results.revealNodeInOutline",
+					"when": "view == wt.wtSearch.results"
 				}
 			],
 			"editor/title": [
@@ -2091,7 +2139,6 @@
 		"@vscode/codicons": "^0.0.32",
 		"buffer": "^6.0.3",
 		"crypto-browserify": "^3.12.1",
-		"glob": "^11.0.0",
 		"minimist": "^1.2.6",
 		"node-fetch-commonjs": "^3.2.4",
 		"turndown": "^7.1.2",

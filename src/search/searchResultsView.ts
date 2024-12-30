@@ -3,7 +3,7 @@ import { HasGetUri, UriBasedView } from '../outlineProvider/UriBasedView';
 import { createFileSystemTree } from './processGrepResults/createFileSystemTree';
 import { Workspace } from '../workspace/workspaceClass';
 import * as extension from '../extension';
-import { randomUUID } from 'crypto';
+import { v4 as uuid } from 'uuid';
 import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { cleanNodeTree, pairMatchedTitlesToNeighborNodes, recreateNodeTree } from './processGrepResults/createNodeTree';
@@ -158,7 +158,7 @@ export class SearchResultsView
         // File location nodes link to a location in a document, and have more complicated labels and tooltips
         if (element.node.kind === 'fileLocation') {
             return {
-                id: randomUUID(),
+                id: uuid(),
                 label: element.getLabel(),        
                 collapsibleState: vscode.TreeItemCollapsibleState.None,
                 resourceUri: element.getUri(),
@@ -180,7 +180,7 @@ export class SearchResultsView
                 icon = new vscode.ThemeIcon('folder-opened');
             }
             return {
-                id: randomUUID(),
+                id: uuid(),
                 label: element.getLabel(),
                 collapsibleState: vscode.TreeItemCollapsibleState.None,
                 resourceUri: element.getUri(),
@@ -209,7 +209,7 @@ export class SearchResultsView
         }
 
         return {
-            id: randomUUID(),
+            id: uuid(),
             label: element.getLabel(),
             resourceUri: element.getUri(),
             tooltip: element.getTooltip(),
