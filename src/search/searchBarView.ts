@@ -17,6 +17,8 @@ type WebviewMessage = {
     kind: 'checkbox',
     field: 'wholeWord' | 'regex' | 'caseInsensitive' | 'matchTitles',
     checked: boolean
+} | {
+    kind: 'ready',
 };
 
 
@@ -71,6 +73,19 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
     }
         
     private registerCommands () {
+        vscode.workspace.onDidChangeConfiguration((e) => {
+            const configuration = 'wt.wtSearch.slowMode';
+            if (!e.affectsConfiguration(configuration)) return;
+            this.setSlowModeValue();
+        });
+    }
+
+    private setSlowModeValue () {
+        const slowModeValue = vscode.workspace.getConfiguration().get<boolean>('wt.wtSearch.slowMode');
+        this._view?.webview.postMessage({
+            kind: 'slowModeValueUpdated',
+            slowMode: slowModeValue
+        });
     }
 
     private async triggerUpdates (searchBarValue: string) {
@@ -126,6 +141,8 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
                     }
                     this.triggerUpdates(textbox);
                     break;
+                case 'ready':
+                    this.setSlowModeValue();
             }
         });
     }

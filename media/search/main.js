@@ -4,16 +4,13 @@
 (function () {
     const vscode = acquireVsCodeApi();
 
-    let synonyms = [];
-    const synonymElements = [];
-
     // Search bar
     {
-        const searchHandler = (field, value) => {
-        /* {
-            kind: 'textBoxChange',
-            input: 'search' | 'replace',
-            value: string,
+        const searchBarValueUpdated = (field, value) => {
+            /* {
+                kind: 'textBoxChange',
+                input: 'search' | 'replace',
+                value: string,
             } */
             vscode.postMessage({
                 kind: 'textBoxChange',
@@ -23,13 +20,18 @@
         };
         
         const searchBar = document.getElementById('search-bar');
-        console.log(searchBar)
-        searchBar?.addEventListener('keyup', (e) => searchHandler('search', e.target.value));
-        const replaceBar = document.getElementById('replace-bar');
-        replaceBar?.addEventListener('click', (e) => replaceHandler('replace', e.target.value));
-
-
-        document.getElementById('search-icon')?.addEventListener('click', e => searchHandler('search', searchBar.target.value));
+        const searchIcon = document.getElementById("search-icon");
+        searchBar?.addEventListener('keyup', (e) => {
+            if (slowMode) {
+                if (e.key === 'Enter' || searchBar.value === '') {
+                    searchBarValueUpdated('search', e.target.value);
+                }
+            }
+            else { 
+                searchBarValueUpdated('search', e.target.value);
+            }
+        });
+        searchIcon?.addEventListener('click', (e) => searchBarValueUpdated('search', searchBar.value));
     }
 
     // Checkboxes
@@ -45,21 +47,30 @@
                 field: 'wholeWord' | 'regex' | 'caseInsensitive' | 'matchTitles',
                 checked: boolean
             } */
-            console.log('hello');
             vscode.postMessage({
                 kind: 'checkbox',
                 field: field,
                 checked: checked
             });
         }
-    
 
-
-        wholeWordCheckbox.addEventListener('click', (event) => { console.log("poop"); checkboxValueChanged(event.target.checked, 'wholeWord')} );
-        regexCheckbox.addEventListener('click', (event) => { console.log("poop"); checkboxValueChanged(event.target.checked, 'regex')} );
-        caseInsensitiveCheckbox.addEventListener('click', (event) => { console.log("poop"); checkboxValueChanged(event.target.checked, 'caseInsensitive')} );
-        matchTitlesCheckbox.addEventListener('click', (event) => { console.log("poop"); checkboxValueChanged(event.target.checked, 'matchTitles')} );
-        console.log('good')
+        wholeWordCheckbox.addEventListener('click', (event) => { checkboxValueChanged(event.target.checked, 'wholeWord')} );
+        regexCheckbox.addEventListener('click', (event) => { checkboxValueChanged(event.target.checked, 'regex')} );
+        caseInsensitiveCheckbox.addEventListener('click', (event) => { checkboxValueChanged(event.target.checked, 'caseInsensitive')} );
+        matchTitlesCheckbox.addEventListener('click', (event) => { checkboxValueChanged(event.target.checked, 'matchTitles')} );
     }
 
+    {
+        // Handle messages sent from the extension to the webview
+        window.addEventListener('message', async (event) => {
+            const message = event.data; // The json data that the extension sent
+            switch (message.kind) {
+                case 'slowModeValueUpdated':
+                    slowMode = message.slowMode;
+                    break;
+            }
+        });
+    }
+
+    vscode.postMessage({ kind: 'ready' });
 }());
