@@ -165,6 +165,11 @@
 					"description": "Enable the 'Remove' button in the editor toolbar",
 					"type": "boolean",
 					"default": true
+				},
+				"wt.wtSearch.slowMode": {
+					"description": "Slow mode is for slower machines and larger projects.  In the search bar view without slow mode turned on, a search will be made every time you change the value of the search bar.  With slow mode turned on, the search only occurs when you hit enter or click the search icon next to the search bar.",
+					"type": "boolean",
+					"default": true
 				}
 			}
 		},
