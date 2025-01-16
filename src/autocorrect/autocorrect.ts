@@ -18,6 +18,7 @@ export const commonReplacements = {
     '—': ' -- ',
     '–': ' -- ',
     '­': '',
+    ' ': ' ',
 };
 
 const UNDERLINE_TIMER = 20 * 1000; // ms
