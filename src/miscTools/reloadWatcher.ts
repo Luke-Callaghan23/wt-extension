@@ -65,7 +65,7 @@ export class ReloadWatcher implements Packageable {
 
         if (reloadTabs) {
             const tabContext = contextValues["wt.reloadWatcher.openedTabs"];
-            TabStates.restoreTabState(tabContext);
+            TabStates.restoreTabState(tabContext, "Previous Workspace");
         }
 
         // Either of the first two options requires us to update the internals of all views and timed classes
@@ -103,7 +103,7 @@ export class ReloadWatcher implements Packageable {
         const resp = await vscode.window.showInformationMessage("Reload Tabs: We've detected that your currently opened tabs are different from the ones you've had opened in the past.  Would you like to close current tabs and open the saved tabs?", "Sure", "Nope");
         if (!resp || resp === 'Nope') return;
         (async () => {
-            setTimeout(() => TabStates.restoreTabState(tabContext), 0);
+            setTimeout(() => TabStates.restoreTabState(tabContext, "Previous Workspace"), 0);
         })()
     }
 

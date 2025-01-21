@@ -60,7 +60,7 @@ export class TabStates implements Packageable {
         return tabPackage;
     }
 
-    public static restoreTabState (tabContext: TabPositions) {
+    public static restoreTabState (tabContext: TabPositions, chosenState: string) {
         (async () => {
             TabLabels.enabled = false;
             try {
@@ -105,6 +105,7 @@ export class TabStates implements Packageable {
             }
             TabLabels.enabled = true;
             TabLabels.assignNamesForOpenTabs();
+            vscode.window.showInformationMessage(`[Tab States] Restored tab state '${chosenState}'`);
         })();
     }
 
@@ -123,6 +124,7 @@ export class TabStates implements Packageable {
             created: created,
             positions: currentState
         };
+        vscode.window.showInformationMessage(`[Tab States] Saved current tab state as '${stateName}'`);
     }
 
     private async chooseTabState (prompt: string): Promise<string | null> {
@@ -157,6 +159,7 @@ export class TabStates implements Packageable {
         delete this.savedTabStates[chosenState];
         oldState.created = Date.now();
         this.savedTabStates[newName] = oldState;
+        vscode.window.showInformationMessage(`[Tab States] Renamed tab state '${chosenState}' to '${newName}'`);
     }
 
     private async overwriteTabState () {
@@ -179,6 +182,7 @@ export class TabStates implements Packageable {
             created: created,
             positions: currentState,
         };
+        vscode.window.showInformationMessage(`[Tab States] Overwrote '${chosenState}' tab state with current state`);
     }
 
     private async restoreState () {
@@ -196,7 +200,7 @@ export class TabStates implements Packageable {
         if (saveOldState === 'Yes') {
             await this.saveCurrentState();
         }
-        return TabStates.restoreTabState(this.savedTabStates[chosenState].positions);
+        return TabStates.restoreTabState(this.savedTabStates[chosenState].positions, chosenState);
     }
 
     private async runCommand (command: TabStateCommand) {
