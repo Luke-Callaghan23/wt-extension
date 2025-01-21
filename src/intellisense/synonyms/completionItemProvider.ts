@@ -469,7 +469,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 const getMisspellCorrections = (res: SynonymError, hoverRange: vscode.Range, wordText: string) => {
     if (!res.suggestions) return [];
     const maxDigits = numDigits(res.suggestions.length);
-    return res.suggestions?.map((suggest, index) => {
+    const corrections = res.suggestions?.map((suggest, index) => {
         const indexStr = ("" + index).padStart(maxDigits, '0')
         return <vscode.CompletionItem> {
             label: suggest,
@@ -482,4 +482,22 @@ const getMisspellCorrections = (res: SynonymError, hoverRange: vscode.Range, wor
             }
         }
     }) || [];
+
+    const addToDictionary = <vscode.CompletionItem> {
+        label: `Add ${capitalize(wordText)} to personal dictionary`,
+        range: hoverRange,
+        command: <vscode.Command> {
+            command: 'wt.personalDictionary.add',
+            arguments: [ wordText ]
+        },
+        insertText: wordText,
+        
+        sortText: "!",
+        isPreferred: true,
+    };
+
+    return [
+        addToDictionary,
+        ...corrections
+    ];
 }
