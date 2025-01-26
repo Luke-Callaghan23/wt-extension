@@ -96,7 +96,7 @@ export async function generalMoveNode (
             }
             finalParentNode = lastNeighbor;
         }
-        return handleInternalContainerReorder(this, destinationContainer, finalParentNode, moveOffset, rememberedMoveDecision);
+        return handleInternalContainerReorder(this, destinationContainer, finalParentNode, moveOffset, moveDecision);
     }
 
     try {
