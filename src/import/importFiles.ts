@@ -8,6 +8,7 @@ import * as extension from '../extension';
 import { ImportForm } from './importFormView';
 import { OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
 import * as mammoth from 'mammoth';
+import { v4 as uuid } from 'uuid';
 const TurndownService = require('turndown');
 
 const libreofficeConvert = require('libreoffice-convert');
@@ -37,6 +38,7 @@ TurndownService.prototype.escape = function (string: string) {
 
 import { JSDOM } from 'jsdom';
 import { Buff } from '../Buffer/bufferSource';
+import { commonReplacements } from '../autocorrect/autocorrect';
 
 export type DocInfo = {
     skip: boolean,
@@ -117,6 +119,8 @@ function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
         let idx: number = 0;
         while ((m = splitter.exec(text)) !== null) {
             const match: RegExpExecArray = m;
+            if (match[0].trim().includes('\n')) continue;
+
             const matchStart = match.index;
 
             // Push the previous split text into the splits array
@@ -198,22 +202,12 @@ function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
 }
 
 
-export const commonReplacements = {
-    '”': '"',
-    '“': '"',
-    '‘': "'",
-    '’': "'",
-    '‛': "'",
-    '‟': '"',
-    '…': '...',
-    '—': ' -- ',
-    '–': ' -- ',
-    '­': '',
-};
 function replaceCommonUnicode (content: string): string {
-    return Object.entries(commonReplacements).reduce((acc, [ from, to ]) => {
+    const replacedText = Object.entries(commonReplacements).reduce((acc, [ from, to ]) => {
         return acc.replaceAll(from , to);
-    }, content)
+    }, content);
+
+    return replacedText.replaceAll(/\n +\n/g, '\n\n');
 }
 
 async function readAndSplitWt (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
@@ -241,9 +235,12 @@ async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Prom
     // Replace some common unicode elements in the file with more friendly stuff
     const filteredContent = replaceCommonUnicode(fileContent);
 
+    const tmpString = uuid()
     const final = filteredContent
+        .replaceAll("~~~", tmpString)
         .replaceAll("**", "^")
-        .replaceAll("~~", "~");
+        .replaceAll("~~", "~")
+        .replaceAll(tmpString, "~~~");
 
     // Split the content with the split rules provided in `split`
     const splits = splitWt(final, split);
@@ -658,7 +655,14 @@ async function importDoc (doc: DocInfo, fileRelativePath: string, workSnipAdditi
     const docSplit = await splitFunc(splitInfo, fileRelativePath);
     if (!docSplit) return;
 
-    const splits: DocSplit = docSplit;
+    let splits: DocSplit = docSplit;
+
+    if (splits.type === 'multi' && splits.data.length === 1 && splits.data[0].title === null) {
+        splits = {
+            type: "single",
+            data: splits.data[0].data
+        }
+    }
 
     // Create a write info struct for this write
     const writeInfo: WriteInfo = getWriteInfo(doc);
