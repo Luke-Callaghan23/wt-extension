@@ -15,16 +15,61 @@ export function getUsableDeleteFileName (type: ResourceType, wt?: boolean) {
     return `deleted-${type}-${timestamp}-${parseInt(Math.random() * 10000 + '')}${wtStr}`
 }
 
+async function shouldPermanentlyDelete(target: OutlineNode) {
+    if (target.data.ids.type !== 'fragment') {
+        return false;
+    }
+    if (!target.data.ids.display.startsWith('New Fragment') && !target.data.ids.display.includes('Imported Fragment')) {
+        return false;
+    }
+
+    const stat = await vscode.workspace.fs.stat(target.data.ids.uri);
+    if (stat.size !== 0) {
+        return false;
+    }
+
+    return true;
+}
+
 // There's one thing you need to know: deleting doesn't exist
 // Instead of deleting, I'm just going to move things to the recycling bin in the workspace itself
 export async function removeResource (this: OutlineView, targets: OutlineNode[]) {
     // Filter out any transferer whose parent is the same as the target, or whose parent is the same as the target's parent
     const uniqueRoots = await this.getLocalRoots(targets);
+    
+    const permantlyDelete: [ boolean, OutlineNode ][]  = await Promise.all(
+        targets.map(target => 
+            shouldPermanentlyDelete(target)
+            .then(should => [ should, target ])
+        )
+    ) as [ boolean, OutlineNode ][];
+
+    const permanentlyDeleteMap = Object.fromEntries(permantlyDelete.map(([ should, target ]) => {
+        return [ target.data.ids.uri.fsPath, should ];
+    }));
+
     const s = uniqueRoots.length > 1 ? 's' : '';
 
-    const result = await vscode.window.showInformationMessage(`Are you sure you want to delete ${uniqueRoots.length} resource${s}?`, { modal: true }, "Yes", "No");
-    if (result === 'No' || result === undefined) {
-        return;
+    let deletingAll = false;
+
+    const everythingPermanentlyDeleteable = permantlyDelete.every(([ should, _ ]) => should);
+    if (everythingPermanentlyDeleteable) {
+        const result = await vscode.window.showInformationMessage(
+            `Would you like to permantly delete ${uniqueRoots.length} empty fragment file${s}?`, 
+            { modal: true }, 
+            "Yes", "Move to Recycling", "Cancel"
+        );
+        
+        if (!result || result === 'Cancel') {
+            return;
+        }
+        deletingAll = result === 'Yes';
+    }
+    else {
+        const result = await vscode.window.showInformationMessage(`Are you sure you want to move ${uniqueRoots.length} resource${s} to the recycling bin?`, { modal: true }, "Yes", "No");
+        if (result === 'No' || result === undefined) {
+            return;
+        }
     }
 
     const newLogs: RecycleLog[] = [];
@@ -40,23 +85,45 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
 
             // And delete the fragment from the file system
             const removedFragmentUri = target.getUri();
-            const recycleBinName = getUsableDeleteFileName(target.data.ids.type, true);
-            try {
-                const newLocationUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
-                await vscode.workspace.fs.rename(removedFragmentUri, newLocationUri);
-            }
-            catch (e) {
-                vscode.window.showErrorMessage(`Error deleting fragment: ${e}`);
+
+            let moveToRecycling = true;
+            if (permanentlyDeleteMap[target.data.ids.uri.fsPath] === true) {
+                if (!everythingPermanentlyDeleteable) {
+                    const result = await vscode.window.showInformationMessage(
+                        `Fragment '${target.data.ids.display}' is empty and has a default name, would you like to permanently delete it?`, 
+                        { modal: true }, 
+                        "Yes", "Move to Recycling"
+                    );
+                    if (result === 'Yes') {
+                        moveToRecycling = false;
+                        await vscode.workspace.fs.delete(target.data.ids.uri);
+                    }
+                }
+                else if (deletingAll) {
+                    moveToRecycling = false;
+                    await vscode.workspace.fs.delete(target.data.ids.uri);
+                }
             }
 
-            const logItem = {
-                oldUri: removedFragmentUri.fsPath,
-                deleteTimestamp: timestamp,
-                title: title,
-                resourceType: target.data.ids.type,
-                recycleBinName: recycleBinName
-            };
-            newLogs.push(logItem);
+            if (moveToRecycling) {
+                const recycleBinName = getUsableDeleteFileName(target.data.ids.type, true);
+                try {
+                    const newLocationUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
+                    await vscode.workspace.fs.rename(removedFragmentUri, newLocationUri);
+                }
+                catch (e) {
+                    vscode.window.showErrorMessage(`Error deleting fragment: ${e}`);
+                }
+    
+                const logItem = {
+                    oldUri: removedFragmentUri.fsPath,
+                    deleteTimestamp: timestamp,
+                    title: title,
+                    resourceType: target.data.ids.type,
+                    recycleBinName: recycleBinName
+                };
+                newLogs.push(logItem);
+            }
 
             // Finally, remove the fragment from the parent's text node container
             const fragmentParentUri = target.data.ids.parentUri;
