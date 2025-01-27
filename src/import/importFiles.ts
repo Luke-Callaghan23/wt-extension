@@ -205,14 +205,6 @@ function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
 }
 
 
-function postProcessContent (content: string): string {
-    const replacedString = Object.entries(commonReplacements).reduce((acc, [ from, to ]) => {
-        return acc.replaceAll(from , to);
-    }, content);
-
-    return replacedString.replaceAll(/\n +\n/g, '\n\n');
-}
-
 async function readAndSplitWt (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
     // Get the full file path and read the content of that file
     const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
@@ -629,6 +621,38 @@ async function writeDocumentSplits (docSplits: DocSplit, writeInfo: WriteInfo) {
     }
 }
 
+
+
+
+function postProcessSplits (splits: DocSplit): DocSplit {
+    function postProcessFragment (content: string): string {
+        const replacedString = Object.entries(commonReplacements).reduce((acc, [ from, to ]) => {
+            return acc.replaceAll(from , to);
+        }, content);
+    
+        return replacedString.replaceAll(/\n +\n/g, '\n\n');
+    }
+
+    if (splits.type === 'multi' && splits.data.length === 1 && splits.data[0].title === null) {
+        splits = {
+            type: "single",
+            data: splits.data[0].data
+        }
+    }
+
+    if (splits.type === 'multi') {
+        splits.data.forEach(data => data.data.forEach(data => postProcessFragment(data.data)));
+    }
+    else if (splits.type === 'single') {
+        splits.data.forEach(data => postProcessFragment(data.data));
+    }
+    else {
+        splits.data = postProcessFragment(splits.data);
+    }
+
+    return splits;
+}
+
 async function importDoc (doc: DocInfo, fileRelativePath: string, workSnipAdditionalPath: string) {
     if (doc.skip) {
         vscode.window.showWarningMessage(`Skipping '${fileRelativePath}' . . . `);
@@ -652,24 +676,7 @@ async function importDoc (doc: DocInfo, fileRelativePath: string, workSnipAdditi
     const docSplit = await splitFunc(splitInfo, fileRelativePath);
     if (!docSplit) return;
 
-    let splits: DocSplit = docSplit;
-
-    if (splits.type === 'multi' && splits.data.length === 1 && splits.data[0].title === null) {
-        splits = {
-            type: "single",
-            data: splits.data[0].data
-        }
-    }
-
-    if (splits.type === 'multi') {
-        splits.data.forEach(data => data.data.forEach(data => postProcessContent(data.data)));
-    }
-    else if (splits.type === 'single') {
-        splits.data.forEach(data => postProcessContent(data.data));
-    }
-    else {
-        splits.data = postProcessContent(splits.data);
-    }
+    const splits: DocSplit = postProcessSplits(docSplit);
 
     // Create a write info struct for this write
     const writeInfo: WriteInfo = getWriteInfo(doc);
