@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import { compareFsPath, ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from "../../../miscTools/help";
+import { compareFsPath, ConfigFileInfo, getLatestOrdering, isSubdirectory, readDotConfig, writeDotConfig } from "../../../miscTools/help";
 import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineTreeProvider";
 import { ChapterNode, ContainerNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../outlineNode";
 import { OutlineView } from '../../outlineView';
@@ -30,6 +30,11 @@ export async function generalMoveNode (
     const newParentNode = newParent as OutlineNode;
     const newParentType = newParentNode.data.ids.type;
     const newParentUri = newParentNode.data.ids.uri;
+
+    if (isSubdirectory(this.data.ids.uri, newParentNode.data.ids.uri)) {
+        vscode.window.showInformationMessage("[INFO] Unable to move node into itself or sub-node of itself")
+        return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
+    }
     
     const moverType = this.data.ids.type;
     const moverParentUri = this.data.ids.parentUri;
