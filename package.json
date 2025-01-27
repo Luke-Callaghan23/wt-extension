@@ -2293,7 +2293,7 @@
 		"@types/node": "^16.11.7",
 		"@types/path-browserify": "^1.0.2",
 		"@types/rwlock": "^5.0.6",
-		"@types/turndown": "^5.0.4",
+		"@types/turndown": "^5.0.5",
 		"@types/uuid": "^9.0.0",
 		"@types/vscode": "^1.73.0",
 		"@typescript-eslint/eslint-plugin": "^5.42.0",

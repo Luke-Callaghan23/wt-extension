@@ -9,7 +9,8 @@ import { ImportForm } from './importFormView';
 import { OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
 import * as mammoth from 'mammoth';
 import { v4 as uuid } from 'uuid';
-const TurndownService = require('turndown');
+import * as TurndownService from 'turndown';
+import {  } from 'turndown';
 
 const libreofficeConvert = require('libreoffice-convert');
 const util = require('util');
@@ -34,6 +35,8 @@ TurndownService.prototype.escape = function (string: string) {
         return accumulator.replace(escape[0], escape[1])
     }, string)
 };
+
+
 
 
 import { JSDOM } from 'jsdom';
@@ -202,12 +205,12 @@ function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
 }
 
 
-function replaceCommonUnicode (content: string): string {
-    const replacedText = Object.entries(commonReplacements).reduce((acc, [ from, to ]) => {
+function postProcessContent (content: string): string {
+    const replacedString = Object.entries(commonReplacements).reduce((acc, [ from, to ]) => {
         return acc.replaceAll(from , to);
     }, content);
 
-    return replacedText.replaceAll(/\n +\n/g, '\n\n');
+    return replacedString.replaceAll(/\n +\n/g, '\n\n');
 }
 
 async function readAndSplitWt (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
@@ -215,11 +218,8 @@ async function readAndSplitWt (split: SplitInfo, fileRelativePath: string): Prom
     const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
     const fileContent = (await vscode.workspace.fs.readFile(fileUri)).toString();
 
-    // Replace some common unicode elements in the file with more friendly stuff
-    const filteredContent = replaceCommonUnicode(fileContent);
-
     // Split the content with the split rules provided in `split`
-    const splits = splitWt(filteredContent, split);
+    const splits = splitWt(fileContent, split);
     if (!splits) {
         vscode.window.showErrorMessage(`Error ocurred when splitting markdown document`);
         throw new Error(`Error ocurred when splitting markdown document`);
@@ -232,11 +232,8 @@ async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Prom
     const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
     const fileContent = (await vscode.workspace.fs.readFile(fileUri)).toString();
 
-    // Replace some common unicode elements in the file with more friendly stuff
-    const filteredContent = replaceCommonUnicode(fileContent);
-
     const tmpString = uuid()
-    const final = filteredContent
+    const final = fileContent
         .replaceAll("~~~", tmpString)
         .replaceAll("**", "^")
         .replaceAll("~~", "~")
@@ -258,7 +255,10 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
     const turndownService = new TurndownService({ 
         bulletListMarker: '-',
         hr: '~~~',
-        emDelimiter: '*'
+        emDelimiter: '*',
+        blankReplacement: function(content: any) {
+            return ' '; // Replace empty lines with two new lines
+        }
     });
 
     turndownService.addRule('strikethrough', {
@@ -289,11 +289,8 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
     // Showdown escapes all tildes ... we don't like that so, we take out all the escape characters
     const withoutEscapedTildes = convertedMd.replaceAll('\\~', '~');
 
-    // Replace some common unicode elements in the file with more friendly stuff
-    const filteredContent = replaceCommonUnicode(withoutEscapedTildes);
-
     // Split the content with the split rules provided in `split`
-    const splits = splitWt(filteredContent, split);
+    const splits = splitWt(withoutEscapedTildes, split);
     if (!splits) {
         vscode.window.showErrorMessage(`Error ocurred when splitting markdown document`);
         throw new Error(`Error ocurred when splitting markdown document`);
@@ -662,6 +659,16 @@ async function importDoc (doc: DocInfo, fileRelativePath: string, workSnipAdditi
             type: "single",
             data: splits.data[0].data
         }
+    }
+
+    if (splits.type === 'multi') {
+        splits.data.forEach(data => data.data.forEach(data => postProcessContent(data.data)));
+    }
+    else if (splits.type === 'single') {
+        splits.data.forEach(data => postProcessContent(data.data));
+    }
+    else {
+        splits.data = postProcessContent(splits.data);
     }
 
     // Create a write info struct for this write
