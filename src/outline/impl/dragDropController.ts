@@ -8,6 +8,13 @@ import { ScratchPadView } from '../../scratchPad/scratchPadView';
 import { ExtensionGlobals } from '../../extension';
 import { setFsPathKey } from '../../miscTools/help';
 
+export type DataTransferType = 
+    'application/vnd.code.tree.outline'
+    | 'application/vnd.code.tree.recycling'
+    | 'application/vnd.code.tree.scratch'
+    | 'application/vnd.code.copied'
+    ;
+
 export async function handleDropController (this: OutlineView, target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
     const targ = target || this.rootNodes[0];
     if (!targ) throw 'unreachable';
@@ -22,7 +29,7 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
     const scratchPadView: ScratchPadView = ExtensionGlobals.scratchPadView;
 
     const moveOperations: { 
-        dataTransferType: string, 
+        dataTransferType: DataTransferType, 
         operation: 'move' | 'recover' | 'scratch' | 'paste',
         sourceProvider: UriBasedView<OutlineNode>
     }[] = [{
@@ -174,8 +181,8 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
     }
 }
 
-export async function handleDragController (this: OutlineView, source: OutlineNode[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-    treeDataTransfer.set('application/vnd.code.tree.outline', new vscode.DataTransferItem(source));
+export async function handleDragController (this: UriBasedView<OutlineNode>, dataTransferType: DataTransferType, source: OutlineNode[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
+    treeDataTransfer.set(dataTransferType, new vscode.DataTransferItem(source));
 
     const uris: vscode.Uri[] = source.map(src => src.getDroppableUris()).flat();
     const uriStrings = uris.map(uri => uri.toString());

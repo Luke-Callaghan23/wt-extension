@@ -72,7 +72,7 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
 
         type Response = 'Yes' | 'No' | 'Stop Asking!!!';
         const response: Response | undefined  = await vscode.window.showInformationMessage(
-            `Save as auto-correction?  You just updated '${original}' to '${correction}'.  Would you like to save this mapping as an auto-correction so that every time you type '${original}' it automatically gets replaced with '${correction}'?`, 
+            `Save as auto-correction?  You just updated '${original}' to '${correction}'.  Would you like to save this mapping as an auto-correction so that every time you type '${original}' it automatically gets replaced with '${correction}'? (ctrl+shift+A to accept)`, 
             "Yes", "No", "Stop Asking!!!"
         );
         if (response !== 'Yes') {

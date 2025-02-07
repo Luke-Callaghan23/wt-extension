@@ -16,6 +16,7 @@ import { Buff } from '../Buffer/bufferSource';
 import { newScratchPadFile } from './createScratchPadFile';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import * as search from '../miscTools/searchFiles';
+import { handleDragController } from '../outline/impl/dragDropController';
 
 export type RecycleLog = {
     oldUri: string,
@@ -207,8 +208,9 @@ implements
         throw "Drag and drop not available for scratch pad view";
     }
 
-    async handleDrag (source: readonly OutlineNode[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-        throw "Drag and drop not available for scratch pad view";
+    dragController = handleDragController;
+    async handleDrag (source: OutlineNode[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
+        return this.dragController('application/vnd.code.tree.scratch', source, dataTransfer, token);
     }
 
     async getParent (element: OutlineNode): Promise<OutlineNode> {

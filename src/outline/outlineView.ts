@@ -143,7 +143,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 
 	dragController = handleDragController;
 	handleDrag (source: OutlineNode[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): void | Thenable<void> {
-		return this.dragController(source, dataTransfer, token);
+		return this.dragController("application/vnd.code.tree.outline", source, dataTransfer, token);
 	}
 
 	dropController = handleDropController;

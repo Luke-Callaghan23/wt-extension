@@ -14,6 +14,7 @@ import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../outline/outlineView';
 import { TreeNode } from '../outlineProvider/outlineTreeProvider';
 import { selectFile } from '../miscTools/searchFiles';
+import { handleDragController } from '../outline/impl/dragDropController';
 
 export type RecycleLog = {
     oldUri: string,
@@ -342,15 +343,9 @@ implements
         await outlineView.removeResource(filteredParents);
     }
 
-    async handleDrag (source: readonly OutlineNode[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-        dataTransfer.set('application/vnd.code.tree.recycling', new vscode.DataTransferItem(source));
-        
-        const uris: vscode.Uri[] = source.map(src => src.getDroppableUris()).flat();
-        const uriStrings = uris.map(uri => uri.toString());
-        
-        // Combine all collected uris into a single string
-        const sourceUriList = uriStrings.join('\r\n');
-        dataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
+    dragController = handleDragController;
+    async handleDrag (source: OutlineNode[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
+        return this.dragController('application/vnd.code.tree.recycling', source, dataTransfer, token);
     }
 
     async getParent (element: OutlineNode): Promise<OutlineNode> {
