@@ -995,10 +995,38 @@
 			{
 				"title": "Writing Tool: Reveal fragment in File Explorer",
 				"command": "wt.editor.revealFileExplorer"
+			},
+			{
+				"title": "Writing Tool: Accept Autocorrect",
+				"command": "wt.autocorrections.acceptAutocorrect"
+			},
+			{
+				"title": "Writing Tool: Reject Autocorrect",
+				"command": "wt.autocorrections.rejectAutocorrect"
 			}
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "wt.autocorrections.acceptAutocorrect",
+					"when": "false"
+				},
+				{
+					"command": "wt.autocorrections.rejectAutocorrect",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.revealVSCode",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.revealOutline",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.revealFileExplorer",
+					"when": "false"
+				},
 				{
 					"command": "wt.wtSearch.results.revealNodeInOutline"
 				},
@@ -1453,22 +1481,22 @@
 			"editor/title/context": [
 				{
 					"command": "wt.tabLabels.rename",
-					"when": "resourceFilename =~ /.*\\.wt/",
+					"when": "resourceFilename =~ /.*\\.wt(Note)?/",
 					"group": "wt"
 				},
 				{
 					"command": "wt.editor.revealVSCode",
-					"when": "resourceFilename =~ /.*\\.wt/",
+					"when": "resourceFilename =~ /.*\\.wt(Note)?/",
 					"group": "wt"
 				},
 				{
 					"command": "wt.editor.revealOutline",
-					"when": "resourceFilename =~ /.*\\.wt/",
+					"when": "resourceFilename =~ /.*\\.wt(Note)?/",
 					"group": "wt"
 				},
 				{
 					"command": "wt.editor.revealFileExplorer",
-					"when": "resourceFilename =~ /.*\\.wt/",
+					"when": "resourceFilename =~ /.*\\.wt(Note)?/",
 					"group": "wt"
 				}
 			],
@@ -1664,6 +1692,20 @@
 			]
 		},
 		"keybindings": [
+			{
+				"command": "wt.autocorrections.acceptAutocorrect",
+				"win": "ctrl+shift+a",
+				"linux": "ctrl+shift+a",
+				"mac": "cmd+shift+a",
+				"when": "(editorLangId == wt || editorLangId == wtNote)"
+			},
+			{
+				"command": "wt.autocorrections.rejectAutocorrect",
+				"win": "ctrl+shift+x",
+				"linux": "ctrl+shift+x",
+				"mac": "cmd+shift+x",
+				"when": "(editorLangId == wt || editorLangId == wtNote)"
+			},
 			{
 				"command": "wt.tabLabels.renameActiveTab",
 				"win": "shift+f2",

@@ -61,6 +61,7 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         }
     } } = {};
 
+    private notificationActive: boolean = false;
     async askToCorrect (original: string, correction: string) {
         if (!this.enabled) return;
         original = original.toLocaleLowerCase();
@@ -71,10 +72,16 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         }
 
         type Response = 'Yes' | 'No' | 'Stop Asking!!!';
-        const response: Response | undefined  = await vscode.window.showInformationMessage(
-            `Save as auto-correction?  You just updated '${original}' to '${correction}'.  Would you like to save this mapping as an auto-correction so that every time you type '${original}' it automatically gets replaced with '${correction}'? (ctrl+shift+A to accept)`, 
+
+        const notificationPromise = vscode.window.showInformationMessage(
+            `Save as auto-correction?  You just updated '${original}' to '${correction}'.  Would you like to save this mapping as an auto-correction so that every time you type '${original}' it automatically gets replaced with '${correction}'? (ctrl+shift+A to accept, ctrl+shift+x to reject) * (cmd on Mac) * (Please only use these commands when this is the only active notification)`, 
             "Yes", "No", "Stop Asking!!!"
         );
+
+        this.notificationActive = true;
+        const response: Response | undefined  = await notificationPromise;
+        this.notificationActive = false;
+
         if (response !== 'Yes') {
             if (response === 'Stop Asking!!!') {
                 this.enabled = false;
@@ -273,6 +280,19 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         vscode.commands.registerCommand('wt.autocorrections.wordReplaced', (word: string, correction: string) => this.askToCorrect(word, correction));
         vscode.commands.registerCommand('wt.autocorrections.wordExcluded', (original: string, fileName: string, range: vscode.Range) => this.wordExcluded(original, fileName, range));
         vscode.commands.registerCommand('wt.autocorrections.stopCorrecting', (original: string) => this.stopCorrecting(original));
+        vscode.commands.registerCommand('wt.autocorrections.acceptAutocorrect', async () => {
+            if (!this.notificationActive) return;
+            await vscode.commands.executeCommand('notifications.focusFirstToast');
+            return vscode.commands.executeCommand('notification.acceptPrimaryAction');
+        });
+        vscode.commands.registerCommand('wt.autocorrections.rejectAutocorrect', async () => {
+            if (!this.notificationActive) {
+                // Do the default behavior for ctrl+shift+x
+                // Hacky workaround, but I don't believe there is any default way to force this keybinding to fall through
+                return vscode.commands.executeCommand('workbench.view.extensions');
+            }
+            return vscode.commands.executeCommand('notifications.clearAll');
+        });
     }
 
     constructor (
