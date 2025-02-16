@@ -983,6 +983,18 @@
 				"title": "Writing Tool Search: Hide Node",
 				"command": "wt.wtSearch.results.hideNode",
 				"icon": "$(x)"
+			},
+			{
+				"title": "Writing Tool: Reveal fragment in VSCode Outline",
+				"command": "wt.editor.revealVSCode"
+			},
+			{
+				"title": "Writing Tool: Reveal fragment in WTANIWE Outline",
+				"command": "wt.editor.revealOutline"
+			},
+			{
+				"title": "Writing Tool: Reveal fragment in File Explorer",
+				"command": "wt.editor.revealFileExplorer"
 			}
 		],
 		"menus": {
@@ -1440,7 +1452,24 @@
 			],
 			"editor/title/context": [
 				{
-					"command": "wt.tabLabels.rename"
+					"command": "wt.tabLabels.rename",
+					"when": "resourceFilename =~ /.*\\.wt/",
+					"group": "wt"
+				},
+				{
+					"command": "wt.editor.revealVSCode",
+					"when": "resourceFilename =~ /.*\\.wt/",
+					"group": "wt"
+				},
+				{
+					"command": "wt.editor.revealOutline",
+					"when": "resourceFilename =~ /.*\\.wt/",
+					"group": "wt"
+				},
+				{
+					"command": "wt.editor.revealFileExplorer",
+					"when": "resourceFilename =~ /.*\\.wt/",
+					"group": "wt"
 				}
 			],
 			"view/item/context": [

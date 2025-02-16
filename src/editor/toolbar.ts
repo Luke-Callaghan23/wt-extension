@@ -8,6 +8,9 @@ import { commentFragment, commentParagraph, commentSentence } from './comment';
 import { highlightExpand } from './highlights';
 import { addQuotes } from './addQuotes';
 import { addAccent as insertAccent } from './accents';
+import { OutlineView } from '../outline/outlineView';
+import { ExtensionGlobals } from '../extension';
+import { vagueNodeSearch } from '../miscTools/help';
 
 
 export function remove () {
@@ -97,5 +100,41 @@ export class Toolbar {
 
         vscode.commands.registerCommand('wt.editor.addQuotes', () => addQuotes());
         vscode.commands.registerCommand('wt.editor.accent.insertAccent', () => insertAccent());
+
+        vscode.commands.registerCommand("wt.editor.revealVSCode", (tabUri: vscode.Uri) => {
+            return vscode.commands.executeCommand('workbench.view.explorer');
+        });
+        vscode.commands.registerCommand("wt.editor.revealOutline", async (tabUri: vscode.Uri) => {
+            const searchResult = await vagueNodeSearch(tabUri);
+            if (searchResult === null) {
+                return vscode.window.showErrorMessage(`[ERROR] Unable to find Outline fragment for uri '${tabUri.fsPath}'`);
+            }
+            switch (searchResult.source) {
+                case 'outline': return ExtensionGlobals.outlineView.view.reveal(searchResult.node, {
+                    expand: true,
+                    select: true,
+                });
+                case 'recycle': return ExtensionGlobals.recyclingBinView.view.reveal(searchResult.node, {
+                    expand: true,
+                    select: true,
+                });
+                case 'scratch': return ExtensionGlobals.scratchPadView.view.reveal(searchResult.node, {
+                    expand: true,
+                    select: true,
+                });
+                case 'workBible': return ExtensionGlobals.workBible.view.reveal(searchResult.node, {
+                    expand: true,
+                    select: true,
+                });
+            }
+        });
+        vscode.commands.registerCommand("wt.editor.revealFileExplorer", (tabUri: vscode.Uri) => {
+            try {
+                return vscode.commands.executeCommand('remote-wsl.revealInExplorer', tabUri);
+            }
+            catch (err: any) {
+                return vscode.commands.executeCommand('revealFileInOS', tabUri);
+            }
+        });
     }
 }
