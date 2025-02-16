@@ -10,8 +10,19 @@ import { TabLabels } from '../tabLabels/tabLabels';
 type TabStateCommand = 'wt.tabStates.saveCurrentState' | 'wt.tabStates.overwriteTabState' | 'wt.tabStates.restoreState' | 'wt.tabStates.renameState';
 export class TabStates implements Packageable {
     private savedTabStates: SavedTabState;
+    private statusBar: vscode.StatusBarItem;
+    private latestTabState: string | null;
+
     constructor (private context: vscode.ExtensionContext, private workspace: Workspace) {
         this.savedTabStates = context.workspaceState.get('wt.tabStates.savedTabStates') || {};
+        this.latestTabState = context.workspaceState.get("wt.tabStates.latestTabState") || null;
+        
+        this.statusBar = vscode.window.createStatusBarItem('wt.tabStates.tabStateStatusBarItem', vscode.StatusBarAlignment.Right, 1000000);
+        this.statusBar.backgroundColor = new vscode.ThemeColor('terminal.ansiBrightYellow');
+        this.statusBar.color = 'white';
+        this.statusBar.command = 'wt.tabStates.showStatusBarMenu';
+        this.update();
+
         this.registerCommands();
     }
     
@@ -60,53 +71,51 @@ export class TabStates implements Packageable {
         return tabPackage;
     }
 
-    public static restoreTabState (tabContext: TabPositions, chosenState: string) {
-        (async () => {
-            TabLabels.enabled = false;
-            try {
-                // First, close all the active tab groups
-                await vscode.window.tabGroups.close(vscode.window.tabGroups.all);
-                for (const [ viewColStr, tabs ] of Object.entries(tabContext)) {
-                    const viewCol = parseInt(viewColStr);
-                    if (isNaN(viewCol)) continue;
+    public static async restoreTabState (tabContext: TabPositions, chosenState: string) {
+        TabLabels.enabled = false;
+        try {
+            // First, close all the active tab groups
+            await vscode.window.tabGroups.close(vscode.window.tabGroups.all);
+            for (const [ viewColStr, tabs ] of Object.entries(tabContext)) {
+                const viewCol = parseInt(viewColStr);
+                if (isNaN(viewCol)) continue;
 
-                    // Open all of the tabs in this tab group in order
-                    let activeUri: vscode.Uri | undefined;
-                    for (const [ relativePath, positions ] of Object.entries(tabs)) {
-                        const openUri = vscode.Uri.joinPath(extension.rootPath, relativePath);
-                        
-                        await vscode.window.showTextDocument(openUri, {
-                            viewColumn: viewCol,
-                            selection: new vscode.Range(
-                                new vscode.Position(positions.activeLine, positions.activeChar),
-                                new vscode.Position(positions.anchorLine, positions.activeChar)
-                            ),
-                            preview: false,
-                        });
+                // Open all of the tabs in this tab group in order
+                let activeUri: vscode.Uri | undefined;
+                for (const [ relativePath, positions ] of Object.entries(tabs)) {
+                    const openUri = vscode.Uri.joinPath(extension.rootPath, relativePath);
+                    
+                    await vscode.window.showTextDocument(openUri, {
+                        viewColumn: viewCol,
+                        selection: new vscode.Range(
+                            new vscode.Position(positions.activeLine, positions.activeChar),
+                            new vscode.Position(positions.anchorLine, positions.activeChar)
+                        ),
+                        preview: false,
+                    });
 
-                        // Save the active tab for later
-                        if (!activeUri && positions.active) {
-                            activeUri = openUri;
-                        }
-                    }
-
-                    // If we came across the active tab, then re-show that document
-                    if (activeUri) {
-                        await vscode.window.showTextDocument(activeUri, {
-                            viewColumn: viewCol,
-                            // Since we opened it with the correct positions earlier, we don't need to do it again here
-                            preview: false,
-                        });
+                    // Save the active tab for later
+                    if (!activeUri && positions.active) {
+                        activeUri = openUri;
                     }
                 }
+
+                // If we came across the active tab, then re-show that document
+                if (activeUri) {
+                    await vscode.window.showTextDocument(activeUri, {
+                        viewColumn: viewCol,
+                        // Since we opened it with the correct positions earlier, we don't need to do it again here
+                        preview: false,
+                    });
+                }
             }
-            catch (err: any) {
-                console.log(err)
-            }
-            TabLabels.enabled = true;
-            TabLabels.assignNamesForOpenTabs();
-            vscode.window.showInformationMessage(`[Tab States] Restored tab state '${chosenState}'`);
-        })();
+        }
+        catch (err: any) {
+            console.log(err)
+        }
+        TabLabels.enabled = true;
+        TabLabels.assignNamesForOpenTabs();
+        vscode.window.showInformationMessage(`[Tab States] Restored tab state '${chosenState}'`);
     }
 
     private async saveCurrentState () {
@@ -125,6 +134,7 @@ export class TabStates implements Packageable {
             positions: currentState
         };
         vscode.window.showInformationMessage(`[Tab States] Saved current tab state as '${stateName}'`);
+        this.latestTabState = stateName;
     }
 
     private async chooseTabState (prompt: string): Promise<string | null> {
@@ -141,10 +151,8 @@ export class TabStates implements Packageable {
         return tabStateName;
     }
 
-    private async renameState () {
-        const chosenState = await this.chooseTabState("Which tab state would you like to rename?");
-        if (!chosenState) return;
-        
+
+    private async renameState (chosenState: string) {
         const newName = await vscode.window.showInputBox({
             placeHolder: chosenState,
             ignoreFocusOut: false,
@@ -160,13 +168,12 @@ export class TabStates implements Packageable {
         oldState.created = Date.now();
         this.savedTabStates[newName] = oldState;
         vscode.window.showInformationMessage(`[Tab States] Renamed tab state '${chosenState}' to '${newName}'`);
+        this.latestTabState = newName;
     }
 
-    private async overwriteTabState () {
-        const created = Date.now();
-        const chosenState = await this.chooseTabState("Which tab state would you like to overwrite with the current positions?");
-        if (!chosenState) return;
 
+    private async overwriteTabState (chosenState: string) {
+        const created = Date.now();
         const areYouSure = await vscode.window.showQuickPick([ "Yes", "No" ], {
             canPickMany: false,
             ignoreFocusOut: false,
@@ -183,12 +190,11 @@ export class TabStates implements Packageable {
             positions: currentState,
         };
         vscode.window.showInformationMessage(`[Tab States] Overwrote '${chosenState}' tab state with current state`);
+        this.latestTabState = chosenState;
     }
 
-    private async restoreState () {
-        const chosenState = await this.chooseTabState("Which tab state would you like to restore?");
-        if (!chosenState) return;
 
+    private async restoreState (chosenState: string) {
         const saveOldState = await vscode.window.showQuickPick([ "Yes", "No" ], {
             canPickMany: false,
             ignoreFocusOut: false,
@@ -200,17 +206,167 @@ export class TabStates implements Packageable {
         if (saveOldState === 'Yes') {
             await this.saveCurrentState();
         }
-        return TabStates.restoreTabState(this.savedTabStates[chosenState].positions, chosenState);
+        await TabStates.restoreTabState(this.savedTabStates[chosenState].positions, chosenState);
+        this.latestTabState = chosenState;
+    }
+
+    private async showStatusBarMenu () {
+        type TabStateMenuCommand = vscode.QuickPickItem & ({
+            type: 'selectTabState',
+            tabStateId: string
+        } | {
+            type: 'savecurrentTabState',
+        });
+
+        interface TabStateButton extends vscode.QuickInputButton {
+            type: 'overwrite' | 'rename' | 'switch',
+            tabStateId: string,
+            iconPath: vscode.ThemeIcon,
+        };
+
+        const iconMap: Record<TabStateButton['type'], vscode.ThemeIcon> = {
+            overwrite: new vscode.ThemeIcon('save'),
+            rename: new vscode.ThemeIcon('edit'),
+            switch: new vscode.ThemeIcon('arrow-swap')
+        };
+
+        const descriptionMap: Record<TabStateButton['type'], string> = {
+            overwrite: "Overwrite this tab state with the currenly opened tabs",
+            rename: "Rename this tab state",
+            switch: "Switch to this tab state"
+        };
+
+        const buttonIdsArray: TabStateButton['type'][] = [ 'switch', 'overwrite', 'rename' ];
+
+        const currentTabStates: TabStateMenuCommand[] = Object.entries(this.savedTabStates).map(([ stateId, _ ]) => {
+            return {
+                type: 'selectTabState',
+                label: `Select: '${stateId}'`,
+                tabStateId: stateId,
+                alwaysShow: true,
+                buttons: buttonIdsArray.map(operation => ({
+                    iconPath: iconMap[operation],
+                    tabStateId: stateId,
+                    type: operation,
+                    tooltip: descriptionMap[operation]
+                })),
+            };
+        })
+
+        const qp = vscode.window.createQuickPick<TabStateMenuCommand>();
+        qp.items = [
+            ...currentTabStates,
+            {
+                type: 'savecurrentTabState',
+                label: `Create new tab state`,
+                alwaysShow: true,
+            }
+        ];
+        qp.matchOnDescription = false;
+        qp.canSelectMany = false;
+        qp.matchOnDetail = false;
+        qp.placeholder = '';
+        qp.value = '';
+        qp.title = 'Select a tab state or create a new one';
+        qp.selectedItems = [];
+        qp.keepScrollPosition = true;
+        qp.ignoreFocusOut = false;
+        qp.busy = false;
+        qp.enabled = true;
+        qp.show();
+
+        return new Promise<void>((accept, reject) => {
+            qp.onDidAccept(() => {
+                const selected = qp.activeItems[0];
+                if (selected.type === 'selectTabState') {
+                    type Response = 'Overwrite this tab state' | 'Rename this tab state' | 'Switch to this tab state';
+                    vscode.window.showQuickPick([
+                        'Switch to this tab state',
+                        'Overwrite this tab state',
+                        'Rename this tab state'
+                    ], {
+                        title: "What would you like to do?",
+                        canPickMany: false,
+                        ignoreFocusOut: false,
+                    }).then((resp: string | undefined) => {
+                        const response: Response | undefined = resp as Response | undefined;
+                        if (!response) {
+                            return;
+                        }
+                        
+                        let finishPromise: Promise<void> | undefined;
+                        switch (response) {
+                            case 'Overwrite this tab state':
+                                finishPromise = this.overwriteTabState(selected.tabStateId);
+                                break;
+                            case 'Rename this tab state': 
+                                finishPromise = this.renameState(selected.tabStateId);
+                                break;
+                            case 'Switch to this tab state':
+                                finishPromise = this.restoreState(selected.tabStateId);
+                                break;
+                        }
+                        finishPromise.then(() => this.update());
+                    });
+                }
+                else if (selected.type === 'savecurrentTabState') {
+                    this.saveCurrentState().then(() => accept());
+                }
+            });
+            qp.onDidTriggerItemButton((event) => {
+                const selected = event.button as TabStateButton;
+                let finishPromise: Promise<void> | undefined;
+                switch (selected.type) {
+                    case 'overwrite':
+                        finishPromise = this.overwriteTabState(selected.tabStateId);
+                        break;
+                    case 'rename':
+                        finishPromise = this.renameState(selected.tabStateId);
+                        break;
+                    case 'switch':
+                        finishPromise = this.restoreState(selected.tabStateId);
+                        break;
+                }
+                finishPromise!.then(() => {
+                    qp.dispose();
+                    this.update();
+                    accept();
+                })
+            });
+            qp.onDidHide(() => {
+                qp.dispose();
+                accept();
+            })
+        })
+    }
+
+    private async update () {
+        this.context.workspaceState.update('wt.tabStates.savedTabStates', this.savedTabStates);
+        this.context.workspaceState.update("wt.tabStates.latestTabState", this.latestTabState);
+        const statusBarText = this.latestTabState === null 
+            ? 'Tab State Options'
+            : `Tab State Options (${this.latestTabState})`
+        this.statusBar.text = statusBarText;
+        this.statusBar.name = statusBarText;
+        this.statusBar.tooltip = statusBarText;
+        this.statusBar.show();
     }
 
     private async runCommand (command: TabStateCommand) {
-        switch (command) {
-            case 'wt.tabStates.saveCurrentState': await this.saveCurrentState(); break;
-            case 'wt.tabStates.overwriteTabState': await this.overwriteTabState(); break;
-            case 'wt.tabStates.restoreState': await this.restoreState(); break;
-            case 'wt.tabStates.renameState': await this.renameState(); break;
+        if (command === 'wt.tabStates.saveCurrentState') {
+            await this.saveCurrentState();
         }
-        this.context.workspaceState.update('wt.tabStates.savedTabStates', this.savedTabStates);
+        else {
+            const chosenState = await this.chooseTabState("Which tab state?");
+            if (!chosenState) return;
+    
+            switch (command) {
+                case 'wt.tabStates.overwriteTabState': await this.overwriteTabState(chosenState); break;
+                case 'wt.tabStates.restoreState': await this.restoreState(chosenState); break;
+                case 'wt.tabStates.renameState': await this.renameState(chosenState); break;
+            }
+        }
+        this.update();
     }
     
     registerCommands () {
@@ -218,9 +374,20 @@ export class TabStates implements Packageable {
         vscode.commands.registerCommand('wt.tabStates.overwriteTabState', () => this.runCommand('wt.tabStates.overwriteTabState'));
         vscode.commands.registerCommand('wt.tabStates.restoreState', () => this.runCommand('wt.tabStates.restoreState'));
         vscode.commands.registerCommand('wt.tabStates.renameState', () => this.runCommand('wt.tabStates.renameState'));
+        vscode.commands.registerCommand('wt.tabStates.showStatusBarMenu', () => this.showStatusBarMenu())
     }
 
-    getPackageItems(): { ["wt.tabStates.savedTabStates"]: DiskContextType["wt.tabStates.savedTabStates"]; } {
-        return { 'wt.tabStates.savedTabStates': this.savedTabStates }
+    getPackageItems(): Partial<DiskContextType> {
+        if (this.latestTabState) {
+            return {
+                'wt.tabStates.savedTabStates': this.savedTabStates,
+                "wt.tabStates.latestTabState": this.latestTabState,
+            }
+        }
+        else {
+            return { 
+                'wt.tabStates.savedTabStates': this.savedTabStates,
+            }
+        }
     }
 }

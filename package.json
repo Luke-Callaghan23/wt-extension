@@ -1003,6 +1003,10 @@
 			{
 				"title": "Writing Tool: Reject Autocorrect",
 				"command": "wt.autocorrections.rejectAutocorrect"
+			},
+			{
+				"title": "Writing Tool: Show tab states menu",
+				"command": "wt.tabStates.showStatusBarMenu"
 			}
 		],
 		"menus": {
@@ -1692,6 +1696,13 @@
 			]
 		},
 		"keybindings": [
+			{
+				"command": "wt.tabStates.showStatusBarMenu",
+				"win": "ctrl+alt+shift+g",
+				"linux": "ctrl+alt+shift+g",
+				"mac": "cmd+alt+shift+g",
+				"when": "(editorLangId == wt || editorLangId == wtNote)"
+			},
 			{
 				"command": "wt.autocorrections.acceptAutocorrect",
 				"win": "ctrl+shift+a",
