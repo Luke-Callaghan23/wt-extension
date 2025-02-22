@@ -7,6 +7,7 @@ import { WordRange } from '../../intellisense/common';
 import { WorkBible } from '../../workBible/workBible';
 import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
 import { Autocorrect } from '../../autocorrect/autocorrect';
+import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
 
 
 export class Spellcheck implements Timed {
@@ -56,7 +57,9 @@ export class Spellcheck implements Timed {
     
                 const word = fullText.substring(startOff, endOff);
                 words.push({
-                    text: word.toLocaleLowerCase().replaceAll(/[#~]/g, ''),
+                    text: word.toLocaleLowerCase()
+                        .replaceAll(/[#~]/g, '')                                // Strip style characters
+                        .normalize("NFD").replace(/[\u0300-\u036f]/g, ""),      // Strip diacritics,
                     range: wordRange,
                 });
             }
@@ -83,7 +86,7 @@ export class Spellcheck implements Timed {
                 if (/\d+/.test(text)) continue;                                                         // do not make red if the word is made up entirely of numbers
                 if (dictionary[text]) continue;                                                         // do not make red if the dictionary contains this word
                 if (this.personalDictionary.search(text)) continue;                                     // do not make red if the personal dictionary contains this word
-                
+
                 // Do not make red if the autocorrector can replace the word
                 if (await this.autocorrect.tryCorrection(text, editor, range)) {
                     continue;
