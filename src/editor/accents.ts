@@ -133,7 +133,7 @@ export class Accents {
             }
             else {
                 const newSelection = new vscode.Selection(selection.start, new vscode.Position(selection.start.line, selection.start.character + 1));
-                const newSelectionText = editor.document.getText(newSelection).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const newSelectionText = editor.document.getText(newSelection).normalize("NFD").replace(/[\u0300-\u036f]/g, "") as string;
                 if (newSelectionText in accentsList) {
                     selectionText = newSelectionText;
                     selection = newSelection;

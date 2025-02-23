@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as childProcess from 'child_process';
 import * as extension from '../extension';
+import { wordSeparator } from '../extension';
 import * as readline from 'readline';
 import { glob } from 'glob';
 import {promisify} from 'util'
@@ -30,7 +31,34 @@ async function getDataDirectoryPaths(): Promise<vscode.Uri[]> {
 }
 
 
-export async function grepExtensionDirectory (regex: RegExp, captureGroupId: string): Promise<vscode.Location[] | null>  {
+export async function grepExtensionDirectory (
+    searchBarValue: string, 
+    useRegex: boolean, 
+    caseInsensitive: boolean, 
+    wholeWord: boolean,
+    captureGroupId: string
+): Promise<vscode.Location[] | null>  {
+
+    let inLineSearch: {
+        regexWithIdGroup: RegExp,
+        captureGroupId: string,
+    } | undefined;
+
+    const flags = 'g' + (caseInsensitive ? 'i' : '');
+    if (!useRegex) {
+        searchBarValue = searchBarValue.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    if (wholeWord) {
+        searchBarValue = `${wordSeparator}${searchBarValue}${wordSeparator}`;
+        
+        inLineSearch = {
+            regexWithIdGroup: new RegExp(`${wordSeparator}(?<${captureGroupId}>${searchBarValue})${wordSeparator}`, 'gi'),
+            captureGroupId: captureGroupId,
+        }
+    }
+
+    const regex = new RegExp(searchBarValue, flags);
+
     try {
         const applicableUris = await getDataDirectoryPaths();
 

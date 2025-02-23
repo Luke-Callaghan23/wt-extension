@@ -51,6 +51,7 @@ export type DiskContextType = {
     "wt.wh.synonyms": string[],
     "wt.reloadWatcher.openedTabs": TabPositions,
     "wt.tabStates.savedTabStates": SavedTabState,
+    "wt.tabStates.latestTabState": string,
     "wt.autocorrections.enabled": Autocorrect['enabled'];
     "wt.autocorrections.corrections": Autocorrect['corrections'];
     "wt.autocorrections.dontCorrect": Autocorrect['dontCorrect'];
