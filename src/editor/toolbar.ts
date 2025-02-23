@@ -7,7 +7,7 @@ import { bold, commasize, emDash, emDashes, italisize, strikethrough, underline 
 import { commentFragment, commentParagraph, commentSentence } from './comment';
 import { highlightExpand } from './highlights';
 import { addQuotes } from './addQuotes';
-import { addAccent as insertAccent } from './accents';
+import { Accents } from './accents';
 import { OutlineView } from '../outline/outlineView';
 import { ExtensionGlobals } from '../extension';
 import { vagueNodeSearch } from '../miscTools/help';
@@ -99,7 +99,9 @@ export class Toolbar {
         vscode.commands.registerCommand('wt.editor.jump.paragraph.backward.shift', () => jumpParagraph('backward', true));
 
         vscode.commands.registerCommand('wt.editor.addQuotes', () => addQuotes());
-        vscode.commands.registerCommand('wt.editor.accent.insertAccent', () => insertAccent());
+
+        const accent = new Accents();
+        vscode.commands.registerCommand('wt.editor.accent.insertAccent', () => accent.addAccent());
 
         vscode.commands.registerCommand("wt.editor.revealVSCode", (tabUri: vscode.Uri) => {
             return vscode.commands.executeCommand('workbench.view.explorer');
