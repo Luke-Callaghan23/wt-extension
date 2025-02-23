@@ -133,8 +133,7 @@ export class Accents {
             }
             else {
                 const newSelection = new vscode.Selection(selection.start, new vscode.Position(selection.start.line, selection.start.character + 1));
-                const newSelectionText = editor.document.getText(newSelection)
-                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");      // remove diacritics
+                const newSelectionText = editor.document.getText(newSelection).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                 if (newSelectionText in accentsList) {
                     selectionText = newSelectionText;
                     selection = newSelection;

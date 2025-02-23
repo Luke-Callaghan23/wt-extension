@@ -404,7 +404,7 @@ implements
         if (!matchedNote) return null;
     
         const subsetNounsRegex = this.getNounsRegex(true, [ matchedNote.note ]);
-        const grepLocations = await grepExtensionDirectory(subsetNounsRegex, matchedNote.note.noteId);
+        const grepLocations = await grepExtensionDirectory(subsetNounsRegex.source, true, false, false, matchedNote.note.noteId);
         if (!grepLocations) return null;
 
         // For some reason the reference provider needs the locations to be indexed one less than the results from the 

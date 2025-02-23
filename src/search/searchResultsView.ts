@@ -63,8 +63,7 @@ export class SearchResultsView
                 title: 'Search Term',
             });
             if (!response) return;
-            const reg = new RegExp(`(?<searchTerm>${response})`, 'gi');
-            return this.searchBarValueWasUpdated(reg, true, 'searchTerm');
+            return this.searchBarValueWasUpdated(response, true, true, true, true, 'searchTerm');
         });
 
         vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {
@@ -129,10 +128,17 @@ export class SearchResultsView
         });
     }
 
-    public async searchBarValueWasUpdated (searchRegex: RegExp, matchTitles: boolean, captureGroupId: string) {
+    public async searchBarValueWasUpdated (
+        searchBarValue: string, 
+        useRegex: boolean, 
+        caseInsensitive: boolean, 
+        matchTitles: boolean, 
+        wholeWord: boolean,
+        captureGroupId: string
+    ) {
         
         // Grep results
-        const grepResults = await grepExtensionDirectory(searchRegex, captureGroupId);
+        const grepResults = await grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord, captureGroupId);
         if (!grepResults || grepResults.length === 0) return this.searchCleared();
         
         // Create file system-esque tree from the grep results
