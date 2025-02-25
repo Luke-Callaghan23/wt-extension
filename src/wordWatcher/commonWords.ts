@@ -133,7 +133,7 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
         qp.show();
         
         const outlineView: OutlineView = extension.ExtensionGlobals.outlineView
-        const { options, currentNode, currentPick } = getFilesQPOptions(outlineView.rootNodes, false);
+        const { options, currentNode, currentPick } = getFilesQPOptions(outlineView.rootNodes, false, "");
         
         qp.busy = false;
         qp.items = [ 
@@ -197,7 +197,7 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
                     return true;
                 };
 
-                const { options, currentNode, currentPick } = getFilesQPOptions(outlineView.rootNodes, false, isFilteringSnips ? [ snipsFilter ] : []);
+                const { options, currentNode, currentPick } = getFilesQPOptions(outlineView.rootNodes, false, "", isFilteringSnips ? [ snipsFilter ] : []);
                 qp.items = options;
                 if (currentPick) {
                     qp.activeItems = [ currentPick ];

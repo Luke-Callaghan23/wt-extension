@@ -17,10 +17,12 @@ export class UriBasedView<T extends HasGetUri> {
     public rootNodes: T[];
 
 	public view: vscode.TreeView<T>;
+	public viewTitle: string;
 
-	constructor () {
+	constructor (viewTitle: string) {
 		this.rootNodes = [];
 		this.view = {} as vscode.TreeView<T>;
+		this.viewTitle = viewTitle;
 	}
 
     protected async initUriExpansion (viewName: string, view: vscode.TreeView<T>, context: vscode.ExtensionContext): Promise<void> {

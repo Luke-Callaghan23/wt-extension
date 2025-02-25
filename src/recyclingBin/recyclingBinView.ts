@@ -295,7 +295,7 @@ implements
         private context: vscode.ExtensionContext,
         private workspace: Workspace,
     ) {
-        super();
+        super("Recycling Bin");
         this.view = {} as vscode.TreeView<OutlineNode>;
         RecyclingBinView.recyclingUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
     }

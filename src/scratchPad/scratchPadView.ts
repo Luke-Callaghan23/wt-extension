@@ -169,7 +169,7 @@ implements
         private context: vscode.ExtensionContext,
         private workspace: Workspace,
     ) {
-        super();
+        super("Scratch Pad");
         this.view = {} as vscode.TreeView<OutlineNode>;
         ScratchPadView.scratchPadContainerUri = vscode.Uri.joinPath(extension.rootPath, 'data', 'scratchPad');
         ScratchPadView.scratchPadConfigUri = vscode.Uri.joinPath(ScratchPadView.scratchPadContainerUri, '.config')

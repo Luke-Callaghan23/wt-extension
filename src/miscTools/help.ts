@@ -136,7 +136,8 @@ export type VagueNodeSearchResult = {
 };
 
 export async function vagueNodeSearch (
-    target: vscode.Uri
+    target: vscode.Uri,
+    targetIsBasename?: boolean
 ): Promise<VagueNodeSearchResult> {
     const relative = target.fsPath.replaceAll(extension.rootPath.fsPath, "");
         
@@ -150,14 +151,14 @@ export async function vagueNodeSearch (
 
 
     if (relative.includes("recycling")) {
-        const node = await extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(target);
+        const node = await extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(target, undefined, targetIsBasename);
         if (node) return {
             node: node,
             source: 'recycle'
         }
     }
     else if (relative.includes("scratchPad")) {
-        const node = await extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(target);
+        const node = await extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(target, undefined, targetIsBasename);
         if (node) return {
             node: node,
             source: 'scratch',
@@ -171,12 +172,33 @@ export async function vagueNodeSearch (
         }
     }
     else {
-        const node = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(target)
+        // If none of the previous paths worked, brute force search for all locations
+
+        // Most likely it is in the outline, so search there first
+        let node = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(target, undefined, targetIsBasename);
         if (node) return {
             source: 'outline',
             node: node,
         }
+
+        node = await extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(target, undefined, targetIsBasename);
+        if (node) return {
+            node: node,
+            source: 'recycle'
+        }
+        node = await extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(target, undefined, targetIsBasename);
+        if (node) return {
+            node: node,
+            source: 'scratch',
+        }
+        
+        const note = extension.ExtensionGlobals.workBible.getNote(target);
+        if (note) return {
+            source: 'workBible',
+            node: note
+        }
     } 
+
 
 
     return {

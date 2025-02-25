@@ -4,7 +4,7 @@ import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from './.
 import { ExtensionGlobals } from './../extension';
 import { compareFsPath } from './help';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
-
+import * as extension from '../extension';
 
 export interface IFragmentPick {
     label: string;
@@ -22,7 +22,7 @@ export interface IButton extends vscode.QuickInputButton {
 
 export type Predicate = ((node: OutlineNode)=>boolean);
 
-export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean, predicateFilters?: Predicate[]): {
+export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean, prefix: string, predicateFilters?: Predicate[]): {
     options: IFragmentPick[],
     currentNode: OutlineNode | undefined,
     currentPick: IFragmentPick | undefined
@@ -215,7 +215,7 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
         if (!predicateFilters || predicateFilters.every(p => p(root.chapters))) {
             options.push({
                 label: "$(folder) Chapters:",
-                description: ``,
+                description: `(${prefix})`,
                 node: root.chapters
             })
             // Sort and create options for chapters 
@@ -224,7 +224,7 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
             chapters.forEach((chapter, chapterIndex) => {
                 processChapter(
                     chapter, 
-                    'Chapters',
+                    prefix.length > 0 ? `${prefix}/Chapters` : "Chapters",
                     [ chapterIndex === chapters.length - 1 ]
                 );
             });
@@ -235,7 +235,7 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
         if (!predicateFilters || predicateFilters.every(p => p(root.snips))) {
             options.push({
                 label: "$(folder) Work Snips:",
-                description: ``,
+                description: `(${prefix})`,
                 node: root.snips
             });
             // Sort and create options for work snips
@@ -244,7 +244,7 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
             snips.forEach((snip, snipIndex) => {
                 processSnip(
                     snip, 
-                    'Work Snips',
+                    prefix.length > 0 ? `${prefix}/Work Snips` : "Work Snips",
                     [ snipIndex === snips.length - 1 ]
                 );
             });
@@ -258,10 +258,10 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
             processRoot(base);
         }
         else if (base.data.ids.type === 'chapter') {
-            processChapter(base, "Base", [ baseIndex === bases.length - 1 ]);
+            processChapter(base, prefix, [ baseIndex === bases.length - 1 ]);
         }
         else if (base.data.ids.type === 'snip') {
-            processSnip(base, "Base", [ baseIndex === bases.length - 1 ]);
+            processSnip(base, prefix, [ baseIndex === bases.length - 1 ]);
         }
         else if (base.data.ids.type === 'fragment') {
             // Create option for this fragment
@@ -269,7 +269,7 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
                 // Fake space followed by real space, because we always want the first column to be a line, but we want the second column to be 
                 //      empty if this is the last chapter
                 label: `${getTreeChar(baseIndex === bases.length - 1)}─$(edit) ${base.data.ids.display}`,
-                description: ``,
+                description: `(${prefix})`,
                 node: base
             });
 
@@ -295,78 +295,19 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
 
 const TAB_SIZE: number = 4;
 export async function searchFiles () {
-    
-    const qp = vscode.window.createQuickPick<IFragmentPick>();
-    qp.canSelectMany = false;
-    qp.ignoreFocusOut = true;
-    qp.matchOnDescription = true;
-    qp.busy = true;
+    const fragment = await selectFragment();
+    if (!fragment) return null;
+    await vscode.window.showTextDocument(fragment.data.ids.uri);
+}
 
-    qp.show();
-
-    const { options, currentNode, currentPick } = getFilesQPOptions(ExtensionGlobals.outlineView.rootNodes, false);
-    
-    qp.busy = false;
-    qp.items = options;
-    if (currentPick) {
-        qp.activeItems = [ currentPick ];
-        qp.value = `${currentPick.description?.slice(1, currentPick.description.length-1)}`
-    } 
-
-    const buttons: IButton[] = [ {
-        iconPath: new vscode.ThemeIcon("filter"),
-        tooltip: "Toggle Generic Fragment Names",
-        id: 'filterButton',
-    }, {
-        iconPath: new vscode.ThemeIcon(""),
-        tooltip: "Clear Filters",
-        id: 'clearFilters'
-    } ];
-    qp.buttons = buttons;
-
-
-    let isFiltering = true;
-    //@ts-ignore
-    qp.onDidTriggerButton((button: IButton) => {
-        if (button.id === 'filterButton') {
-            isFiltering = !isFiltering;
-            qp.busy = true;
-            const { options, currentNode, currentPick } = getFilesQPOptions(ExtensionGlobals.outlineView.rootNodes, isFiltering);
-            qp.items = options;
-            if (currentPick) {
-                qp.activeItems = [ currentPick ];
-                qp.value = `${currentPick.description?.slice(1, currentPick.description.length-1)}`
-            }
-            qp.busy = false;
-        }
-        else if (button.id === 'clearFilters') {
-            isFiltering = false;
-            qp.busy = true;
-            const { options } = getFilesQPOptions(ExtensionGlobals.outlineView.rootNodes, isFiltering);
-            qp.items = options;
-            qp.value = ``
-            qp.busy = false;
-        }
-    });
-
-    qp.onDidAccept(async () => {
-        const [ selected ] = qp.selectedItems;
-        ExtensionGlobals.outlineView.view.reveal(selected.node);
-        if (selected.node.data.ids.type === 'fragment') {
-            await vscode.window.showTextDocument(selected.node.data.ids.uri);
-            const outline: OutlineView = ExtensionGlobals.outlineView;
-            await outline.view.reveal(selected.node, {
-                expand: true,
-                select: true,
-            });
-            qp.dispose();
-        }
-        else {
-            qp.busy = true;
-            qp.value = `${selected.description?.slice(1, selected.description.length - 1)}/${selected.node.data.ids.display}`;
-            qp.busy = false;
-        }
-    });
+export async function selectFragment (): Promise<OutlineNode | null> {
+    const selected = await select([
+        ExtensionGlobals.outlineView,
+        ExtensionGlobals.scratchPadView,
+        ExtensionGlobals.recyclingBinView,
+    ], [], false, true);
+    if (!selected || selected.length === 0) return null;
+    return selected[0];
 }
 
 
@@ -382,7 +323,45 @@ export async function selectFile (this: UriBasedView<OutlineNode>, predicateFilt
     return null;
 }
 
-async function select (view: UriBasedView<OutlineNode>, predicateFilters: Predicate[], allowMultiple: boolean): Promise<OutlineNode[] | null> {
+const viewSeparatorTitle = (prefix: string): IFragmentPick => ({
+    label: prefix,
+    node: new OutlineNode({
+        ids: {
+            type: 'root',
+            display: prefix,
+            fileName: "",
+            ordering: 0,
+            parentTypeId: 'root',
+            parentUri: extension.rootPath,
+            uri: extension.rootPath,
+            relativePath: "",
+        },
+        contents: [],
+    }),
+    alwaysShow: false,
+    description: `(${prefix})`,
+    kind: vscode.QuickPickItemKind.Default,
+});
+
+const viewSeparatorLine = (prefix: string): IFragmentPick => ({
+    label: prefix,
+    //@ts-ignore
+    node: null,
+    alwaysShow: false,
+    kind: vscode.QuickPickItemKind.Separator,
+    description: `(${prefix})`,
+})
+
+async function select (
+    viewOrViews: UriBasedView<OutlineNode>[] | UriBasedView<OutlineNode>, 
+    predicateFilters: Predicate[], 
+    allowMultiple: boolean,
+    selectForFragment?: boolean
+): Promise<OutlineNode[] | null> {
+    const views = Array.isArray(viewOrViews)
+        ? viewOrViews
+        : [ viewOrViews ];
+
     return new Promise((accept, reject) => {
         const qp = vscode.window.createQuickPick<IFragmentPick>();
         qp.canSelectMany = allowMultiple;
@@ -392,15 +371,34 @@ async function select (view: UriBasedView<OutlineNode>, predicateFilters: Predic
 
         qp.show();
         
-        const outlineView: OutlineView = ExtensionGlobals.outlineView;
-        const { options, currentNode, currentPick } = getFilesQPOptions(view.rootNodes, false, predicateFilters);
+        const refreshInputs = () => {
+            let allOptions: IFragmentPick[] = [];
+            let currentFragmentPick: IFragmentPick | null = null;
+            for (let index = 0; index < views.length; index++) {
+                const view = views[index];
+
+                allOptions.push(viewSeparatorLine(view.viewTitle));
+                if (view !== ExtensionGlobals.outlineView) {
+                    allOptions.push(viewSeparatorTitle(view.viewTitle));
+                }
+
+                const { options, currentNode, currentPick } = getFilesQPOptions(view.rootNodes, false, view.viewTitle, predicateFilters);
+                currentFragmentPick = currentFragmentPick || currentPick || null;
+
+                allOptions = allOptions.concat(options);
+                if (index !== views.length - 1) {
+                }
+            }
+
+            qp.busy = false;
+            qp.items = allOptions;
+            if (currentFragmentPick) {
+                qp.activeItems = [ currentFragmentPick ];
+                qp.value = `${currentFragmentPick.description?.slice(1, currentFragmentPick.description.length-1)}`
+            } 
+        }
+        refreshInputs();
         
-        qp.busy = false;
-        qp.items = options;
-        if (currentPick) {
-            qp.activeItems = [ currentPick ];
-            qp.value = `${currentPick.description?.slice(1, currentPick.description.length-1)}`
-        } 
 
         const buttons: IButton[] = [ {
             iconPath: new vscode.ThemeIcon("filter"),
@@ -420,19 +418,12 @@ async function select (view: UriBasedView<OutlineNode>, predicateFilters: Predic
             if (button.id === 'filterButton') {
                 isFiltering = !isFiltering;
                 qp.busy = true;
-                const { options, currentNode, currentPick } = getFilesQPOptions(view.rootNodes, isFiltering, predicateFilters);
-                qp.items = options;
-                if (currentPick) {
-                    qp.activeItems = [ currentPick ];
-                    qp.value = `${currentPick.description?.slice(1, currentPick.description.length-1)}`
-                }
-                qp.busy = false;
+                refreshInputs();
             }
             else if (button.id === 'clearFilters') {
                 isFiltering = false;
                 qp.busy = true;
-                const { options } = getFilesQPOptions(view.rootNodes, isFiltering, predicateFilters);
-                qp.items = options;
+                refreshInputs();
                 qp.value = ``
                 qp.busy = false;
             }
@@ -447,13 +438,30 @@ async function select (view: UriBasedView<OutlineNode>, predicateFilters: Predic
 
             // Reveal the first node in the outline explorer
             const [ selected ] = qp.selectedItems;
-            view.view.reveal(selected.node, {
-                expand: true,
-                select: true,
-            });
+            const selectedUri = selected.node.getUri();
 
-            accept(qp.selectedItems.map(si => si.node));
-            qp.dispose();
+            if ((selectForFragment && selected.node.data.ids.type === 'fragment') || !selectForFragment) {
+                accept(qp.selectedItems.map(si => si.node))
+                Promise.any(views.map(view => {
+                    return new Promise<UriBasedView<OutlineNode>>((accept, reject) => {
+                        return view.getTreeElementByUri(selectedUri).then(node => {
+                            if (!node) return reject();
+                            return accept(view);
+                        });
+                    });
+                })).then(view => {
+                    view.view.reveal(selected.node, {
+                        expand: true,
+                        select: true,
+                    });
+                });
+                qp.dispose();
+            }
+            else {
+                qp.busy = true;
+                qp.value = `${selected.description?.slice(1, selected.description.length - 1)}/${selected.node.data.ids.display}`;
+                qp.busy = false;
+            }
         });
     });
 }

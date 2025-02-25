@@ -125,7 +125,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
         protected context: vscode.ExtensionContext, 
 		public workspace: Workspace
     ) {
-        super(context, 'wt.outline');
+        super(context, 'wt.outline', "Outline");
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 
 		// Set up callback for text editor change that displays the opened document in the outline view

@@ -3,9 +3,10 @@ import { Packageable } from '../packageable';
 import { DiskContextType } from '../workspace/workspaceClass';
 import * as extension from '../extension';
 import { FileAccessManager } from './fileAccesses';
-import { searchFiles, selectFile } from './searchFiles';
+import { searchFiles, selectFile, selectFragment } from './searchFiles';
 import * as path from 'path'
 import * as vscodeUri from 'vscode-uri';
+import { vagueNodeSearch } from './help';
 
 export class FragmentLinker {
     constructor () {
@@ -19,7 +20,7 @@ export class FragmentLinker {
         }, this);
 
         vscode.commands.registerCommand('wt.fragmentLinker.insertLink', async () => {
-            const fragment = await extension.ExtensionGlobals.outlineView.selectFile();
+            const fragment = await selectFragment();
             if (!fragment) return;
 
             const fileName = vscodeUri.Utils.basename(fragment.getUri());
@@ -48,10 +49,10 @@ export class FragmentLinker {
         const description = match.groups?.['description']
         const link = match.groups?.['link'];
         if (!description || !link) return [];
-        
-        const fragment = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(vscode.Uri.file(link), undefined, true);
-        if (!fragment) return [];
-        const uri = fragment.getUri();
+
+        const node = await vagueNodeSearch(vscode.Uri.file(link), true);
+        if (!node || node.source === 'workBible') return [];
+        const uri = node.node!.data.ids.uri;
 
         return {
             range: FileAccessManager.getPosition(uri) || new vscode.Selection(

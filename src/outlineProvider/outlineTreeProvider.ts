@@ -44,8 +44,9 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 	constructor (
 		protected context: vscode.ExtensionContext, 
 		private viewName: string,
+		viewTitle: string,
 	) {
-		super();
+		super(viewTitle);
 		this.uriToVisibility = {};
 	}
 

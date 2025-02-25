@@ -22,7 +22,7 @@ export class SearchResultsView
         protected workspace: Workspace,
         protected context: vscode.ExtensionContext
     ) {
-        super();
+        super("Search Results");
         this.rootNodes = [];
         this.filteredUris = [];
     }
