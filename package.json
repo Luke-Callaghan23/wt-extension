@@ -1007,6 +1007,10 @@
 			{
 				"title": "Writing Tool: Show tab states menu",
 				"command": "wt.tabStates.showStatusBarMenu"
+			},
+			{
+				"title": "Writing Tool: Insert link to fragment",
+				"command": "wt.fragmentLinker.insertLink"
 			}
 		],
 		"menus": {

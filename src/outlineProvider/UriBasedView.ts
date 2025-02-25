@@ -3,6 +3,7 @@ import * as extension from '../extension';
 import * as vsconsole from '../miscTools/vsconsole';
 import { compareFsPath, getFsPathKey, isSubdirectory, setFsPathKey } from '../miscTools/help';
 import * as search from './../miscTools/searchFiles';
+import * as vscodeUri from 'vscode-uri';
 
 export interface HasGetUri {
     getUri(): vscode.Uri;
@@ -65,7 +66,7 @@ export class UriBasedView<T extends HasGetUri> {
 		return localRoots;
 	}
 
-	async getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: T, filter?: boolean): Promise<T | null> {
+	async getTreeElementByUri (targetUri: vscode.Uri | undefined, tree?: T, targetIsBasename?: boolean): Promise<T | null> {
 		if (this.rootNodes.length === 0) {
 			return null;
 		}
@@ -77,7 +78,7 @@ export class UriBasedView<T extends HasGetUri> {
 			return this.rootNodes[0];
 		}
 		
-		if (!targetUri.fsPath.includes(extension.rootPath.fsPath)) {
+		if (!targetUri.fsPath.includes(extension.rootPath.fsPath) && !targetIsBasename) {
 			return null;
 		}
 
@@ -97,10 +98,13 @@ export class UriBasedView<T extends HasGetUri> {
 		for (const currentNode of currentNodes) {
 			if (!currentNode) throw 'unreachable';
 			if (!currentNode.getChildren) return null;
-			if (!isSubdirectory(currentNode.getUri(), targetUri)) continue;
-			const currentChildren = await currentNode.getChildren(!!filter, insertIntoNodeMap);
+			if (!isSubdirectory(currentNode.getUri(), targetUri) && !targetIsBasename) continue;
+			const currentChildren = await currentNode.getChildren(false, insertIntoNodeMap);
 	
-			if (compareFsPath(currentNode.getUri(), targetUri)) {
+			const found = targetIsBasename
+				? vscodeUri.Utils.basename(targetUri) === vscodeUri.Utils.basename(currentNode.getUri())
+				: compareFsPath(currentNode.getUri(), targetUri)
+			if (found) {
 				setFsPathKey(targetUri, currentNode, this.nodeMap);
 				return currentNode as T;
 			}
@@ -115,8 +119,8 @@ export class UriBasedView<T extends HasGetUri> {
 				}
 				// Otherwise, recurse into this function again, using the current
 				//		subtree as the search space
-				if (!isSubdirectory(subtree.getUri(), targetUri)) continue;
-				const treeElement = await this.getTreeElementByUri(targetUri, subtree as T, filter);
+				if (!isSubdirectory(subtree.getUri(), targetUri) && !targetIsBasename) continue;
+				const treeElement = await this.getTreeElementByUri(targetUri, subtree as T, targetIsBasename);
 				
 				// If the tree was found, return it
 				if (treeElement) {

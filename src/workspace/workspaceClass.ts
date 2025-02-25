@@ -11,6 +11,7 @@ import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynony
 import * as fs from 'fs';
 import { Autocorrect } from '../autocorrect/autocorrect';
 import { SearchBarView } from '../search/searchBarView';
+import { FragmentLinker } from '../miscTools/fragmentLinker';
 
 export type DiskContextType = {
     "wt.outline.collapseState": {

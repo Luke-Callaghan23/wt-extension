@@ -3,11 +3,14 @@
     "name": "wt",
     "scopeName": "source.wt",
     "patterns": [
-        {
-            "include": "#comments"
-        }
+        { "include": "#mdLink" },
+        { "include": "#comments" }
     ],
     "repository": {
+        "mdLink": {
+            "match": "\\[.*?\\]\\(.*?\\)",
+            "name": "keyword"
+        },
         "comments": {
             "name": "comment.line.number-sign.wt",
             "begin": "\\[",

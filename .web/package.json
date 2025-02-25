@@ -927,10 +927,58 @@
 				"title": "Writing Tool Search: Hide Node",
 				"command": "wt.wtSearch.results.hideNode",
 				"icon": "$(x)"
+			},
+			{
+				"title": "Writing Tool: Reveal fragment in VSCode Outline",
+				"command": "wt.editor.revealVSCode"
+			},
+			{
+				"title": "Writing Tool: Reveal fragment in WTANIWE Outline",
+				"command": "wt.editor.revealOutline"
+			},
+			{
+				"title": "Writing Tool: Reveal fragment in File Explorer",
+				"command": "wt.editor.revealFileExplorer"
+			},
+			{
+				"title": "Writing Tool: Accept Autocorrect",
+				"command": "wt.autocorrections.acceptAutocorrect"
+			},
+			{
+				"title": "Writing Tool: Reject Autocorrect",
+				"command": "wt.autocorrections.rejectAutocorrect"
+			},
+			{
+				"title": "Writing Tool: Show tab states menu",
+				"command": "wt.tabStates.showStatusBarMenu"
+			},
+			{
+				"title": "Writing Tool: Insert link to fragment",
+				"command": "wt.fragmentLinker.insertLink"
 			}
 		],
 		"menus": {
 			"commandPalette": [
+				{
+					"command": "wt.autocorrections.acceptAutocorrect",
+					"when": "false"
+				},
+				{
+					"command": "wt.autocorrections.rejectAutocorrect",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.revealVSCode",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.revealOutline",
+					"when": "false"
+				},
+				{
+					"command": "wt.editor.revealFileExplorer",
+					"when": "false"
+				},
 				{
 					"command": "wt.wtSearch.results.revealNodeInOutline"
 				},
@@ -1384,7 +1432,24 @@
 			],
 			"editor/title/context": [
 				{
-					"command": "wt.tabLabels.rename"
+					"command": "wt.tabLabels.rename",
+					"when": "resourceFilename =~ /.*\\.wt(Note)?/",
+					"group": "wt"
+				},
+				{
+					"command": "wt.editor.revealVSCode",
+					"when": "resourceFilename =~ /.*\\.wt(Note)?/",
+					"group": "wt"
+				},
+				{
+					"command": "wt.editor.revealOutline",
+					"when": "resourceFilename =~ /.*\\.wt(Note)?/",
+					"group": "wt"
+				},
+				{
+					"command": "wt.editor.revealFileExplorer",
+					"when": "resourceFilename =~ /.*\\.wt(Note)?/",
+					"group": "wt"
 				}
 			],
 			"view/item/context": [
@@ -1579,6 +1644,27 @@
 			]
 		},
 		"keybindings": [
+			{
+				"command": "wt.tabStates.showStatusBarMenu",
+				"win": "ctrl+alt+shift+g",
+				"linux": "ctrl+alt+shift+g",
+				"mac": "cmd+alt+shift+g",
+				"when": "(editorLangId == wt || editorLangId == wtNote)"
+			},
+			{
+				"command": "wt.autocorrections.acceptAutocorrect",
+				"win": "ctrl+shift+a",
+				"linux": "ctrl+shift+a",
+				"mac": "cmd+shift+a",
+				"when": "(editorLangId == wt || editorLangId == wtNote)"
+			},
+			{
+				"command": "wt.autocorrections.rejectAutocorrect",
+				"win": "ctrl+shift+x",
+				"linux": "ctrl+shift+x",
+				"mac": "cmd+shift+x",
+				"when": "(editorLangId == wt || editorLangId == wtNote)"
+			},
 			{
 				"command": "wt.tabLabels.renameActiveTab",
 				"win": "shift+f2",

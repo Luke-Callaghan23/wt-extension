@@ -36,6 +36,7 @@ import { FileLinker } from './miscTools/fileLinker';
 import { SearchResultsView } from './search/searchResultsView';
 import { SearchBarView } from './search/searchBarView';
 import { FragmentOverviewView } from './fragmentOverview/fragmentOverview';
+import { FragmentLinker } from './miscTools/fragmentLinker';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -116,6 +117,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);
 		new FileLinker(context, workspace);
+		new FragmentLinker();
 
 		const timedViews = new TimedView(context, [
 			['wt.workBible.tree', 'workBible', workBible],
