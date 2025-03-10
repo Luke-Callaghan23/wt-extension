@@ -445,7 +445,13 @@ export class TabStates implements Packageable {
         vscode.commands.registerCommand('wt.tabStates.restoreState', () => this.runCommand('wt.tabStates.restoreState'));
         vscode.commands.registerCommand('wt.tabStates.renameState', () => this.runCommand('wt.tabStates.renameState'));        
         vscode.commands.registerCommand('wt.tabStates.newEmptyGroup', () => this.runCommand('wt.tabStates.newEmptyGroup'));
-        vscode.commands.registerCommand('wt.tabStates.showStatusBarMenu', () => this.showStatusBarMenu())
+        vscode.commands.registerCommand('wt.tabStates.showStatusBarMenu', () => this.showStatusBarMenu());
+        vscode.commands.registerCommand('wt.tabStates.hideStatusBar', () => {
+            this.statusBar.hide();
+        });
+        vscode.commands.registerCommand('wt.tabStates.showStatusBar', () => {
+            this.statusBar.show();
+        })
     }
 
     getPackageItems(): Partial<DiskContextType> {

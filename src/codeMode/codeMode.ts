@@ -87,6 +87,7 @@ export class CoderModer {
             await this.enter();
             vscode.window.showInformationMessage(`[INFO] Entered Code Mode`);
             vscode.commands.executeCommand('wt.statusBarTimer.enteredCodeMode');
+            vscode.commands.executeCommand('wt.tabStates.hideStatusBar');
         });
 
         vscode.commands.registerCommand('wt.codeMode.changeCodeModeRepo', async () => {
@@ -108,6 +109,7 @@ export class CoderModer {
             await this.exit();
             vscode.window.showInformationMessage(`[INFO] Exited Code Mode`);
             vscode.commands.executeCommand('wt.statusBarTimer.exitedCodeMode');
+            vscode.commands.executeCommand('wt.tabStates.showStatusBar');
         });
         
         vscode.commands.registerCommand('wt.codeMode.swapMode', async () => {
