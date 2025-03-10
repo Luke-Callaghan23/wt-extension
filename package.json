@@ -875,6 +875,10 @@
 				"title": "Writing Tool: Rename a previous Tab State"
 			},
 			{
+				"command": "wt.tabStates.newEmptyGroup",
+				"title": "Writing Tool: Create a new empty Tab State"
+			},
+			{
 				"command": "wt.outline.manualMove",
 				"title": "Writing Tool: Move Node"
 			},

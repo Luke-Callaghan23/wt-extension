@@ -7,7 +7,9 @@ import * as extension from './../extension';
 import { TabLabels } from '../tabLabels/tabLabels';
 
 
-type TabStateCommand = 'wt.tabStates.saveCurrentState' | 'wt.tabStates.overwriteTabState' | 'wt.tabStates.restoreState' | 'wt.tabStates.renameState';
+type StateOption <T> = { label: string, isStateId: true } | { label: T, isStateId: false };
+
+type TabStateCommand = 'wt.tabStates.saveCurrentState' | 'wt.tabStates.overwriteTabState' | 'wt.tabStates.restoreState' | 'wt.tabStates.renameState' | 'wt.tabStates.newEmptyGroup';
 export class TabStates implements Packageable {
     private savedTabStates: SavedTabState;
     private statusBar: vscode.StatusBarItem;
@@ -120,35 +122,56 @@ export class TabStates implements Packageable {
 
     private async saveCurrentState () {
         const created = Date.now();
-        const stateName = await vscode.window.showInputBox({
-            placeHolder: "Baby's first tab state",
-            ignoreFocusOut: false,
-            prompt: `Give a name to the current tab state so that you can return to it later`,
-            title: 'Assign a Name'
-        });
-        if (!stateName) return;
+        const response = await this.chooseTabState("Chose a group to overwrite, or create a new one", "Create a new tab group");
+        if (!response) return;
+
+        let stateId: string;
+        if (!response.isStateId && response.label === 'Create a new tab group') {
+            const newStateId = await vscode.window.showInputBox({
+                ignoreFocusOut: false,
+                prompt: `Tab group name`,
+                title: `Tab group name`,
+            });
+            if (!newStateId) return;
+            stateId = newStateId;
+        }
+        else {
+            stateId = response.label;
+        }
 
         const currentState: TabPositions = TabStates.packageCurrentTabState();
-        this.savedTabStates[stateName] = {
+        this.savedTabStates[stateId] = {
             created: created,
             positions: currentState
         };
-        vscode.window.showInformationMessage(`[Tab States] Saved current tab state as '${stateName}'`);
-        this.latestTabState = stateName;
+        vscode.window.showInformationMessage(`[Tab States] Saved current tab state as '${stateId}'`);
+        this.latestTabState = stateId;
     }
 
-    private async chooseTabState (prompt: string): Promise<string | null> {
+    private async chooseTabState <T extends string> (prompt: string, ...extraOptions: T[]): Promise<StateOption<T> | null> {
         const sortedStates = Object.entries(this.savedTabStates).sort(([_a, stateA], [_b, stateB]) => stateB.created - stateA.created);
-        const stateNames = sortedStates.map(([ stateName, _state ]) => stateName);
-        const tabStateName = await vscode.window.showQuickPick(stateNames, {
+        
+        const stateOptions: StateOption<T>[] = sortedStates.map(([ stateName, _state ]) => ({
+            label: stateName,
+            isStateId: true
+        }));
+
+        for (const extra of extraOptions) {
+            stateOptions.push({
+                label: extra,
+                isStateId: false
+            })
+        }
+
+        const stateOption = await vscode.window.showQuickPick<StateOption<T>>(stateOptions, {
             canPickMany: false,
             ignoreFocusOut: false,
             matchOnDescription: true,
             matchOnDetail: true,
             title: prompt,
         });
-        if (!tabStateName) return null;
-        return tabStateName;
+        if (!stateOption) return null;
+        return stateOption as StateOption<T>;
     }
 
 
@@ -169,6 +192,30 @@ export class TabStates implements Packageable {
         this.savedTabStates[newName] = oldState;
         vscode.window.showInformationMessage(`[Tab States] Renamed tab state '${chosenState}' to '${newName}'`);
         this.latestTabState = newName;
+    }
+
+    private async newEmptyState () {
+        const response = await vscode.window.showInformationMessage("Close current tabs?", {
+            detail: "Doing this will close all currently opened tabs and start a new tab group.",
+            modal: true,
+        }, "Yes", "No");
+        if (!response || response === 'No') return;
+
+        const newStateId = await vscode.window.showInputBox({
+            ignoreFocusOut: false,
+            prompt: `New tab group name`,
+            title: `New tab group name`,
+        });
+        if (!newStateId) return;
+
+        // Create an empty tab state
+        this.savedTabStates[newStateId] = {
+            created: Date.now(),
+            positions: {}
+        };
+
+        await this.restoreState(newStateId);
+        this.latestTabState = newStateId;
     }
 
 
@@ -216,6 +263,8 @@ export class TabStates implements Packageable {
             tabStateId: string
         } | {
             type: 'savecurrentTabState',
+        } | {
+            type: 'createNewEmptyTabState'
         });
 
         interface TabStateButton extends vscode.QuickInputButton {
@@ -258,7 +307,12 @@ export class TabStates implements Packageable {
             ...currentTabStates,
             {
                 type: 'savecurrentTabState',
-                label: `Create new tab state`,
+                label: `Save to new state group`,
+                alwaysShow: true,
+            },
+            {
+                type: 'createNewEmptyTabState',
+                label: "Create new empty state group",
                 alwaysShow: true,
             }
         ];
@@ -283,7 +337,7 @@ export class TabStates implements Packageable {
                     vscode.window.showQuickPick([
                         'Switch to this tab state',
                         'Overwrite this tab state',
-                        'Rename this tab state'
+                        'Rename this tab state',
                     ], {
                         title: "What would you like to do?",
                         canPickMany: false,
@@ -308,10 +362,21 @@ export class TabStates implements Packageable {
                         }
                         finishPromise.then(() => this.update());
                     });
+                    return;
                 }
                 else if (selected.type === 'savecurrentTabState') {
-                    this.saveCurrentState().then(() => accept());
+                    return this.saveCurrentState().then(() => {
+                        this.update();
+                        accept()
+                    });
                 }
+                else if (selected.type === 'createNewEmptyTabState') {
+                    return this.newEmptyState().then(() => {
+                        this.update();
+                        accept();
+                    });
+                }
+                ((s: never) => {})(selected);
             });
             qp.onDidTriggerItemButton((event) => {
                 const selected = event.button as TabStateButton;
@@ -356,10 +421,15 @@ export class TabStates implements Packageable {
         if (command === 'wt.tabStates.saveCurrentState') {
             await this.saveCurrentState();
         }
+        else if (command === 'wt.tabStates.newEmptyGroup') {
+            await this.newEmptyState();
+        }
         else {
-            const chosenState = await this.chooseTabState("Which tab state?");
-            if (!chosenState) return;
-    
+            const chosenStateOption = await this.chooseTabState("Which tab state?");
+            if (!chosenStateOption) return;
+            if (!chosenStateOption.isStateId) throw "Unreachable";
+
+            const chosenState = chosenStateOption.label;
             switch (command) {
                 case 'wt.tabStates.overwriteTabState': await this.overwriteTabState(chosenState); break;
                 case 'wt.tabStates.restoreState': await this.restoreState(chosenState); break;
@@ -373,7 +443,8 @@ export class TabStates implements Packageable {
         vscode.commands.registerCommand('wt.tabStates.saveCurrentState', () => this.runCommand('wt.tabStates.saveCurrentState'));
         vscode.commands.registerCommand('wt.tabStates.overwriteTabState', () => this.runCommand('wt.tabStates.overwriteTabState'));
         vscode.commands.registerCommand('wt.tabStates.restoreState', () => this.runCommand('wt.tabStates.restoreState'));
-        vscode.commands.registerCommand('wt.tabStates.renameState', () => this.runCommand('wt.tabStates.renameState'));
+        vscode.commands.registerCommand('wt.tabStates.renameState', () => this.runCommand('wt.tabStates.renameState'));        
+        vscode.commands.registerCommand('wt.tabStates.newEmptyGroup', () => this.runCommand('wt.tabStates.newEmptyGroup'));
         vscode.commands.registerCommand('wt.tabStates.showStatusBarMenu', () => this.showStatusBarMenu())
     }
 
