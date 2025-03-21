@@ -9,7 +9,12 @@ import { TabLabels } from '../tabLabels/tabLabels';
 
 type StateOption <T> = { label: string, isStateId: true } | { label: T, isStateId: false };
 
-type TabStateCommand = 'wt.tabStates.saveCurrentState' | 'wt.tabStates.overwriteTabState' | 'wt.tabStates.restoreState' | 'wt.tabStates.renameState' | 'wt.tabStates.newEmptyGroup';
+type TabStateCommand = 'wt.tabStates.saveCurrentState' 
+    | 'wt.tabStates.overwriteTabState' 
+    | 'wt.tabStates.restoreState' 
+    | 'wt.tabStates.renameState' 
+    | 'wt.tabStates.newEmptyGroup'
+    | 'wt.tabStates.saveToCurrentTabGroup';
 export class TabStates implements Packageable {
     private savedTabStates: SavedTabState;
     private statusBar: vscode.StatusBarItem;
@@ -218,6 +223,28 @@ export class TabStates implements Packageable {
         this.latestTabState = newStateId;
     }
 
+    private async saveToCurrentTabGroup (prompt?: string) {
+        if (!this.latestTabState) return;
+
+        
+        const created = Date.now();
+        const areYouSure = await vscode.window.showQuickPick([ "Yes", "No" ], {
+            canPickMany: false,
+            ignoreFocusOut: false,
+            matchOnDescription: true,
+            matchOnDetail: true,
+            title: prompt || `Save current tab group to existing tab groub '${this.latestTabState}'`,
+            placeHolder: "Yes"
+        });
+        if (!areYouSure || areYouSure !== "Yes") return;
+        
+        const currentState: TabPositions = TabStates.packageCurrentTabState();
+        this.savedTabStates[this.latestTabState] = {
+            created: created,
+            positions: currentState
+        };
+        vscode.window.showInformationMessage(`[Tab States] Saved current tab state as '${this.latestTabState}'`);
+    }
 
     private async overwriteTabState (chosenState: string) {
         const created = Date.now();
@@ -406,8 +433,8 @@ export class TabStates implements Packageable {
     }
 
     private async update () {
-        this.context.workspaceState.update('wt.tabStates.savedTabStates', this.savedTabStates);
-        this.context.workspaceState.update("wt.tabStates.latestTabState", this.latestTabState);
+        await this.context.workspaceState.update('wt.tabStates.savedTabStates', this.savedTabStates);
+        await this.context.workspaceState.update("wt.tabStates.latestTabState", this.latestTabState);
         const statusBarText = this.latestTabState === null 
             ? 'Tab State Options'
             : `Tab State Options (${this.latestTabState})`
@@ -417,12 +444,15 @@ export class TabStates implements Packageable {
         this.statusBar.show();
     }
 
-    private async runCommand (command: TabStateCommand) {
+    private async runCommand (command: TabStateCommand, prompt?: string) {
         if (command === 'wt.tabStates.saveCurrentState') {
             await this.saveCurrentState();
         }
         else if (command === 'wt.tabStates.newEmptyGroup') {
             await this.newEmptyState();
+        }
+        else if (command === 'wt.tabStates.saveToCurrentTabGroup') {
+            await this.saveToCurrentTabGroup(prompt);
         }
         else {
             const chosenStateOption = await this.chooseTabState("Which tab state?");
@@ -436,10 +466,13 @@ export class TabStates implements Packageable {
                 case 'wt.tabStates.renameState': await this.renameState(chosenState); break;
             }
         }
-        this.update();
+        await this.update();
     }
     
     registerCommands () {
+        vscode.commands.registerCommand('wt.tabStates.saveToCurrentTabGroup', async (prompt: string) => {
+            return this.runCommand('wt.tabStates.saveToCurrentTabGroup');
+        });
         vscode.commands.registerCommand('wt.tabStates.saveCurrentState', () => this.runCommand('wt.tabStates.saveCurrentState'));
         vscode.commands.registerCommand('wt.tabStates.overwriteTabState', () => this.runCommand('wt.tabStates.overwriteTabState'));
         vscode.commands.registerCommand('wt.tabStates.restoreState', () => this.runCommand('wt.tabStates.restoreState'));
