@@ -89,7 +89,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
     }
 
     private async triggerUpdates (searchBarValue: string) {
-        return this.searchResults.searchBarValueWasUpdated(searchBarValue, this.regex, this.caseInsensitive, this.matchTitles, this.wholeWord, 'searchTerm');
+        return this.searchResults.searchBarValueWasUpdated(searchBarValue, this.regex, this.caseInsensitive, this.matchTitles, this.wholeWord);
     }
 
     private lastRequest: number = 0;

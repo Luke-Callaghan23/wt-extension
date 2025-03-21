@@ -206,12 +206,14 @@ implements
         return `(${idAddition}${note.noun}${aliasesAddition})`
     }
 
-    private getNounsRegex (withId: boolean=true, subset?: Note[]): RegExp {
+    private getNounsRegex (withId: boolean=true, withSeparator: boolean=true, subset?: Note[]): RegExp {
         if (this.notes.length === 0) {
             return /^_^/
         }
         const nounFragments = (subset || this.notes).map(note => this.getNounPattern(note, withId))
-        const regexString = '(^|[^a-zA-Z0-9])?' + `(${nounFragments.join('|')})` + '([^a-zA-Z0-9]|$)?';
+        const regexString = withSeparator 
+            ? '(^|[^a-zA-Z0-9])?' + `(${nounFragments.join('|')})` + '([^a-zA-Z0-9]|$)?'
+            : `(${nounFragments.join('|')})`;
         const nounsRegex = new RegExp(regexString, 'gi');
         return nounsRegex;
     }
@@ -403,9 +405,9 @@ implements
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
     
-        const subsetNounsRegex = this.getNounsRegex(false, [ matchedNote.note ]);
+        const subsetNounsRegex = this.getNounsRegex(false, false, [ matchedNote.note ]);
         const grepLocations: vscode.Location[] = []; 
-        for await (const loc of grepExtensionDirectory(subsetNounsRegex.source, true, false, false)) {
+        for await (const loc of grepExtensionDirectory(subsetNounsRegex.source, true, true, true)) {
             if (loc === null) return null;
             grepLocations.push(loc);
         }
@@ -414,8 +416,8 @@ implements
         //      grep of the nouns
         // Not sure why that is -- but subtracting one from each character index works here
         return grepLocations.map(loc => new vscode.Location(loc.uri, new vscode.Range(
-            new vscode.Position(loc.range.start.line, loc.range.start.character - 1),
-            new vscode.Position(loc.range.end.line, loc.range.end.character - 1)
+            new vscode.Position(loc.range.start.line, Math.max(loc.range.start.character - 1, 0)),
+            new vscode.Position(loc.range.end.line, Math.max(loc.range.end.character - 1, 0))
         )));
     }
 }

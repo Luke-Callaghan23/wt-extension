@@ -91,7 +91,7 @@ export async function *grepExtensionDirectory (
     
     // inline search regex is a secondary regex which makes use of NodeJS's regex capture groups
     //      to do additional searches inside of CONTENTS_OF_LINE for the actual matched text
-    const inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${searchBarValue})`, 'gi');
+    let inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${searchBarValue})`, 'gi');
 
     let flags: string = 'g';
     
@@ -109,6 +109,10 @@ export async function *grepExtensionDirectory (
     }
 
     if (wholeWord) {
+        
+        // Also must recreate the inline search
+        inlineSearchRegex = new RegExp(`${extension.wordSeparator}(?<${captureGroupId}>${searchBarValue})${extension.wordSeparator}`, 'gi');
+
         // Basically a git grep command requires a very specific formatting for the special characters in a regex
         // So, we cannot rely on existing word separators that have been declared elsewhere in this project
         // Have to recreate the regex using these special word separators
