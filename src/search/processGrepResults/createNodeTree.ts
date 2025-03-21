@@ -71,6 +71,7 @@ async function convertFolderToSearchNode (
             const dotConfig = await readDotConfig(uri);
             if (!dotConfig) continue;
             const configFileNode = folderOrFile as ResultFile;
+
             const configDoc = await vscode.workspace.openTextDocument(uri);
             const configFullText = configDoc.getText();
 
@@ -323,7 +324,7 @@ export function cleanNodeTree (trees: Record<Categories, SearchNode<SearchContai
         if (searchTree.node.results === 0) continue;
 
         // We know that the root level result will always be a search container node, so it is okay to cast it as such
-        cleanedTrees.push(filterTree(searchTree, true) as SearchNode<SearchContainerNode>);
+        cleanedTrees.push(searchTree);
     }
     return cleanedTrees;
 }

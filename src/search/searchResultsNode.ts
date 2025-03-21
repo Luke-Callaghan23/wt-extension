@@ -51,9 +51,7 @@ export type MatchedTitleNode = {
     prefix: string;
     labelHighlights: [number, number][];
     linkNode: Exclude<VagueNodeSearchResult, { node: null, source: null}>,
-}
-
-
+};
 export type SearchNodeTemporaryText = {
     kind: 'searchTemp',
     uri: vscode.Uri;

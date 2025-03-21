@@ -451,6 +451,11 @@ export class TabStates implements Packageable {
         });
         vscode.commands.registerCommand('wt.tabStates.showStatusBar', () => {
             this.statusBar.show();
+        });
+        vscode.commands.registerCommand('wt.tabStates.refresh', () => {
+            this.savedTabStates = this.context.workspaceState.get('wt.tabStates.savedTabStates') || {};
+            this.latestTabState = this.context.workspaceState.get("wt.tabStates.latestTabState") || null;
+            this.update();
         })
     }
 

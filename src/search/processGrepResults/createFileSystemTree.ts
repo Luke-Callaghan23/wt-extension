@@ -53,16 +53,23 @@ export async function createFileSystemTree (locations: vscode.Location[]): Promi
         docMap[uriFsPath] = doc;
     }
 
-    for (const location of locations) {
+    for (let location of locations) {
         const path = getRelativePath(location.uri);
         let current: ResultFolder = root.folders;
         let relativePath: string[] = [];
 
         if (location.range.start.character !== 0) {
-            location.range = new vscode.Range(
-                new vscode.Position(location.range.start.line, location.range.start.character - 1),
-                new vscode.Position(location.range.end.line, location.range.end.character - 1),
-            )
+            // Create a whole new location with the the highlight moved backwards
+            // Do not edit the location in place, because as more grep results get
+            //      returned those location updates will remain
+            // And only the latest of the locations will be accurate
+            location = new vscode.Location(
+                location.uri,
+                new vscode.Range(
+                    new vscode.Position(location.range.start.line, location.range.start.character - 1),
+                    new vscode.Position(location.range.end.line, location.range.end.character - 1),
+                )
+            );
         }
 
         const pathSegments = path.split("/");

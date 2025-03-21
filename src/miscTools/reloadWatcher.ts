@@ -89,6 +89,7 @@ export class ReloadWatcher implements Packageable {
             vscode.commands.executeCommand("wt.colors.refresh", contextValues['wt.colors.extraColors']),
             vscode.commands.executeCommand("wt.workBible.refresh"),
             vscode.commands.executeCommand("wt.scratchPad.refresh"),
+            vscode.commands.executeCommand('wt.tabStates.refresh')
         ]).then(() => {
             // And trigger a forced timed views update
             vscode.commands.executeCommand('wt.timedViews.update');

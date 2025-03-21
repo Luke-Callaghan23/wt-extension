@@ -403,9 +403,12 @@ implements
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
     
-        const subsetNounsRegex = this.getNounsRegex(true, [ matchedNote.note ]);
-        const grepLocations = await grepExtensionDirectory(subsetNounsRegex.source, true, false, false, matchedNote.note.noteId);
-        if (!grepLocations) return null;
+        const subsetNounsRegex = this.getNounsRegex(false, [ matchedNote.note ]);
+        const grepLocations: vscode.Location[] = []; 
+        for await (const loc of grepExtensionDirectory(subsetNounsRegex.source, true, false, false)) {
+            if (loc === null) return null;
+            grepLocations.push(loc);
+        }
 
         // For some reason the reference provider needs the locations to be indexed one less than the results from the 
         //      grep of the nouns

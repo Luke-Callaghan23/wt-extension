@@ -11,12 +11,18 @@ import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { compareFsPath, vagueNodeSearch } from '../miscTools/help';
 
 
-export type SearchNodeKind = SearchContainerNode | FileResultNode | FileResultLocationNode | SearchNodeTemporaryText | MatchedTitleNode;
+export type SearchNodeKind = 
+    SearchContainerNode
+    | FileResultNode
+    | FileResultLocationNode
+    | SearchNodeTemporaryText
+    | MatchedTitleNode;
 
 export class SearchResultsView 
     extends UriBasedView<SearchNode<SearchNodeKind>>
     implements vscode.TreeDataProvider<SearchNode<SearchNodeKind>> 
 {
+    private static viewId = 'wt.wtSearch.results';
     private filteredUris: vscode.Uri[];
     constructor (
         protected workspace: Workspace,
@@ -32,8 +38,7 @@ export class SearchResultsView
     readonly onDidChangeTreeData: vscode.Event<SearchNode<SearchNodeKind> | undefined> = this._onDidChangeTreeData.event;
     
     async initialize() {
-        const viewName = 'wt.wtSearch.results';
-        const view = vscode.window.createTreeView(viewName, { 
+        const view = vscode.window.createTreeView(SearchResultsView.viewId, { 
             treeDataProvider: this,
             showCollapseAll: true, 
             canSelectMany: true,
@@ -42,7 +47,7 @@ export class SearchResultsView
         this.registerCommands();
         this.view = view;
 
-        await this.initUriExpansion(viewName, this.view, this.context);
+        await this.initUriExpansion(SearchResultsView.viewId, this.view, this.context);
     }
 
     async refresh(updatedNodes?: typeof this.rootNodes): Promise<void> {
@@ -63,7 +68,7 @@ export class SearchResultsView
                 title: 'Search Term',
             });
             if (!response) return;
-            return this.searchBarValueWasUpdated(response, true, true, true, true, 'searchTerm');
+            return this.searchBarValueWasUpdated(response, true, true, true, true);
         });
 
         vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {
@@ -133,34 +138,43 @@ export class SearchResultsView
         useRegex: boolean, 
         caseInsensitive: boolean, 
         matchTitles: boolean, 
-        wholeWord: boolean,
-        captureGroupId: string
+        wholeWord: boolean
     ) {
+        // Use `withProgress` pointing at this viewId to show the user that there is 
+        //      something going on with the search
+        return vscode.window.withProgress<void>({
+            location: { viewId: SearchResultsView.viewId },
+        }, async () => {
+            // Grep results
+            const grepResults: vscode.Location[] = [];
+            for await (const result of grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord)) {
+                if (result === null) return this.searchCleared();
+                grepResults.push(result);
         
-        // Grep results
-        const grepResults = await grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord, captureGroupId);
-        if (!grepResults || grepResults.length === 0) return this.searchCleared();
+                // Create file system-esque tree from the grep results
+                const fsTree = await createFileSystemTree(grepResults);
         
-        // Create file system-esque tree from the grep results
-        const fsTree = await createFileSystemTree(grepResults);
-
-        // Create a node tree based off the file system tree
-        const searchResults = await recreateNodeTree(fsTree, matchTitles);
-        if (!searchResults) return this.searchCleared();
-
-        // Filter empty nodes and nodes with single results
-        const filteredTree = cleanNodeTree(searchResults);
-
-        // Pair up all MatchedTitleNodes with their paired SearchFileNode or SearchContainerNode, if one exists
-        const finalPairedTree = pairMatchedTitlesToNeighborNodes(filteredTree);
-        this.refresh(finalPairedTree);
+                // Create a node tree based off the file system tree
+                const searchResults = await recreateNodeTree(fsTree, matchTitles);
+                if (!searchResults) return this.searchCleared();
+        
+                // Filter empty nodes and nodes with single results
+                const filteredTree = cleanNodeTree(searchResults);
+        
+                // Pair up all MatchedTitleNodes with their paired SearchFileNode or SearchContainerNode, if one exists
+                const finalPairedTree = pairMatchedTitlesToNeighborNodes(filteredTree);
+                this.refresh(finalPairedTree);
+        
+            } 
+            if (grepResults.length === 0) return this.searchCleared();
+        });
     }
 
     public async searchCleared () {
         this.refresh([]);
     }
     
-    getTreeItem (element: SearchNode<SearchNodeKind>): vscode.TreeItem | Promise<vscode.TreeItem> {
+    async getTreeItem (element: SearchNode<SearchNodeKind>): Promise<vscode.TreeItem> {
         // File location nodes link to a location in a document, and have more complicated labels and tooltips
         if (element.node.kind === 'fileLocation') {
             return {
