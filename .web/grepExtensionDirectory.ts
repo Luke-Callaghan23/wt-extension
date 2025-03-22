@@ -31,13 +31,14 @@ async function getDataDirectoryPaths(): Promise<vscode.Uri[]> {
 }
 
 
-export async function grepExtensionDirectory (
+export async function *grepExtensionDirectory (
     searchBarValue: string, 
     useRegex: boolean, 
     caseInsensitive: boolean, 
     wholeWord: boolean,
-    captureGroupId: string
-): Promise<vscode.Location[] | null>  {
+): AsyncGenerator<vscode.Location | null>  {
+
+    const captureGroupId = 'searchTerm';
 
     let inLineSearch: {
         regexWithIdGroup: RegExp,
@@ -102,7 +103,7 @@ export async function grepExtensionDirectory (
                     const endPosition = new vscode.Position(lineIndex, characterEnd);
                     const foundRange = new vscode.Selection(startPosition, endPosition);
             
-                    locations.push(new vscode.Location(openedDoc.uri, foundRange));
+                    yield new vscode.Location(openedDoc.uri, foundRange);
                     lastLineMatch = lineMatch;
                 }
             }
