@@ -186,7 +186,6 @@ export function commasize () {
             startStr = ',';
             diff++;
         }
-        if (text[startOffset] === ' ' && !selection.isEmpty) startStr = ',';
         if (text[startOffset - 1] === ',' && text[startOffset - 2] === ' ') startStr = ',';
         
         // Check if the character before the cursor is a space
