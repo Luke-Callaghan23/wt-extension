@@ -600,11 +600,11 @@
 				"icon": "$(list-filter)"
 			},
 			{
-				"command": "wt.editor.word.forward",
+				"command": "wt.editor.jump.word.forward",
 				"title": "Writing Tool: Jump to Word (forward)."
 			},
 			{
-				"command": "wt.editor.word.backward",
+				"command": "wt.editor.jump.word.backward",
 				"title": "Writing Tool: Jump to Word (backward)."
 			},
 			{
@@ -632,11 +632,11 @@
 				"title": "Writing Tool: Jump to paragraph (backward)."
 			},
 			{
-				"command": "wt.editor.word.forward.shift",
+				"command": "wt.editor.jump.word.forward.shift",
 				"title": "Writing Tool: Jump to Word (forward) (select)."
 			},
 			{
-				"command": "wt.editor.word.backward.shift",
+				"command": "wt.editor.jump.word.backward.shift",
 				"title": "Writing Tool: Jump to Word (backward) (select)."
 			},
 			{
