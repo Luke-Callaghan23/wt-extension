@@ -140,7 +140,11 @@ async function initializeContextItems (context: vscode.ExtensionContext, package
 
 
 // Function for importing a workspace from an .iwe file
-export async function importWorkspace (context: vscode.ExtensionContext): Promise<Workspace | null> {
+export async function importWorkspace (
+    context: vscode.ExtensionContext, 
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+    workDivision: number = 0.5                                                  // Percent of work done by this function compared to overall work (50%)
+): Promise<Workspace | null> {
 
     // Request the user to select their .iwe file
     const uris = await vscode.window.showOpenDialog({
@@ -171,16 +175,21 @@ export async function importWorkspace (context: vscode.ExtensionContext): Promis
     const dotConfigUri = workspace.dotWtconfigPath;
     await vscode.workspace.fs.writeFile(dotConfigUri, Buff.from(dotWtconfigJSON, 'utf-8'));
 
+    progress.report({ message: "Created workspace configuration files", increment: 25 * workDivision });
+
     // Create all chapters
     const chapterContainer = workspace.chaptersFolder;
     await initializeChapters(iweRecord.chapters, chapterContainer);
+    progress.report({ message: "Wrote chapter files", increment: 25 * workDivision });
 
     // Create all work snips
     const workSnipsContainer = workspace.workSnipsFolder;
     await initializeSnips(iweRecord.snips, workSnipsContainer);
+    progress.report({ message: "Wrote snip files", increment: 25 * workDivision });
 
     // Insert packageable workspace items into the current workspace context
     await initializeContextItems(context, iweRecord.packageableItems);
+    progress.report({ message: "Copied extension configuration values", increment: 25 * workDivision });
 
     context.workspaceState.update('wt.todo.enabled', iweRecord.packageableItems['wt.todo.enabled']);
     context.workspaceState.update('wt.wordWatcher.enabled', iweRecord.packageableItems['wt.wordWatcher.enabled']);

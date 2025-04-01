@@ -8,7 +8,7 @@ import { CoderModer } from './codeMode/codeMode';
 import { activateSpeak } from './ttsDebugger/tts/tts';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
 import { ExportForm } from './export/exportFormView';
-import { importWorkspace } from './workspace/importExport/importWorkspace';
+import { importWorkspace as importWorkspaceFromIWEFile } from './workspace/importExport/importWorkspace';
 
 import { OutlineView } from './outline/outlineView';
 import { TODOsView } from './TODO/TODOsView';
@@ -84,49 +84,99 @@ export class ExtensionGlobals {
 
 // To be called whenever a workspace is successfully loaded
 // Loads all the content for all the views for the wt extension
-async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspace: Workspace): Promise<void> {
+async function loadExtensionWorkspace (
+    context: vscode.ExtensionContext, 
+    workspace: Workspace,
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+    workDivision: number = -1,
+): Promise<void> {
     try {
+
+        type LoadStatuses = [
+            "Loaded outline",
+            "Loaded TODO tree",
+            "Loaded recycling bin",
+            "Loaded spellchecker",
+            "Loaded intellisense",
+            "Loaded scratch pad",
+            "Loaded fragment overview",
+            "Loaded tab groups",
+            "Loaded search bad",
+            "Loaded work bible",
+            "Loaded status bar items",
+            "Loaded tab labels",
+            "Loaded text-to-speech debugger",
+            "Finished.",
+        ]
+        type ValueOfTuple<T extends readonly any[]> = T[number];
+        const report = (status: ValueOfTuple<LoadStatuses>) => {
+            if (workDivision < 0) {
+                progress.report({ message: status });        
+            }
+            else {
+                const totalStatuses: LoadStatuses['length'] = 14;
+                const thisProgress = 100 * workDivision * 1/totalStatuses;
+                progress.report({ message: status, increment: thisProgress });
+            }
+        }
+
         const outline = new OutlineView(context, workspace);                // wt.outline
         await outline.init();
+        report("Loaded outline");
+
         const importFS = new ImportFileSystemView(context, workspace);        // wt.import.fileSystem
         const synonyms = new SynonymViewProvider(context, workspace);        // wt.synonyms
         const wh = new WHViewProvider(context, workspace);        // wt.synonyms
         const todo = new TODOsView(context, workspace);                        // wt.todo
         await todo.init();
+        report("Loaded TODO tree");
+
         const wordWatcher = new WordWatcher(context, workspace);            // wt.wordWatcher
         const proximity = new Proximity(context, workspace);
         const textStyles = new TextStyles(context, workspace);    
         const recycleBin = new RecyclingBinView(context, workspace);        
         await recycleBin.initialize();
+        report("Loaded recycling bin");
 
         const autocorrection = new Autocorrect(context, workspace);
         const personalDictionary = new PersonalDictionary(context, workspace);
-        const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, true);
         const spellcheck = new Spellcheck(context, workspace, personalDictionary, autocorrection);
+        report("Loaded spellchecker");
+
+        const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, true);
         const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
         const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+        report("Loaded intellisense");
+
         const reloadWatcher = new ReloadWatcher(workspace, context);
         const scratchPad = new ScratchPadView(context, workspace);
         await scratchPad.init();
+        report("Loaded scratch pad");
 
         const fragmentOverview = new FragmentOverviewView(context, workspace);
+        report("Loaded fragment overview");
         
         const tabStates = new TabStates(context, workspace);
+        report("Loaded tab groups");
 
         const searchResultsView = new SearchResultsView(workspace, context);
         const searchBarView = new SearchBarView(context, workspace, searchResultsView);
         searchResultsView.initialize();
+        report("Loaded search bad");
 
-        new CoderModer(context);
-
+        
         const workBible = new WorkBible(workspace, context);
         await workBible.initialize()
+        report("Loaded work bible");
         
         ExtensionGlobals.initialize(outline, recycleBin, scratchPad, workBible, todo, workspace, context);
         
+        new CoderModer(context);
         const wordCountStatus = new WordCount();
         const statusBarTimer = new StatusBarTimer(context);
+        report("Loaded status bar items");
+
         new FileLinker(context, workspace);
         new FragmentLinker();
 
@@ -174,11 +224,15 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 
 
         await TabLabels.assignNamesForOpenTabs();
+        report("Loaded tab labels");
+
         activateSpeak(context);
         activateDebug(context);
+        report("Loaded text-to-speech debugger");
 
         reloadWatcher.checkForRestoreTabs();
         outline.selectActiveDocument(vscode.window.activeTextEditor);
+        report("Finished.");
     }
     catch (e) {
         handleLoadFailure(e);
@@ -186,13 +240,13 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
     }
 };
 
-function handleLoadFailure (err: Error | string | unknown) {
+async function handleLoadFailure (err: Error | string | unknown) {
     // First thing to do, is to set wt.valid context value to false
     // This will display the welcome scene in the wt.outline view
-    vscode.commands.executeCommand('setContext', 'wt.valid', false);
+    await vscode.commands.executeCommand('setContext', 'wt.valid', false);
 
     // Tell the user about the load failure
-    vscode.window.showErrorMessage(`Error loading the IWE workspace: ${err}`);
+    await vscode.window.showErrorMessage(`Error loading the IWE workspace: ${err}`);
 }
 
 export function activate (context: vscode.ExtensionContext) {
@@ -200,67 +254,81 @@ export function activate (context: vscode.ExtensionContext) {
     return context;
 }
 
-async function activateImpl (context: vscode.ExtensionContext) {
-    vscode.commands.registerCommand("wt.walkthroughs.openIntro", () => {
-        vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
-    });
-    vscode.commands.registerCommand("wt.walkthroughs.openImports", () => {
-        vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.importsWalkthrough`, false);
-    });
 
+async function loadExtensionWithProgress (context: vscode.ExtensionContext, title: "Starting Integrated Writing Environment" | "Reloading Integrated Writing Environment"): Promise<boolean> {
+    // Attempt to load a workspace from the current location
+    return vscode.window.withProgress<boolean>({
+        location: vscode.ProgressLocation.Notification,
+        title: title
+    }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+        const workspace = await loadWorkspace(context);
+        progress.report({ message: "Loaded workspace" });
+        if (workspace === null) return false;
+
+        await loadExtensionWorkspace(context, workspace, progress);
+        progress.report({ message: "Loaded extension" })
+        return true;
+    });
+}
+
+async function activateImpl (context: vscode.ExtensionContext) {
     // Load the root path of file system where the extension was loaded
     rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
         ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
+    vscode.commands.registerCommand("wt.walkthroughs.openIntro", async () => {
+        return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
+    });
+    vscode.commands.registerCommand("wt.walkthroughs.openImports", async () => {
+        return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.importsWalkthrough`, false);
+    });
+    vscode.commands.registerCommand("wt.searchFiles", searchFiles);    
+    vscode.commands.registerCommand('wt.convert', () => convertFileNames());
+
     vscode.commands.registerCommand('wt.reload', async () => {
-        const workspace = await loadWorkspace(context);
-        if (workspace !== null) {
-            loadExtensionWorkspace(context, workspace);
-        }
+        return loadExtensionWithProgress(context, "Reloading Integrated Writing Environment");
     });
 
-    vscode.commands.registerCommand("wt.searchFiles", searchFiles);
-    
-    vscode.commands.registerCommand('wt.convert', () => {
-        convertFileNames();
-    })
+    const loadWorkspaceSuccess = await loadExtensionWithProgress(context, "Starting Integrated Writing Environment");
+    if (loadWorkspaceSuccess) return;
 
-    // Attempt to load a workspace from the current location
-    const workspace = await loadWorkspace(context);
-    if (workspace !== null) {
-        loadExtensionWorkspace(context, workspace);
-    }
-    else {
-        // If the attempt to load the workspace failed, then register commands both for loading 
-        //        a workspace from a .iwe environment file or for creating a new iwe environment
-        //        at the current location
-        vscode.commands.registerCommand('wt.importWorkspace', () => {
-            importWorkspace(context).then((ws) => {
-                if (ws) {
-                    loadExtensionWorkspace(context, ws);
-                    return;
-                }
-                // Inform the user of the failed import 
-                vscode.window.showInformationMessage(`Could not import .iwe workspace`, {
-                    modal: true,
-                    detail: 'Make sure the .iwe file you provided is the exact same as the one created by this extension.'
-                }, 'Okay');
-            })
-            .catch(err => {
+    // If the attempt to load the workspace failed, then register commands both for loading 
+    //        a workspace from a .iwe environment file or for creating a new iwe environment
+    //        at the current location
+    vscode.commands.registerCommand('wt.importWorkspace', () => {
+        vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Importing Workspace"
+        }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+            try {
+                const workDivision = 0.5;
+                const ws = await importWorkspaceFromIWEFile(context, progress, workDivision);
+                if (!ws) return handleLoadFailure(`Could not import .iwe workspace: Make sure the .iwe file you provided is the exact same as the one created by this extension.`);
+
+                await loadExtensionWorkspace(context, ws, progress, workDivision);
+                return;
+            }
+            catch (err: any) {
+                return handleLoadFailure(err);
+            }
+        });
+    });
+    vscode.commands.registerCommand('wt.createWorkspace', async () => {
+        return vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Creating Workspace"
+        }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+            try {
+                const workDivision = 0.5;
+                const ws = await createWorkspace(context);
+                await loadExtensionWorkspace(context, ws, progress, workDivision);
+            }
+            catch(err: any) {
                 handleLoadFailure(err);
                 throw err;
-            });
+            }
         });
-        vscode.commands.registerCommand('wt.createWorkspace', () => {
-            createWorkspace(context).then((ws) => {
-                loadExtensionWorkspace(context, ws);
-            })
-            .catch(err => {
-                handleLoadFailure(err);
-                throw err;
-            });
-        });
-    }
+    });
 }
 
 export function deactivate (): Promise<void> {
