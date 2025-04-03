@@ -348,3 +348,67 @@ export function getSurroundingTextInRange(
         highlight: [ surroundingTextHighlightStart, surroundingTextHighlightEnd ],
     }
 }
+
+
+export function defaultProgress <T>(title: string, worker: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>): Thenable<T> {
+    return vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: title,
+    }, worker);
+}
+
+type ValueOfTuple<T extends readonly any[]> = T[number];
+export function getSectionedProgressReporter <T extends readonly string[]>(
+    statuses: T,
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+    workDivision: number = 1,
+): (status: ValueOfTuple<T>) => void {
+    return (status: ValueOfTuple<T>) => {
+        if (workDivision < 0) {
+            progress.report({ message: status });
+        }
+        else {
+            const thisProgress = 100 * workDivision * 1 / statuses.length
+            progress.report({ message: status, increment: thisProgress });
+        }
+    };
+};
+
+type ExactlyOne<T> = {
+    [K in keyof T]-?: Required<Pick<T, K>> & Partial<Record<Exclude<keyof T, K>, never>>;
+}[keyof T];
+
+export function progressOnViews <T> (
+    viewIds: string[] | string, 
+    worker: () => Promise<T>
+): Thenable<T>;
+
+export function progressOnViews <T> (
+    viewIds: string[] | string, 
+    title: string,
+    worker: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>
+): Thenable<T>;
+
+
+export function progressOnViews <T> (
+    viewIds: string[] | string, 
+    titleOrWorker: (() => Promise<T>) | string,
+    workerOrNothing?: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>,
+): Thenable<T> {
+    return progressOnViews_impl(viewIds, titleOrWorker, workerOrNothing);
+}
+
+export function progressOnViews_impl <T> (
+    viewIds: string[] | string, 
+    titleOrWorker: (() => Promise<T>) | string,
+    workerOrNothing?: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>,
+): Thenable<T> {
+    if (viewIds.length === 0 || typeof viewIds === 'string') {
+        if (typeof titleOrWorker === 'function') {
+            return titleOrWorker();
+        }
+        return defaultProgress(titleOrWorker, workerOrNothing!);
+    }
+    const next = viewIds.shift()!;
+    return vscode.window.withProgress({ location: { viewId: next } }, () => progressOnViews_impl(viewIds, titleOrWorker, workerOrNothing));
+}

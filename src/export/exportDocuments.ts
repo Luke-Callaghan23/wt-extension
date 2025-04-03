@@ -18,6 +18,7 @@ import { OutlineView } from '../outline/outlineView';
 import { wtToHtml } from './wtToHtml';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
 import { wtToMd } from './wtToMd';
+import { defaultProgress } from '../miscTools/help';
 
 // Data provided by the export form webview
 export type ExportDocumentInfo = {
@@ -549,36 +550,38 @@ export async function handleDocumentExport (
     const dirname = `export (${dateString})`;
     const dirUri = vscode.Uri.joinPath(workspace.exportFolder, dirname);
 
-    let dirExists = true;
-    try { await vscode.workspace.fs.stat(dirUri) }
-    catch (err: any) {
-        dirExists = false;
-    }
-
-    try {
-        await vscode.workspace.fs.createDirectory(dirUri);
-    }
-    catch (e) {
-        vscode.window.showErrorMessage(`ERROR an error occurred while creating the export directory: ${e}`);
-        return;
-    }
-
-    // Process all the markdown in this work
-    const processed: Processed = await doProcessMd(workspace, exportInfo, dirUri, outline);
-    if (!processed) {
-        return;
-    }
-    const success: ProcessedMd = processed as ProcessedMd;
-
-    // Get the correct export function and perform the export
-    let exportFunction: (processed: ProcessedMd) => Promise<void>;
-    switch (exportInfo.ext) {
-        case 'md': exportFunction = exportMd; break;
-        case 'txt': exportFunction = exportTxt; break;
-        case 'docx': exportFunction = exportDocx; break;
-        case 'html': exportFunction = exportHtml; break;
-        case 'odt': exportFunction = exportOdt; break;
-    }
-    await exportFunction(success);
-    vscode.window.showInformationMessage(`Successfully exported files into '${dirUri.fsPath}'`);
+    return defaultProgress(`Exporting to '${dirUri.fsPath}'`, async () => {
+        let dirExists = true;
+        try { await vscode.workspace.fs.stat(dirUri) }
+        catch (err: any) {
+            dirExists = false;
+        }
+    
+        try {
+            await vscode.workspace.fs.createDirectory(dirUri);
+        }
+        catch (e) {
+            vscode.window.showErrorMessage(`ERROR an error occurred while creating the export directory: ${e}`);
+            return;
+        }
+    
+        // Process all the markdown in this work
+        const processed: Processed = await doProcessMd(workspace, exportInfo, dirUri, outline);
+        if (!processed) {
+            return;
+        }
+        const success: ProcessedMd = processed as ProcessedMd;
+    
+        // Get the correct export function and perform the export
+        let exportFunction: (processed: ProcessedMd) => Promise<void>;
+        switch (exportInfo.ext) {
+            case 'md': exportFunction = exportMd; break;
+            case 'txt': exportFunction = exportTxt; break;
+            case 'docx': exportFunction = exportDocx; break;
+            case 'html': exportFunction = exportHtml; break;
+            case 'odt': exportFunction = exportOdt; break;
+        }
+        await exportFunction(success);
+        vscode.window.showInformationMessage(`Successfully exported files into '${dirUri.fsPath}'`);
+    });
 }

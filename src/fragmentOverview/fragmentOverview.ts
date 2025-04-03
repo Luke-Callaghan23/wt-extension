@@ -27,13 +27,15 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
     bulletPoints: FragmentOverviewNode[];
     view: vscode.TreeView<FragmentOverviewNode>;
     activeDocumentUri: vscode.Uri | null;
+
+    static viewId: string = 'wt.overview';
     constructor (
         private context: vscode.ExtensionContext,
         private workspace: Workspace,
     ) {
         this.enabled = true;
         this.bulletPoints = [];
-        this.view = vscode.window.createTreeView('wt.overview', {
+        this.view = vscode.window.createTreeView(FragmentOverviewView.viewId, {
             treeDataProvider: this,
             canSelectMany: true,
             showCollapseAll: true,
@@ -92,24 +94,28 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
     }
 
     async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
-        this.view.message = undefined;
-        const text = editor.document.getText();
-        const lines = text.split('\n');
-        this.bulletPoints = [];
-        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-            const line = lines[lineIndex].trim();
-            if (line.length === 0 || /^\s*$/.test(line)) continue;
-
-            const surrounding = getSurroundingTextInRange(editor.document, text.length, new vscode.Location(editor.document.uri, new vscode.Position(lineIndex, 0)), [0, 120], true);
-            this.bulletPoints.push({
-                beginningOfLine: surrounding.surroundingText.trim(),
-                fullLine: line,
-                uri: editor.document.uri,
-                lineZeroIndex: lineIndex
-            });
-        }
-        this.activeDocumentUri = editor.document.uri;
-        this.refresh();
+        return vscode.window.withProgress({
+            location: { viewId: FragmentOverviewView.viewId },
+        }, async () => {
+            this.view.message = undefined;
+            const text = editor.document.getText();
+            const lines = text.split('\n');
+            this.bulletPoints = [];
+            for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+                const line = lines[lineIndex].trim();
+                if (line.length === 0 || /^\s*$/.test(line)) continue;
+    
+                const surrounding = getSurroundingTextInRange(editor.document, text.length, new vscode.Location(editor.document.uri, new vscode.Position(lineIndex, 0)), [0, 120], true);
+                this.bulletPoints.push({
+                    beginningOfLine: surrounding.surroundingText.trim(),
+                    fullLine: line,
+                    uri: editor.document.uri,
+                    lineZeroIndex: lineIndex
+                });
+            }
+            this.activeDocumentUri = editor.document.uri;
+            this.refresh();
+        });
     }
 
     private _onDidChangeTreeData: vscode.EventEmitter<FragmentOverviewNode[] | undefined> = new vscode.EventEmitter<FragmentOverviewNode[] | undefined>();

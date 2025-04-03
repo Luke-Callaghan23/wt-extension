@@ -85,7 +85,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 	disposables: vscode.Disposable[] = [];
     async initializeTree(): Promise<TODONode> {
 		const init: InitializeNode<TODONode> = (data: NodeTypes<TODONode>) => new TODONode(data);
-        return initializeOutline<TODONode>(init);
+        return initializeOutline<TODONode>(TODOsView.viewId, init);
     }
 
 	async refresh(reload: boolean, updates: TODONode[]): Promise<void> {
@@ -154,8 +154,9 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
     // Register all the commands needed for the outline view to work
     registerCommands = registerCommands;
 
+	static viewId: string = 'wt.todo';
 	constructor(context: vscode.ExtensionContext, protected workspace: Workspace) {
-        super(context, 'wt.todo', "TODO");
+        super(context, TODOsView.viewId, "TODO");
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 		ExtensionGlobals.todoView = this;
 	}

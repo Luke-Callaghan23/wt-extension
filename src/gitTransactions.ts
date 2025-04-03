@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as console from './miscTools/vsconsole';
+import { defaultProgress } from './miscTools/help';
 
 
 export async function gitiniter () {
@@ -16,8 +17,10 @@ export let lastCommit: number = Date.now();
 export const setLastCommit = () => lastCommit = Date.now();
 export async function gitCommit () {
     try {
-        lastCommit = Date.now();
-        await vscode.commands.executeCommand('git.commitAll');
+        return defaultProgress("Commiting All Files", async () => {
+            lastCommit = Date.now();
+            await vscode.commands.executeCommand('git.commitAll');
+        });
     }
     catch (e) {
         vscode.window.showErrorMessage(`ERROR: An error occurred while making commit: ${e}`);
@@ -27,9 +30,11 @@ export async function gitCommit () {
 
 export async function gitCommitFile () {
     try {
-        lastCommit = Date.now();
-        await vscode.commands.executeCommand('git.stage');
-        await vscode.commands.executeCommand('git.commit');
+        return defaultProgress("Commiting All Files", async () => {
+            lastCommit = Date.now();
+            await vscode.commands.executeCommand('git.stage');
+            await vscode.commands.executeCommand('git.commit');
+        });
     }
     catch (e) {
         vscode.window.showErrorMessage(`ERROR: An error occurred while making commit: ${e}`);

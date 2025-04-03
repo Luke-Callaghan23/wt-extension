@@ -2,18 +2,16 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../workspace/workspaceClass';
 import * as extension from './../extension';
-import { InitializeNode, initializeChapter, initializeFragment, initializeOutline, initializeSnip } from '../outlineProvider/initialize';
+import { InitializeNode, initializeChapter, initializeFragment, initializeSnip } from '../outlineProvider/initialize';
 // import { OutlineNode, ResourceType } from '../outline/node';
 import { NodeTypes, ResourceType } from '../outlineProvider/fsNodes';
-import { ConfigFileInfo, setFsPathKey } from '../miscTools/help';
+import { ConfigFileInfo, progressOnViews, setFsPathKey } from '../miscTools/help';
 import { v4 as uuidv4 } from 'uuid';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { deleteNodePermanently } from './node/deleteNodePermanently';
 import { renameResource as _renameResource } from './node/renameNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../outline/outlineView';
-import { TreeNode } from '../outlineProvider/outlineTreeProvider';
-import { selectFile } from '../miscTools/searchFiles';
 import { handleDragController } from '../outline/impl/dragDropController';
 
 export type RecycleLog = {
@@ -300,12 +298,13 @@ implements
         RecyclingBinView.recyclingUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
     }
 
+    static readonly viewId: string = 'wt.recyclingBin';
     async initialize () {
         const rootNodes = await this.initializeTree();
         if (rootNodes === null) return;
         this.rootNodes = rootNodes;
         
-        const view = vscode.window.createTreeView('wt.recyclingBin', { 
+        const view = vscode.window.createTreeView(RecyclingBinView.viewId, { 
             treeDataProvider: this,
             showCollapseAll: true, 
             canSelectMany: true,
@@ -315,7 +314,7 @@ implements
         this.registerCommands();
 
         this.view = view;
-        await this.initUriExpansion('wt.recyclingBin', this.view, this.context);
+        await this.initUriExpansion(RecyclingBinView.viewId, this.view, this.context);
     }
 
     dropMimeTypes = ['application/vnd.code.tree.outline', 'text/uri-list'];

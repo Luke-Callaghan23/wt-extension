@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
-import { ConfigFileInfo } from '../miscTools/help';
+import { ConfigFileInfo, getSectionedProgressReporter } from '../miscTools/help';
 import { getUsableFileName, newSnip } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
@@ -696,57 +696,68 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
         lastModified: number 
     }[] = [];
 
-    // Assign modified dates to each of the doc names provided by called
-    for (const docName of docNames) {
-        const doc = vscode.Uri.joinPath(extension.rootPath, docName);
-        const stat = await vscode.workspace.fs.stat(doc);
-        docLastModified.push({
-            name: docName,
-            lastModified: stat.mtime.valueOf()
-        });
-    }
+    return vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: ""
+    }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
 
-    // Sort all doc names by the last modified date
-    docLastModified.sort((a, b) => a.lastModified - b.lastModified);
-
-    let workSnipsParentFileName = '';
-    const workSnipsCount = Object.entries(docInfo).filter(([_, info]) => info.outputType === 'snip' && !info.outputIntoChapter).length;
-    if (docNames.length > 1 && workSnipsCount > 1) {
-
-        // If there is more than one work snip account to import, then make a parent container to insert all work snips into
-        const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
-        const workSnipsContainer = (outlineView.rootNodes[0].data as RootNode).snips;
-        const snipUri = await outlineView.newSnip(workSnipsContainer, {
-            defaultName: `Imported ${getSnipDateString()}`,
-            preventRefresh: true,
-            skipFragment: true,
-        });
-        await outlineView.refresh(true, []);
-        if (snipUri) {
-            const snipNode: OutlineNode | null = await outlineView.getTreeElementByUri(snipUri);
-            if (snipNode) {
-                workSnipsParentFileName = snipNode.data.ids.fileName;
+        progress.report({ message: "Preparing import" });
+        
+        // Assign modified dates to each of the doc names provided by called
+        for (const docName of docNames) {
+            const doc = vscode.Uri.joinPath(extension.rootPath, docName);
+            const stat = await vscode.workspace.fs.stat(doc);
+            docLastModified.push({
+                name: docName,
+                lastModified: stat.mtime.valueOf()
+            });
+        }
+    
+        // Sort all doc names by the last modified date
+        docLastModified.sort((a, b) => a.lastModified - b.lastModified);
+    
+        let workSnipsParentFileName = '';
+        const workSnipsCount = Object.entries(docInfo).filter(([_, info]) => info.outputType === 'snip' && !info.outputIntoChapter).length;
+        if (docNames.length > 1 && workSnipsCount > 1) {
+            progress.report({ message: "Creating containers" });
+            
+            // If there is more than one work snip account to import, then make a parent container to insert all work snips into
+            const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+            const workSnipsContainer = (outlineView.rootNodes[0].data as RootNode).snips;
+            const snipUri = await outlineView.newSnip(workSnipsContainer, {
+                defaultName: `Imported ${getSnipDateString()}`,
+                preventRefresh: true,
+                skipFragment: true,
+            });
+            await outlineView.refresh(true, []);
+            if (snipUri) {
+                const snipNode: OutlineNode | null = await outlineView.getTreeElementByUri(snipUri);
+                if (snipNode) {
+                    workSnipsParentFileName = snipNode.data.ids.fileName;
+                }
             }
         }
-    }
 
-    // Process imports for each imported file
-    for (let index = 0; index < docNames.length; index++) {
-        const docRelativePath = docNames[index];
-        const doc = docInfo[docRelativePath];
-        vscode.window.showInformationMessage(`Processing '${docRelativePath}' [${index + 1} of ${docNames.length}]`);
-        try {
-            let workSnipAdditionalPath = '';
-            if (doc.outputType === 'snip' && !doc.outputIntoChapter) {
-                workSnipAdditionalPath += workSnipsParentFileName;
+        const report = getSectionedProgressReporter(docNames, progress);
+    
+        // Process imports for each imported file
+        for (let index = 0; index < docNames.length; index++) {
+            const docRelativePath = docNames[index];
+            const doc = docInfo[docRelativePath];
+            report(`Processing '${docRelativePath}' [${index + 1} of ${docNames.length}]`);
+            try {
+                let workSnipAdditionalPath = '';
+                if (doc.outputType === 'snip' && !doc.outputIntoChapter) {
+                    workSnipAdditionalPath += workSnipsParentFileName;
+                }
+                await importDoc(doc, docRelativePath, workSnipAdditionalPath);
             }
-            await importDoc(doc, docRelativePath, workSnipAdditionalPath);
+            catch (e) {
+                vscode.window.showErrorMessage(`Error occurred when importing '${docRelativePath}': ${e}`);
+            }
         }
-        catch (e) {
-            vscode.window.showErrorMessage(`Error occurred when importing '${docRelativePath}': ${e}`);
-        }
-    }
-
-    // Do the expensive full refresh
-    vscode.commands.executeCommand('wt.outline.refresh');
+    
+        // Do the expensive full refresh
+        vscode.commands.executeCommand('wt.outline.refresh');
+    });
 }

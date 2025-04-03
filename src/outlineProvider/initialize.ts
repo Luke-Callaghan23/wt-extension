@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import { ConfigFileInfo, getLatestOrdering, readDotConfig } from '../miscTools/help';
+import { ConfigFileInfo, getLatestOrdering, progressOnViews, readDotConfig } from '../miscTools/help';
 import { TreeNode } from './outlineTreeProvider';
 import { ChapterNode, ContainerNode, FragmentNode, NodeTypes, ResourceType, RootNode, SnipNode } from './fsNodes';
 import * as extension from '../extension';
@@ -9,137 +9,138 @@ import * as extension from '../extension';
 
 export type InitializeNode<T extends TreeNode> = (data: NodeTypes<T>) => T;
 
-export async function initializeOutline<T extends TreeNode>(init: InitializeNode<T>, dontFail?: boolean): Promise<T> {
-
-    const dataFolderUri = vscode.Uri.joinPath(extension.rootPath, `data`);
-    const chaptersContainerUri = vscode.Uri.joinPath(dataFolderUri, `chapters`);
-    const workSnipsContainerUri = vscode.Uri.joinPath(dataFolderUri, `snips`);
-
-    let chapterEntries: [ string, vscode.FileType ][];
-    let snipEntries: [ string, vscode.FileType ][];
-    try {
-        const dfEntries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(dataFolderUri);
-        let chaptersFound = false;
-        let snipsFound = false;
-        dfEntries.find(([ name, _ ]) => {
-            if (name === 'chapters') { chaptersFound = true; }
-            if (name === 'snips') { snipsFound = true; }
-        });
-        if (!chaptersFound) {
-            vscode.window.showErrorMessage(`Error initializing workspace from file system: '/data/chapters' wasn't found.  Please do not mess with the file system of an IWE environment.`);
-            throw new Error(`Error initializing workspace from file system: '/data/chapters' wasn't found.  Please do not mess with the file system of an IWE environment.`);
-        }
-        if (!snipsFound) {
-            vscode.window.showErrorMessage(`Error initializing workspace from file system: '/data/snips' wasn't found.  Please do not mess with the file system of an IWE environment.`);
-            throw new Error(`Error initializing workspace from file system: '/data/snips' wasn't found.  Please do not mess with the file system of an IWE environment.`);
-        }
-
-        chapterEntries = await vscode.workspace.fs.readDirectory(chaptersContainerUri);
-        snipEntries = await vscode.workspace.fs.readDirectory(workSnipsContainerUri);
-    }
-    catch (e) {
-        vscode.commands.executeCommand('setContext', 'wt.valid', false);
-        let message: string | undefined = undefined;
-        if (typeof e === 'string') {
-            message = e;
-        }
-        else if (e instanceof Error) {
-            message = e.message;
-        }
-        if (message) {
-            vscode.window.showErrorMessage(message);
-        }
-        throw e;
-    }
-
-    const chapters = chapterEntries.filter(([ _, fileType ]) => fileType === vscode.FileType.Directory);
-    const snips = snipEntries.filter(([ _, fileType ]) => fileType === vscode.FileType.Directory);
+export async function initializeOutline<T extends TreeNode>(viewId: string, init: InitializeNode<T>, dontFail?: boolean): Promise<T> {
+    return progressOnViews(viewId, async () => {
+        const dataFolderUri = vscode.Uri.joinPath(extension.rootPath, `data`);
+        const chaptersContainerUri = vscode.Uri.joinPath(dataFolderUri, `chapters`);
+        const workSnipsContainerUri = vscode.Uri.joinPath(dataFolderUri, `snips`);
     
-    const dotConfigChaptersUri = vscode.Uri.joinPath(chaptersContainerUri, `.config`);
-    const dotConfigChapters = await readDotConfig(dotConfigChaptersUri);
-    if (!dotConfigChapters) throw new Error('Error loading chapter config');
-
-    // Parse all chapters
-
-    const chapterNodes: T[] = []
-    for (const [ name, _ ] of chapters) {
-        chapterNodes.push(init(await initializeChapter({
-            parentDotConfig: dotConfigChapters,
-            relativePath: `data/chapters`, 
-            fileName: name, 
-            chaptersContainerUri: chaptersContainerUri,
-            init,
-            dontFail: dontFail
-        })));
-    }
-
-    // Insert chapters into a container
-    const chapterContainerNode: ContainerNode<T> = {
-        ids: {
-            type: 'container',
-            display: 'Chapters',
-            fileName: 'chapters',
-            uri: chaptersContainerUri,
-            ordering: 0,
-            parentUri: dataFolderUri,
-            parentTypeId: 'root',
-            relativePath: 'data'
-        },
-        contents: chapterNodes
-    };
-    const chapterContainer = init(chapterContainerNode);
-
-    const dotConfigSnipsUri = vscode.Uri.joinPath(workSnipsContainerUri, '.config');
-    const dotConfigSnips = await readDotConfig(dotConfigSnipsUri);
-    if (!dotConfigSnips) throw new Error('Error loading snips config');
-
-    // Parse all work snips
-    const snipNodes: T[] = [];
-    for (const [ name,  _ ] of snips) {
-        snipNodes.push(
-            init(await initializeSnip({
-                parentDotConfig: dotConfigSnips,
-                relativePath: `data/snips`, 
+        let chapterEntries: [ string, vscode.FileType ][];
+        let snipEntries: [ string, vscode.FileType ][];
+        try {
+            const dfEntries: [string, vscode.FileType][] = await vscode.workspace.fs.readDirectory(dataFolderUri);
+            let chaptersFound = false;
+            let snipsFound = false;
+            dfEntries.find(([ name, _ ]) => {
+                if (name === 'chapters') { chaptersFound = true; }
+                if (name === 'snips') { snipsFound = true; }
+            });
+            if (!chaptersFound) {
+                vscode.window.showErrorMessage(`Error initializing workspace from file system: '/data/chapters' wasn't found.  Please do not mess with the file system of an IWE environment.`);
+                throw new Error(`Error initializing workspace from file system: '/data/chapters' wasn't found.  Please do not mess with the file system of an IWE environment.`);
+            }
+            if (!snipsFound) {
+                vscode.window.showErrorMessage(`Error initializing workspace from file system: '/data/snips' wasn't found.  Please do not mess with the file system of an IWE environment.`);
+                throw new Error(`Error initializing workspace from file system: '/data/snips' wasn't found.  Please do not mess with the file system of an IWE environment.`);
+            }
+    
+            chapterEntries = await vscode.workspace.fs.readDirectory(chaptersContainerUri);
+            snipEntries = await vscode.workspace.fs.readDirectory(workSnipsContainerUri);
+        }
+        catch (e) {
+            vscode.commands.executeCommand('setContext', 'wt.valid', false);
+            let message: string | undefined = undefined;
+            if (typeof e === 'string') {
+                message = e;
+            }
+            else if (e instanceof Error) {
+                message = e.message;
+            }
+            if (message) {
+                vscode.window.showErrorMessage(message);
+            }
+            throw e;
+        }
+    
+        const chapters = chapterEntries.filter(([ _, fileType ]) => fileType === vscode.FileType.Directory);
+        const snips = snipEntries.filter(([ _, fileType ]) => fileType === vscode.FileType.Directory);
+        
+        const dotConfigChaptersUri = vscode.Uri.joinPath(chaptersContainerUri, `.config`);
+        const dotConfigChapters = await readDotConfig(dotConfigChaptersUri);
+        if (!dotConfigChapters) throw new Error('Error loading chapter config');
+    
+        // Parse all chapters
+    
+        const chapterNodes: T[] = []
+        for (const [ name, _ ] of chapters) {
+            chapterNodes.push(init(await initializeChapter({
+                parentDotConfig: dotConfigChapters,
+                relativePath: `data/chapters`, 
                 fileName: name, 
-                parentTypeId: 'root', 
-                parentUri: workSnipsContainerUri,
+                chaptersContainerUri: chaptersContainerUri,
                 init,
                 dontFail: dontFail
-            }))
-        );
-    }
-
-    // Insert work snips into a container
-    const snipsContainerNode: ContainerNode<T> = {
-        ids: {
-            type: 'container',
-            display: 'Work Snips',
-            fileName: 'snips',
-            uri: workSnipsContainerUri,
-            ordering: 1,
-            parentUri: dataFolderUri,
-            parentTypeId: 'root',
-            relativePath: 'data'
-        },
-        contents: snipNodes
-    };
-    const snipContainer = init(snipsContainerNode);
-
-    const outlineNode: RootNode<T> = {
-        ids: {
-            type: 'root',
-            display: 'root',
-            uri: dataFolderUri,
-            relativePath: 'data',
-            fileName: '',
-            parentTypeId: 'root',
-            parentUri: vscodeUris.Utils.joinPath(extension.rootPath, 'data'),
-            ordering: 0,
-        },
-        chapters: chapterContainer as T,
-        snips: snipContainer as T
-    };
-    return init(outlineNode);
+            })));
+        }
+    
+        // Insert chapters into a container
+        const chapterContainerNode: ContainerNode<T> = {
+            ids: {
+                type: 'container',
+                display: 'Chapters',
+                fileName: 'chapters',
+                uri: chaptersContainerUri,
+                ordering: 0,
+                parentUri: dataFolderUri,
+                parentTypeId: 'root',
+                relativePath: 'data'
+            },
+            contents: chapterNodes
+        };
+        const chapterContainer = init(chapterContainerNode);
+    
+        const dotConfigSnipsUri = vscode.Uri.joinPath(workSnipsContainerUri, '.config');
+        const dotConfigSnips = await readDotConfig(dotConfigSnipsUri);
+        if (!dotConfigSnips) throw new Error('Error loading snips config');
+    
+        // Parse all work snips
+        const snipNodes: T[] = [];
+        for (const [ name,  _ ] of snips) {
+            snipNodes.push(
+                init(await initializeSnip({
+                    parentDotConfig: dotConfigSnips,
+                    relativePath: `data/snips`, 
+                    fileName: name, 
+                    parentTypeId: 'root', 
+                    parentUri: workSnipsContainerUri,
+                    init,
+                    dontFail: dontFail
+                }))
+            );
+        }
+    
+        // Insert work snips into a container
+        const snipsContainerNode: ContainerNode<T> = {
+            ids: {
+                type: 'container',
+                display: 'Work Snips',
+                fileName: 'snips',
+                uri: workSnipsContainerUri,
+                ordering: 1,
+                parentUri: dataFolderUri,
+                parentTypeId: 'root',
+                relativePath: 'data'
+            },
+            contents: snipNodes
+        };
+        const snipContainer = init(snipsContainerNode);
+    
+        const outlineNode: RootNode<T> = {
+            ids: {
+                type: 'root',
+                display: 'root',
+                uri: dataFolderUri,
+                relativePath: 'data',
+                fileName: '',
+                parentTypeId: 'root',
+                parentUri: vscodeUris.Utils.joinPath(extension.rootPath, 'data'),
+                ordering: 0,
+            },
+            chapters: chapterContainer as T,
+            snips: snipContainer as T
+        };
+        return init(outlineNode);
+    });
 }
 
 type ChapterParams<T extends TreeNode> = {

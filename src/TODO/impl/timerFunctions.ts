@@ -1,9 +1,5 @@
 import * as vscode from 'vscode';
-import { TODOsView, Validation } from "../TODOsView";
-import { TODONode } from '../node';
-import { initializeOutline } from '../../outlineProvider/initialize';
-import * as extension from '../../extension';
-import { setFsPathKey } from '../../miscTools/help';
+import { TODOsView } from "../TODOsView";
 
 export async function update (
     this: TODOsView,

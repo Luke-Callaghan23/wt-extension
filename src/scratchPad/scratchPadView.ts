@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../workspace/workspaceClass';
 import * as extension from '../extension';
-import { InitializeNode, initializeChapter, initializeFragment, initializeOutline, initializeSnip } from '../outlineProvider/initialize';
+import { initializeSnip } from '../outlineProvider/initialize';
 // import { OutlineNode, ResourceType } from '../outline/node';
 import { NodeTypes, ResourceType } from '../outlineProvider/fsNodes';
 import { ConfigFileInfo, determineAuxViewColumn } from '../miscTools/help';
@@ -175,6 +175,7 @@ implements
         ScratchPadView.scratchPadConfigUri = vscode.Uri.joinPath(ScratchPadView.scratchPadContainerUri, '.config')
     }
 
+    static readonly viewId: string = 'wt.scratchPad';
     async init () {
         // Since older versions of WTANIWe did not have scratch pad, we can't take it as a given that the scratchPad folder
         //      exists in the workspace
@@ -191,7 +192,7 @@ implements
         if (rootNodes === null) return;
         this.rootNodes = rootNodes;
         
-        this.view = vscode.window.createTreeView('wt.scratchPad', { 
+        this.view = vscode.window.createTreeView(ScratchPadView.viewId, { 
             treeDataProvider: this,
             showCollapseAll: true, 
             canSelectMany: true,

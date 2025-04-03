@@ -45,6 +45,7 @@ import { SearchResultsView } from './search/searchResultsView';
 import { SearchBarView } from './search/searchBarView';
 import { FragmentOverviewView } from './fragmentOverview/fragmentOverview';
 import { FragmentLinker } from './miscTools/fragmentLinker';
+import { getSectionedProgressReporter, progressOnViews } from './miscTools/help';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -91,8 +92,7 @@ async function loadExtensionWorkspace (
     workDivision: number = -1,
 ): Promise<void> {
     try {
-
-        type LoadStatuses = [
+        const report = getSectionedProgressReporter ([
             "Loaded outline",
             "Loaded TODO tree",
             "Loaded recycling bin",
@@ -107,18 +107,7 @@ async function loadExtensionWorkspace (
             "Loaded tab labels",
             "Loaded text-to-speech debugger",
             "Finished.",
-        ]
-        type ValueOfTuple<T extends readonly any[]> = T[number];
-        const report = (status: ValueOfTuple<LoadStatuses>) => {
-            if (workDivision < 0) {
-                progress.report({ message: status });        
-            }
-            else {
-                const totalStatuses: LoadStatuses['length'] = 14;
-                const thisProgress = 100 * workDivision * 1/totalStatuses;
-                progress.report({ message: status, increment: thisProgress });
-            }
-        }
+        ] as const, progress, workDivision);
 
         const outline = new OutlineView(context, workspace);                // wt.outline
         await outline.init();
@@ -256,18 +245,31 @@ export function activate (context: vscode.ExtensionContext) {
 
 
 async function loadExtensionWithProgress (context: vscode.ExtensionContext, title: "Starting Integrated Writing Environment" | "Reloading Integrated Writing Environment"): Promise<boolean> {
-    // Attempt to load a workspace from the current location
-    return vscode.window.withProgress<boolean>({
-        location: vscode.ProgressLocation.Notification,
-        title: title
-    }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
-        const workspace = await loadWorkspace(context);
-        progress.report({ message: "Loaded workspace" });
-        if (workspace === null) return false;
-
-        await loadExtensionWorkspace(context, workspace, progress);
-        progress.report({ message: "Loaded extension" })
-        return true;
+    return progressOnViews([
+        "wt.outline",
+        "wt.wordWatcher",
+        "wt.overview",
+        "wt.todo",
+        "wt.synonyms",
+        "wt.wh",
+        "wt.import.fileExplorer",
+        "wt.export",
+        "wt.scratchPad",
+        "wt.recyclingBin",
+        "wt.workBible.tree",
+        "wt.wtSearch.search",
+        "wt.wtSearch.results",
+    ], {
+        title: title,
+        worker: async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+            const workspace = await loadWorkspace(context);
+            progress.report({ message: "Loaded workspace" });
+            if (workspace === null) return false;
+    
+            await loadExtensionWorkspace(context, workspace, progress);
+            progress.report({ message: "Loaded extension" })
+            return true;
+        }
     });
 }
 

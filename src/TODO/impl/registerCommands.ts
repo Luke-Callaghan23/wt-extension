@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { TODO, TODOsView } from '../TODOsView';
-import { initializeOutline } from '../../outlineProvider/initialize';
 import { TODONode } from '../node';
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode } from '../../outlineProvider/fsNodes';

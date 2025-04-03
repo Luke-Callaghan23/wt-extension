@@ -5,6 +5,7 @@ import { OutlineView } from '../outline/outlineView';
 import * as vscodeUri from 'vscode-uri';
 import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
 import { v4 as uuidv4 } from 'uuid';
+import { defaultProgress } from '../miscTools/help';
 
 export class WordCount {
     wordCountStatus: vscode.StatusBarItem;
@@ -101,65 +102,68 @@ export class WordCount {
             };
         }
 
-        const promises: Promise<DisplayInfo>[] = [];
-        const root: RootNode = outlineView.rootNodes[0].data as RootNode;
-        
-        // Create promises to collect display data for all existing chapters
-        const chapters: ContainerNode = root.chapters.data as ContainerNode;
-        for (const chapterWrapper of chapters.contents) {
-            const chapter = chapterWrapper.data as ChapterNode;
-            const fragments: FragmentNode[] = chapter.textData.map(fragmentWrapper => fragmentWrapper.data as FragmentNode);
-            promises.push(processContainer('chapter', chapter.ids.display, chapter.ids.uri, fragments));
-        }
-        
-        // Create promises to collect display data for all existing work snips
-        const workSnips: ContainerNode = root.snips.data as ContainerNode;
-        for (const workSnipWrapper of workSnips.contents) {
-            const snip = workSnipWrapper.data as SnipNode;
-            const fragments: FragmentNode[] = snip.contents.map(fragmentWrapper => fragmentWrapper.data as FragmentNode);
-            promises.push(processContainer('snip', snip.ids.display, snip.ids.uri, fragments));
-        }
 
-        // Wait for all fragments to be processed
-        const displayData = await Promise.all(promises);
-
-        // Get word count statistics
-        const chaptersDisplay = displayData.filter(dd => dd.kind === 'chapter');
-        const chaptersWordCount = chaptersDisplay.reduce((acc, current) => {
-            return acc + current.wordCount;
-        }, 0);
-
-        const snipsDisplay = displayData.filter(dd => dd.kind === 'snip');        
-        const snipsWordCount = snipsDisplay.reduce((acc, current) => {
-            return acc + current.wordCount;
-        }, 0);
-        
-        const totalWordCount = chaptersWordCount + snipsWordCount;
-
-        // Format data in markdown
-        const processContainerMD = (container: DisplayInfo) => {
-            const fragmentsMD = container.breakdown.map(fragment => {
-                return `    - '${fragment.name}' (${fragment.wordCount} words)`;
-            }).join('\n');
-            return `  - '${container.name}' (${container.wordCount} words)\n${fragmentsMD}`;
-        };
-
-        const chaptersMD = chaptersDisplay.map(processContainerMD).join('\n');
-        const snipsMD = snipsDisplay.map(processContainerMD).join('\n');
-
-        const md = `# Total Word Count: ${totalWordCount}\n- Chapters Word Count: ${chaptersWordCount}\n${chaptersMD}\n- Work Snips Word Count: ${snipsWordCount}\n${snipsMD}`;
-        const mdBuffer = extension.encoder.encode(md);
-
-        // Create a 'tmp' folder for storing the markdown
-        const tmpFolderPath = vscodeUri.Utils.joinPath(extension.rootPath, 'tmp');
-        await vscode.workspace.fs.createDirectory(tmpFolderPath);
-
-        // Create a file with the markdown data inside of it
-        const tmpFilePath = vscodeUri.Utils.joinPath(tmpFolderPath, `${uuidv4()}.md`);
-        vscode.workspace.fs.writeFile(tmpFilePath, mdBuffer);
-
-        // Open a markdown preview for this content
-        await vscode.commands.executeCommand("markdown.showPreview", tmpFilePath);
+        return defaultProgress("Collecting file word counts", async () => {
+            const promises: Promise<DisplayInfo>[] = [];
+            const root: RootNode = outlineView.rootNodes[0].data as RootNode;
+            
+            // Create promises to collect display data for all existing chapters
+            const chapters: ContainerNode = root.chapters.data as ContainerNode;
+            for (const chapterWrapper of chapters.contents) {
+                const chapter = chapterWrapper.data as ChapterNode;
+                const fragments: FragmentNode[] = chapter.textData.map(fragmentWrapper => fragmentWrapper.data as FragmentNode);
+                promises.push(processContainer('chapter', chapter.ids.display, chapter.ids.uri, fragments));
+            }
+            
+            // Create promises to collect display data for all existing work snips
+            const workSnips: ContainerNode = root.snips.data as ContainerNode;
+            for (const workSnipWrapper of workSnips.contents) {
+                const snip = workSnipWrapper.data as SnipNode;
+                const fragments: FragmentNode[] = snip.contents.map(fragmentWrapper => fragmentWrapper.data as FragmentNode);
+                promises.push(processContainer('snip', snip.ids.display, snip.ids.uri, fragments));
+            }
+    
+            // Wait for all fragments to be processed
+            const displayData = await Promise.all(promises);
+    
+            // Get word count statistics
+            const chaptersDisplay = displayData.filter(dd => dd.kind === 'chapter');
+            const chaptersWordCount = chaptersDisplay.reduce((acc, current) => {
+                return acc + current.wordCount;
+            }, 0);
+    
+            const snipsDisplay = displayData.filter(dd => dd.kind === 'snip');        
+            const snipsWordCount = snipsDisplay.reduce((acc, current) => {
+                return acc + current.wordCount;
+            }, 0);
+            
+            const totalWordCount = chaptersWordCount + snipsWordCount;
+    
+            // Format data in markdown
+            const processContainerMD = (container: DisplayInfo) => {
+                const fragmentsMD = container.breakdown.map(fragment => {
+                    return `    - '${fragment.name}' (${fragment.wordCount} words)`;
+                }).join('\n');
+                return `  - '${container.name}' (${container.wordCount} words)\n${fragmentsMD}`;
+            };
+    
+            const chaptersMD = chaptersDisplay.map(processContainerMD).join('\n');
+            const snipsMD = snipsDisplay.map(processContainerMD).join('\n');
+    
+            const md = `# Total Word Count: ${totalWordCount}\n- Chapters Word Count: ${chaptersWordCount}\n${chaptersMD}\n- Work Snips Word Count: ${snipsWordCount}\n${snipsMD}`;
+            const mdBuffer = extension.encoder.encode(md);
+    
+            // Create a 'tmp' folder for storing the markdown
+            const tmpFolderPath = vscodeUri.Utils.joinPath(extension.rootPath, 'tmp');
+            await vscode.workspace.fs.createDirectory(tmpFolderPath);
+    
+            // Create a file with the markdown data inside of it
+            const tmpFilePath = vscodeUri.Utils.joinPath(tmpFolderPath, `${uuidv4()}.md`);
+            vscode.workspace.fs.writeFile(tmpFilePath, mdBuffer);
+    
+            // Open a markdown preview for this content
+            await vscode.commands.executeCommand("markdown.showPreview", tmpFilePath);
+        })
     }
     
 

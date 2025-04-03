@@ -9,7 +9,7 @@ import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
+import { compareFsPath, defaultProgress, formatFsPathForCompare } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 
 export interface Note {
@@ -398,26 +398,28 @@ implements
         token: vscode.CancellationToken
     ): Promise<vscode.Location[] | null> {
         if (!this.matchedNotes) return null;
-
+        
         const documentMatches = this.matchedNotes[formatFsPathForCompare(document.uri)];
         if (!documentMatches) return null;
 
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
-    
-        const subsetNounsRegex = this.getNounsRegex(false, false, [ matchedNote.note ]);
-        const grepLocations: vscode.Location[] = []; 
-        for await (const loc of grepExtensionDirectory(subsetNounsRegex.source, true, true, true)) {
-            if (loc === null) return null;
-            grepLocations.push(loc);
-        }
 
-        // For some reason the reference provider needs the locations to be indexed one less than the results from the 
-        //      grep of the nouns
-        // Not sure why that is -- but subtracting one from each character index works here
-        return grepLocations.map(loc => new vscode.Location(loc.uri, new vscode.Range(
-            new vscode.Position(loc.range.start.line, Math.max(loc.range.start.character - 1, 0)),
-            new vscode.Position(loc.range.end.line, Math.max(loc.range.end.character - 1, 0))
-        )));
+        return defaultProgress(`Collecting references for '${matchedNote.note.noun}'`, async () => {
+            const subsetNounsRegex = this.getNounsRegex(false, false, [ matchedNote.note ]);
+            const grepLocations: vscode.Location[] = []; 
+            for await (const loc of grepExtensionDirectory(subsetNounsRegex.source, true, true, true)) {
+                if (loc === null) return null;
+                grepLocations.push(loc);
+            }
+    
+            // For some reason the reference provider needs the locations to be indexed one less than the results from the 
+            //      grep of the nouns
+            // Not sure why that is -- but subtracting one from each character index works here
+            return grepLocations.map(loc => new vscode.Location(loc.uri, new vscode.Range(
+                new vscode.Position(loc.range.start.line, Math.max(loc.range.start.character - 1, 0)),
+                new vscode.Position(loc.range.end.line, Math.max(loc.range.end.character - 1, 0))
+            )));
+        });
     }
 }

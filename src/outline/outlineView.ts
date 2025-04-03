@@ -22,6 +22,7 @@ import { handleDragController, handleDropController } from './impl/dragDropContr
 import { TODOsView } from '../TODO/TODOsView';
 import * as search from '../miscTools/searchFiles';
 import { NodeMoveKind } from './nodes_impl/handleMovement/generalMoveNode';
+import { defaultProgress } from '../miscTools/help';
 
 export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Renamable<OutlineNode> {
     // Deleting nodes
@@ -46,7 +47,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 	//#region Tree Provider methods
 	async initializeTree(): Promise<OutlineNode> {
 		const init: InitializeNode<OutlineNode> = (data: NodeTypes<OutlineNode>) => new OutlineNode(data);
-        return initializeOutline(init);
+        return initializeOutline(OutlineView.viewId, init);
     }
 
 	async refresh(reload: boolean, updates: OutlineNode[]): Promise<void> {
@@ -121,11 +122,12 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 		this.registerCommands();
 	}
 
+	static viewId: string = 'wt.outline';
     constructor(
         protected context: vscode.ExtensionContext, 
 		public workspace: Workspace
     ) {
-        super(context, 'wt.outline', "Outline");
+        super(context, OutlineView.viewId, "Outline");
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 
 		// Set up callback for text editor change that displays the opened document in the outline view
