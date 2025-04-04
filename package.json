@@ -229,7 +229,7 @@
 					"id": "wt.welcome",
 					"name": "Welcome",
 					"contextualTitle": "Welcome",
-					"when": "!wt.loaded"
+					"when": "!wt.loaded || !wt.valid"
 				},
 				{
 					"id": "wt.outline",
