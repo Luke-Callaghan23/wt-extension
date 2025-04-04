@@ -205,7 +205,8 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
     }
     
     // Set the value of the context item wt.valid to the result of the validation process 
-    vscode.commands.executeCommand('setContext', 'wt.valid', valid);
+    await vscode.commands.executeCommand('setContext', 'wt.valid', valid);
+    await vscode.commands.executeCommand('setContext', 'wt.loaded', true);
     
     if (!valid) {
         return null;

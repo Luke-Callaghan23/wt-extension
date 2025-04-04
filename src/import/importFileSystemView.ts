@@ -119,44 +119,6 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 	}
 	//#endregion
 
-
-	async handleImportDialog () {
-		const uris = await vscode.window.showOpenDialog({ 
-			canSelectFiles: true, 
-			canSelectFolders: true, 
-			canSelectMany: true, 
-			openLabel: 'import', 
-			filters: {
-				// eslint-disable-next-line @typescript-eslint/naming-convention
-				'Text': [
-					'wt',
-					'txt',
-					'docx',
-					'html',
-					'odt',
-					'md',
-				]
-			}
-		});
-		if (!uris) return;
-		
-		// Ask the user if their sure about the copy proceedure
-		const proceed = await vscode.window.showInformationMessage(`Copying ${uris.length} resources`, {
-			modal: true,
-			detail: 'Data will be copied, not moved.'
-		}, 'Okay', 'Cancel');
-		if (proceed === 'Cancel' || proceed === undefined) return;
-
-		// Import each uri
-		// Don't need to await them, as none of the imports (should) rely on each other
-		await Promise.all(uris.map(uri => {
-			const uriName = vscodeUris.Utils.basename(uri);
-			const dest = vscode.Uri.joinPath(this.importFolder, uriName);
-			return vscode.workspace.fs.copy(uri, dest);
-		}));
-		this.refresh();
-	}
-
 	private filterResource (resource: Entry) {
 		this.excludedFiles.push(resource.uri.fsPath);
 		this.refresh();
@@ -199,8 +161,10 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 			vscode.commands.executeCommand('wt.walkthroughs.openImports');
 		});
 
-		// Adding files to the import folder
-		vscode.commands.registerCommand('wt.import.fileExplorer.importFiles', () => this.handleImportDialog());
+		// // Adding files to the import folder
+		// vscode.commands.registerCommand('wt.import.fileExplorer.importFiles', () => {
+		// 	new ImportForm(this.context.extensionUri, this.context, this.allDocs);
+		// });
 
 
 		vscode.commands.registerCommand('wt.import.fileExplorer.openFileExplorer', () => {

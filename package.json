@@ -188,9 +188,14 @@
 		},
 		"viewsWelcome": [
 			{
-				"view": "wt.outline",
+				"view": "wt.welcome",
+				"contents": "Loading your WT environment.\n[Loading . . . ](command:wt.reload)",
+				"when": "!wt.loaded"
+			},
+			{
+				"view": "wt.welcome",
 				"contents": "No WT workspace found.\n[Create Workspace](command:wt.createWorkspace)\nImport a workspace from a .iwe file.\n[Import Workspace](command:wt.importWorkspace)\nAttempt to reload the current workspace.\n[Reload](command:wt.reload)",
-				"when": "!wt.valid"
+				"when": "wt.loaded && !wt.valid"
 			},
 			{
 				"view": "wt.export",
@@ -221,9 +226,16 @@
 		"views": {
 			"wt": [
 				{
+					"id": "wt.welcome",
+					"name": "Welcome",
+					"contextualTitle": "Welcome",
+					"when": "!wt.loaded"
+				},
+				{
 					"id": "wt.outline",
 					"name": "Outline",
-					"contextualTitle": "Outline"
+					"contextualTitle": "Outline",
+					"when": "wt.valid"
 				},
 				{
 					"id": "wt.wordWatcher",

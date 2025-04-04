@@ -109,9 +109,12 @@ async function loadExtensionWorkspace (
             "Finished.",
         ] as const, progress, workDivision);
 
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
         const outline = new OutlineView(context, workspace);                // wt.outline
         await outline.init();
         report("Loaded outline");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const importFS = new ImportFileSystemView(context, workspace);        // wt.import.fileSystem
         const synonyms = new SynonymViewProvider(context, workspace);        // wt.synonyms
@@ -119,6 +122,7 @@ async function loadExtensionWorkspace (
         const todo = new TODOsView(context, workspace);                        // wt.todo
         await todo.init();
         report("Loaded TODO tree");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const wordWatcher = new WordWatcher(context, workspace);            // wt.wordWatcher
         const proximity = new Proximity(context, workspace);
@@ -126,38 +130,46 @@ async function loadExtensionWorkspace (
         const recycleBin = new RecyclingBinView(context, workspace);        
         await recycleBin.initialize();
         report("Loaded recycling bin");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const autocorrection = new Autocorrect(context, workspace);
         const personalDictionary = new PersonalDictionary(context, workspace);
         const spellcheck = new Spellcheck(context, workspace, personalDictionary, autocorrection);
         report("Loaded spellchecker");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, true);
         const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
         const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
         report("Loaded intellisense");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const reloadWatcher = new ReloadWatcher(workspace, context);
         const scratchPad = new ScratchPadView(context, workspace);
         await scratchPad.init();
         report("Loaded scratch pad");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const fragmentOverview = new FragmentOverviewView(context, workspace);
         report("Loaded fragment overview");
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         const tabStates = new TabStates(context, workspace);
         report("Loaded tab groups");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const searchResultsView = new SearchResultsView(workspace, context);
         const searchBarView = new SearchBarView(context, workspace, searchResultsView);
         searchResultsView.initialize();
         report("Loaded search bad");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         
         const workBible = new WorkBible(workspace, context);
         await workBible.initialize()
         report("Loaded work bible");
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         ExtensionGlobals.initialize(outline, recycleBin, scratchPad, workBible, todo, workspace, context);
         
@@ -165,6 +177,7 @@ async function loadExtensionWorkspace (
         const wordCountStatus = new WordCount();
         const statusBarTimer = new StatusBarTimer(context);
         report("Loaded status bar items");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         new FileLinker(context, workspace);
         new FragmentLinker();
@@ -214,14 +227,17 @@ async function loadExtensionWorkspace (
 
         await TabLabels.assignNamesForOpenTabs();
         report("Loaded tab labels");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         activateSpeak(context);
         activateDebug(context);
         report("Loaded text-to-speech debugger");
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         reloadWatcher.checkForRestoreTabs();
         outline.selectActiveDocument(vscode.window.activeTextEditor);
         report("Finished.");
+        await new Promise(resolve => setTimeout(resolve, 500));
     }
     catch (e) {
         handleLoadFailure(e);
@@ -246,19 +262,19 @@ export function activate (context: vscode.ExtensionContext) {
 
 async function loadExtensionWithProgress (context: vscode.ExtensionContext, title: "Starting Integrated Writing Environment" | "Reloading Integrated Writing Environment"): Promise<boolean> {
     return progressOnViews([
-        "wt.outline",
-        "wt.wordWatcher",
-        "wt.overview",
-        "wt.todo",
-        "wt.synonyms",
-        "wt.wh",
-        "wt.import.fileExplorer",
-        "wt.export",
-        "wt.scratchPad",
-        "wt.recyclingBin",
-        "wt.workBible.tree",
-        "wt.wtSearch.search",
-        "wt.wtSearch.results",
+        // "wt.outline",
+        // "wt.wordWatcher",
+        // "wt.overview",
+        // "wt.todo",
+        // "wt.synonyms",
+        // "wt.wh",
+        // "wt.import.fileExplorer",
+        // "wt.export",
+        // "wt.scratchPad",
+        // "wt.recyclingBin",
+        // "wt.workBible.tree",
+        // "wt.wtSearch.search",
+        // "wt.wtSearch.results",
     ], title, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
         const workspace = await loadWorkspace(context);
         progress.report({ message: "Loaded workspace" });
