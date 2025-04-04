@@ -374,10 +374,6 @@ export function getSectionedProgressReporter <T extends readonly string[]>(
     };
 };
 
-type ExactlyOne<T> = {
-    [K in keyof T]-?: Required<Pick<T, K>> & Partial<Record<Exclude<keyof T, K>, never>>;
-}[keyof T];
-
 export function progressOnViews <T> (
     viewIds: string[] | string, 
     worker: () => Promise<T>
@@ -399,13 +395,12 @@ export function progressOnViews <T> (
 }
 
 
-let a = 1;
 export function progressOnViews_impl <T> (
     viewIds: string[] | string, 
     titleOrWorker: (() => Promise<T>) | string,
     workerOrNothing?: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>,
 ): Thenable<T> {
-    if (viewIds.length === 0 || typeof viewIds === 'string' || a == 1) {
+    if (viewIds.length === 0 || typeof viewIds === 'string') {
         if (typeof titleOrWorker === 'function') {
             return titleOrWorker();
         }

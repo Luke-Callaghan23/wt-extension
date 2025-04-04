@@ -135,18 +135,18 @@ async function loadExtensionWorkspace (
         const spellcheck = new Spellcheck(context, workspace, personalDictionary, autocorrection);
         report("Loaded spellchecker");
 
-        // const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, true);
-        // const veryIntellisense = new VeryIntellisense(context, workspace);
-        // const colorGroups = new ColorGroups(context);
-        // const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+        const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, true);
+        const veryIntellisense = new VeryIntellisense(context, workspace);
+        const colorGroups = new ColorGroups(context);
+        const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
         report("Loaded intellisense");
 
-        // const reloadWatcher = new ReloadWatcher(workspace, context);
+        const reloadWatcher = new ReloadWatcher(workspace, context);
         const scratchPad = new ScratchPadView(context, workspace);
         await scratchPad.init();
         report("Loaded scratch pad");
 
-        // const fragmentOverview = new FragmentOverviewView(context, workspace);
+        const fragmentOverview = new FragmentOverviewView(context, workspace);
         report("Loaded fragment overview");
         
         // const tabStates = new TabStates(context, workspace);
@@ -158,34 +158,33 @@ async function loadExtensionWorkspace (
 
         ExtensionGlobals.initialize(outline, recycleBin, scratchPad, workBible, todo, workspace, context);
 
-        // const searchResultsView = new SearchResultsView(workspace, context);
-        // const searchBarView = new SearchBarView(context, workspace, searchResultsView);
-        // searchResultsView.initialize();
-        // report("Loaded search bad");
+        const searchResultsView = new SearchResultsView(workspace, context);
+        const searchBarView = new SearchBarView(context, workspace, searchResultsView);
+        searchResultsView.initialize();
+        report("Loaded search bad");
 
         new CoderModer(context);
-        // const wordCountStatus = new WordCount();
-        // const statusBarTimer = new StatusBarTimer(context);
+        const wordCountStatus = new WordCount();
+        const statusBarTimer = new StatusBarTimer(context);
         report("Loaded status bar items");
 
-        // new FileLinker(context, workspace);
-        // new FragmentLinker();
+        new FileLinker(context, workspace);
+        new FragmentLinker();
 
-        // const timedViews = new TimedView(context, [
-        //     ['wt.workBible.tree', 'workBible', workBible],
-        //     ['wt.todo', 'todo', todo],
-        //     ['wt.wordWatcher', 'wordWatcher', wordWatcher],
-        //     // ['wt.proximity', 'proximity', proximity],
-        //     ['wt.spellcheck', 'spellcheck', spellcheck],
-        //     ['wt.very', 'very', veryIntellisense],  
-        //     ['wt.colors', 'colors', colorIntellisense],
-        //     ['wt.textStyle', 'textStyle', textStyles],
-        //     ['wt.autocorrections', 'autocorrections', autocorrection],
-        //     ['wt.overview', 'overview', fragmentOverview]
-        // ]);
+        const timedViews = new TimedView(context, [
+            ['wt.workBible.tree', 'workBible', workBible],
+            ['wt.todo', 'todo', todo],
+            ['wt.wordWatcher', 'wordWatcher', wordWatcher],
+            // ['wt.proximity', 'proximity', proximity],
+            ['wt.spellcheck', 'spellcheck', spellcheck],
+            ['wt.very', 'very', veryIntellisense],  
+            ['wt.colors', 'colors', colorIntellisense],
+            ['wt.textStyle', 'textStyle', textStyles],
+            ['wt.autocorrections', 'autocorrections', autocorrection],
+            ['wt.overview', 'overview', fragmentOverview]
+        ]);
 
-        // const tabLabels = new TabLabels();
-
+        const tabLabels = new TabLabels();
 
         // Register commands for the toolbar (toolbar that appears when editing a .wt file)
         Toolbar.registerCommands();
@@ -220,8 +219,8 @@ async function loadExtensionWorkspace (
         activateDebug(context);
         report("Loaded text-to-speech debugger");
 
-        // reloadWatcher.checkForRestoreTabs();
-        // outline.selectActiveDocument(vscode.window.activeTextEditor);
+        await reloadWatcher.checkForRestoreTabs();
+        await outline.selectActiveDocument(vscode.window.activeTextEditor);
         report("Finished.");
     }
     catch (e) {
@@ -246,29 +245,29 @@ export function activate (context: vscode.ExtensionContext) {
 
 
 async function loadExtensionWithProgress (context: vscode.ExtensionContext, title: "Starting Integrated Writing Environment" | "Reloading Integrated Writing Environment"): Promise<boolean> {
-    // return progressOnViews([
-    //     // "wt.outline",
-    //     // "wt.wordWatcher",
-    //     // "wt.overview",
-    //     // "wt.todo",
-    //     // "wt.synonyms",
-    //     // "wt.wh",
-    //     // "wt.import.fileExplorer",
-    //     // "wt.export",
-    //     // "wt.scratchPad",
-    //     // "wt.recyclingBin",
-    //     // "wt.workBible.tree",
-    //     // "wt.wtSearch.search",
-    //     // "wt.wtSearch.results",
-    // ], title, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
-    // });
-    const workspace = await loadWorkspace(context);
-    // progress.report({ message: "Loaded workspace" });
-    if (workspace === null) return false;
-
-    await loadExtensionWorkspace(context, workspace);
-    // progress.report({ message: "Loaded extension" })
-    return true;
+    return progressOnViews([
+        "wt.outline",
+        "wt.wordWatcher",
+        "wt.overview",
+        "wt.todo",
+        "wt.synonyms",
+        "wt.wh",
+        "wt.import.fileExplorer",
+        "wt.export",
+        "wt.scratchPad",
+        "wt.recyclingBin",
+        "wt.workBible.tree",
+        "wt.wtSearch.search",
+        "wt.wtSearch.results",
+    ], title, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+        const workspace = await loadWorkspace(context);
+        progress.report({ message: "Loaded workspace" });
+        if (workspace === null) return false;
+    
+        await loadExtensionWorkspace(context, workspace);
+        progress.report({ message: "Loaded extension" })
+        return true;
+    });
 }
 
 async function activateImpl (context: vscode.ExtensionContext) {
