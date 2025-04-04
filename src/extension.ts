@@ -262,19 +262,19 @@ export function activate (context: vscode.ExtensionContext) {
 
 async function loadExtensionWithProgress (context: vscode.ExtensionContext, title: "Starting Integrated Writing Environment" | "Reloading Integrated Writing Environment"): Promise<boolean> {
     return progressOnViews([
-        "wt.outline",
-        "wt.wordWatcher",
-        "wt.overview",
-        "wt.todo",
-        "wt.synonyms",
-        "wt.wh",
-        "wt.import.fileExplorer",
-        "wt.export",
-        "wt.scratchPad",
-        "wt.recyclingBin",
-        "wt.workBible.tree",
-        "wt.wtSearch.search",
-        "wt.wtSearch.results",
+        // "wt.outline",
+        // "wt.wordWatcher",
+        // "wt.overview",
+        // "wt.todo",
+        // "wt.synonyms",
+        // "wt.wh",
+        // "wt.import.fileExplorer",
+        // "wt.export",
+        // "wt.scratchPad",
+        // "wt.recyclingBin",
+        // "wt.workBible.tree",
+        // "wt.wtSearch.search",
+        // "wt.wtSearch.results",
     ], title, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
         const workspace = await loadWorkspace(context);
         progress.report({ message: "Loaded workspace" });

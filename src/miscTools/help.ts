@@ -398,12 +398,14 @@ export function progressOnViews <T> (
     return progressOnViews_impl(viewIds, titleOrWorker, workerOrNothing);
 }
 
+
+let a = 1;
 export function progressOnViews_impl <T> (
     viewIds: string[] | string, 
     titleOrWorker: (() => Promise<T>) | string,
     workerOrNothing?: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>,
 ): Thenable<T> {
-    if (viewIds.length === 0 || typeof viewIds === 'string') {
+    if (viewIds.length === 0 || typeof viewIds === 'string' || a == 1) {
         if (typeof titleOrWorker === 'function') {
             return titleOrWorker();
         }
