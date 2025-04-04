@@ -259,17 +259,14 @@ async function loadExtensionWithProgress (context: vscode.ExtensionContext, titl
         "wt.workBible.tree",
         "wt.wtSearch.search",
         "wt.wtSearch.results",
-    ], {
-        title: title,
-        worker: async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
-            const workspace = await loadWorkspace(context);
-            progress.report({ message: "Loaded workspace" });
-            if (workspace === null) return false;
-    
-            await loadExtensionWorkspace(context, workspace, progress);
-            progress.report({ message: "Loaded extension" })
-            return true;
-        }
+    ], title, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+        const workspace = await loadWorkspace(context);
+        progress.report({ message: "Loaded workspace" });
+        if (workspace === null) return false;
+
+        await loadExtensionWorkspace(context, workspace, progress);
+        progress.report({ message: "Loaded extension" })
+        return true;
     });
 }
 
