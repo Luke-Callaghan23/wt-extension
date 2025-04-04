@@ -162,9 +162,9 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		});
 
 		// // Adding files to the import folder
-		// vscode.commands.registerCommand('wt.import.fileExplorer.importFiles', () => {
-		// 	new ImportForm(this.context.extensionUri, this.context, this.allDocs);
-		// });
+		vscode.commands.registerCommand('wt.import.fileExplorer.importFiles', () => {
+			new ImportForm(this.context.extensionUri, this.context, this.allDocs);
+		});
 
 
 		vscode.commands.registerCommand('wt.import.fileExplorer.openFileExplorer', () => {
