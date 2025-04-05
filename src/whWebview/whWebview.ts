@@ -19,9 +19,7 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 
 		this._extensionUri = context.extensionUri;
 		try {
-			context.subscriptions.push (
-				vscode.window.registerWebviewViewProvider('wt.wh', this)
-			);
+			context.subscriptions.push(vscode.window.registerWebviewViewProvider('wt.wh', this));
 		}
 		catch (e) {
 			console.log(`${e}`);
@@ -38,22 +36,22 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 		
 	private registerCommands () {
 			
-		vscode.commands.registerCommand('wt.wh.clearSynonyms', () => {
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.wh.clearSynonyms', () => {
 			this.clearSynonyms();
-		});
+		}));
 		
-		vscode.commands.registerCommand('wt.wh.addSynonym', (term) => {
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.wh.addSynonym', (term) => {
 			this.addSynonym(term);
-		});
+		}));
 
-		vscode.commands.registerCommand("wt.wh.help", () => {
+		this.context.subscriptions.push(vscode.commands.registerCommand("wt.wh.help", () => {
 			vscode.window.showInformationMessage(`Synonyms`, {
                 modal: true,
                 detail: `The synonyms panel is an area where you can quickly look up synonyms/definitions to words.`
             }, 'Okay');
-		});
+		}));
 
-		vscode.commands.registerCommand("wt.wh.searchWord", () => {
+		this.context.subscriptions.push(vscode.commands.registerCommand("wt.wh.searchWord", () => {
 			(async () => {
 				// Get the active text editor
 				const editor = vscode.window.activeTextEditor;
@@ -94,14 +92,14 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 					this.addSynonym(text);
 				}
 			})();
-		});
+		}));
 		
-		vscode.commands.registerCommand("wt.wh.refresh", (refreshWith: string[]) => {
+		this.context.subscriptions.push(vscode.commands.registerCommand("wt.wh.refresh", (refreshWith: string[]) => {
 			this._view?.webview.postMessage({
 				type: "refreshSynonyms",
 				terms: refreshWith
 			});
-		})
+		}));
 	}
 
 	public resolveWebviewView (
@@ -117,7 +115,7 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 		};
 
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-		webviewView.webview.onDidReceiveMessage(data => {
+		this.context.subscriptions.push(webviewView.webview.onDidReceiveMessage(data => {
 			switch (data.type) {
 				case 'pasteSynonym':
 					vscode.window.activeTextEditor?.insertSnippet(new vscode.SnippetString(`${data.value}`));
@@ -161,7 +159,7 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 
 					break;
 			}
-		});
+		}));
 	}
 
 	public addSynonym (term: string) {

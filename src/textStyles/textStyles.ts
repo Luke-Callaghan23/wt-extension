@@ -5,7 +5,7 @@ import * as console from '../miscTools/vsconsole';
 import { Packageable } from '../packageable';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
-import { update, disable  } from './timer';
+import { update, disable, italicsDecoration, boldDecoration, underlineDecoration, strikethroughDecoration  } from './timer';
 import { hexToRgb } from '../miscTools/help';
 
 export class TextStyles implements Timed {
@@ -20,6 +20,10 @@ export class TextStyles implements Timed {
         // Will later be modified by TimedView
         this.enabled = true;
         this.registerCommands();
+        this.context.subscriptions.push(italicsDecoration);
+        this.context.subscriptions.push(boldDecoration);
+        this.context.subscriptions.push(underlineDecoration);
+        this.context.subscriptions.push(strikethroughDecoration);
 	}
     registerCommands () {
 

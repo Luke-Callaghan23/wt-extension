@@ -133,22 +133,22 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 	registerCommands() {
 		
 		// Open import form
-		vscode.commands.registerCommand('wt.import.fileExplorer.openImportWindow', () => {
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.openImportWindow', () => {
 			new ImportForm(this.context.extensionUri, this.context, this.allDocs);
-		});
+		}));
 		
-		vscode.commands.registerCommand('wt.import.fileExplorer.importFile', (uri: vscode.Uri) => {
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importFile', (uri: vscode.Uri) => {
 			new ImportForm(this.context.extensionUri, this.context, [ uri ]);
-		});
+		}));
 
-		vscode.commands.registerCommand('wt.import.fileExplorer.importFolder', (folderUri: vscode.Uri) => {
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importFolder', (folderUri: vscode.Uri) => {
 			const subFolder = this.allDocs.filter(file => file.fsPath.includes(folderUri.fsPath + sep) && file.fsPath !== folderUri.fsPath);
 			new ImportForm(this.context.extensionUri, this.context, subFolder);
-		});
+		}));
 
-		vscode.commands.registerCommand('wt.import.fileExplorer.refresh', () => this.refresh());
-		vscode.commands.registerCommand('wt.import.fileExplorer.filter', (resource) => this.filterResource(resource));
-		vscode.commands.registerCommand('wt.import.fileExplorer.defilter', (resource) => this.defilterResource(resource));
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.refresh', () => this.refresh()));
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.filter', (resource) => this.filterResource(resource)));
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.defilter', (resource) => this.defilterResource(resource)));
 
 
 		// Help message
@@ -156,20 +156,20 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		const lastOne = importFiles.pop();
 		const allowedFileTypes = importFiles.join("', '");
 		const allowedFullTypes = `${allowedFileTypes}', and '${lastOne}'`;
-		vscode.commands.registerCommand('wt.import.fileExplorer.help', () => {
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.help', () => {
 			// vscode.window.showInformationMessage(`Drag '${allowedFullTypes}' files into the /data/imports/ folder at the root of this workspace and hit the 'Import' button on this panel to import them into the workspace.`, { modal: true });
 			vscode.commands.executeCommand('wt.walkthroughs.openImports');
-		});
+		}));
 
 		// // Adding files to the import folder
-		vscode.commands.registerCommand('wt.import.fileExplorer.importFiles', () => {
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importFiles', () => {
 			new ImportForm(this.context.extensionUri, this.context, this.allDocs);
-		});
+		}));
 
 
-		vscode.commands.registerCommand('wt.import.fileExplorer.openFileExplorer', () => {
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.openFileExplorer', () => {
 			vscode.commands.executeCommand('revealFileInOS', this.workspace.importFolder);
-		});
+		}));
 	}
 
     private importFolder: vscode.Uri;
@@ -180,6 +180,8 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		this.excludedFiles = [];
         this.importFolder = this.workspace.importFolder;
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+		this.context.subscriptions.push(this._onDidChangeFile);
+		this.context.subscriptions.push(this._onDidChangeTreeData);
         
 		const documentDropProvider = new ImportDocumentProvider(this.importFolder, this.workspace, this);
 		context.subscriptions.push(vscode.window.createTreeView('wt.import.fileExplorer', { 

@@ -42,10 +42,11 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
         });
         this.activeDocumentUri = null;
         this.registerCommands();
+        this.context.subscriptions.push(this.view);
     }
 
     private registerCommands () {
-        vscode.commands.registerCommand('wt.overview.goToLine', (line: FragmentOverviewNode) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.overview.goToLine', (line: FragmentOverviewNode) => {
             if (!vscode.window.activeTextEditor) {
                 return;
             }
@@ -57,9 +58,9 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
                 selection: selection,
                 preserveFocus: false,
             });
-        });
+        }));
 
-        vscode.window.onDidChangeTextEditorSelection(async (event) => {
+        this.context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection(async (event) => {
             if (!this.activeDocumentUri || !compareFsPath(event.textEditor.document.uri, this.activeDocumentUri)) {
                 return;
             }
@@ -81,16 +82,16 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
                     });
                 }
             }
-        });
+        }));
 
-        vscode.window.onDidChangeActiveTextEditor(event => {
+        this.context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(event => {
             if (!event) {
                 this.activeDocumentUri = null;
                 this.bulletPoints = [];
                 this.view.message = 'Open a .wt or .wtNote document to get a Text Overview';
                 this.refresh();
             }
-        });
+        }));
     }
 
     async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {

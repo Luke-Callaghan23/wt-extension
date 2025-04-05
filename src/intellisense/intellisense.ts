@@ -18,16 +18,16 @@ export class SynonymsIntellisense {
             language: 'wt'
         };
         SynonymsProvider.init(workspace).then(() => {
-            vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace, useWordHippo));
-            vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace));
-            vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(context, workspace, personalDictionary));
+            this.context.subscriptions.push(vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace, useWordHippo)));
+            this.context.subscriptions.push(vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace)));
+            this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(context, workspace, personalDictionary)));
             this.registerCommands();
         });
     }
 
     registerCommands() {
-        vscode.commands.registerCommand('wt.synonyms.getSynonyms', () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.synonyms.getSynonyms', () => {
             // TODO    
-        })
+        }));
     }
 }

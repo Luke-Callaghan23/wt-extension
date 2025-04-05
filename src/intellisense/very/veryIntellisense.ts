@@ -117,6 +117,7 @@ export class VeryIntellisense implements Timed {
         const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
             language: 'wt'
         };
-        vscode.languages.registerCodeActionsProvider(wtSelector, new VeryActionProvider(context, workspace, this));
+        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider(wtSelector, new VeryActionProvider(context, workspace, this)));
+        this.context.subscriptions.push(VeryIntellisense.VeryMarker);
     }
 }

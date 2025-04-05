@@ -95,9 +95,9 @@ export class VeryActionProvider implements vscode.CodeActionProvider {
     }
 
     registerCommands () {
-        vscode.commands.registerCommand('wt.very.openBrowser', (veryWord: string) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.very.openBrowser', (veryWord: string) => {
             vscode.env.openExternal(vscode.Uri.parse(`https://www.losethevery.com/another-word/very-${veryWord}`))
-        });
+        }));
     }
 
 }

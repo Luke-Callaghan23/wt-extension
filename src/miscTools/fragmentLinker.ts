@@ -9,17 +9,17 @@ import * as vscodeUri from 'vscode-uri';
 import { vagueNodeSearch } from './help';
 
 export class FragmentLinker {
-    constructor () {
-        vscode.languages.registerDefinitionProvider({
+    constructor (private context: vscode.ExtensionContext) {
+        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider({
             pattern: "**/*.wt",
             scheme: "file"
-        }, this);
-        vscode.languages.registerDefinitionProvider({
+        }, this));
+        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider({
             pattern: "**/*.wtNote",
             scheme: "file"
-        }, this);
+        }, this));
 
-        vscode.commands.registerCommand('wt.fragmentLinker.insertLink', async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.fragmentLinker.insertLink', async () => {
             const fragment = await selectFragment();
             if (!fragment) return;
 
@@ -33,7 +33,7 @@ export class FragmentLinker {
                     eb.replace(selection, `[${fragment.data.ids.display}](${fileName})`);
                 });
             }
-        });
+        }));
     }
 
     

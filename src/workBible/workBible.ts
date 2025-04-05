@@ -3,7 +3,7 @@ import { Packageable } from '../packageable';
 import { readNotes, readSingleNote, writeNotes, writeSingleNote } from './readWriteNotes';
 import { Workspace } from '../workspace/workspaceClass';
 import { Timed } from '../timedView';
-import { disable, update } from './timedViewUpdate';
+import { disable, update, workBibleDecorations } from './timedViewUpdate';
 import { v4 as uuidv4 } from 'uuid';
 import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
@@ -86,7 +86,8 @@ implements
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
         WorkBible.singleton = this;
 
-        vscode.workspace.onDidSaveTextDocument(async (e: vscode.TextDocument) => {
+        this.context.subscriptions.push(workBibleDecorations);
+        this.context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(async (e: vscode.TextDocument) => {
             if (!e.fileName.endsWith('.wtnote')) return;
             if (!e.uri.fsPath.includes(this.workBibleFolderPath.fsPath)) return;
 
@@ -112,7 +113,7 @@ implements
 
             // Refresh the treeview
             this.refresh();
-        });
+        }));
     }
 
     async renameResource (node?: Note | undefined): Promise<void> {
@@ -143,26 +144,27 @@ implements
             canSelectMany: true,
             showCollapseAll: true,
         });
-        vscode.languages.registerHoverProvider({
+        this.context.subscriptions.push(this.view);
+        this.context.subscriptions.push(vscode.languages.registerHoverProvider({
             language: 'wt',
-        }, this);
-        vscode.languages.registerHoverProvider({
+        }, this));
+        this.context.subscriptions.push(vscode.languages.registerHoverProvider({
             language: 'wtNote',
-        }, this);
+        }, this));
 
-        vscode.languages.registerDefinitionProvider({
+        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider({
             language: 'wt',
-        }, this);
-        vscode.languages.registerDefinitionProvider({
+        }, this));
+        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider({
             language: 'wtNote',
-        }, this);
+        }, this));
 
-        vscode.languages.registerReferenceProvider({
+        this.context.subscriptions.push(vscode.languages.registerReferenceProvider({
             language: "wt",
-        }, this);
-        vscode.languages.registerReferenceProvider({
+        }, this));
+        this.context.subscriptions.push(vscode.languages.registerReferenceProvider({
             language: "wtNote",
-        }, this);
+        }, this));
 
         this.registerCommands();
     }
@@ -229,15 +231,14 @@ implements
             if (note === undefined) return;
             this.writeSingleNote(note);
         }
-
-        vscode.commands.registerCommand("wt.workBible.addNote", (resource: Note | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) });
-        vscode.commands.registerCommand("wt.workBible.removeNote", (resource: Note) => { doTheThingAndWrite(() => this.removeNote(resource)) });
-        vscode.commands.registerCommand('wt.workBible.search', (resource: Note) => { this.searchInSearchPanel(resource) });
-        vscode.commands.registerCommand('wt.workBible.editNote', (resource: Note | AppearanceContainer | SubNote) => { this.editNote(resource) });
-        vscode.commands.registerCommand('wt.workBible.getWorkBible', () => this);
-        vscode.commands.registerCommand('wt.workBible.refresh', () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.workBible.addNote", (resource: Note | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.workBible.removeNote", (resource: Note) => { doTheThingAndWrite(() => this.removeNote(resource)) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.workBible.search', (resource: Note) => { this.searchInSearchPanel(resource) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.workBible.editNote', (resource: Note | AppearanceContainer | SubNote) => { this.editNote(resource) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.workBible.getWorkBible', () => this));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.workBible.refresh', () => {
             return this.refresh(true);
-        });
+        }));
     }
 
     getTreeItem(noteNode: Note | SubNote | AppearanceContainer): vscode.TreeItem {

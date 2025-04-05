@@ -33,20 +33,20 @@ export class UriBasedView<T extends HasGetUri> {
         
 		// Functions for storing the state of a uri's collapse/expands whenever a tree is closed 
 		//		or opened
-		view.onDidExpandElement((event: vscode.TreeViewExpansionEvent<T>) => {
+		context.subscriptions.push(view.onDidExpandElement((event: vscode.TreeViewExpansionEvent<T>) => {
 			const expandedElementUri = event.element.getUri();
 			const usableUri = expandedElementUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
 			this.uriToVisibility[usableUri] = true;
 			// Also save the state of all collapse and expands to workspace context state
 			context.workspaceState.update(`${viewName}.collapseState`, this.uriToVisibility);
-		});
+		}));
 
-		view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
+		context.subscriptions.push(view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
 			const collapsedElementUri = event.element.getUri();
 			const usableUri = collapsedElementUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
 			this.uriToVisibility[usableUri] = false;			
 			context.workspaceState.update(`${viewName}.collapseState`, this.uriToVisibility);
-		});
+		}));
     }
 	
 	// From the given nodes, filter out all nodes who's parent is already in the the array of Nodes.

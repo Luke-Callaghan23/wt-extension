@@ -277,22 +277,22 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
     }
 
     registerCommands () {
-        vscode.commands.registerCommand('wt.autocorrections.wordReplaced', (word: string, correction: string) => this.askToCorrect(word, correction));
-        vscode.commands.registerCommand('wt.autocorrections.wordExcluded', (original: string, fileName: string, range: vscode.Range) => this.wordExcluded(original, fileName, range));
-        vscode.commands.registerCommand('wt.autocorrections.stopCorrecting', (original: string) => this.stopCorrecting(original));
-        vscode.commands.registerCommand('wt.autocorrections.acceptAutocorrect', async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.autocorrections.wordReplaced', (word: string, correction: string) => this.askToCorrect(word, correction)));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.autocorrections.wordExcluded', (original: string, fileName: string, range: vscode.Range) => this.wordExcluded(original, fileName, range)));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.autocorrections.stopCorrecting', (original: string) => this.stopCorrecting(original)));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.autocorrections.acceptAutocorrect', async () => {
             if (!this.notificationActive) return;
             await vscode.commands.executeCommand('notifications.focusFirstToast');
             return vscode.commands.executeCommand('notification.acceptPrimaryAction');
-        });
-        vscode.commands.registerCommand('wt.autocorrections.rejectAutocorrect', async () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.autocorrections.rejectAutocorrect', async () => {
             if (!this.notificationActive) {
                 // Do the default behavior for ctrl+shift+x
                 // Hacky workaround, but I don't believe there is any default way to force this keybinding to fall through
                 return vscode.commands.executeCommand('workbench.view.extensions');
             }
             return vscode.commands.executeCommand('notifications.clearAll');
-        });
+        }));
     }
 
     constructor (
@@ -305,14 +305,16 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         this.exclusions = this.context.workspaceState.get<DiskContextType['wt.autocorrections.exclusions']>('wt.autocorrections.exclusions') || {};
         this.registerCommands();
 
-        vscode.languages.registerCodeActionsProvider(
+        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider(
             <vscode.DocumentFilter>{
                 language: 'wt'
             }, this
-        );
+        ));
 
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection("stuff");
         this.replacementsRegex = new RegExp(`(${Object.keys(commonReplacements).join("|")})`, 'g');
+        this.context.subscriptions.push(Autocorrect.BlueUnderline);
+        this.context.subscriptions.push(this.diagnosticCollection);
     }
 
     // recieve 

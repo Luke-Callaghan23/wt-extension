@@ -7,7 +7,7 @@ const decorationsOptions: vscode.DecorationRenderOptions = {
     fontStyle: 'oblique',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
 };
-export const decorations = vscode.window.createTextEditorDecorationType(decorationsOptions);
+export const workBibleDecorations = vscode.window.createTextEditorDecorationType(decorationsOptions);
 
 export async function update (this: WorkBible, editor: vscode.TextEditor): Promise<void> {
     if (!this.nounsRegex) return;
@@ -103,7 +103,7 @@ export async function update (this: WorkBible, editor: vscode.TextEditor): Promi
         delete this.matchedNotes[formatFsPathForCompare(editor.document.uri)];
     }
 
-    editor.setDecorations(decorations, decorationLocations);
+    editor.setDecorations(workBibleDecorations, decorationLocations);
 }
 
 export async function disable (this: WorkBible): Promise<void> {

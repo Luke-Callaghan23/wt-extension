@@ -329,16 +329,16 @@ export class Proximity implements Timed, Packageable {
             }
         }).flat();
 
-        vscode.languages.registerCodeActionsProvider (<vscode.DocumentFilter>{
+        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider (<vscode.DocumentFilter>{
             language: 'wt'
-        }, new ProximityCodeActions(context, workspace, this));
+        }, new ProximityCodeActions(context, workspace, this)));
 
         this.registerCommands();
     }
 
     registerCommands() {
-        vscode.commands.registerCommand('wt.proximity.addFilteredWord', () => this.addPattern());
-        vscode.commands.registerCommand('wt.proximity.removeFilteredWord', () => this.removePattern())
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.proximity.addFilteredWord', () => this.addPattern()));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.proximity.removeFilteredWord', () => this.removePattern()))
     }
 
     getPackageItems(): { [index: string]: any; } {

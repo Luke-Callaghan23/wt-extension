@@ -563,10 +563,10 @@ export class ColorGroups implements Packageable {
 
 
     registerCommands () {
-        vscode.commands.registerCommand('wt.colors.addColor', () => this.addColor());
-        vscode.commands.registerCommand('wt.colors.removeColor', () => this.removeColor());
-        vscode.commands.registerCommand('wt.colors.refresh', (refreshWith: { [index: string]: Colors }) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.colors.addColor', () => this.addColor()));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.colors.removeColor', () => this.removeColor()));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.colors.refresh', (refreshWith: { [index: string]: Colors }) => {
             this.extraColors = refreshWith;
-        });
+        }));
     }
 }

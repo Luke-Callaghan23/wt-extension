@@ -10,15 +10,15 @@ export class FileLinker implements vscode.DefinitionProvider {
         private context: vscode.ExtensionContext,
         private workspace: Workspace
     ) {
-        vscode.languages.registerDefinitionProvider({
+        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider({
             pattern: "**/.config",
             scheme: "file"
-        }, this);
+        }, this));
 
-        vscode.languages.registerDefinitionProvider({
+        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider({
             pattern: "**/contextValues.json",
             scheme: "file"
-        }, this);
+        }, this));
     }
 
     async provideDefinition(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.Definition | vscode.DefinitionLink[]> {

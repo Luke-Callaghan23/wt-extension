@@ -43,7 +43,7 @@ export class SearchResultsView
             showCollapseAll: true, 
             canSelectMany: true,
         });
-        this.context.subscriptions.push();
+        this.context.subscriptions.push(view);
         this.registerCommands();
         this.view = view;
 
@@ -59,7 +59,7 @@ export class SearchResultsView
     }
 
     registerCommands() {
-        vscode.commands.registerCommand('wt.wtSearch.results.search', async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.search', async () => {
             const response = await vscode.window.showInputBox({
                 ignoreFocusOut: false,
                 password: false,
@@ -69,17 +69,17 @@ export class SearchResultsView
             });
             if (!response) return;
             return this.searchBarValueWasUpdated(response, true, true, true, true);
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {
             // Called when a file location node is clicked in the results tree, opens the location in the editor
             const doc = await vscode.workspace.openTextDocument(location.uri);
             const editor = await vscode.window.showTextDocument(doc);
             editor.selections = [ new vscode.Selection(location.range.start, location.range.end) ];
             return editor.revealRange(location.range);
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.wtSearch.results.showNode', async (node: SearchNode<MatchedTitleNode>) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.showNode', async (node: SearchNode<MatchedTitleNode>) => {
             // Called when a MatchedTitleNode is clicked in the outline tree,
             // When the matched title is the title of a fragment, opens that in the editor
             // Otherwise, reveals that node in the Outline / Scratch Pad / Recycling Bin / Notes view
@@ -102,9 +102,9 @@ export class SearchResultsView
                 case 'recycle': provider = extension.ExtensionGlobals.recyclingBinView; break;
             }
             provider.view.reveal(node.node.linkNode.node);
-        });
+        }));
 
-        vscode.commands.registerCommand("wt.wtSearch.results.revealNodeInOutline", async (node: SearchNode<SearchNodeKind>) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wtSearch.results.revealNodeInOutline", async (node: SearchNode<SearchNodeKind>) => {
 
             const nodeResult = await vagueNodeSearch(node.getUri());
             if (nodeResult.node === null || nodeResult.source === null) return;
@@ -125,12 +125,12 @@ export class SearchResultsView
                 case 'scratch': provider = extension.ExtensionGlobals.scratchPadView; break;
             }
             provider.view.reveal(nodeResult.node);
-        });
+        }));
 
-        vscode.commands.registerCommand("wt.wtSearch.results.hideNode", (node: SearchNode<SearchNodeKind>) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wtSearch.results.hideNode", (node: SearchNode<SearchNodeKind>) => {
             this.filteredUris.push(node.getUri());
             this.refresh();
-        });
+        }));
     }
 
     public async searchBarValueWasUpdated (

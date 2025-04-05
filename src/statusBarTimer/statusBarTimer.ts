@@ -15,6 +15,7 @@ export class StatusBarTimer {
         // this.startTimer();
         this.registerCommands();
         this.startTimer();
+        this.context.subscriptions.push(this.timerStatusItem);
     }
 
     isCodeMode: boolean = false;
@@ -64,7 +65,7 @@ export class StatusBarTimer {
     }
 
     private registerCommands () {
-        vscode.commands.registerCommand('wt.statusBarTimer.displayOptions', async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.displayOptions', async () => {
 
             const isActive = !this.isPaused;
             const firstOptionText = isActive ? 'Pause Timer' : 'Resume Timer';
@@ -90,9 +91,9 @@ export class StatusBarTimer {
             else if (response === 'Show Timer rules') {
                 vscode.commands.executeCommand('wt.statusBarTimer.showInfo');
             }
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.statusBarTimer.showInfo', () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.showInfo', () => {
             vscode.window.showInformationMessage(
                 "Session Timer Rules",
                 {
@@ -100,18 +101,18 @@ export class StatusBarTimer {
                     detail: "Timer shows the amount of time you have spent on your current session.  Time does not progress when: \n  -  In code mode, \n  -  Focused out of VS Code, \n  -  Active document extension is not '.wt' (yes, not even '.wtnote' — world building is not writing), \n  -  Editor is not focused (reorganizing notes is not writing, either, sorry)."
                 }
             )
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.statusBarTimer.resetTimer', () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.resetTimer', () => {
             this.activeTimer = 0;
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.statusBarTimer.enteredCodeMode', () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.enteredCodeMode', () => {
             this.isCodeMode = true;
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.statusBarTimer.exitedCodeMode', () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.exitedCodeMode', () => {
             this.isCodeMode = false;
-        });
+        }));
     }
 }

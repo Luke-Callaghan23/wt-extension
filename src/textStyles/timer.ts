@@ -29,10 +29,10 @@ const strikethroughDecorationOptions: vscode.DecorationRenderOptions = {
 };
 
 // Decoration for watched words
-const italicsDecoration = vscode.window.createTextEditorDecorationType(italicsDecorationOptions);
-const boldDecoration = vscode.window.createTextEditorDecorationType(boldDecorationOptions);
-const underlineDecoration = vscode.window.createTextEditorDecorationType(underlineDecorationOptions);
-const strikethroughDecoration = vscode.window.createTextEditorDecorationType(strikethroughDecorationOptions);
+export const italicsDecoration = vscode.window.createTextEditorDecorationType(italicsDecorationOptions);
+export const boldDecoration = vscode.window.createTextEditorDecorationType(boldDecorationOptions);
+export const underlineDecoration = vscode.window.createTextEditorDecorationType(underlineDecorationOptions);
+export const strikethroughDecoration = vscode.window.createTextEditorDecorationType(strikethroughDecorationOptions);
 
 type WordStyles = 'italics' | 'bold' | 'underline' | 'strikethrough';
 

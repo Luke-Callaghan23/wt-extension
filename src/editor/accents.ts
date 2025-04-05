@@ -69,7 +69,7 @@ export class Accents {
     private defaultSelections: SelectUnaccented[];
     private accentSelections: Record<string, SelectAccent[]>;
 
-    constructor () {
+    constructor (private context: vscode.ExtensionContext) {
         this.defaultSelections = [];
         const covered: Set<string> = new Set<string>();
         for (const unaccented of Object.keys(accentsList)) {
@@ -116,7 +116,6 @@ export class Accents {
         const document = editor.document;
         if (!document) return;
 
-
         for (let selection of editor.selections) {
             let selectionText: string | null = null;
             if (!selection.isEmpty) {
@@ -153,7 +152,6 @@ export class Accents {
                 title = 'Select a character with an accent';
             }
             
-            
             const qp = vscode.window.createQuickPick<SelectUnaccented | SelectAccent | SelectCapitalization>();
             qp.items = currentSelections;
             qp.matchOnDescription = true;
@@ -168,8 +166,9 @@ export class Accents {
             qp.busy = false;
             qp.enabled = true;
             qp.show();
+            this.context.subscriptions.push(qp);
 
-            qp.onDidChangeValue(newValue => {
+            this.context.subscriptions.push(qp.onDidChangeValue(newValue => {
                 if (newValue in this.accentSelections) {
                     qp.items = this.accentSelections[newValue];
                     qp.title = 'Select an accent' as Title;
@@ -178,9 +177,9 @@ export class Accents {
                     qp.items = this.defaultSelections;
                     qp.title = 'Select a character with an accent' as Title;
                 }
-            });
+            }));
 
-            qp.onDidAccept(() => {
+            this.context.subscriptions.push(qp.onDidAccept(() => {
                 
                 const item = qp.selectedItems[0];
                 if (item.type === 'selectAccent') {
@@ -207,7 +206,7 @@ export class Accents {
                     qp.value = '';
                     qp.title = 'Select an accent' as Title;
                 }
-            });
+            }));
         }
     }
 }

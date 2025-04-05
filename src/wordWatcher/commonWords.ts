@@ -131,6 +131,7 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
         qp.matchOnDescription = true;
         qp.busy = true;
         qp.show();
+        this.context.subscriptions.push(qp);
         
         const outlineView: OutlineView = extension.ExtensionGlobals.outlineView
         const { options, currentNode, currentPick } = getFilesQPOptions(outlineView.rootNodes, false, "");
@@ -178,7 +179,7 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
     
         let isFilteringSnips = false;
         //@ts-ignore
-        qp.onDidTriggerButton((button: IButton) => {
+        this.context.subscriptions.push(qp.onDidTriggerButton((button: IButton) => {
             if (button.id === 'filterSnipsButton') {
                 isFilteringSnips = !isFilteringSnips;
                 qp.busy = true;
@@ -210,13 +211,13 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
                 ];
                 qp.busy = false;
             }
-        });
+        }));
 
-        qp.onDidAccept(() => {
+        this.context.subscriptions.push(qp.onDidAccept(() => {
             producePaths(isFilteringSnips, qp.selectedItems).then(paths => {
                 accept(paths);
             });
-        });
+        }));
     });
 }
 
@@ -254,10 +255,10 @@ async function getChosenCommonWords (ww: WordWatcher): Promise<string[] | null> 
         qp.title = "Select words you would like to watch out for:"
         qp.busy = false;
     
-    
-        qp.onDidAccept(() => {
+        ww.context.subscriptions.push(qp);
+        ww.context.subscriptions.push(qp.onDidAccept(() => {
             accept(qp.selectedItems.map(({ word }) => word));
-        });
+        }));
     })
 }
 

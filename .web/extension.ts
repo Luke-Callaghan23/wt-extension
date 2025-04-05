@@ -143,11 +143,11 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		//		fragment/snips/chapters in the outline view
 		FileAccessManager.initialize();
 		vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
-		vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
+		context.subscriptions.push(vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
 			outline, synonyms, timedViews, new FileAccessManager(), 
 			personalDictionary, colorGroups, reloadWatcher, tabStates,
 			autocorrection, searchBarView
-		]));
+		])));
 		
 		// Lastly, clear the 'tmp' folder
 		// This is used to store temporary data for a session and should not last between sessions
@@ -185,29 +185,29 @@ export function activate (context: vscode.ExtensionContext) {
 }
 
 async function activateImpl (context: vscode.ExtensionContext) {
-	vscode.commands.registerCommand("wt.walkthroughs.openIntro", () => {
+	context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openIntro", () => {
 		vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
-	});
-	vscode.commands.registerCommand("wt.walkthroughs.openImports", () => {
+	}));
+	context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openImports", () => {
 		vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.importsWalkthrough`, false);
-	});
+	}));
 
 	// Load the root path of file system where the extension was loaded
 	rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
 		? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
-	vscode.commands.registerCommand('wt.reload', async () => {
+	context.subscriptions.push(vscode.commands.registerCommand('wt.reload', async () => {
 		const workspace = await loadWorkspace(context);
 		if (workspace !== null) {
 			loadExtensionWorkspace(context, workspace);
 		}
-	});
+	}));
 
-	vscode.commands.registerCommand("wt.searchFiles", searchFiles);
+	context.subscriptions.push(vscode.commands.registerCommand("wt.searchFiles", searchFiles));
 	
-	vscode.commands.registerCommand('wt.convert', () => {
+	context.subscriptions.push(vscode.commands.registerCommand('wt.convert', () => {
 		convertFileNames();
-	})
+	}))
 
 	// Attempt to load a workspace from the current location
 	const workspace = await loadWorkspace(context);

@@ -30,19 +30,19 @@ export class TimedView implements Packageable {
         });
 
         // If the active editor changed, then change the internal activeEditor value and trigger updates
-        vscode.window.onDidChangeActiveTextEditor(editor => {
+        this.context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
             setTimeout(() => {
                 this.triggerUpdates();
             }, 0);
-        }, null, context.subscriptions);
+        }, null, context.subscriptions));
     
         // On text document change within the editor, update decorations with throttle
-        vscode.workspace.onDidChangeTextDocument(event => {
+        this.context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => {
             this.triggerUpdates(true);
-        }, null, context.subscriptions);
+        }, null, context.subscriptions));
 
 
-        vscode.workspace.onDidChangeConfiguration((e) => {
+        this.context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => {
             this.timedViews.forEach(([ viewName, viewId, timed ]) => {
                 const configuration = `wt.timedSearches.${viewId}`;
                 if (!e.affectsConfiguration(configuration)) return;
@@ -71,7 +71,7 @@ export class TimedView implements Packageable {
                     timed.disable?.();
                 }
             });
-        })
+        }));
 
         this.registerCommands();
         this.triggerUpdates();
@@ -139,7 +139,7 @@ export class TimedView implements Packageable {
 	}
 
     private registerCommands () {
-        vscode.commands.registerCommand('wt.timedViews.update', () => this.triggerUpdates(true));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.timedViews.update', () => this.triggerUpdates(true)));
     }
     
     getPackageItems(): { [index: string]: any; } {

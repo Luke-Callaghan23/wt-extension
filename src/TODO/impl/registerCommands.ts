@@ -6,7 +6,7 @@ import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode } from '..
 import { DiskContextType } from '../../workspace/workspaceClass';
 
 export function registerCommands(this: TODOsView) {
-    vscode.commands.registerCommand('wt.todo.openFile', async (resourceUri: vscode.Uri, todoData: TODO) => {
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.todo.openFile', async (resourceUri: vscode.Uri, todoData: TODO) => {
         // Create a range object representing where the TODO lies on the document
         const textDocumentRange = new vscode.Range (
             todoData.rowStart,		// start line
@@ -17,9 +17,9 @@ export function registerCommands(this: TODOsView) {
 
         // Open the document
         await vscode.window.showTextDocument(resourceUri, { selection: textDocumentRange });
-    });
+    }));
 
-    vscode.commands.registerCommand('wt.todo.refresh', async (resource: TODONode | DiskContextType['wt.outline.collapseState'] | undefined | null) => {
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.todo.refresh', async (resource: TODONode | DiskContextType['wt.outline.collapseState'] | undefined | null) => {
         Object.getOwnPropertyNames(TODOsView.todo).forEach(uri => {
             TODOsView.todo[uri] = { type: 'invalid' };
         });
@@ -44,23 +44,23 @@ export function registerCommands(this: TODOsView) {
         // Refresh command involves ambiguous changes to TODO tree structure
         //      so should reload the tree fully from disk
         this.refresh(true, []);
-    });
+    }));
 
-    vscode.commands.registerCommand('wt.todo.help', () => {
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.todo.help', () => {
         vscode.window.showInformationMessage(`TODOs`, {
             modal: true,
             detail: `The TODO panel is an area that logs all areas you've marked as 'to do' in your work.  The default (and only (for now)) way to mark a TODO in your work is to enclose the area you want to mark with square brackets '[]'`
         }, 'Okay');
-    });
+    }));
 
-    vscode.commands.registerCommand('wt.todo.getView', () => this);
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.todo.getView', () => this));
 
     // Command for recieving an updated outline tree from the outline view --
     // Since the OutlineView handles A LOT of modification of its node tree, it's a lot easier
     //		to just emit changes from there over to here and then reflect the changes on this end
     //		rather than trying to make sure the two trees are always in sync with each other
     // `updated` is always the root node of the outline tree
-    vscode.commands.registerCommand('wt.todo.updateTree', (arr: OutlineNode[], targets: OutlineNode[]) => {
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.todo.updateTree', (arr: OutlineNode[], targets: OutlineNode[]) => {
         const updated = arr[0];
         this.rootNodes[0].data.ids = { ...updated.data.ids };
             
@@ -127,5 +127,5 @@ export function registerCommands(this: TODOsView) {
             })
             this.refresh(false, []);
         }
-    });
+    }));
 }

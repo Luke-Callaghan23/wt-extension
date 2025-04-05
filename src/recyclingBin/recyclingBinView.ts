@@ -243,7 +243,7 @@ implements
     //#endregion
 
     registerCommands() {
-        vscode.commands.registerCommand("wt.recyclingBin.permanentlyDelete", (resource) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.recyclingBin.permanentlyDelete", (resource) => {
             let targets: OutlineNode[];
             if (resource) {
                 targets = [resource];
@@ -252,40 +252,40 @@ implements
                 targets = [...this.view.selection];
             }
             this.deleteNodePermanently(targets);
-        });
-        vscode.commands.registerCommand('wt.recyclingBin.renameFile', () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.recyclingBin.renameFile', () => {
             if (this.view.selection.length > 1) return;
             this.renameResource();
-        });
-        vscode.commands.registerCommand("wt.recyclingBin.refresh", () => this.refresh(true, []));
-        vscode.commands.registerCommand('wt.recyclingBin.getRecyclingBinView', () => this);
-        vscode.commands.registerCommand('wt.recyclingBin.deleteAll', () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.recyclingBin.refresh", () => this.refresh(true, [])));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.recyclingBin.getRecyclingBinView', () => this));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.recyclingBin.deleteAll', () => {
             this.deleteNodePermanently(this.rootNodes);
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.recyclingBin.recoverNode', (resource: OutlineNode) => this.recoverNode(resource));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.recyclingBin.recoverNode', (resource: OutlineNode) => this.recoverNode(resource)));
 
-        vscode.commands.registerCommand("wt.recyclingBin.commandPalette.deleteNode", async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.recyclingBin.commandPalette.deleteNode", async () => {
             const deletes = await this.selectFiles();
             if (deletes === null) {
                 return null;
             }
             return this.deleteNodePermanently(deletes);
-        });
-        vscode.commands.registerCommand("wt.recyclingBin.commandPalette.renameNode", async () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.recyclingBin.commandPalette.renameNode", async () => {
             const renamer = await this.selectFile();
             if (renamer === null) {
                 return null;
             }
             return this.renameResource(renamer);
-        });
-        vscode.commands.registerCommand("wt.recyclingBin.commandPalette.recoverNode", async () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.recyclingBin.commandPalette.recoverNode", async () => {
             const mover = await this.selectFile();
             if (mover === null) {
                 return null;
             }
             return this.recoverNode(mover);
-        });
+        }));
     }
 
     public view: vscode.TreeView<OutlineNode>;
@@ -310,7 +310,7 @@ implements
             canSelectMany: true,
             dragAndDropController: this,
         });
-        this.context.subscriptions.push();
+        this.context.subscriptions.push(view);
         this.registerCommands();
 
         this.view = view;

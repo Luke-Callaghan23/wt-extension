@@ -5,7 +5,7 @@ import * as console from '../miscTools/vsconsole';
 import { Packageable } from '../packageable';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
-import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, changePattern, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString } from './timer';
+import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, changePattern, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString, defaultWatchedWordDecoration } from './timer';
 import { getChildren, getTreeItem } from './tree';
 import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';
 import { hexToRgb } from '../miscTools/help';
@@ -116,55 +116,56 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         });
 
 		context.subscriptions.push(vscode.window.createTreeView('wt.wordWatcher', { treeDataProvider: this }));
+        context.subscriptions.push(defaultWatchedWordDecoration);
         this.registerCommands();
 	}
 
     registerCommands () {
-        vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.addWord({ watched: true }));
-        vscode.commands.registerCommand('wt.wordWatcher.newUnwatchedWord', () => this.addWord({
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.addWord({ watched: true })));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newUnwatchedWord', () => this.addWord({
             watched: false,
-        }));
+        })));
         
-        vscode.commands.registerCommand('wt.wordWatcher.jumpNextInstanceOf', (word: string) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.jumpNextInstanceOf', (word: string) => {
             this.jumpNextInstanceOf(word);
-        });
-        vscode.commands.registerCommand('wt.wordWatcher.help', () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.help', () => {
             vscode.window.showInformationMessage(`The Word Watcher`, {
                 modal: true,
                 detail: `The Word Watcher panel is an area where you can add and track certain 'problem' words you may want to watch out for in your work.  Any words added in this area will be highlighted inside of the vscode editor, so you can notice them more easily while writing.  You can also use patterns with a simplified subset of regexes including only: groups '()', sets '[]', one or more '+', zero or more '*', optional '?', and alphabetic characters a-z, A-Z`
             }, 'Okay');
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.wordWatcher.deleteWord', (resource: WordEnrty) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.deleteWord', (resource: WordEnrty) => {
             this.updateWords('delete', resource.uri, 'wt.wordWatcher.watchedWords');
-        });
-        vscode.commands.registerCommand('wt.wordWatcher.deleteUnwatchedWord', (resource: WordEnrty) => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.deleteUnwatchedWord', (resource: WordEnrty) => {
             this.updateWords('delete', resource.uri, 'wt.wordWatcher.unwatchedWords');
-        });
-        vscode.commands.registerCommand('wt.wordWatcher.disableWatchedWord', (resource: WordEnrty) => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.disableWatchedWord', (resource: WordEnrty) => {
             this.updateWords('add', resource.uri, 'wt.wordWatcher.disabledWatchedWords');
-        });
-        vscode.commands.registerCommand('wt.wordWatcher.enableWatchedWord', (resource: WordEnrty) => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.enableWatchedWord', (resource: WordEnrty) => {
             this.updateWords('delete', resource.uri, 'wt.wordWatcher.disabledWatchedWords')
-        });
-        vscode.commands.registerCommand('wt.wordWatcher.toggleWatchedWord', (word: string) => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.toggleWatchedWord', (word: string) => {
             const operation = this.disabledWatchedWords.includes(word)
                 ? 'delete'
                 : 'add';
             this.updateWords(operation, word, 'wt.wordWatcher.disabledWatchedWords')
-        });
-        vscode.commands.registerCommand('wt.wordWatcher.changeColor', (resource: WordEnrty) => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.changeColor', (resource: WordEnrty) => {
             this.changeColor(resource);
-        });
-        vscode.commands.registerCommand('wt.wordWatcher.changePattern', (resource: WordEnrty) => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.changePattern', (resource: WordEnrty) => {
             this.changePattern(resource);
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.wordWatcher.addCommonWords', () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.addCommonWords', () => {
             return this.commonWordsPrompt();
-        })
+        }));
 
-        vscode.commands.registerCommand("wt.wordWatcher.refresh", (refreshWith: {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.refresh", (refreshWith: {
             watchedWords: string[],
             disabledWatchedWords: string[],
             unwatchedWords: string[],
@@ -190,41 +191,41 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             });
             
             this.refresh();
-        });
+        }));
 
-        vscode.commands.registerCommand("wt.colorPicker.pick", async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.colorPicker.pick", async () => {
             // this.colorPick('maybe|perhaps', 'maybe')
-        })
+        }));
 
-        vscode.commands.registerCommand("wt.wordWatcher.commandPalette.changeColor", async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.commandPalette.changeColor", async () => {
             const change = await this.selectWatchedWord();
             if (!change) return null;
             return this.changeColor({
                 type: 'watchedWord',
                 uri: change
             });
-        });
+        }));
 
-        vscode.commands.registerCommand("wt.wordWatcher.commandPalette.changePattern", async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.commandPalette.changePattern", async () => {
             const change = await this.selectWatchedWord();
             if (!change) return null;
             return this.changePattern({
                 type: 'watchedWord',
                 uri: change
             });
-        });
+        }));
 
-        vscode.commands.registerCommand("wt.wordWatcher.commandPalette.deleteWord", async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.commandPalette.deleteWord", async () => {
             const del = await this.selectWatchedWord();
             if (!del) return null;
             return this.updateWords('delete', del, 'wt.wordWatcher.watchedWords');
-        });
+        }));
 
-        vscode.commands.registerCommand("wt.wordWatcher.commandPalette.deleteUnwatchedWord", async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.commandPalette.deleteUnwatchedWord", async () => {
             const del = await this.selectUnwatchedWord();
             if (!del) return null;
             return this.updateWords('delete', del, 'wt.wordWatcher.unwatchedWords');
-        });
+        }));
 
 	}
 

@@ -362,6 +362,8 @@ async function select (
         ? viewOrViews
         : [ viewOrViews ];
 
+    const context = ExtensionGlobals.context;
+
     return new Promise((accept, reject) => {
         const qp = vscode.window.createQuickPick<IFragmentPick>();
         qp.canSelectMany = allowMultiple;
@@ -370,6 +372,7 @@ async function select (
         qp.busy = true;
 
         qp.show();
+        context.subscriptions.push(qp);
         
         const refreshInputs = () => {
             let allOptions: IFragmentPick[] = [];
@@ -414,7 +417,7 @@ async function select (
 
         let isFiltering = true;
         //@ts-ignore
-        qp.onDidTriggerButton((button: IButton) => {
+        context.subscriptions.push(qp.onDidTriggerButton((button: IButton) => {
             if (button.id === 'filterButton') {
                 isFiltering = !isFiltering;
                 qp.busy = true;
@@ -427,9 +430,9 @@ async function select (
                 qp.value = ``
                 qp.busy = false;
             }
-        });
+        }));
 
-        qp.onDidAccept(async () => {
+        context.subscriptions.push(qp.onDidAccept(async () => {
             if (qp.selectedItems.length === 0) {
                 accept(null);
                 qp.dispose();
@@ -462,6 +465,6 @@ async function select (
                 qp.value = `${selected.description?.slice(1, selected.description.length - 1)}/${selected.node.data.ids.display}`;
                 qp.busy = false;
             }
-        });
+        }));
     });
 }

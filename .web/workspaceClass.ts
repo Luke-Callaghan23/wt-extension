@@ -194,7 +194,7 @@ export class Workspace {
     }
 
     registerCommands(context: vscode.ExtensionContext): void {
-        vscode.commands.registerCommand('wt.workspace.loadContextValues', async () => {
+        context.subscriptions.push(vscode.commands.registerCommand('wt.workspace.loadContextValues', async () => {
             
             const action = "Load Context";
             const selectedAction = await vscode.window.showQuickPick(
@@ -233,9 +233,9 @@ export class Workspace {
             // Save the new context
             await vscode.workspace.fs.copy(newContext, this.contextValuesFilePath);
             await vscode.commands.executeCommand('workbench.action.reloadWindow');
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.workspace.generateContextValues', async () => {
+        context.subscriptions.push(vscode.commands.registerCommand('wt.workspace.generateContextValues', async () => {
             try {
                 await Workspace.packageContextItems();
             }
@@ -244,6 +244,6 @@ export class Workspace {
                 return;
             }
             vscode.window.showInformationMessage(`INFO: Successfully created context values file at: '${this.contextValuesFilePath}'`);
-        });
+        }));
     }
 }

@@ -164,12 +164,12 @@ async function loadExtensionWorkspace (
         report("Loaded search bad");
 
         new CoderModer(context);
-        const wordCountStatus = new WordCount();
+        const wordCountStatus = new WordCount(context);
         const statusBarTimer = new StatusBarTimer(context);
         report("Loaded status bar items");
 
         new FileLinker(context, workspace);
-        new FragmentLinker();
+        new FragmentLinker(context);
 
         const timedViews = new TimedView(context, [
             ['wt.workBible.tree', 'workBible', workBible],
@@ -184,10 +184,10 @@ async function loadExtensionWorkspace (
             ['wt.overview', 'overview', fragmentOverview]
         ]);
 
-        const tabLabels = new TabLabels();
+        const tabLabels = new TabLabels(context);
 
         // Register commands for the toolbar (toolbar that appears when editing a .wt file)
-        Toolbar.registerCommands();
+        Toolbar.registerCommands(context);
     
         // Register commands for the export webview form
         ExportForm.registerCommands(context.extensionUri, context, workspace, outline);
@@ -197,11 +197,11 @@ async function loadExtensionWorkspace (
         //        fragment/snips/chapters in the outline view
         // FileAccessManager.initialize();
         vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
-        vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
+        context.subscriptions.push(vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
             outline, synonyms, new FileAccessManager(),
             personalDictionary, wh,  
             autocorrection, 
-        ]));
+        ])));
 
         // Lastly, clear the 'tmp' folder
         // This is used to store temporary data for a session and should not last between sessions
@@ -275,18 +275,18 @@ async function activateImpl (context: vscode.ExtensionContext) {
     rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
         ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
-    vscode.commands.registerCommand("wt.walkthroughs.openIntro", async () => {
+    context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openIntro", async () => {
         return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
-    });
-    vscode.commands.registerCommand("wt.walkthroughs.openImports", async () => {
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openImports", async () => {
         return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.importsWalkthrough`, false);
-    });
-    vscode.commands.registerCommand("wt.searchFiles", searchFiles);    
-    vscode.commands.registerCommand('wt.convert', () => convertFileNames());
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand("wt.searchFiles", searchFiles));    
+    context.subscriptions.push(vscode.commands.registerCommand('wt.convert', () => convertFileNames()));
 
-    vscode.commands.registerCommand('wt.reload', async () => {
+    context.subscriptions.push(vscode.commands.registerCommand('wt.reload', async () => {
         return loadExtensionWithProgress(context, "Reloading Integrated Writing Environment");
-    });
+    }));
 
     const loadWorkspaceSuccess = await loadExtensionWithProgress(context, "Starting Integrated Writing Environment");
     if (loadWorkspaceSuccess) return;
@@ -294,7 +294,7 @@ async function activateImpl (context: vscode.ExtensionContext) {
     // If the attempt to load the workspace failed, then register commands both for loading 
     //        a workspace from a .iwe environment file or for creating a new iwe environment
     //        at the current location
-    vscode.commands.registerCommand('wt.importWorkspace', () => {
+    context.subscriptions.push(vscode.commands.registerCommand('wt.importWorkspace', () => {
         vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: "Importing Workspace"
@@ -311,8 +311,8 @@ async function activateImpl (context: vscode.ExtensionContext) {
                 return handleLoadFailure(err);
             }
         });
-    });
-    vscode.commands.registerCommand('wt.createWorkspace', async () => {
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('wt.createWorkspace', async () => {
         return vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: "Creating Workspace"
@@ -327,7 +327,7 @@ async function activateImpl (context: vscode.ExtensionContext) {
                 throw err;
             }
         });
-    });
+    }));
 }
 
 export function deactivate (): Promise<void> {

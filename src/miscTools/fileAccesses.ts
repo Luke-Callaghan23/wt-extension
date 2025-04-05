@@ -89,7 +89,7 @@ export class FileAccessManager implements Packageable {
     }
 
     private static lastContextUpdate: number = Date.now();
-    static registerCommands (): void {
+    static registerCommands (context: vscode.ExtensionContext): void {
 
 
         const cb = async (editor: vscode.TextEditor | undefined) => {
@@ -105,13 +105,13 @@ export class FileAccessManager implements Packageable {
             }, 0);
         };
 
-        vscode.window.onDidChangeActiveTextEditor(cb);
-        vscode.workspace.onDidSaveTextDocument(() => cb(vscode.window.activeTextEditor));
-        vscode.window.onDidChangeTextEditorSelection((e) => cb(e.textEditor));
+        context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(cb));
+        context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(() => cb(vscode.window.activeTextEditor)));
+        context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((e) => cb(e.textEditor)));
     }
 
     
-    static async initialize () {
+    static async initialize (context: vscode.ExtensionContext) {
 
         FileAccessManager.latestFragmentForUri = {};
 
@@ -164,7 +164,7 @@ export class FileAccessManager implements Packageable {
         FileAccessManager.positions = {};
 
         // Register the commands associated with the file access manager
-        FileAccessManager.registerCommands();
+        FileAccessManager.registerCommands(context);
     }
 
     

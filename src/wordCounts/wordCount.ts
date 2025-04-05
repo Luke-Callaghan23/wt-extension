@@ -9,11 +9,12 @@ import { defaultProgress } from '../miscTools/help';
 
 export class WordCount {
     wordCountStatus: vscode.StatusBarItem;
-    constructor () {
+    constructor (private context: vscode.ExtensionContext) {
         this.wordCountStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 10000);
         this.wordCountStatus.command = 'wt.wordCount.showWordCountRules';
 
-        vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => this.updateWordCountStatusBar(vscode.window.activeTextEditor!, doc));
+        this.context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => this.updateWordCountStatusBar(vscode.window.activeTextEditor!, doc)));
+        this.context.subscriptions.push(this.wordCountStatus);
         
         // Set the initial value for the word count
         const currentDoc = vscode.window.activeTextEditor?.document;
@@ -168,7 +169,7 @@ export class WordCount {
     
 
     private registerCommands () {
-        vscode.commands.registerCommand('wt.wordCount.showWordCountRules', () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordCount.showWordCountRules', () => {
             vscode.window.showInformationMessage(
                 "Word Count Rules",
                 {
@@ -176,10 +177,10 @@ export class WordCount {
                     detail: "Word count gets updated on every save to prevent redundancy.  Rules for a what is counted as a word is simple.  Every segment of alphanumeric text that is delimited by non-alphanumeric text is considered a word."
                 }
             )
-        });
-        vscode.commands.registerCommand('wt.wordCount.showFullWordCounts', async () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordCount.showFullWordCounts', async () => {
             const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
             this.getFullWordCounts(outlineView);
-        });
+        }));
     } 
 }

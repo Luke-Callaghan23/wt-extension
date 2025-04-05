@@ -26,9 +26,9 @@ export class ExportForm {
 		outlineView: OutlineView
 	) {
 		// Export the workspace
-		vscode.commands.registerCommand('wt.export.exportWorkspace', () => handleWorkspaceExport(_extensionUri, context, workspace, outlineView));
+		context.subscriptions.push(vscode.commands.registerCommand('wt.export.exportWorkspace', () => handleWorkspaceExport(_extensionUri, context, workspace, outlineView)));
 		// Export documents
-		vscode.commands.registerCommand('wt.export.exportDocuments', () => {
+		context.subscriptions.push(vscode.commands.registerCommand('wt.export.exportDocuments', () => {
 			// Inform the user that the export only considers fragments within chapters
 			const promise = vscode.window.showInformationMessage(`Snips will be ignored!`, {
 				modal: true,
@@ -38,14 +38,14 @@ export class ExportForm {
 				if (proceed === undefined) return;
 				new ExportForm(_extensionUri, context, workspace, outlineView);
 			});
-		});
+		}));
 	}
 	
 	// Creates and initializes the html for a webview panel
 	private panel: vscode.WebviewPanel;
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
-        context: vscode.ExtensionContext,
+        private context: vscode.ExtensionContext,
 		private workspace: Workspace,
 		private outline: OutlineView
 	) { 
@@ -59,7 +59,8 @@ export class ExportForm {
 		panel.webview.html = this._getHtmlForWebview(panel.webview, context.extensionPath);
 		
 		// Set up message handler for webview
-		panel.webview.onDidReceiveMessage((e) => this.handleMessage(e));
+		this.context.subscriptions.push(panel.webview.onDidReceiveMessage((e) => this.handleMessage(e)));
+		this.context.subscriptions.push(panel);
 		this.panel = panel;
     }
 	

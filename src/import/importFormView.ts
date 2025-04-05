@@ -28,7 +28,7 @@ export class ImportForm {
 
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
-        context: vscode.ExtensionContext,
+        private context: vscode.ExtensionContext,
 		private documents: vscode.Uri[]
 	) { 
 
@@ -41,8 +41,8 @@ export class ImportForm {
 			}
 		);
 
-		
-		panel.webview.onDidReceiveMessage((e) => this.handleMessage(e));
+		this.context.subscriptions.push(panel.webview.onDidReceiveMessage((e) => this.handleMessage(e)));
+		this.context.subscriptions.push(panel);
 		panel.webview.html = this._getHtmlForWebview(panel.webview, context.extensionPath);
 		this.panel = panel;
     }

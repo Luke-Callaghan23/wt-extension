@@ -132,5 +132,6 @@ export class Spellcheck implements Timed {
     ) {
         this.enabled = true;
         this.lastUpdate = [];
+        this.context.subscriptions.push(Spellcheck.RedUnderline);
     }
 }

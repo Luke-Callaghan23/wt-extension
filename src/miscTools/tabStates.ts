@@ -29,7 +29,7 @@ export class TabStates implements Packageable {
         this.statusBar.color = 'white';
         this.statusBar.command = 'wt.tabStates.showStatusBarMenu';
         this.update();
-
+        this.context.subscriptions.push(this.statusBar);
         this.registerCommands();
     }
     
@@ -355,9 +355,10 @@ export class TabStates implements Packageable {
         qp.busy = false;
         qp.enabled = true;
         qp.show();
+        this.context.subscriptions.push(qp);
 
         return new Promise<void>((accept, reject) => {
-            qp.onDidAccept(() => {
+            this.context.subscriptions.push(qp.onDidAccept(() => {
                 const selected = qp.activeItems[0];
                 if (selected.type === 'selectTabState') {
                     type Response = 'Overwrite this tab state' | 'Rename this tab state' | 'Switch to this tab state';
@@ -404,8 +405,8 @@ export class TabStates implements Packageable {
                     });
                 }
                 ((s: never) => {})(selected);
-            });
-            qp.onDidTriggerItemButton((event) => {
+            }));
+            this.context.subscriptions.push(qp.onDidTriggerItemButton((event) => {
                 const selected = event.button as TabStateButton;
                 let finishPromise: Promise<void> | undefined;
                 switch (selected.type) {
@@ -424,11 +425,11 @@ export class TabStates implements Packageable {
                     this.update();
                     accept();
                 })
-            });
-            qp.onDidHide(() => {
+            }));
+            this.context.subscriptions.push(qp.onDidHide(() => {
                 qp.dispose();
                 accept();
-            })
+            }))
         })
     }
 
@@ -470,26 +471,26 @@ export class TabStates implements Packageable {
     }
     
     registerCommands () {
-        vscode.commands.registerCommand('wt.tabStates.saveToCurrentTabGroup', async (prompt: string) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.tabStates.saveToCurrentTabGroup', async (prompt: string) => {
             return this.runCommand('wt.tabStates.saveToCurrentTabGroup');
-        });
-        vscode.commands.registerCommand('wt.tabStates.saveCurrentState', () => this.runCommand('wt.tabStates.saveCurrentState'));
-        vscode.commands.registerCommand('wt.tabStates.overwriteTabState', () => this.runCommand('wt.tabStates.overwriteTabState'));
-        vscode.commands.registerCommand('wt.tabStates.restoreState', () => this.runCommand('wt.tabStates.restoreState'));
-        vscode.commands.registerCommand('wt.tabStates.renameState', () => this.runCommand('wt.tabStates.renameState'));        
-        vscode.commands.registerCommand('wt.tabStates.newEmptyGroup', () => this.runCommand('wt.tabStates.newEmptyGroup'));
-        vscode.commands.registerCommand('wt.tabStates.showStatusBarMenu', () => this.showStatusBarMenu());
-        vscode.commands.registerCommand('wt.tabStates.hideStatusBar', () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.tabStates.saveCurrentState', () => this.runCommand('wt.tabStates.saveCurrentState')));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.tabStates.overwriteTabState', () => this.runCommand('wt.tabStates.overwriteTabState')));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.tabStates.restoreState', () => this.runCommand('wt.tabStates.restoreState')));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.tabStates.renameState', () => this.runCommand('wt.tabStates.renameState')));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.tabStates.newEmptyGroup', () => this.runCommand('wt.tabStates.newEmptyGroup')));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.tabStates.showStatusBarMenu', () => this.showStatusBarMenu()));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.tabStates.hideStatusBar', () => {
             this.statusBar.hide();
-        });
-        vscode.commands.registerCommand('wt.tabStates.showStatusBar', () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.tabStates.showStatusBar', () => {
             this.statusBar.show();
-        });
-        vscode.commands.registerCommand('wt.tabStates.refresh', () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.tabStates.refresh', () => {
             this.savedTabStates = this.context.workspaceState.get('wt.tabStates.savedTabStates') || {};
             this.latestTabState = this.context.workspaceState.get("wt.tabStates.latestTabState") || null;
             this.update();
-        })
+        }));
     }
 
     getPackageItems(): Partial<DiskContextType> {

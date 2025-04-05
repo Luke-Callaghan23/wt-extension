@@ -347,7 +347,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     }
 
     private registerCommands () {
-        vscode.commands.registerCommand(`wt.intellisense.synonyms.activateDefinition`, (definitionIndex: number) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(`wt.intellisense.synonyms.activateDefinition`, (definitionIndex: number) => {
             if (!this.activationState) return;
 
             // Flip the activation status of the selected definition
@@ -358,10 +358,10 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
             // Then reopen the suggestions panel
             vscode.commands.executeCommand('editor.action.triggerSuggest');
-        });
+        }));
 
         
-        vscode.commands.registerCommand(`wt.intellisense.synonyms.activateShowMoreLess`, (definitionIndex: number) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(`wt.intellisense.synonyms.activateShowMoreLess`, (definitionIndex: number) => {
             if (!this.activationState) return;
 
             // Flip the activation status of the selected definition
@@ -372,9 +372,9 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
             // Then reopen the suggestions panel
             vscode.commands.executeCommand('editor.action.triggerSuggest');
-        });
+        }));
 
-        vscode.commands.registerCommand('wt.intellisense.synonyms.shiftMode', () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.intellisense.synonyms.shiftMode', () => {
             // Reset word hippo status, activation state, and cache
             this.isWordHippo = !this.isWordHippo;
             this.activationState = undefined;
@@ -383,23 +383,24 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 ? 'Word Hippo'
                 : 'Dictionary API'
             vscode.window.showInformationMessage(`[INFO] Synonyms intellisense is now using ${using} for completion`);
-        });
+        }));
 
-        vscode.commands.registerCommand("wt.intellisense.synonyms.prevSelection", async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.intellisense.synonyms.prevSelection", async () => {
             if (!this.activationState) return vscode.commands.executeCommand('selectPrevSuggestion');
             this.activationState.selected--;
             if (this.activationState.selected < 0) {
                 this.activationState.selected = this.allCompletionItems.length - 1;
             }
             return vscode.commands.executeCommand('selectPrevSuggestion')
-        })
-        vscode.commands.registerCommand("wt.intellisense.synonyms.nextSelection", async () => {
+        }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.intellisense.synonyms.nextSelection", async () => {
             if (!this.activationState) return vscode.commands.executeCommand('selectNextSuggestion')
             this.activationState.selected = (this.activationState.selected + 1) % this.allCompletionItems.length;
             return vscode.commands.executeCommand('selectNextSuggestion');
-        })
+        }));
 
-        vscode.commands.registerCommand(`wt.intellisense.synonyms.prevDefinition`, async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(`wt.intellisense.synonyms.prevDefinition`, async () => {
             if (!this.activationState) return;
             if (this.activationState.selected === 0) {
                 let lastDefIndex = 0;
@@ -435,9 +436,9 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             await vscode.commands.executeCommand('hideSuggestWidget');
             await vscode.commands.executeCommand('editor.action.triggerSuggest');
             this.forceSelectIndex = false;
-        });
+        }));
 
-        vscode.commands.registerCommand(`wt.intellisense.synonyms.nextDefinition`, async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(`wt.intellisense.synonyms.nextDefinition`, async () => {
             if (!this.activationState) return;
             if (this.activationState.selected >= this.allCompletionItems.length - 1) {
                 this.activationState.selected = 0;
@@ -461,7 +462,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             await vscode.commands.executeCommand('hideSuggestWidget');
             await vscode.commands.executeCommand('editor.action.triggerSuggest');
             this.forceSelectIndex = false;
-        });
+        }));
 
     }
 }

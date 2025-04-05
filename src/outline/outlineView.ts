@@ -129,15 +129,17 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
     ) {
         super(context, OutlineView.viewId, "Outline");
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+		this.context.subscriptions.push(this._onDidChangeFile)
+		this.context.subscriptions.push(this._onDidChangeTreeData)
 
 		// Set up callback for text editor change that displays the opened document in the outline view
-		vscode.window.onDidChangeActiveTextEditor((editor) => {
+		this.context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((editor) => {
 			if (this.view.visible) {
 				setTimeout(() => {
 					this.selectActiveDocument(editor);
 				}, 0)
 			}
-		});
+		}));
 	}
 	
 	dropMimeTypes = ['application/vnd.code.tree.outline', 'application/vnd.code.tree.recycling', 'application/vnd.code.tree.scratch', 'text/uri-list'];

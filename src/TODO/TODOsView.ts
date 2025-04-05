@@ -158,6 +158,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 	constructor(context: vscode.ExtensionContext, protected workspace: Workspace) {
         super(context, TODOsView.viewId, "TODO");
 		this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+		this.context.subscriptions.push(this._onDidChangeFile);
 		ExtensionGlobals.todoView = this;
 	}
 

@@ -18,9 +18,9 @@ export class ReloadWatcher implements Packageable {
     ) {
         ReloadWatcher.context = context;
         ReloadWatcher.contextValuesUri = workspace.contextValuesFilePath;
-        vscode.commands.registerCommand("wt.reloadWatcher.reloadWorkspace", () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.reloadWatcher.reloadWorkspace", () => {
             return ReloadWatcher.changedContextValues(true);
-        });
+        }));
         ReloadWatcher.enableReloadWatch();
     }
     
@@ -30,10 +30,12 @@ export class ReloadWatcher implements Packageable {
     }
     
     public static enableReloadWatch () {
-        ReloadWatcher.watcher = vscode.workspace.createFileSystemWatcher(ReloadWatcher.contextValuesUri.fsPath);
-        ReloadWatcher.watcher.onDidChange(() => {
+        this.context.subscriptions.push(
+            ReloadWatcher.watcher = vscode.workspace.createFileSystemWatcher(ReloadWatcher.contextValuesUri.fsPath)
+        );
+        this.context.subscriptions.push(ReloadWatcher.watcher.onDidChange(() => {
             ReloadWatcher.changedContextValues();
-        });
+        }));
         console.log('enabled reload watching');
     }
 

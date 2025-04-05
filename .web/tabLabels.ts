@@ -12,14 +12,14 @@ import { vagueNodeSearch } from '../miscTools/help';
 
 export class TabLabels {
     public static enabled: boolean = true;
-        constructor () {
+        constructor (private context: vscode.ExtensionContext) {
         this.registerCommands();
 
-        vscode.workspace.onDidChangeConfiguration((e) => {
+        this.context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => {
             const configuration = 'wt.tabLabels.maxSize';
             if (!e.affectsConfiguration(configuration)) return;
             TabLabels.assignNamesForOpenTabs();
-        });
+        }));
     }
 
     private registerCommands() {
@@ -52,16 +52,16 @@ export class TabLabels {
             return source.renameResource(node);
         }
 
-        vscode.commands.registerCommand("wt.tabLabels.rename", async (uri: vscode.Uri) => {            
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.tabLabels.rename", async (uri: vscode.Uri) => {            
             return renameFromUri(uri);
-        });
-        vscode.commands.registerCommand("wt.tabLabels.renameActiveTab", async () => {
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.tabLabels.renameActiveTab", async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) return;
 
             const uri = editor.document.uri;
             return renameFromUri(uri);
-        });
+        }));
     }
 
     static async assignNamesForOpenTabs () {

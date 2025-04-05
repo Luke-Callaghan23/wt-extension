@@ -61,54 +61,54 @@ async function deleteSelection (jt: JumpType): Promise<boolean> {
 
 
 export class Toolbar {
-    static registerCommands() {
-        vscode.commands.registerCommand('wt.editor.remove', remove);
-        vscode.commands.registerCommand('wt.editor.save', save);
-        vscode.commands.registerCommand('wt.editor.saveAll', saveAll);
-        vscode.commands.registerCommand('wt.editor.italisize', italisize);
-        vscode.commands.registerCommand('wt.editor.bold', bold);
-        vscode.commands.registerCommand('wt.editor.strikethrough', strikethrough);
-        vscode.commands.registerCommand('wt.editor.commasize', commasize);
-        vscode.commands.registerCommand('wt.editor.underline', underline);
-        vscode.commands.registerCommand('wt.editor.emdash', emDash);
-        vscode.commands.registerCommand('wt.editor.emdashes', emDashes);
+    static registerCommands(context: vscode.ExtensionContext) {
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.remove', remove));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.save', save));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.saveAll', saveAll));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.italisize', italisize));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.bold', bold));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.strikethrough', strikethrough));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.commasize', commasize));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.underline', underline));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.emdash', emDash));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.emdashes', emDashes));
 
-        vscode.commands.registerCommand("wt.editor.todo.commentSentence", commentSentence);
-        vscode.commands.registerCommand("wt.editor.todo.commentFragment", commentFragment);
-        vscode.commands.registerCommand("wt.editor.todo.commentParagraph", commentParagraph);
+        context.subscriptions.push(vscode.commands.registerCommand("wt.editor.todo.commentSentence", commentSentence));
+        context.subscriptions.push(vscode.commands.registerCommand("wt.editor.todo.commentFragment", commentFragment));
+        context.subscriptions.push(vscode.commands.registerCommand("wt.editor.todo.commentParagraph", commentParagraph));
 
-        vscode.commands.registerCommand('wt.editor.delete.forward', () => deleteSelection('forward'));
-        vscode.commands.registerCommand('wt.editor.delete.backward', () => deleteSelection('backward'));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.delete.forward', () => deleteSelection('forward')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.delete.backward', () => deleteSelection('backward')));
 
-        vscode.commands.registerCommand('wt.editor.highlightExpand', highlightExpand);
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.highlightExpand', highlightExpand));
 
         // Jump commands
-        vscode.commands.registerCommand('wt.editor.jump.word.forward', () => jumpWord('forward'));
-        vscode.commands.registerCommand('wt.editor.jump.word.backward', () => jumpWord('backward'));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.forward', () => jumpSentence('forward', false));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.backward', () => jumpSentence('backward', false));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.forward', () => jumpSentence('forward', false, defaultJumpFragmentOptions));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.backward', () => jumpSentence('backward', false, defaultJumpFragmentOptions));
-        vscode.commands.registerCommand('wt.editor.jump.paragraph.forward', () => jumpParagraph('forward'));
-        vscode.commands.registerCommand('wt.editor.jump.paragraph.backward', () => jumpParagraph('backward'));
-        vscode.commands.registerCommand('wt.editor.jump.word.forward.shift', () => jumpWord('forward', true));
-        vscode.commands.registerCommand('wt.editor.jump.word.backward.shift', () => jumpWord('backward', true));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.forward.shift', () => jumpSentence('forward', true));
-        vscode.commands.registerCommand('wt.editor.jump.sentence.backward.shift', () => jumpSentence('backward', true));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.forward.shift', () => jumpSentence('forward', true, defaultJumpFragmentOptions));
-        vscode.commands.registerCommand('wt.editor.jump.fragment.backward.shift', () => jumpSentence('backward', true, defaultJumpFragmentOptions));
-        vscode.commands.registerCommand('wt.editor.jump.paragraph.forward.shift', () => jumpParagraph('forward', true));
-        vscode.commands.registerCommand('wt.editor.jump.paragraph.backward.shift', () => jumpParagraph('backward', true));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.forward', () => jumpWord('forward')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.backward', () => jumpWord('backward')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.forward', () => jumpSentence('forward', false)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.backward', () => jumpSentence('backward', false)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.forward', () => jumpSentence('forward', false, defaultJumpFragmentOptions)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.backward', () => jumpSentence('backward', false, defaultJumpFragmentOptions)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.forward', () => jumpParagraph('forward')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.backward', () => jumpParagraph('backward')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.forward.shift', () => jumpWord('forward', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.backward.shift', () => jumpWord('backward', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.forward.shift', () => jumpSentence('forward', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.backward.shift', () => jumpSentence('backward', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.forward.shift', () => jumpSentence('forward', true, defaultJumpFragmentOptions)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.backward.shift', () => jumpSentence('backward', true, defaultJumpFragmentOptions)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.forward.shift', () => jumpParagraph('forward', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.backward.shift', () => jumpParagraph('backward', true)));
 
-        vscode.commands.registerCommand('wt.editor.addQuotes', () => addQuotes());
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.addQuotes', () => addQuotes()));
 
-        const accent = new Accents();
-        vscode.commands.registerCommand('wt.editor.accent.insertAccent', () => accent.addAccent());
+        const accent = new Accents(context);
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.accent.insertAccent', () => accent.addAccent()));
 
-        vscode.commands.registerCommand("wt.editor.revealVSCode", (tabUri: vscode.Uri) => {
+        context.subscriptions.push(vscode.commands.registerCommand("wt.editor.revealVSCode", (tabUri: vscode.Uri) => {
             return vscode.commands.executeCommand('workbench.view.explorer');
-        });
-        vscode.commands.registerCommand("wt.editor.revealOutline", async (tabUri: vscode.Uri) => {
+        }));
+        context.subscriptions.push(vscode.commands.registerCommand("wt.editor.revealOutline", async (tabUri: vscode.Uri) => {
             const searchResult = await vagueNodeSearch(tabUri);
             if (searchResult === null) {
                 return vscode.window.showErrorMessage(`[ERROR] Unable to find Outline fragment for uri '${tabUri.fsPath}'`);
@@ -131,14 +131,14 @@ export class Toolbar {
                     select: true,
                 });
             }
-        });
-        vscode.commands.registerCommand("wt.editor.revealFileExplorer", (tabUri: vscode.Uri) => {
+        }));
+        context.subscriptions.push(vscode.commands.registerCommand("wt.editor.revealFileExplorer", (tabUri: vscode.Uri) => {
             try {
                 return vscode.commands.executeCommand('remote-wsl.revealInExplorer', tabUri);
             }
             catch (err: any) {
                 return vscode.commands.executeCommand('revealFileInOS', tabUri);
             }
-        });
+        }));
     }
 }

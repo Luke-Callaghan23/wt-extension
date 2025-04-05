@@ -47,9 +47,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
 
         this._extensionUri = context.extensionUri;
         try {
-            context.subscriptions.push (
-                vscode.window.registerWebviewViewProvider('wt.wtSearch.search', this)
-            );
+            context.subscriptions.push (vscode.window.registerWebviewViewProvider('wt.wtSearch.search', this));
         }
         catch (e) {
             console.log(`${e}`);
@@ -73,11 +71,11 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
     }
         
     private registerCommands () {
-        vscode.workspace.onDidChangeConfiguration((e) => {
+        this.context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => {
             const configuration = 'wt.wtSearch.slowMode';
             if (!e.affectsConfiguration(configuration)) return;
             this.setSlowModeValue();
-        });
+        }));
     }
 
     private setSlowModeValue () {
@@ -106,7 +104,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
         };
 
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-        webviewView.webview.onDidReceiveMessage(data => {
+        this.context.subscriptions.push(webviewView.webview.onDidReceiveMessage(data => {
             const message = data as WebviewMessage;
             switch (message.kind) {
                 case 'checkbox': 
@@ -134,7 +132,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
                 case 'ready':
                     this.setSlowModeValue();
             }
-        });
+        }));
     }
 
     private _getHtmlForWebview(webview: vscode.Webview) {
