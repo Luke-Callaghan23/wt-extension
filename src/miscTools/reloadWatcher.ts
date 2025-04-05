@@ -89,7 +89,7 @@ export class ReloadWatcher implements Packageable {
             vscode.commands.executeCommand("wt.wh.refresh", contextValues['wt.wh.synonyms']),
             vscode.commands.executeCommand("wt.personalDictionary.refresh", contextValues['wt.personalDictionary']),
             vscode.commands.executeCommand("wt.colors.refresh", contextValues['wt.colors.extraColors']),
-            vscode.commands.executeCommand("wt.workBible.refresh"),
+            vscode.commands.executeCommand("wt.notes.refresh"),
             vscode.commands.executeCommand("wt.scratchPad.refresh"),
             vscode.commands.executeCommand('wt.tabStates.refresh')
         ]).then(() => {

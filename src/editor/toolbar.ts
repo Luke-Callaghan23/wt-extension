@@ -126,7 +126,7 @@ export class Toolbar {
                     expand: true,
                     select: true,
                 });
-                case 'workBible': return ExtensionGlobals.workBible.view.reveal(searchResult.node, {
+                case 'notes': return ExtensionGlobals.notes.view.reveal(searchResult.node, {
                     expand: true,
                     select: true,
                 });

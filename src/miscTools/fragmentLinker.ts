@@ -51,7 +51,7 @@ export class FragmentLinker {
         if (!description || !link) return [];
 
         const node = await vagueNodeSearch(vscode.Uri.file(link), true);
-        if (!node || node.source === 'workBible') return [];
+        if (!node || node.source === 'notes') return [];
         const uri = node.node!.data.ids.uri;
 
         return {

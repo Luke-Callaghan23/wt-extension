@@ -31,7 +31,7 @@ import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
-import { WorkBible } from './workBible/workBible';
+import { Notes } from './notes/notes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { TabLabels } from './tabLabels/tabLabels';
 import { searchFiles } from './miscTools/searchFiles';
@@ -45,7 +45,7 @@ import { SearchResultsView } from './search/searchResultsView';
 import { SearchBarView } from './search/searchBarView';
 import { FragmentOverviewView } from './fragmentOverview/fragmentOverview';
 import { FragmentLinker } from './miscTools/fragmentLinker';
-import { getSectionedProgressReporter, progressOnViews } from './miscTools/help';
+import { defaultProgress, getSectionedProgressReporter, progressOnViews } from './miscTools/help';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -59,7 +59,7 @@ export class ExtensionGlobals {
     public static outlineView: OutlineView;
     public static recyclingBinView: RecyclingBinView;
     public static scratchPadView: ScratchPadView;
-    public static workBible: WorkBible;
+    public static notes: Notes;
     public static todoView: TODOsView;
     public static workspace: Workspace;
     public static context: vscode.ExtensionContext;
@@ -68,7 +68,7 @@ export class ExtensionGlobals {
         outlineView: OutlineView, 
         recyclingBinView: RecyclingBinView, 
         scratchPadView: ScratchPadView, 
-        workBible: WorkBible,
+        notes: Notes,
         todoView: TODOsView,
         workspace: Workspace,
         context: vscode.ExtensionContext
@@ -76,7 +76,7 @@ export class ExtensionGlobals {
         ExtensionGlobals.outlineView = outlineView;
         ExtensionGlobals.recyclingBinView = recyclingBinView;
         ExtensionGlobals.scratchPadView = scratchPadView;
-        ExtensionGlobals.workBible = workBible;
+        ExtensionGlobals.notes = notes;
         ExtensionGlobals.todoView = todoView;
         ExtensionGlobals.workspace = workspace;
         ExtensionGlobals.context = context;
@@ -103,7 +103,7 @@ async function loadExtensionWorkspace (
                 "Loaded fragment overview",
                 "Loaded tab groups",
                 "Loaded search bad",
-                "Loaded work bible",
+                "Loaded notes",
                 "Loaded status bar items",
                 "Loaded tab labels",
                 "Loaded text-to-speech debugger",
@@ -149,14 +149,14 @@ async function loadExtensionWorkspace (
         const fragmentOverview = new FragmentOverviewView(context, workspace);
         report("Loaded fragment overview");
         
-        // const tabStates = new TabStates(context, workspace);
+        const tabStates = new TabStates(context, workspace);
         report("Loaded tab groups");
 
-        const workBible = new WorkBible(workspace, context);
-        await workBible.initialize()
-        report("Loaded work bible");
+        const notes = new Notes(workspace, context);
+        await notes.initialize()
+        report("Loaded notes");
 
-        ExtensionGlobals.initialize(outline, recycleBin, scratchPad, workBible, todo, workspace, context);
+        ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notes, todo, workspace, context);
 
         const searchResultsView = new SearchResultsView(workspace, context);
         const searchBarView = new SearchBarView(context, workspace, searchResultsView);
@@ -172,7 +172,7 @@ async function loadExtensionWorkspace (
         new FragmentLinker(context);
 
         const timedViews = new TimedView(context, [
-            ['wt.workBible.tree', 'workBible', workBible],
+            ['wt.notes.tree', 'notes', notes],
             ['wt.todo', 'todo', todo],
             ['wt.wordWatcher', 'wordWatcher', wordWatcher],
             // ['wt.proximity', 'proximity', proximity],
@@ -245,26 +245,12 @@ export function activate (context: vscode.ExtensionContext) {
 
 
 async function loadExtensionWithProgress (context: vscode.ExtensionContext, title: "Starting Integrated Writing Environment" | "Reloading Integrated Writing Environment"): Promise<boolean> {
-    return progressOnViews([
-        "wt.outline",
-        "wt.wordWatcher",
-        "wt.overview",
-        "wt.todo",
-        "wt.synonyms",
-        "wt.wh",
-        "wt.import.fileExplorer",
-        "wt.export",
-        "wt.scratchPad",
-        "wt.recyclingBin",
-        "wt.workBible.tree",
-        "wt.wtSearch.search",
-        "wt.wtSearch.results",
-    ], title, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+    return defaultProgress(title, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
         const workspace = await loadWorkspace(context);
         progress.report({ message: "Loaded workspace" });
         if (workspace === null) return false;
     
-        await loadExtensionWorkspace(context, workspace);
+        await loadExtensionWorkspace(context, workspace, progress, 1);
         progress.report({ message: "Loaded extension" })
         return true;
     });

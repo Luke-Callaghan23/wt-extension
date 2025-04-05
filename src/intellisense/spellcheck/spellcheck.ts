@@ -4,7 +4,7 @@ import { Workspace } from '../../workspace/workspaceClass';
 import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
 import { WordRange } from '../../intellisense/common';
-import { WorkBible } from '../../workBible/workBible';
+import { Notes } from '../../notes/notes';
 import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
 import { Autocorrect } from '../../autocorrect/autocorrect';
 import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
@@ -94,7 +94,7 @@ export class Spellcheck implements Timed {
 
 
                 // Do not add red decorations to words that have been matched by world notes
-                const worldNotes = WorkBible.singleton;
+                const worldNotes = Notes.singleton;
                 if (worldNotes) {
                     if (worldNotes.matchedNotes) {
                         const matches = worldNotes.matchedNotes[formatFsPathForCompare(document.uri)];

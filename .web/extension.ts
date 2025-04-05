@@ -23,7 +23,7 @@ import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
-import { WorkBible } from './workBible/workBible';
+import { Notes } from './notes/notes';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { TabLabels } from './tabLabels/tabLabels';
 import { searchFiles } from './miscTools/searchFiles';
@@ -50,7 +50,7 @@ export class ExtensionGlobals {
     public static outlineView: OutlineView;
     public static recyclingBinView: RecyclingBinView;
     public static scratchPadView: ScratchPadView;
-    public static workBible: WorkBible;
+    public static notes: Notes;
 	public static todoView: TODOsView;
 	public static workspace: Workspace;
 	public static context: vscode.ExtensionContext;
@@ -59,7 +59,7 @@ export class ExtensionGlobals {
 		outlineView: OutlineView, 
 		recyclingBinView: RecyclingBinView, 
 		scratchPadView: ScratchPadView, 
-		workBible: WorkBible,
+		notes: Notes,
 		todoView: TODOsView,
 		workspace: Workspace,
 		context: vscode.ExtensionContext
@@ -67,7 +67,7 @@ export class ExtensionGlobals {
         ExtensionGlobals.outlineView = outlineView;
         ExtensionGlobals.recyclingBinView = recyclingBinView;
         ExtensionGlobals.scratchPadView = scratchPadView;
-        ExtensionGlobals.workBible = workBible;
+        ExtensionGlobals.notes = notes;
 		ExtensionGlobals.todoView = todoView;
 		ExtensionGlobals.workspace = workspace;
 		ExtensionGlobals.context = context;
@@ -109,10 +109,10 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		searchResultsView.initialize();
 
 
-		const workBible = new WorkBible(workspace, context);
-		await workBible.initialize()
+		const notes = new Notes(workspace, context);
+		await notes.initialize()
 		
-		ExtensionGlobals.initialize(outline, recycleBin, scratchPad, workBible, todo, workspace, context);
+		ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notes, todo, workspace, context);
 		
 		const wordCountStatus = new WordCount();
 		const statusBarTimer = new StatusBarTimer(context);
@@ -120,7 +120,7 @@ async function loadExtensionWorkspace (context: vscode.ExtensionContext, workspa
 		new FragmentLinker();
 
 		const timedViews = new TimedView(context, [
-			['wt.workBible.tree', 'workBible', workBible],
+			['wt.notes.tree', 'notes', notes],
 			['wt.todo', 'todo', todo],
 			['wt.wordWatcher', 'wordWatcher', wordWatcher],
 			// ['wt.proximity', 'proximity', proximity],

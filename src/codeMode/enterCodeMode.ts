@@ -4,7 +4,7 @@ import { Buff } from '../Buffer/bufferSource';
 import { isText } from 'istextorbinary';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { OutlineView } from '../outline/outlineView';
-import { WorkBible } from '../workBible/workBible';
+import { Notes } from '../notes/notes';
 import { ExtensionGlobals } from '../extension';
 
 export async function enter (this: CoderModer): Promise<void> {
@@ -42,12 +42,12 @@ export async function enter (this: CoderModer): Promise<void> {
 
     
     const outlineView: OutlineView = ExtensionGlobals.outlineView;
-    const workBibleView: WorkBible = ExtensionGlobals.workBible;
+    const notesView: Notes = ExtensionGlobals.notes;
     if (outlineView.view.visible) {
         vscode.commands.executeCommand('workbench.view.explorer');
         this.openedExplorer = true;
     }
-    if (workBibleView.view.visible) {
+    if (notesView.view.visible) {
         vscode.commands.executeCommand('workbench.action.output.toggleOutput');
         this.openedOutput = true;
     }

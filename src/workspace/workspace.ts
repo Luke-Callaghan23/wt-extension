@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
-import { prompt } from '../miscTools/help';
+import { prompt, statFile } from '../miscTools/help';
 import * as vsconsole from '../miscTools/vsconsole';
 import * as extension from '../extension';
 import { gitiniter } from '../gitTransactions';
@@ -83,10 +83,10 @@ export async function createWorkspace (
             "wt.wordWatcher.rgbaColors": {},
             "wt.wordWatcher.unwatchedWords": [],
             "wt.wordWatcher.watchedWords": [],
-            "wt.workBible.dontAskDeleteAppearance": false,
-            "wt.workBible.dontAskDeleteDescription": false,
-            "wt.workBible.dontAskDeleteNote": false,
-            "wt.workBible.tree.enabled": false,
+            "wt.notes.dontAskDeleteAppearance": false,
+            "wt.notes.dontAskDeleteDescription": false,
+            "wt.notes.dontAskDeleteNote": false,
+            "wt.notes.tree.enabled": false,
         }, undefined, 2)));
 
         const gitignoreUri = vscode.Uri.joinPath(extension.rootPath, '.gitignore');
@@ -129,7 +129,7 @@ tmp/**
         await vscode.workspace.fs.createDirectory(dotVscodeUri);
         const settingsUri = vscode.Uri.joinPath(extension.rootPath, `.vscode/settings.json`);
         await vscode.workspace.fs.writeFile(settingsUri, Buff.from(settingsJSON, 'utf-8'));
-        await vscode.workspace.fs.createDirectory(workspace.workBibleFolder);
+        await vscode.workspace.fs.createDirectory(workspace.notesFolder);
     }
     catch (e) {
         vscode.window.showErrorMessage(`Error creating directory: ${e}`);
@@ -194,6 +194,26 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
             }
         }
         catch (err: any) {
+            if (attempting?.fsPath === workspace.notesFolder.fsPath) {
+                // Notes folder has moved from original folder called 'workBible'
+                // Older WT envs will need to adjust to this new folder name
+                if (await statFile(workspace.workBibleFolder)) {
+                    const result = await vscode.window.showInformationMessage("Work Bible has moved!!!", {
+                        modal: true,
+                        detail: "The work bible has been renamed to Notes.  As a part of other improvements, we're going to need to rename your local folder 'workBible' to 'notes'.  Please enter 'confirm' to rename this folder, or 'cancel' to create a new empty 'notes' folder (No clue why you would want that, but whatever)."
+                    }, "Confirm");
+
+                    if (result === "Confirm") {
+                        await vscode.workspace.fs.rename(workspace.workBibleFolder, workspace.notesFolder);
+                        vscode.window.showInformationMessage("Renamed 'workBible' folder!");
+                    }
+                    else {
+                        await vscode.workspace.fs.createDirectory(workspace.notesFolder);
+                        vscode.window.showInformationMessage("Created 'notes' folder!");
+                    } 
+                    return loadWorkspace(context);
+                }
+            }
             vscode.window.showWarningMessage(`Could not load WT environment because folder '${attempting}' was missing`);
             return null;
         }

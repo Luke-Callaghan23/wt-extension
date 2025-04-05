@@ -18,10 +18,10 @@ export type DiskContextType = {
         [index: string]: boolean,
     },
     "wt.synonyms.synonyms": string[],
-    "wt.workBible.tree.enabled": boolean,
-    "wt.workBible.dontAskDeleteNote": boolean,
-    "wt.workBible.dontAskDeleteDescription": boolean,
-    "wt.workBible.dontAskDeleteAppearance": boolean,
+    "wt.notes.tree.enabled": boolean,
+    "wt.notes.dontAskDeleteNote": boolean,
+    "wt.notes.dontAskDeleteDescription": boolean,
+    "wt.notes.dontAskDeleteAppearance": boolean,
     "wt.todo.enabled": boolean,
     "wt.todo.collapseState": {
         [index: string]: boolean;
@@ -82,9 +82,11 @@ export class Workspace {
     public recyclingBin: vscode.Uri;
     public contextValuesFilePath: vscode.Uri;
     public worldNotesPath: vscode.Uri;
-    public workBibleFolder: vscode.Uri;
+    public notesFolder: vscode.Uri;
     public scratchPadFolder: vscode.Uri;
 
+    // Old folders
+    public workBibleFolder: vscode.Uri;
 
     public synonymsCachePath: vscode.Uri;
 
@@ -96,7 +98,7 @@ export class Workspace {
             this.importFolder, 
             this.exportFolder,
             this.recyclingBin,
-            this.workBibleFolder,
+            this.notesFolder,
             this.scratchPadFolder
         ];
     }
@@ -199,9 +201,12 @@ export class Workspace {
         this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         this.worldNotesPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotes.json');
-        this.workBibleFolder = vscode.Uri.joinPath(extension.rootPath, `data/workBible`);
+        this.notesFolder = vscode.Uri.joinPath(extension.rootPath, `data/notes`);
         this.scratchPadFolder = vscode.Uri.joinPath(extension.rootPath, `data/scratchPad`);
         this.synonymsCachePath = vscode.Uri.joinPath(extension.rootPath, 'synonymsCache.json');
+
+        // Old folders
+        this.workBibleFolder = vscode.Uri.joinPath(extension.rootPath, `data/workBible`);
     }
 
     registerCommands(context: vscode.ExtensionContext): void {

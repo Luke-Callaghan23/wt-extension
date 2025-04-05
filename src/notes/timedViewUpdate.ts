@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Note, NoteMatch, WorkBible } from './workBible';
+import { Note, NoteMatch, Notes } from './notes';
 import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
 
 const decorationsOptions: vscode.DecorationRenderOptions = {
@@ -7,9 +7,9 @@ const decorationsOptions: vscode.DecorationRenderOptions = {
     fontStyle: 'oblique',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
 };
-export const workBibleDecorations = vscode.window.createTextEditorDecorationType(decorationsOptions);
+export const notesDecorations = vscode.window.createTextEditorDecorationType(decorationsOptions);
 
-export async function update (this: WorkBible, editor: vscode.TextEditor): Promise<void> {
+export async function update (this: Notes, editor: vscode.TextEditor): Promise<void> {
     if (!this.nounsRegex) return;
     let match: RegExpExecArray | null;
 
@@ -103,9 +103,9 @@ export async function update (this: WorkBible, editor: vscode.TextEditor): Promi
         delete this.matchedNotes[formatFsPathForCompare(editor.document.uri)];
     }
 
-    editor.setDecorations(workBibleDecorations, decorationLocations);
+    editor.setDecorations(notesDecorations, decorationLocations);
 }
 
-export async function disable (this: WorkBible): Promise<void> {
+export async function disable (this: Notes): Promise<void> {
     throw new Error('Method not implemented.');
 }

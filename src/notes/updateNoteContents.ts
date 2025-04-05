@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { AppearanceContainer, Note, SubNote, WorkBible } from './workBible';
+import { AppearanceContainer, Note, SubNote, Notes } from './notes';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { determineAuxViewColumn } from '../miscTools/help';
 
 
-export async function addNote (this: WorkBible, resource: Note | undefined): Promise<string | null> {
+export async function addNote (this: Notes, resource: Note | undefined): Promise<string | null> {
     const noun = await vscode.window.showInputBox({
         ignoreFocusOut: false,
         placeHolder: 'Tom Tomington',
@@ -12,8 +12,8 @@ export async function addNote (this: WorkBible, resource: Note | undefined): Pro
     });
     if (noun === undefined || noun === null || noun.length === 0) return null;
 
-    const noteId = WorkBible.getNewNoteId();
-    const notePath = vscode.Uri.joinPath(this.workBibleFolderPath, `${noteId}.wtnote`);
+    const noteId = Notes.getNewNoteId();
+    const notePath = vscode.Uri.joinPath(this.notesFolderPath, `${noteId}.wtnote`);
     const insert: Note = {
         noun: noun,
         description: [],
@@ -60,7 +60,7 @@ export async function addNote (this: WorkBible, resource: Note | undefined): Pro
     return insert.noteId;
 }
 
-export async function removeNote (this: WorkBible, resource: Note): Promise<string | null> {
+export async function removeNote (this: Notes, resource: Note): Promise<string | null> {
     const no = 'No';
     const yes = 'Yes';
     const areYouSure = await vscode.window.showQuickPick([ no, yes ], {
@@ -80,7 +80,7 @@ export async function removeNote (this: WorkBible, resource: Note): Promise<stri
     return resource.noteId;
 };
 
-export async function editNote (this: WorkBible, resource: Note | SubNote | AppearanceContainer) {
+export async function editNote (this: Notes, resource: Note | SubNote | AppearanceContainer) {
     
     let note: Note | undefined = undefined;
     switch (resource.kind) {
@@ -94,7 +94,7 @@ export async function editNote (this: WorkBible, resource: Note | SubNote | Appe
     if (note === undefined) return;
 
     const noteFileName = `${note.noteId}.wtnote`
-    const notePath = vscode.Uri.joinPath(this.workBibleFolderPath, noteFileName);
+    const notePath = vscode.Uri.joinPath(this.notesFolderPath, noteFileName);
     
     const document = await vscode.workspace.openTextDocument(notePath);
     return vscode.window.showTextDocument(document, {

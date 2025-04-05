@@ -3,7 +3,7 @@ import { OutlineView } from "../outlineView";
 import { OutlineNode } from '../nodes_impl/outlineNode';
 import { vagueNodeSearch } from '../../miscTools/help';
 import { ExtensionGlobals } from '../../extension';
-import { Note } from '../../workBible/workBible';
+import { Note } from '../../notes/notes';
 import { TabLabels } from '../../tabLabels/tabLabels';
 
 
@@ -24,7 +24,7 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
     const { node: nodeOrNote, source } = await vagueNodeSearch(uri);
     if (!nodeOrNote || !source) return;
 
-    if (source !== 'workBible' && nodeOrNote instanceof OutlineNode) {
+    if (source !== 'notes' && nodeOrNote instanceof OutlineNode) {
         let view: vscode.TreeView<OutlineNode>;
         let node: OutlineNode = nodeOrNote;
         switch (source) {
@@ -48,7 +48,7 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
     }
     else {
         const note = nodeOrNote as Note;
-        ExtensionGlobals.workBible.view.reveal(note, {
+        ExtensionGlobals.notes.view.reveal(note, {
             expand: true,
             focus: false,
             select: true

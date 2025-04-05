@@ -7,7 +7,7 @@ import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
-import { Note, WorkBible } from '../workBible/workBible';
+import { Note, Notes } from '../notes/notes';
 import { vagueNodeSearch } from '../miscTools/help';
 
 export class TabLabels {
@@ -33,9 +33,9 @@ export class TabLabels {
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.recyclingBinView, node ]) : reject())),
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.scratchPadView, node ]) : reject())),
                     new Promise<[ ViewSource, Note ]>((resolve, reject) =>  {
-                        const note = extension.ExtensionGlobals.workBible.getNote(uri);
+                        const note = extension.ExtensionGlobals.notes.getNote(uri);
                         if (note) {
-                            resolve([ extension.ExtensionGlobals.workBible, note ]);
+                            resolve([ extension.ExtensionGlobals.notes, note ]);
                         } 
                         else {
                             reject();
@@ -108,7 +108,7 @@ export class TabLabels {
                         label = `(scratch) ${node.data.ids.display}`;
                     }
                 }
-                else if (source === 'workBible') {
+                else if (source === 'notes') {
                     label = `(notes) ${node.data.ids.display}`;
                 }
                 else throw 'unreachable';

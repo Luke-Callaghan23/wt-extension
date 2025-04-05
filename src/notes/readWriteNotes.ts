@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Note, WorkBible } from './workBible';
+import { Note, Notes } from './notes';
 import * as extension from '../extension';
 import { v4 as uuidv4 } from 'uuid';
 import { getNoteText } from './updateNoteContents';
@@ -11,7 +11,7 @@ const appearancesSplitter = /-- Enter APPEARANCE descriptions for .* here, separ
 const generalSplitter = /-- Enter GENERAL DESCRIPTIONS for .* here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!/;
 
 
-export function readSingleNote (this: WorkBible, noteId: string, content: string, uri: vscode.Uri): Note {
+export function readSingleNote (this: Notes, noteId: string, content: string, uri: vscode.Uri): Note {
     // If the aliases splitter was not found, use the first newline as the separator instead
     let [ name, remaining ] = content.split(aliasesSplitter);
     if (remaining === undefined) {
@@ -87,19 +87,19 @@ export function readSingleNote (this: WorkBible, noteId: string, content: string
     };
 }
 
-export async function readNotes (this: WorkBible, workBiblePath: vscode.Uri): Promise<Note[]> {
+export async function readNotes (this: Notes, notesPath: vscode.Uri): Promise<Note[]> {
     try {
 
         try {
-            await vscode.workspace.fs.stat(this.workBibleFolderPath);
+            await vscode.workspace.fs.stat(this.notesFolderPath);
         }
         catch (err: any) {
             // If the stat fails, then make the container directory and an empty config file
-            await vscode.workspace.fs.createDirectory(this.workBibleFolderPath);
-            await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(this.workBibleFolderPath, '.gitkeep'), Buff.from(""));
+            await vscode.workspace.fs.createDirectory(this.notesFolderPath);
+            await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(this.notesFolderPath, '.gitkeep'), Buff.from(""));
         }
 
-        const folders = await vscode.workspace.fs.readDirectory(this.workBibleFolderPath);
+        const folders = await vscode.workspace.fs.readDirectory(this.notesFolderPath);
         const readPromises: Thenable<{
             noteId: string,
             content: string,
@@ -110,7 +110,7 @@ export async function readNotes (this: WorkBible, workBiblePath: vscode.Uri): Pr
             }
             const noteId = name.replace('.wtnote', '');
             console.log(noteId);
-            const pathUri = vscode.Uri.joinPath(this.workBibleFolderPath, name)
+            const pathUri = vscode.Uri.joinPath(this.notesFolderPath, name)
             return vscode.workspace.fs.readFile(pathUri).then(buff => {
                 return {
                     noteId: noteId,
@@ -139,7 +139,7 @@ export async function readNotes (this: WorkBible, workBiblePath: vscode.Uri): Pr
 }
 
 
-export async function writeNotes (this: WorkBible): Promise<void> {
+export async function writeNotes (this: Notes): Promise<void> {
     try {
         const writePromises = this.notes.map(note => {
             return this.writeSingleNote(note);
@@ -154,11 +154,11 @@ export async function writeNotes (this: WorkBible): Promise<void> {
 
 
 
-export async function writeSingleNote (this: WorkBible, note: Note): Promise<vscode.Uri | null> {
+export async function writeSingleNote (this: Notes, note: Note): Promise<vscode.Uri | null> {
     const noteText = getNoteText(note);
 
     const noteFileName = `${note.noteId}.wtnote`
-    const notePath = vscode.Uri.joinPath(this.workBibleFolderPath, noteFileName);
+    const notePath = vscode.Uri.joinPath(this.notesFolderPath, noteFileName);
 
     try {
         const encodedNote = extension.encoder.encode(noteText);

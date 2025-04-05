@@ -84,9 +84,9 @@ export class SearchResultsView
             // When the matched title is the title of a fragment, opens that in the editor
             // Otherwise, reveals that node in the Outline / Scratch Pad / Recycling Bin / Notes view
             
-            // Work bible or scratch pad or fragment: open in editor
+            // Notes or scratch pad or fragment: open in editor
             if (
-                node.node.linkNode.source === 'workBible' || 
+                node.node.linkNode.source === 'notes' || 
                 node.node.linkNode.source === 'scratch' || 
                 node.node.linkNode.node.data.ids.type === 'fragment'
             ) {
@@ -109,8 +109,8 @@ export class SearchResultsView
             const nodeResult = await vagueNodeSearch(node.getUri());
             if (nodeResult.node === null || nodeResult.source === null) return;
 
-            if (nodeResult.source === 'workBible') {
-                extension.ExtensionGlobals.workBible.view.reveal(nodeResult.node, {
+            if (nodeResult.source === 'notes') {
+                extension.ExtensionGlobals.notes.view.reveal(nodeResult.node, {
                     expand: true,
                     focus: false,
                     select: true
@@ -193,7 +193,7 @@ export class SearchResultsView
         }
         else if (element.node.kind === 'matchedTitle') {
             let icon: vscode.ThemeIcon;
-            if (element.node.linkNode.source === 'workBible' || element.node.linkNode.node.data.ids.type === 'fragment') {
+            if (element.node.linkNode.source === 'notes' || element.node.linkNode.node.data.ids.type === 'fragment') {
                 icon = new vscode.ThemeIcon('edit');
             }
             else {

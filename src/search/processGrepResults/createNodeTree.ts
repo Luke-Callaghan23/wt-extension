@@ -102,7 +102,7 @@ async function convertFolderToSearchNode (
                     if (node.source === null || node.node === null) continue;
 
                     const linkNode: Exclude<VagueNodeSearchResult, { node: null, source: null }> = node;
-                    const [ prefix, title ] = linkNode.source === 'workBible' 
+                    const [ prefix, title ] = linkNode.source === 'notes' 
                         ? [ `Note`, linkNode.node.noun ]
                         : [ `${capitalize(linkNode.node.data.ids.type)}`, linkNode.node.data.ids.display ];
 
@@ -169,7 +169,7 @@ async function convertFolderToSearchNode (
     }
 }
 
-type Categories = 'chapters' | 'snips' | 'scratchPad' | 'recycle' | 'workBible';
+type Categories = 'chapters' | 'snips' | 'scratchPad' | 'recycle' | 'notes';
 export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat, createTitleNodes: boolean): Promise<Record<Categories, SearchNode<SearchContainerNode>> | null> {
 
     const rootCategoryNodes: Record<Categories, SearchNode<SearchContainerNode>> = {
@@ -213,9 +213,9 @@ export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat, cre
             title: 'Recycling Bin',
             prefix: '',
         }),
-        'workBible': new SearchNode<SearchContainerNode>({
+        'notes': new SearchNode<SearchContainerNode>({
             kind: 'searchContainer',
-            uri: vscode.Uri.joinPath(extension.rootPath, 'data', 'workBible'),
+            uri: vscode.Uri.joinPath(extension.rootPath, 'data', 'notes'),
             contents: [],
             results: 0,
             parentLabels: [],
@@ -225,7 +225,7 @@ export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat, cre
         }),
     };
 
-    // All search locations besides 'workBible' use a UriBasedView with an OutlineNode as the Node
+    // All search locations besides 'notes' use a UriBasedView with an OutlineNode as the Node
     //      so for all three of these we can use the same function to extract labels
     const mainLabelProvider = (view: UriBasedView<OutlineNode>) => async (uri: vscode.Uri): Promise<[ string, string ] | null> => {
         const node = await view.getTreeElementByUri(uri);
@@ -240,9 +240,9 @@ export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat, cre
         'snips': mainLabelProvider(extension.ExtensionGlobals.outlineView),
         'scratchPad': mainLabelProvider(extension.ExtensionGlobals.scratchPadView),
         'recycle': mainLabelProvider(extension.ExtensionGlobals.recyclingBinView),
-        // For the work bible, since OutlineNodes are not used, we can just take the "noun" in the note as the label
-        'workBible': async (uri: vscode.Uri) => {
-            const note = extension.ExtensionGlobals.workBible.getNote(uri);
+        // For the notes, since OutlineNodes are not used, we can just take the "noun" in the note as the label
+        'notes': async (uri: vscode.Uri) => {
+            const note = extension.ExtensionGlobals.notes.getNote(uri);
             if (!note) return null;
             return [ 'Note', note.noun ];
         }
