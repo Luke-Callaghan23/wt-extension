@@ -8,7 +8,7 @@ import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
 import { CodeModeState } from '../codeMode/codeMode';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
-import { Note, Notes } from '../notes/notes';
+import { Note, Notebook } from '../notebook/notebook';
 import { vagueNodeSearch } from '../miscTools/help';
 
 export class TabLabels {
@@ -34,9 +34,9 @@ export class TabLabels {
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.recyclingBinView, node ]) : reject())),
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.scratchPadView, node ]) : reject())),
                     new Promise<[ ViewSource, Note ]>((resolve, reject) =>  {
-                        const note = extension.ExtensionGlobals.notes.getNote(uri);
+                        const note = extension.ExtensionGlobals.notebook.getNote(uri);
                         if (note) {
-                            resolve([ extension.ExtensionGlobals.notes, note ]);
+                            resolve([ extension.ExtensionGlobals.notebook, note ]);
                         } 
                         else {
                             reject();
@@ -76,7 +76,7 @@ export class TabLabels {
         const newPatterns: { [index: string]: string } = {};
         for (const group of vscode.window.tabGroups.all) {
             for (const tab of group.tabs) {
-                if (!(tab.input instanceof vscode.TabInputText)) continue;
+                if (!(tab.input instanceof vscode.TabInputText) && !(tab.input instanceof vscode.TabInputNotebook)) continue;
     
                 const uri = tab.input.uri;
                 if (!(uri.fsPath.endsWith('.wt') || uri.fsPath.endsWith('.wtnote'))) continue;
@@ -112,8 +112,8 @@ export class TabLabels {
                         label = `(scratch) ${node.data.ids.display}`;
                     }
                 }
-                else if (source === 'notes') {
-                    label = `(notes) ${node.data.ids.display}`;
+                else if (source === 'notebook') {
+                    label = `(notebook) ${node.data.ids.display}`;
                 }
                 else throw 'unreachable';
                 console.log(`Tab labels for ${uri.fsPath}: label='${label}'`);

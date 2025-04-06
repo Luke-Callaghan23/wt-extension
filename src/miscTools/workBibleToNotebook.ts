@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { Note, Notes } from './notes';
+import { Note, Notebook } from './../notebook/notebook';
 import * as extension from '../extension';
 import { v4 as uuidv4 } from 'uuid';
-import { getNoteText } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
+import { SerializedNote } from '../notebook/notebookApi/serializer';
 
 
 const aliasesSplitter = /-- Enter ALIASES for .* here, separated by semicolons -- ALSO, DON'T DELETE THIS LINE!/;
@@ -11,7 +11,32 @@ const appearancesSplitter = /-- Enter APPEARANCE descriptions for .* here, separ
 const generalSplitter = /-- Enter GENERAL DESCRIPTIONS for .* here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!/;
 
 
-export function readSingleNote (this: Notes, noteId: string, content: string, uri: vscode.Uri): Note {
+
+function getNoteText (note: Note): string {
+    const aliasesText = note.aliases
+        .map(alias => alias.trim().replace(';', '\\;'))
+        .join('; ')
+
+    const appearancesText = note.appearance
+        .join('\n\n');
+
+    const descriptionsText = note.description
+        .join('\n\n');
+
+    return `${note.noun}
+
+-- Enter ALIASES for ${note.noun} here, separated by semicolons -- ALSO, DON'T DELETE THIS LINE!
+${aliasesText}
+
+-- Enter APPEARANCE descriptions for ${note.noun} here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!
+${appearancesText}
+
+-- Enter GENERAL DESCRIPTIONS for ${note.noun} here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!
+${descriptionsText}
+`;
+}
+
+function readSingleNote (noteId: string, content: string, uri: vscode.Uri): Note {
     // If the aliases splitter was not found, use the first newline as the separator instead
     let [ name, remaining ] = content.split(aliasesSplitter);
     if (remaining === undefined) {
@@ -87,19 +112,19 @@ export function readSingleNote (this: Notes, noteId: string, content: string, ur
     };
 }
 
-export async function readNotes (this: Notes, notesPath: vscode.Uri): Promise<Note[]> {
+async function readNotebook (notebookPath: vscode.Uri): Promise<Note[]> {
     try {
 
         try {
-            await vscode.workspace.fs.stat(this.notesFolderPath);
+            await vscode.workspace.fs.stat(notebookPath);
         }
         catch (err: any) {
             // If the stat fails, then make the container directory and an empty config file
-            await vscode.workspace.fs.createDirectory(this.notesFolderPath);
-            await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(this.notesFolderPath, '.gitkeep'), Buff.from(""));
+            await vscode.workspace.fs.createDirectory(notebookPath);
+            await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(notebookPath, '.gitkeep'), Buff.from(""));
         }
 
-        const folders = await vscode.workspace.fs.readDirectory(this.notesFolderPath);
+        const folders = await vscode.workspace.fs.readDirectory(notebookPath);
         const readPromises: Thenable<{
             noteId: string,
             content: string,
@@ -109,8 +134,7 @@ export async function readNotes (this: Notes, notesPath: vscode.Uri): Promise<No
                 return new Promise((resolve, reject) => resolve(null));
             }
             const noteId = name.replace('.wtnote', '');
-            console.log(noteId);
-            const pathUri = vscode.Uri.joinPath(this.notesFolderPath, name)
+            const pathUri = vscode.Uri.joinPath(notebookPath, name)
             return vscode.workspace.fs.readFile(pathUri).then(buff => {
                 return {
                     noteId: noteId,
@@ -120,53 +144,44 @@ export async function readNotes (this: Notes, notesPath: vscode.Uri): Promise<No
             });
         });
 
-        const notes: Note[] = [];
+        const notebook: Note[] = [];
 
         const contents = await Promise.all(readPromises);
         for (const data of contents) {
             if (data === null) continue;
             const { content, noteId, uri } = data;
-            notes.push(this.readSingleNote(noteId, content, uri));
+            const singleNote = readSingleNote(noteId, content, uri);
+            if (singleNote.noun === '' || !singleNote.noun) {
+                continue;
+            }
+            notebook.push(singleNote);
         }
 
-        return notes;
+        return notebook;
     }
     catch (err: any) {
-        vscode.window.showWarningMessage(`[WARNING] An error occurred while world notes from disk: ${err.message}.  Creating a new world notes file instead.`);
+        vscode.window.showWarningMessage(`[WARNING] An error occurred while world notebook from disk: ${err.message}.  Creating a new world notebook file instead.`);
         console.log(err);
         return [];
     }
 }
 
 
-export async function writeNotes (this: Notes): Promise<void> {
-    try {
-        const writePromises = this.notes.map(note => {
-            return this.writeSingleNote(note);
-        });
-        await Promise.all(writePromises);
+export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: vscode.Uri): Promise<vscode.Uri[]> {
+    const results: vscode.Uri[] = [];
+    const read = await readNotebook(workBibleFolderPath);
+    for (const note of read) {
+        if (note.noun === '') {
+            continue;
+        }
+
+        const tmp: Omit<Note, "uri"> & Partial<Pick<Note, "uri">> = note;
+        delete tmp.uri;
+        const serializedNote: SerializedNote = tmp;
+        const jsonNote = JSON.stringify(serializedNote, undefined, 4);
+        const newUri = vscode.Uri.joinPath(notebookUriPath, `${note.noteId}.wtnote`);
+        await vscode.workspace.fs.writeFile(newUri, Buff.from(jsonNote));
+        results.push(newUri);
     }
-    catch (err: any) {
-        vscode.window.showErrorMessage(`[ERR] An error occurred while writing notes to disk: ${err.message}`);
-        console.log(err);
-    }
-}
-
-
-
-export async function writeSingleNote (this: Notes, note: Note): Promise<vscode.Uri | null> {
-    const noteText = getNoteText(note);
-
-    const noteFileName = `${note.noteId}.wtnote`
-    const notePath = vscode.Uri.joinPath(this.notesFolderPath, noteFileName);
-
-    try {
-        const encodedNote = extension.encoder.encode(noteText);
-        await vscode.workspace.fs.writeFile(notePath, encodedNote);
-        return notePath;
-    }
-    catch (err: any) {
-        vscode.window.showErrorMessage(`[ERRROR]: An error occurred while writing note for '${note.noun}' to '${notePath}': ${err.message}`);
-        return null;
-    }
+    return results;
 }

@@ -18,10 +18,10 @@ export type DiskContextType = {
         [index: string]: boolean,
     },
     "wt.synonyms.synonyms": string[],
-    "wt.notes.tree.enabled": boolean,
-    "wt.notes.dontAskDeleteNote": boolean,
-    "wt.notes.dontAskDeleteDescription": boolean,
-    "wt.notes.dontAskDeleteAppearance": boolean,
+    "wt.notebook.tree.enabled": boolean,
+    "wt.notebook.dontAskDeleteNote": boolean,
+    "wt.notebook.dontAskDeleteDescription": boolean,
+    "wt.notebook.dontAskDeleteAppearance": boolean,
     "wt.todo.enabled": boolean,
     "wt.todo.collapseState": {
         [index: string]: boolean;
@@ -80,8 +80,8 @@ export class Workspace {
     public workSnipsFolder: vscode.Uri;
     public recyclingBin: vscode.Uri;
     public contextValuesFilePath: vscode.Uri;
-    public worldNotesPath: vscode.Uri;
-    public notesFolder: vscode.Uri;
+    public worldNotebookPath: vscode.Uri;
+    public notebookFolder: vscode.Uri;
     public scratchPadFolder: vscode.Uri;
 
 
@@ -93,7 +93,7 @@ export class Workspace {
             this.chaptersFolder, 
             this.workSnipsFolder, 
             this.recyclingBin,
-            this.notesFolder,
+            this.notebookFolder,
             this.scratchPadFolder
         ];
     }
@@ -187,8 +187,8 @@ export class Workspace {
         this.workSnipsFolder = vscode.Uri.joinPath(extension.rootPath, `data/snips`);
         this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-        this.worldNotesPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotes.json');
-        this.notesFolder = vscode.Uri.joinPath(extension.rootPath, `data/notes`);
+        this.worldNotebookPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotebook.json');
+        this.notebookFolder = vscode.Uri.joinPath(extension.rootPath, `data/notebook`);
         this.scratchPadFolder = vscode.Uri.joinPath(extension.rootPath, `data/scratchPad`);
         this.synonymsCachePath = vscode.Uri.joinPath(extension.rootPath, 'synonymsCache.json');
     }

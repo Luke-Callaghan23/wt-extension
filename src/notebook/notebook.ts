@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
 import { Packageable } from '../packageable';
-import { readNotes, readSingleNote, writeNotes, writeSingleNote } from './readWriteNotes';
 import { Workspace } from '../workspace/workspaceClass';
 import { Timed } from '../timedView';
-import { disable, update, notesDecorations } from './timedViewUpdate';
+import { disable, update, notebookDecorations } from './timedViewUpdate';
 import { v4 as uuidv4 } from 'uuid';
-import { editNote,  addNote, removeNote } from './updateNoteContents';
+import { editNote,  addNote, removeNote, writeSingleNote, readNotebook } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
@@ -41,18 +40,14 @@ export interface NoteMatch {
 }
 
 
-export class Notes 
+export class Notebook 
 implements 
     vscode.TreeDataProvider<Note | SubNote | AppearanceContainer>, 
     vscode.HoverProvider, Timed, Renamable<Note>,
     vscode.ReferenceProvider
 {
-
-    readNotes = readNotes;
-    readSingleNote = readSingleNote;
-    writeNotes = writeNotes;
     writeSingleNote = writeSingleNote;
-
+    readNotebook = readNotebook;
     addNote = addNote;
     removeNote = removeNote;
     editNote = editNote;
@@ -61,59 +56,32 @@ implements
     update = update;
     disable = disable;
 
-    static singleton: Notes;
+    static singleton: Notebook;
 
-    public matchedNotes: { [index: string]: NoteMatch[] };
+    public matchedNotebook: { [index: string]: NoteMatch[] };
     protected nounsRegex: RegExp | undefined;
 
-    protected notes: Note[];
-    protected notesFolderPath: vscode.Uri;
+    protected notebook: Note[];
+    protected notebookFolderPath: vscode.Uri;
     public view: vscode.TreeView<Note | SubNote | AppearanceContainer>;
     constructor (
-        protected workspace: Workspace,
-        protected context: vscode.ExtensionContext
+        public workspace: Workspace,
+        public context: vscode.ExtensionContext
     ) {
-        this.notesFolderPath = workspace.notesFolder;
+        this.notebookFolderPath = workspace.notebookFolder;
         
-        this.matchedNotes = {};
+        this.matchedNotebook = {};
 
         // Will be modified by TimedView
         this.enabled = true;
 
-        // Read notes from disk
-        this.notes = []; 
+        // Read notebook from disk
+        this.notebook = []; 
         this.view = {} as vscode.TreeView<Note | SubNote | AppearanceContainer>
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
-        Notes.singleton = this;
+        Notebook.singleton = this;
 
-        this.context.subscriptions.push(notesDecorations);
-        this.context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(async (e: vscode.TextDocument) => {
-            if (!e.fileName.endsWith('.wtnote')) return;
-            if (!e.uri.fsPath.includes(this.notesFolderPath.fsPath)) return;
-
-            // Read the note id from the file name and the note from the newly saved
-            //      document
-            const noteIdSplit = e.fileName.replace('.wtnote', '').split(/\/|\\/);
-            const noteId = noteIdSplit[noteIdSplit.length - 1] || '';
-            const note = this.readSingleNote(noteId, e.getText(), e.uri);
-
-            // Find the location of the saved note in the existing notes array
-            const oldNoteIdx = this.notes.findIndex(on => {
-                return on.noteId === noteId;
-            });
-
-            // If the note existed in the existing array, replace it
-            // Or, push the new note
-            if (oldNoteIdx === -1) {
-                this.notes.push(note);
-            }
-            else {
-                this.notes[oldNoteIdx] = note;
-            }
-
-            // Refresh the treeview
-            this.refresh();
-        }));
+        this.context.subscriptions.push(notebookDecorations);
     }
 
     async renameResource (node?: Note | undefined): Promise<void> {
@@ -137,9 +105,9 @@ implements
     }
 
     async initialize () {
-        this.notes = await this.readNotes(this.workspace.worldNotesPath)
+        this.notebook = await this.readNotebook();
         this.nounsRegex = this.getNounsRegex();
-        this.view = vscode.window.createTreeView(`wt.notes.tree`, {
+        this.view = vscode.window.createTreeView(`wt.notebook.tree`, {
             treeDataProvider: this,
             canSelectMany: true,
             showCollapseAll: true,
@@ -187,7 +155,7 @@ implements
 	readonly onDidChangeTreeData: vscode.Event<Note | SubNote | AppearanceContainer | undefined> = this._onDidChangeTreeData.event;
 	async refresh (reload: boolean = false) {
         if (reload) {
-            this.notes = await this.readNotes(this.workspace.worldNotesPath);
+            this.notebook = await this.readNotebook();
         }
         // Also update the nouns regex
         this.nounsRegex = this.getNounsRegex();
@@ -209,10 +177,10 @@ implements
     }
 
     private getNounsRegex (withId: boolean=true, withSeparator: boolean=true, subset?: Note[]): RegExp {
-        if (this.notes.length === 0) {
+        if (this.notebook.length === 0) {
             return /^_^/
         }
-        const nounFragments = (subset || this.notes).map(note => this.getNounPattern(note, withId))
+        const nounFragments = (subset || this.notebook).map(note => this.getNounPattern(note, withId))
         const regexString = withSeparator 
             ? '(^|[^a-zA-Z0-9])?' + `(${nounFragments.join('|')})` + '([^a-zA-Z0-9]|$)?'
             : `(${nounFragments.join('|')})`;
@@ -227,23 +195,23 @@ implements
             if (result === null) return;
             const noteId = result;
 
-            const note = this.notes.find(note => note.noteId === noteId);
+            const note = this.notebook.find(note => note.noteId === noteId);
             if (note === undefined) return;
             this.writeSingleNote(note);
         }
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notes.addNote", (resource: Note | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) }));
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notes.removeNote", (resource: Note) => { doTheThingAndWrite(() => this.removeNote(resource)) }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notes.search', (resource: Note) => { this.searchInSearchPanel(resource) }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notes.editNote', (resource: Note | AppearanceContainer | SubNote) => { this.editNote(resource) }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notes.getNotes', () => this));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notes.refresh', () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", (resource: Note | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.removeNote", (resource: Note) => { doTheThingAndWrite(() => this.removeNote(resource)) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.search', (resource: Note) => { this.searchInSearchPanel(resource) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.editNote', (resource: Note | AppearanceContainer | SubNote) => { this.editNote(resource) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.getNotebook', () => this));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.refresh', () => {
             return this.refresh(true);
         }));
     }
 
     getTreeItem(noteNode: Note | SubNote | AppearanceContainer): vscode.TreeItem {
         const editCommand: vscode.Command = {
-            command: "wt.notes.editNote",
+            command: "wt.notebook.editNote",
             title: "Edit Note",
             arguments: [ noteNode ],
         };
@@ -281,7 +249,7 @@ implements
         }
     }
     getChildren(element?: Note | SubNote | AppearanceContainer | undefined): vscode.ProviderResult<(Note | SubNote | AppearanceContainer)[]> {
-        if (!element) return this.notes;
+        if (!element) return this.notebook;
         switch (element.kind) {
             case 'note': 
                 const descriptions: SubNote[] = element.description.map((desc, idx) => ({
@@ -317,7 +285,7 @@ implements
 
     getParent(element: Note | SubNote | AppearanceContainer): vscode.ProviderResult<Note | SubNote | AppearanceContainer> {
         if (element.kind === 'description' || element.kind === 'appearance' || element.kind === 'appearanceContainer') {
-            return this.notes.find(note => note.noteId === element.noteId);
+            return this.notebook.find(note => note.noteId === element.noteId);
         }
         else if (element.kind === 'note') {
             return null;
@@ -326,8 +294,9 @@ implements
     }
 
     getNote (noteUri: vscode.Uri): Note | null {
-        return this.notes.find(note => {
-            return compareFsPath(note.uri, noteUri);
+        return this.notebook.find(note => {
+            const thisUri = note.uri;
+            return compareFsPath(thisUri, noteUri);
         }) || null;
     }
 
@@ -348,9 +317,9 @@ implements
         position: vscode.Position, 
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.Hover> {
-        if (!this.matchedNotes) return null;
+        if (!this.matchedNotebook) return null;
 
-        const documentMatches = this.matchedNotes[formatFsPathForCompare(document.uri)];
+        const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
         if (!documentMatches) return null;
 
         const matchedNote = documentMatches.find(match => match.range.contains(position));
@@ -369,9 +338,9 @@ implements
         position: vscode.Position, 
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
-        if (!this.matchedNotes) return null;
+        if (!this.matchedNotebook) return null;
 
-        const documentMatches = this.matchedNotes[formatFsPathForCompare(document.uri)];
+        const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
         if (!documentMatches) return null;
 
         const matchedNote = documentMatches.find(match => match.range.contains(position));
@@ -385,7 +354,7 @@ implements
         }
     
         const fileName = `${matchedNote.note.noteId}.wtnote`;
-        const filePath = vscode.Uri.joinPath(this.notesFolderPath, fileName);
+        const filePath = vscode.Uri.joinPath(this.notebookFolderPath, fileName);
         return <vscode.Definition>{
             uri: filePath,
             range: new vscode.Range(position, position),
@@ -398,9 +367,9 @@ implements
         context: vscode.ReferenceContext, 
         token: vscode.CancellationToken
     ): Promise<vscode.Location[] | null> {
-        if (!this.matchedNotes) return null;
+        if (!this.matchedNotebook) return null;
         
-        const documentMatches = this.matchedNotes[formatFsPathForCompare(document.uri)];
+        const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
         if (!documentMatches) return null;
 
         const matchedNote = documentMatches.find(match => match.range.contains(position));

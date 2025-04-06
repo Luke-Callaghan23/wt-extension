@@ -6,7 +6,7 @@ import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
 import { OutlineView } from '../outline/outlineView';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
-import { Note, Notes } from '../notes/notes';
+import { Note, Notebook } from '../notebook/notebook';
 import { TabLabels } from '../tabLabels/tabLabels';
 import * as childProcess from 'child_process'
 import * as vscodeUri from 'vscode-uri';
@@ -123,12 +123,12 @@ export function clamp(num: number, min: number, max: number) {
 }
 
 
-export type VagueSearchSource = 'outline' | 'recycle' | 'scratch' | 'notes' | null;
+export type VagueSearchSource = 'outline' | 'recycle' | 'scratch' | 'notebook' | null;
 export type VagueNodeSearchResult = {
     source: 'scratch' | 'recycle' | 'outline',
     node: OutlineNode,
 } | {
-    source: 'notes',
+    source: 'notebook',
     node: Note,
 } | {
     source: null,
@@ -165,9 +165,9 @@ export async function vagueNodeSearch (
         }
     }
     else if (relative.endsWith(".wtnote")) {
-        const note = extension.ExtensionGlobals.notes.getNote(target);
+        const note = extension.ExtensionGlobals.notebook.getNote(target);
         if (note) return {
-            source: 'notes',
+            source: 'notebook',
             node: note
         }
     }
@@ -192,9 +192,9 @@ export async function vagueNodeSearch (
             source: 'scratch',
         }
         
-        const note = extension.ExtensionGlobals.notes.getNote(target);
+        const note = extension.ExtensionGlobals.notebook.getNote(target);
         if (note) return {
-            source: 'notes',
+            source: 'notebook',
             node: note
         }
     } 
@@ -209,7 +209,7 @@ export async function vagueNodeSearch (
 
 
 // Determines which view column should be used for "auxilliary" documents being opened
-// "auxilliary" documents are documents such as a scratch pad fragment or a notes wtnote
+// "auxilliary" documents are documents such as a scratch pad fragment or a notebook wtnote
 // since these documents are often not the main thing a user will be editing, we'll *usually* want to open the 
 //      aux document in in the "Beside" view column
 // BUT, if the currently active view column is already a document of the same type as the aux document being

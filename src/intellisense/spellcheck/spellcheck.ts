@@ -4,7 +4,7 @@ import { Workspace } from '../../workspace/workspaceClass';
 import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
 import { WordRange } from '../../intellisense/common';
-import { Notes } from '../../notes/notes';
+import { Notebook } from '../../notebook/notebook';
 import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
 import { Autocorrect } from '../../autocorrect/autocorrect';
 import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
@@ -93,11 +93,11 @@ export class Spellcheck implements Timed {
                 }
 
 
-                // Do not add red decorations to words that have been matched by world notes
-                const worldNotes = Notes.singleton;
-                if (worldNotes) {
-                    if (worldNotes.matchedNotes) {
-                        const matches = worldNotes.matchedNotes[formatFsPathForCompare(document.uri)];
+                // Do not add red decorations to words that have been matched by world notebook
+                const worldNotebook = Notebook.singleton;
+                if (worldNotebook) {
+                    if (worldNotebook.matchedNotebook) {
+                        const matches = worldNotebook.matchedNotebook[formatFsPathForCompare(document.uri)];
                         if (matches && matches.find(note => note.range.contains(range))) {
                             continue;
                         }

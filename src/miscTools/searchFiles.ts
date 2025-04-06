@@ -37,7 +37,7 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
     // Get spaces before an option's text for the search menu
     // Need to determine if any given "column" of indents before the option text is "lined" or "spaced"
     // A column is lined when the parent item of that column is NOT the last item in its collection
-    //      the line denotes that there are more items to follow
+    //      the line denotebook that there are more items to follow
     // When the item is the last item in its collection, then all lines down its path is not lined in that specific 
     //      column
     // `lastItemMarkers` --> array of booleans which say whether the item at each indent level is the last item in that path of the tree

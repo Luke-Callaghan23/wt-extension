@@ -295,7 +295,7 @@ export function registerCommands (this: OutlineView) {
         }
 
         const result = await vagueNodeSearch(uri);
-        if (!result || result.source === 'notes') {
+        if (!result || result.source === 'notebook') {
             vscode.window.showWarningMessage("Could not find active document in Outline, Scratch Pad, or Recycling Bin");
             return;
         }

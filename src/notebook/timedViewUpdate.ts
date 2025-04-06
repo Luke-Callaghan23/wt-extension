@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Note, NoteMatch, Notes } from './notes';
+import { Note, NoteMatch, Notebook } from './notebook';
 import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
 
 const decorationsOptions: vscode.DecorationRenderOptions = {
@@ -7,9 +7,9 @@ const decorationsOptions: vscode.DecorationRenderOptions = {
     fontStyle: 'oblique',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
 };
-export const notesDecorations = vscode.window.createTextEditorDecorationType(decorationsOptions);
+export const notebookDecorations = vscode.window.createTextEditorDecorationType(decorationsOptions);
 
-export async function update (this: Notes, editor: vscode.TextEditor): Promise<void> {
+export async function update (this: Notebook, editor: vscode.TextEditor): Promise<void> {
     if (!this.nounsRegex) return;
     let match: RegExpExecArray | null;
 
@@ -34,8 +34,8 @@ export async function update (this: Notes, editor: vscode.TextEditor): Promise<v
                     .map(([ noteId, match ]) => noteId);
 
                 // Get the note objects for each matched note
-                const matchedNotes = matchedNoteIds.map(matchedNoteId => {
-                    const result = this.notes.find(note => note.noteId === matchedNoteId);
+                const matchedNotebook = matchedNoteIds.map(matchedNoteId => {
+                    const result = this.notebook.find(note => note.noteId === matchedNoteId);
                     if (result) {
                         matchedNote = result;
                         return result;
@@ -44,7 +44,7 @@ export async function update (this: Notes, editor: vscode.TextEditor): Promise<v
                 }).flat();
 
                 // Create a markdown string for the match
-                const matchedMarkdown = matchedNotes.map(note => {
+                const matchedMarkdown = matchedNotebook.map(note => {
                     const aliasesString = note.aliases.join(', ');
                     const title = `## ${note.noun}`;
                     const subtitle = aliasesString.length !== 0
@@ -61,8 +61,6 @@ export async function update (this: Notes, editor: vscode.TextEditor): Promise<v
             }
             catch (err: any) {}
         }
-
-
 
         let start: number = match.index;
         if (match.index !== 0) {
@@ -97,15 +95,15 @@ export async function update (this: Notes, editor: vscode.TextEditor): Promise<v
         }
     }
     if (matches.length > 0) {
-        this.matchedNotes[formatFsPathForCompare(editor.document.uri)] = matches;
+        this.matchedNotebook[formatFsPathForCompare(editor.document.uri)] = matches;
     }
     else {
-        delete this.matchedNotes[formatFsPathForCompare(editor.document.uri)];
+        delete this.matchedNotebook[formatFsPathForCompare(editor.document.uri)];
     }
 
-    editor.setDecorations(notesDecorations, decorationLocations);
+    editor.setDecorations(notebookDecorations, decorationLocations);
 }
 
-export async function disable (this: Notes): Promise<void> {
+export async function disable (this: Notebook): Promise<void> {
     throw new Error('Method not implemented.');
 }

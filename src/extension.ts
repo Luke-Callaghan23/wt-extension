@@ -31,7 +31,7 @@ import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
-import { Notes } from './notes/notes';
+import { Notebook } from './notebook/notebook';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { TabLabels } from './tabLabels/tabLabels';
 import { searchFiles } from './miscTools/searchFiles';
@@ -46,6 +46,7 @@ import { SearchBarView } from './search/searchBarView';
 import { FragmentOverviewView } from './fragmentOverview/fragmentOverview';
 import { FragmentLinker } from './miscTools/fragmentLinker';
 import { defaultProgress, getSectionedProgressReporter, progressOnViews } from './miscTools/help';
+import { WTNotebookSerializer } from './notebook/notebookApi/serializer';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -54,12 +55,13 @@ export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n"\'
 export const wordSeparatorRegex = new RegExp(wordSeparator.split('|')[1], 'g');
 export const sentenceSeparator: RegExp = /[.?!]/g;
 export const paragraphSeparator: RegExp = /\n\n/g;
+export let globalWorkspace: Workspace | undefined;
 
 export class ExtensionGlobals {
     public static outlineView: OutlineView;
     public static recyclingBinView: RecyclingBinView;
     public static scratchPadView: ScratchPadView;
-    public static notes: Notes;
+    public static notebook: Notebook;
     public static todoView: TODOsView;
     public static workspace: Workspace;
     public static context: vscode.ExtensionContext;
@@ -68,7 +70,7 @@ export class ExtensionGlobals {
         outlineView: OutlineView, 
         recyclingBinView: RecyclingBinView, 
         scratchPadView: ScratchPadView, 
-        notes: Notes,
+        notebook: Notebook,
         todoView: TODOsView,
         workspace: Workspace,
         context: vscode.ExtensionContext
@@ -76,7 +78,7 @@ export class ExtensionGlobals {
         ExtensionGlobals.outlineView = outlineView;
         ExtensionGlobals.recyclingBinView = recyclingBinView;
         ExtensionGlobals.scratchPadView = scratchPadView;
-        ExtensionGlobals.notes = notes;
+        ExtensionGlobals.notebook = notebook;
         ExtensionGlobals.todoView = todoView;
         ExtensionGlobals.workspace = workspace;
         ExtensionGlobals.context = context;
@@ -103,7 +105,7 @@ async function loadExtensionWorkspace (
                 "Loaded fragment overview",
                 "Loaded tab groups",
                 "Loaded search bad",
-                "Loaded notes",
+                "Loaded notebook",
                 "Loaded status bar items",
                 "Loaded tab labels",
                 "Loaded text-to-speech debugger",
@@ -152,11 +154,15 @@ async function loadExtensionWorkspace (
         const tabStates = new TabStates(context, workspace);
         report("Loaded tab groups");
 
-        const notes = new Notes(workspace, context);
-        await notes.initialize()
-        report("Loaded notes");
+        const notebook = new Notebook(workspace, context);
+        await notebook.initialize();
+        context.subscriptions.push(
+            vscode.workspace.registerNotebookSerializer('wt.notebook', new WTNotebookSerializer(context, workspace, notebook))
+        );
+        
+        report("Loaded notebook");
 
-        ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notes, todo, workspace, context);
+        ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notebook, todo, workspace, context);
 
         const searchResultsView = new SearchResultsView(workspace, context);
         const searchBarView = new SearchBarView(context, workspace, searchResultsView);
@@ -172,7 +178,7 @@ async function loadExtensionWorkspace (
         new FragmentLinker(context);
 
         const timedViews = new TimedView(context, [
-            ['wt.notes.tree', 'notes', notes],
+            ['wt.notebook.tree', 'notebook', notebook],
             ['wt.todo', 'todo', todo],
             ['wt.wordWatcher', 'wordWatcher', wordWatcher],
             // ['wt.proximity', 'proximity', proximity],
@@ -249,6 +255,7 @@ async function loadExtensionWithProgress (context: vscode.ExtensionContext, titl
         const workspace = await loadWorkspace(context);
         progress.report({ message: "Loaded workspace" });
         if (workspace === null) return false;
+        globalWorkspace = workspace;
     
         await loadExtensionWorkspace(context, workspace, progress, 1);
         progress.report({ message: "Loaded extension" })

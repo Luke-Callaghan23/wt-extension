@@ -181,7 +181,7 @@ export async function *grepExtensionDirectory (
                 (
                     isSubdirectory(extension.ExtensionGlobals.workspace.chaptersFolder, uri)
                     || isSubdirectory(extension.ExtensionGlobals.workspace.workSnipsFolder, uri)
-                    || isSubdirectory(extension.ExtensionGlobals.workspace.notesFolder, uri)
+                    || isSubdirectory(extension.ExtensionGlobals.workspace.notebookFolder, uri)
                     || isSubdirectory(extension.ExtensionGlobals.workspace.scratchPadFolder, uri)
                 )
             ) {

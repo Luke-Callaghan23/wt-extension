@@ -17,6 +17,10 @@
 	"categories": [
 		"Other"
 	],
+	"enabledApiProposals": [
+		"notebook"
+	],
+
 	"activationEvents": [
 		"onView:wt.outline",
 		"onView:wt.wordWatcher",
@@ -27,7 +31,7 @@
 		"onView:wt.export",
 		"onView:wt.scratchPad",
 		"onView:wt.recyclingBin",
-		"onView:wt.notes.tree"
+		"onView:wt.notebook.tree"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -84,7 +88,7 @@
 					"default": true,
 					"description": "Determines whether you want to show the 'Recycling Bin' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
 				},
-				"wt.showPanels.notes": {
+				"wt.showPanels.notebook": {
 					"type": "boolean",
 					"default": true,
 					"description": "Determines whether you want to show the 'Notes' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
@@ -134,8 +138,8 @@
 					"type": "boolean",
 					"default": true
 				},
-				"wt.timedSearches.notes": {
-					"description": "Enable automatic querying for terms in your notes",
+				"wt.timedSearches.notebook": {
+					"description": "Enable automatic querying for terms in your notebook",
 					"type": "boolean",
 					"default": true
 				},
@@ -217,7 +221,7 @@
 			],
 			"panel": [
 				{
-					"id": "notes",
+					"id": "notebook",
 					"title": "Notes",
 					"icon": "$(bookmark)"
 				}
@@ -305,12 +309,12 @@
 					"icon": "$(edit)"
 				}
 			],
-			"notes": [
+			"notebook": [
 				{
-					"id": "wt.notes.tree",
+					"id": "wt.notebook.tree",
 					"name": "Notes",
 					"contextualTitle": "Notes",
-					"when": "wt.valid && config.wt.showPanels.notes",
+					"when": "wt.valid && config.wt.showPanels.notebook",
 					"icon": "$(edit)"
 				}
 			],
@@ -786,31 +790,55 @@
 			},
 			{
 				"title": "Writing Tool: Add Note",
-				"command": "wt.notes.addNote",
+				"command": "wt.notebook.addNote",
 				"icon": "$(add)"
 			},
 			{
 				"title": "Writing Tool: Remove Note",
-				"command": "wt.notes.removeNote",
+				"command": "wt.notebook.removeNote",
 				"icon": "$(trashcan)"
 			},
 			{
 				"title": "Writing Tool: Search For Note",
-				"command": "wt.notes.search"
+				"command": "wt.notebook.search"
 			},
 			{
 				"title": "Writing Tool: Add Alias",
-				"command": "wt.notes.addAlias",
+				"command": "wt.notebook.addAlias",
 				"icon": "$(add)"
 			},
 			{
 				"title": "Writing Tool: Search For Note",
-				"command": "wt.notes.search"
+				"command": "wt.notebook.search"
 			},
 			{
 				"title": "Writing Tool: Open Note in editor",
-				"command": "wt.notes.editNote",
+				"command": "wt.notebook.editNote",
 				"icon": "$(edit)"
+			},
+			{
+				"command": "wt.notebook.saveToMarkdown",
+				"title": "Notebook: Save to Markdown"
+			},
+			{
+				"command": "wt.notebook.cell.moveDown",
+				"title": "Notebook: Move Cell Down",
+				"icon": "$(arrow-down)"
+			},
+			{
+				"command": "wt.notebook.cell.moveUp",
+				"title": "Notebook: Move Cell Up",
+				"icon": "$(arrow-up)"
+			},
+			{
+				"command": "wt.notebook.cell.changeToCode",
+				"title": "Notebook: Change Cell to Code",
+				"icon": "$(code)"
+			},
+			{
+				"command": "wt.notebook.cell.changeToMarkdown",
+				"title": "Notebook: Change Cell to Markdown",
+				"icon": "$(markdown)"
 			},
 			{
 				"title": "Writing Tool: Open Introduction Walkthrough",
@@ -877,8 +905,8 @@
 				"title": "Writing Tool: Refresh colors"
 			},
 			{
-				"command": "wt.notes.refresh",
-				"title": "Writing Tool: Refresh notes"
+				"command": "wt.notebook.refresh",
+				"title": "Writing Tool: Refresh notebook"
 			},
 			{
 				"command": "wt.reloadWatcher.reloadWorkspace",
@@ -1336,19 +1364,23 @@
 					"when": "false"
 				},
 				{
-					"command": "wt.notes.addNote",
+					"command": "wt.notebook.addNote",
 					"when": "false"
 				},
 				{
-					"command": "wt.notes.removeNote",
+					"command": "wt.notebook.removeNote",
 					"when": "false"
 				},
 				{
-					"command": "wt.notes.search",
+					"command": "wt.notebook.search",
 					"when": "false"
 				},
 				{
-					"command": "wt.notes.editNote",
+					"command": "wt.notebook.editNote",
+					"when": "false"
+				},
+				{
+					"command": "wt.notebook.refresh",
 					"when": "false"
 				},
 				{
@@ -1397,10 +1429,6 @@
 				},
 				{
 					"command": "wt.colors.refresh",
-					"when": "false"
-				},
-				{
-					"command": "wt.notes.refresh",
 					"when": "false"
 				}
 			],
@@ -1511,8 +1539,8 @@
 					"group": "navigation@3"
 				},
 				{
-					"command": "wt.notes.addNote",
-					"when": "view == wt.notes.tree",
+					"command": "wt.notebook.addNote",
+					"when": "view == wt.notebook.tree",
 					"group": "navigation"
 				}
 			],
@@ -1662,23 +1690,23 @@
 					"group": "inline"
 				},
 				{
-					"command": "wt.notes.addNote",
-					"when": "view == wt.notes.tree && viewItem == note",
+					"command": "wt.notebook.addNote",
+					"when": "view == wt.notebook.tree && viewItem == note",
 					"group": "inline@1"
 				},
 				{
-					"command": "wt.notes.removeNote",
-					"when": "view == wt.notes.tree && viewItem == note",
+					"command": "wt.notebook.removeNote",
+					"when": "view == wt.notebook.tree && viewItem == note",
 					"group": "inline@2"
 				},
 				{
-					"command": "wt.notes.search",
-					"when": "view == wt.notes.tree && viewItem == note",
+					"command": "wt.notebook.search",
+					"when": "view == wt.notebook.tree && viewItem == note",
 					"group": "search@1"
 				},
 				{
-					"command": "wt.notes.editNote",
-					"when": "view == wt.notes.tree",
+					"command": "wt.notebook.editNote",
+					"when": "view == wt.notebook.tree",
 					"group": "inline@3"
 				},
 				{
@@ -1727,8 +1755,45 @@
 					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showRemove",
 					"group": "navigation@9"
 				}
+			],
+			"notebook/cell/title": [
+				{
+					"command": "wt.notebook.cell.moveDown",
+					"when": "notebookViewType == wtNote",
+					"group": "inline@1"
+				},
+				{
+					"command": "wt.notebook.cell.moveUp",
+					"when": "notebookViewType == wtNote",
+					"group": "inline@2"
+				},
+				{
+					"command": "wt.notebook.cell.changeToMarkdown",
+					"when": "notebookViewType == wtNote && notebookCellType == code",
+					"group": "inline@3"
+				},
+				{
+					"command": "wt.notebook.cell.changeToCode",
+					"when": "notebookViewType == wtNote && notebookCellType == markdown",
+					"group": "inline@3"
+				}
 			]
 		},
+		"notebooks": [
+			{
+				"id": "wt.notebook",
+				"type": "wt.notebook",
+				"displayName": "Writing Tool: Notebook",
+				"selector": [
+					{
+						"filenamePattern": "*.wtNote"
+					},
+					{
+						"filenamePattern": "*.wtnote"
+					}
+				]
+			}
+		],
 		"keybindings": [
 			{
 				"command": "wt.tabStates.showStatusBarMenu",
@@ -2189,9 +2254,9 @@
 					{
 						"id": "wt.introWalkthrough.organizeChapterNotes",
 						"title": "Organize Notes/Text Snippets for Each Chapter",
-						"description": "- Another major motivation for WTANIWE was the ability to organize notes and snippets of text for each chapter in an easily organizable way.\n- Instead of opening twenty different word documents at a time while scouring for that one piece of dialogue I wrote two months ago, and killing my computer in the process, I can place all notes for a project in one place.\n- Just as with chapters, each text note (called snip by WTANIWE) can have multiple text fragments associated with it.",
+						"description": "- Another major motivation for WTANIWE was the ability to organize notebook and snippets of text for each chapter in an easily organizable way.\n- Instead of opening twenty different word documents at a time while scouring for that one piece of dialogue I wrote two months ago, and killing my computer in the process, I can place all notebook for a project in one place.\n- Just as with chapters, each text note (called snip by WTANIWE) can have multiple text fragments associated with it.",
 						"media": {
-							"image": "media/walkthroughs/intro/organize_chapter_notes.png",
+							"image": "media/walkthroughs/intro/organize_chapter_notebook.png",
 							"altText": "Organize By Chapters"
 						}
 					},
@@ -2200,7 +2265,7 @@
 						"title": "Organize Snips for Project",
 						"description": "- If you're like me, you have about a hundred tiny fragments of text laying around which have a loose place in your story but no solid chapter commitement yet.  Work Snips is a section of the Outline Tree where you can store all misc. text snippets with no solid home yet.\n- Like Chapters and Chapter Snips, Work Snips can be separated into multiple text fragments.",
 						"media": {
-							"image": "media/walkthroughs/intro/organize_work_notes.png",
+							"image": "media/walkthroughs/intro/organize_work_notebook.png",
 							"altText": "Organize By Chapters"
 						}
 					},
@@ -2295,7 +2360,7 @@
 					{
 						"id": "wt.importsWalkthrough.importSingleChapterSnip",
 						"title": "Import a Single Chapter Snippet",
-						"description": "- The other main import type is importing notes or text fragments into existing chapters.\n- To import notes into chapters, select the 'Snip' output type.\n- Check the 'Output into Chapter' checkbox to indicate that the destination of the notes is a chapter (and not uncategorized 'Work Snips').\n- And, finally, in the drop down that appears, select the chapter that you would like to insert the snips into.\n- Test this out by importing the example document 'Example Single Snip Import.docx' with the options seen here and you should see one new snip with four new lorem ipsum filled fragments in the selected chapter.",
+						"description": "- The other main import type is importing notebook or text fragments into existing chapters.\n- To import notebook into chapters, select the 'Snip' output type.\n- Check the 'Output into Chapter' checkbox to indicate that the destination of the notebook is a chapter (and not uncategorized 'Work Snips').\n- And, finally, in the drop down that appears, select the chapter that you would like to insert the snips into.\n- Test this out by importing the example document 'Example Single Snip Import.docx' with the options seen here and you should see one new snip with four new lorem ipsum filled fragments in the selected chapter.",
 						"media": {
 							"image": "media/walkthroughs/imports/single_snip_into_chapter.gif",
 							"altText": "Organize By Chapters"
@@ -2304,7 +2369,7 @@
 					{
 						"id": "wt.importsWalkthrough.importSingleWorkSnip",
 						"title": "Import a Single Work Snippet",
-						"description": "- To import uncategorized notes -- or text fragments that do not have a chapter placement yet -- follow the same steps as before, but do no select to import into a specific chapter.\n- Test this out by importing the example document 'Example Single Snip Import.docx' with the options seen here and you should see one new snip with four new lorem ipsum filled fragments in the work snips area.",
+						"description": "- To import uncategorized notebook -- or text fragments that do not have a chapter placement yet -- follow the same steps as before, but do no select to import into a specific chapter.\n- Test this out by importing the example document 'Example Single Snip Import.docx' with the options seen here and you should see one new snip with four new lorem ipsum filled fragments in the work snips area.",
 						"media": {
 							"image": "media/walkthroughs/imports/single_snip_into_work_snips.gif",
 							"altText": "Organize By Chapters"
@@ -2411,7 +2476,7 @@
 		"@types/rwlock": "^5.0.6",
 		"@types/turndown": "^5.0.5",
 		"@types/uuid": "^9.0.0",
-		"@types/vscode": "^1.73.0",
+		"@types/vscode": "^1.99.0",
 		"@typescript-eslint/eslint-plugin": "^5.42.0",
 		"@typescript-eslint/parser": "^5.42.0",
 		"eslint": "^8.26.0",
@@ -2419,6 +2484,9 @@
 	},
 	"dependencies": {
 		"@bendera/vscode-webview-elements": "^0.8.1",
+		"@jupyter-widgets/base": "^2.0.2",
+		"@jupyter-widgets/controls": "^1.5.3",
+		"@lumino/widgets": "^1.3.0",
 		"@types/markdown-it": "^12.2.3",
 		"@types/nedb": "^1.8.16",
 		"@vscode/codicons": "^0.0.32",
