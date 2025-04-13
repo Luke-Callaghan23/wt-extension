@@ -1,15 +1,45 @@
 import * as vscode from 'vscode';
-import { Note, Notebook } from './../notebook/notebook';
+import { Notebook } from './../notebook/notebook';
 import * as extension from '../extension';
 import { v4 as uuidv4 } from 'uuid';
 import { Buff } from '../Buffer/bufferSource';
-import { SerializedNote } from '../notebook/notebookApi/serializer';
+import { SerializedNote } from '../notebook/notebookApi/notebookSerializer';
 
 
 const aliasesSplitter = /-- Enter ALIASES for .* here, separated by semicolons -- ALSO, DON'T DELETE THIS LINE!/;
 const appearancesSplitter = /-- Enter APPEARANCE descriptions for .* here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!/;
 const generalSplitter = /-- Enter GENERAL DESCRIPTIONS for .* here, separated by new lines -- ALSO, DON'T DELETE THIS LINE!/;
 
+
+
+
+export interface Note {
+    kind: 'note';
+    noteId: string;
+    noun: string;
+    appearance: string[];
+    aliases: string[];
+    description: string[];
+    uri: vscode.Uri;
+}
+
+export interface AppearanceContainer {
+    kind: 'appearanceContainer';
+    noteId: string;
+    appearances: SubNote[];
+}
+
+export interface SubNote {
+    kind: 'description' | 'appearance';
+    idx: number;
+    noteId: string;
+    description: string;
+}
+
+export interface NoteMatch {
+    range: vscode.Range;
+    note: Note;
+}
 
 
 function getNoteText (note: Note): string {
@@ -175,9 +205,39 @@ export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: 
             continue;
         }
 
-        const tmp: Omit<Note, "uri"> & Partial<Pick<Note, "uri">> = note;
-        delete tmp.uri;
-        const serializedNote: SerializedNote = tmp;
+        const serializedNote: SerializedNote = {
+            noteId: note.noteId,
+            title: {
+                editing: false,
+                text: note.noun
+            },
+            headers: [
+                {
+                    headerOrder: 0,
+                    headerText: 'aliases',
+                    cells: [{
+                        text: note.aliases.join("\n\n"),
+                        editing: true,
+                    }],
+                },
+                {
+                    headerOrder: 0,
+                    headerText: 'appearances',
+                    cells: [{
+                        text: note.appearance.join("\n\n"),
+                        editing: true,
+                    }],
+                },
+                {
+                    headerOrder: 0,
+                    headerText: 'notes',
+                    cells: [{
+                        text: note.description.join("\n\n"),
+                        editing: true,
+                    }]
+                },
+            ]
+        };
         const jsonNote = JSON.stringify(serializedNote, undefined, 4);
         const newUri = vscode.Uri.joinPath(notebookUriPath, `${note.noteId}.wtnote`);
         await vscode.workspace.fs.writeFile(newUri, Buff.from(jsonNote));

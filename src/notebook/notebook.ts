@@ -4,34 +4,39 @@ import { Workspace } from '../workspace/workspaceClass';
 import { Timed } from '../timedView';
 import { disable, update, notebookDecorations } from './timedViewUpdate';
 import { v4 as uuidv4 } from 'uuid';
-import { editNote,  addNote, removeNote, writeSingleNote, readNotebook } from './updateNoteContents';
+import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { compareFsPath, defaultProgress, formatFsPathForCompare } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
+import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
+import { capitalize } from '../intellisense/common';
+
 
 export interface Note {
     kind: 'note';
     noteId: string;
-    noun: string;
-    appearance: string[];
+    title: string;
     aliases: string[];
-    description: string[];
+    sections: NoteSection[];
     uri: vscode.Uri;
 }
 
-export interface AppearanceContainer {
-    kind: 'appearanceContainer';
-    noteId: string;
-    appearances: SubNote[];
+export interface NoteSection {
+    kind: 'section';
+    noteId: string,
+    header: string;
+    idx: number,
+    bullets: BulletPoint[];
 }
 
-export interface SubNote {
-    kind: 'description' | 'appearance';
-    idx: number;
+export interface BulletPoint {
+    kind: 'bullet';
     noteId: string;
-    description: string;
+    sectionIdx: number;
+    idx: number;
+    text: string;
 }
 
 export interface NoteMatch {
@@ -39,15 +44,12 @@ export interface NoteMatch {
     note: Note;
 }
 
-
 export class Notebook 
 implements 
-    vscode.TreeDataProvider<Note | SubNote | AppearanceContainer>, 
+    vscode.TreeDataProvider<Note | NoteSection | BulletPoint>, 
     vscode.HoverProvider, Timed, Renamable<Note>,
     vscode.ReferenceProvider
 {
-    writeSingleNote = writeSingleNote;
-    readNotebook = readNotebook;
     addNote = addNote;
     removeNote = removeNote;
     editNote = editNote;
@@ -61,12 +63,13 @@ implements
     public matchedNotebook: { [index: string]: NoteMatch[] };
     protected nounsRegex: RegExp | undefined;
 
-    protected notebook: Note[];
+    public notebook: Note[];
     protected notebookFolderPath: vscode.Uri;
-    public view: vscode.TreeView<Note | SubNote | AppearanceContainer>;
+    public view: vscode.TreeView<Note | NoteSection | BulletPoint>;
     constructor (
         public workspace: Workspace,
-        public context: vscode.ExtensionContext
+        public context: vscode.ExtensionContext,
+        protected serializer: WTNotebookSerializer
     ) {
         this.notebookFolderPath = workspace.notebookFolder;
         
@@ -77,7 +80,7 @@ implements
 
         // Read notebook from disk
         this.notebook = []; 
-        this.view = {} as vscode.TreeView<Note | SubNote | AppearanceContainer>
+        this.view = {} as vscode.TreeView<Note | NoteSection | BulletPoint>
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
         Notebook.singleton = this;
 
@@ -87,7 +90,7 @@ implements
     async renameResource (node?: Note | undefined): Promise<void> {
         if (!node) return;
         
-        const originalName = node.noun;
+        const originalName = node.title;
         const newName = await vscode.window.showInputBox({
             placeHolder: originalName,
             prompt: `What would you like to rename note for '${originalName}'?`,
@@ -97,15 +100,15 @@ implements
         });
         if (!newName) return;
 
-        node.noun = newName;
-        this.writeSingleNote(node);
+        node.title = newName;
+        this.serializer.writeSingleNote(node);
         return this.refresh().then(() => {
             TabLabels.assignNamesForOpenTabs();
         });
     }
 
     async initialize () {
-        this.notebook = await this.readNotebook();
+        this.notebook = await this.serializer.readNotebook(this.notebookFolderPath);
         this.nounsRegex = this.getNounsRegex();
         this.view = vscode.window.createTreeView(`wt.notebook.tree`, {
             treeDataProvider: this,
@@ -151,11 +154,11 @@ implements
 		return this._onDidChangeFile.event;
 	}
 
-	private _onDidChangeTreeData: vscode.EventEmitter<Note | SubNote | AppearanceContainer | undefined> = new vscode.EventEmitter<Note | SubNote | AppearanceContainer | undefined>();
-	readonly onDidChangeTreeData: vscode.Event<Note | SubNote | AppearanceContainer | undefined> = this._onDidChangeTreeData.event;
+	private _onDidChangeTreeData: vscode.EventEmitter<Note | NoteSection | BulletPoint | undefined> = new vscode.EventEmitter<Note | NoteSection | BulletPoint | undefined>();
+	readonly onDidChangeTreeData: vscode.Event<Note | NoteSection | BulletPoint | undefined> = this._onDidChangeTreeData.event;
 	async refresh (reload: boolean = false) {
         if (reload) {
-            this.notebook = await this.readNotebook();
+            this.notebook = await this.serializer.readNotebook(this.notebookFolderPath);
         }
         // Also update the nouns regex
         this.nounsRegex = this.getNounsRegex();
@@ -173,7 +176,7 @@ implements
         const idAddition = withId
             ? `?<${note.noteId}>`
             : ``;
-        return `(${idAddition}${note.noun}${aliasesAddition})`
+        return `(${idAddition}${note.title}${aliasesAddition})`
     }
 
     private getNounsRegex (withId: boolean=true, withSeparator: boolean=true, subset?: Note[]): RegExp {
@@ -197,19 +200,19 @@ implements
 
             const note = this.notebook.find(note => note.noteId === noteId);
             if (note === undefined) return;
-            this.writeSingleNote(note);
+            this.serializer.writeSingleNote(note);
         }
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", (resource: Note | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) }));
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.removeNote", (resource: Note) => { doTheThingAndWrite(() => this.removeNote(resource)) }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.search', (resource: Note) => { this.searchInSearchPanel(resource) }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.editNote', (resource: Note | AppearanceContainer | SubNote) => { this.editNote(resource) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.editNote', (resource: Note | NoteSection | BulletPoint) => { this.editNote(resource) }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.getNotebook', () => this));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.refresh', () => {
             return this.refresh(true);
         }));
     }
 
-    getTreeItem(noteNode: Note | SubNote | AppearanceContainer): vscode.TreeItem {
+    getTreeItem(noteNode: Note | NoteSection | BulletPoint): vscode.TreeItem {
         const editCommand: vscode.Command = {
             command: "wt.notebook.editNote",
             title: "Edit Note",
@@ -221,76 +224,50 @@ implements
                 return {
                     id: noteNode.noteId,
                     contextValue: 'note',
-                    label: noteNode.noun,
+                    label: noteNode.title,
                     description: aliasesString,
                     collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
                     tooltip: aliasesString.length !== 0 
-                        ? `${noteNode.noun} (${aliasesString})`
-                        : `${noteNode.noun}`,
+                        ? `${noteNode.title} (${aliasesString})`
+                        : `${noteNode.title}`,
                     command: editCommand
                 }
-            case 'description': case 'appearance': return {
+            case 'bullet': return {
                 id: `${noteNode.noteId}__${noteNode.idx}__${noteNode.kind}`,
                 contextValue: noteNode.kind,
-                label: noteNode.description,
+                label: noteNode.text,
                 collapsibleState: vscode.TreeItemCollapsibleState.None,
-                tooltip: noteNode.description,
+                tooltip: noteNode.text,
                 iconPath: new vscode.ThemeIcon("debug-breakpoint-disabled"),
                 command: editCommand
             }
-            case 'appearanceContainer': return {
-                id: `${noteNode.noteId}__appearanceContainer`,
+            case 'section': return {
+                id: `${noteNode.noteId}__section__${noteNode.idx}`,
                 contextValue: noteNode.kind,
-                label: 'Appearance',
+                label: capitalize(noteNode.header),
                 collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
-                tooltip: 'Appearance',
+                tooltip: capitalize(noteNode.header),
                 command: editCommand
             }
         }
     }
-    getChildren(element?: Note | SubNote | AppearanceContainer | undefined): vscode.ProviderResult<(Note | SubNote | AppearanceContainer)[]> {
+    getChildren(element?: Note | NoteSection | BulletPoint | undefined): vscode.ProviderResult<(Note | NoteSection | BulletPoint)[]> {
         if (!element) return this.notebook;
         switch (element.kind) {
             case 'note': 
-                const descriptions: SubNote[] = element.description.map((desc, idx) => ({
-                    kind: 'description',
-                    idx: idx,
-                    noteId: element.noteId,
-                    description: desc,
-                }));
-
-                const appearances: SubNote[] = element.appearance.map((desc, idx) => ({
-                    kind: 'appearance',
-                    description: desc,
-                    idx: idx,
-                    noteId: element.noteId
-                }));
-
-                const appearanceContainer: AppearanceContainer = {
-                    appearances: appearances,
-                    kind: 'appearanceContainer',
-                    noteId: element.noteId
-                }
-
-                return [
-                    appearanceContainer,
-                    ...descriptions
-                ];
-            case 'appearanceContainer': 
-                return element.appearances
-            case 'description': case 'appearance':
+                return element.sections;
+            case 'section': 
+                return element.bullets;
+            case 'bullet':
                 return [];
         }
     }
 
-    getParent(element: Note | SubNote | AppearanceContainer): vscode.ProviderResult<Note | SubNote | AppearanceContainer> {
-        if (element.kind === 'description' || element.kind === 'appearance' || element.kind === 'appearanceContainer') {
-            return this.notebook.find(note => note.noteId === element.noteId);
-        }
-        else if (element.kind === 'note') {
+    getParent(element: Note | NoteSection | BulletPoint): vscode.ProviderResult<Note | NoteSection | BulletPoint> {
+        if (element.kind === 'note') {
             return null;
         }
-        else throw `Not possible`;
+        return this.notebook.find(note => note.noteId === element.noteId);
     }
 
     getNote (noteUri: vscode.Uri): Note | null {
@@ -375,7 +352,7 @@ implements
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
 
-        return defaultProgress(`Collecting references for '${matchedNote.note.noun}'`, async () => {
+        return defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
             const subsetNounsRegex = this.getNounsRegex(false, false, [ matchedNote.note ]);
             const grepLocations: vscode.Location[] = []; 
             for await (const loc of grepExtensionDirectory(subsetNounsRegex.source, true, true, true)) {

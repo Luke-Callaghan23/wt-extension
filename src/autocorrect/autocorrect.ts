@@ -113,7 +113,7 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         }
         else {
             const node: { data: { ids: { display: string } } } = nodeOrNote instanceof OutlineNode ?
-                nodeOrNote : { data: { ids: { display: nodeOrNote!.noun } } };
+                nodeOrNote : { data: { ids: { display: nodeOrNote!.title } } };
             label = node.data.ids.display;
         }
         

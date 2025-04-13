@@ -27,7 +27,7 @@ export async function createWorkspace (
     if (!defaultConfig) {
         // Prompt the user for their name
         let creatorName = await prompt({
-            placeholder: Math.random() > 0.5 ? 'John Doe' : 'Jane Doe',
+            placeholder: Math.random() <= 0.3333 ? 'John Doe' : Math.random() > 0.50 ? 'Jane Doe' : 'Them Doe',
             prompt: "What is your name?",
         });
     

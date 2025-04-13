@@ -103,7 +103,15 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
             localResourceRoots: [ this._extensionUri ]
         };
 
-        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        const refreshHtml = () => {
+            webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        };
+
+        this.context.subscriptions.push(this._view.onDidChangeVisibility(() => {
+            refreshHtml();
+        }))
+
+        refreshHtml();
         this.context.subscriptions.push(webviewView.webview.onDidReceiveMessage(data => {
             const message = data as WebviewMessage;
             switch (message.kind) {

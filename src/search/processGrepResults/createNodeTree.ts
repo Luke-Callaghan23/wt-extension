@@ -103,7 +103,7 @@ async function convertFolderToSearchNode (
 
                     const linkNode: Exclude<VagueNodeSearchResult, { node: null, source: null }> = node;
                     const [ prefix, title ] = linkNode.source === 'notebook' 
-                        ? [ `Note`, linkNode.node.noun ]
+                        ? [ `Note`, linkNode.node.title ]
                         : [ `${capitalize(linkNode.node.data.ids.type)}`, linkNode.node.data.ids.display ];
 
                     parent.push(new SearchNode<MatchedTitleNode>({
@@ -244,7 +244,7 @@ export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat, cre
         'notebook': async (uri: vscode.Uri) => {
             const note = extension.ExtensionGlobals.notebook.getNote(uri);
             if (!note) return null;
-            return [ 'Note', note.noun ];
+            return [ 'Note', note.title ];
         }
     };
 

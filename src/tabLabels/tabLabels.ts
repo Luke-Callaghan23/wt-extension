@@ -88,7 +88,7 @@ export class TabLabels {
                 if (!nodeOrNote || !source) continue;
 
                 const node: { data: { ids: { display: string } } } = nodeOrNote instanceof OutlineNode ?
-                    nodeOrNote : { data: { ids: { display: nodeOrNote.noun } } };
+                    nodeOrNote : { data: { ids: { display: nodeOrNote.title } } };
     
                 // Remove the extension root path from the pattern
                 let relativePath = uri.fsPath.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/')

@@ -44,7 +44,17 @@ export class TabStates implements Packageable {
                         continue;
                     }
 
-                    const uri = (tab.input as vscode.TabInputText).uri;
+                    let uri: vscode.Uri;
+                    if (tab.input instanceof vscode.TabInputText) {
+                        uri = tab.input.uri;
+                    }
+                    else if (tab.input instanceof vscode.TabInputNotebook) {
+                        uri = tab.input.uri;
+                    }
+                    else {
+                        continue;
+                    }
+
                     const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
                     
                     const selection = FileAccessManager.getPosition(uri);

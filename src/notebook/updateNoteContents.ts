@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { AppearanceContainer, Note, SubNote, Notebook } from './notebook';
+import { Note, Notebook, BulletPoint, NoteSection } from './notebook';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { determineAuxViewColumn } from '../miscTools/help';
 import { Buff } from '../Buffer/bufferSource';
 import * as extension from './../extension';
-import { SerializedNote } from './notebookApi/serializer';
+import { SerializedNote } from './notebookApi/notebookSerializer';
 
 export async function addNote (this: Notebook, resource: Note | undefined): Promise<string | null> {
     const noun = await vscode.window.showInputBox({
@@ -17,13 +17,24 @@ export async function addNote (this: Notebook, resource: Note | undefined): Prom
     const noteId = Notebook.getNewNoteId();
     const notePath = vscode.Uri.joinPath(this.notebookFolderPath, `${noteId}.wtnote`);
     const insert: Note = {
-        noun: noun,
-        description: [],
-        appearance: [],
-        aliases: [],
+        title: noun,
         kind: 'note',
         noteId: noteId,
-        uri: notePath
+        uri: notePath,
+        aliases: [],
+        sections: [{
+            kind: 'section',
+            noteId: noteId,
+            idx: 0,
+            header: 'appearance',
+            bullets: [],
+        }, {
+            kind: 'section',
+            noteId: noteId,
+            idx: 1,
+            header: 'notes',
+            bullets: [],
+        }]
     };
 
     let idx: number; 
@@ -46,7 +57,7 @@ export async function addNote (this: Notebook, resource: Note | undefined): Prom
         ...this.notebook.slice(idx+1)
     ];
     this.refresh();
-    this.writeSingleNote(insert).then(result => {
+    this.serializer.writeSingleNote(insert).then(result => {
         if (result === null) return;
         vscode.workspace.openTextDocument(result).then(async document => {
             vscode.window.showTextDocument(document, {
@@ -81,16 +92,16 @@ export async function removeNote (this: Notebook, resource: Note): Promise<strin
     return resource.noteId;
 };
 
-export async function editNote (this: Notebook, resource: Note | SubNote | AppearanceContainer) {
+export async function editNote (this: Notebook, resource: Note | NoteSection | BulletPoint) {
     
     let note: Note | undefined = undefined;
-    switch (resource.kind) {
-        case 'appearance': case 'appearanceContainer': case 'description':
-            note = this.notebook.find(note => {
-                return note.noteId === resource.noteId;
-            });
-        case 'note':
-            note = resource as Note;
+    if (resource.kind === 'note') {
+        note = resource as Note;
+    }
+    else {
+        note = this.notebook.find(note => {
+            return note.noteId === resource.noteId;
+        });
     }
     if (note === undefined) return;
 
@@ -104,41 +115,4 @@ export async function editNote (this: Notebook, resource: Note | SubNote | Appea
     }).then(() => {
         TabLabels.assignNamesForOpenTabs();
     });
-}
-
-export async function readNotebook (this: Notebook): Promise<Note[]> {
-    const readPromises: PromiseLike<Note>[] = [];
-    for (const [ fileName, type ] of await vscode.workspace.fs.readDirectory(this.notebookFolderPath)) {
-        if (type !== vscode.FileType.File) {
-            continue;
-        }
-        const uri = vscode.Uri.joinPath(this.notebookFolderPath, fileName);
-        readPromises.push(vscode.workspace.fs.readFile(uri).then(readSingleNote));
-    }
-    return Promise.all(readPromises);
-}
-
-export async function readSingleNote (buffer: ArrayBufferLike) {
-    const text = extension.decoder.decode(buffer);
-    const serializedNote: SerializedNote = JSON.parse(text);
-    const note: Note = {
-        ...serializedNote,
-        uri: vscode.Uri.joinPath(extension.globalWorkspace!.notebookFolder, `${serializedNote.noteId}.wtnote`)
-    }
-    return note;
-}
-
-export async function writeSingleNote (this: Notebook, note: Note): Promise<vscode.Uri> {
-    const uri = note.uri;
-    const serializedNote = serializeSingleNote(note);
-    const jsonNote = JSON.stringify(serializedNote, undefined, 4);
-    await vscode.workspace.fs.writeFile(uri, Buff.from(jsonNote));
-    return uri;
-}
-
-export function serializeSingleNote (note: Note) {
-    const tmp: Omit<Note, "uri"> & Partial<Pick<Note, "uri">> = {...note};
-    delete tmp.uri;
-    const serializedNote: SerializedNote = tmp;
-    return serializedNote;
 }

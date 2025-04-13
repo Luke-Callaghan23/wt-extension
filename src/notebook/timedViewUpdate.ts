@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { Note, NoteMatch, Notebook } from './notebook';
 import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
+import { capitalize } from '../intellisense/common';
 
 const decorationsOptions: vscode.DecorationRenderOptions = {
     color: '#006eff',
@@ -46,14 +47,18 @@ export async function update (this: Notebook, editor: vscode.TextEditor): Promis
                 // Create a markdown string for the match
                 const matchedMarkdown = matchedNotebook.map(note => {
                     const aliasesString = note.aliases.join(', ');
-                    const title = `## ${note.noun}`;
+                    const title = `## ${note.title}`;
                     const subtitle = aliasesString.length !== 0
                         ? `#### (*${aliasesString}*)\n`
                         : '';
 
-                    const descriptions = note.description
-                        .map(desc => `- ${desc}`)
-                        .join('\n');
+                    const descriptions = note.sections.map(
+                        section => `- ${capitalize(section.header)}\n` + (
+                            section.bullets.map(
+                                bullet => `  - ${bullet.text}`
+                            ).join('\n')
+                        )
+                    ).join('\n');
 
                     return `${title}\n${subtitle}\n${descriptions}`;
                 }).join('\n');

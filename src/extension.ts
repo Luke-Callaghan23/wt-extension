@@ -46,7 +46,8 @@ import { SearchBarView } from './search/searchBarView';
 import { FragmentOverviewView } from './fragmentOverview/fragmentOverview';
 import { FragmentLinker } from './miscTools/fragmentLinker';
 import { defaultProgress, getSectionedProgressReporter, progressOnViews } from './miscTools/help';
-import { WTNotebookSerializer } from './notebook/notebookApi/serializer';
+import { WTNotebookSerializer } from './notebook/notebookApi/notebookSerializer';
+import { WTNotebookController } from './notebook/notebookApi/notebookController';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -94,24 +95,25 @@ async function loadExtensionWorkspace (
     workDivision: number = -1,
 ): Promise<void> {
     try {
-        const report = progress 
-            ? getSectionedProgressReporter ([
-                "Loaded outline",
-                "Loaded TODO tree",
-                "Loaded recycling bin",
-                "Loaded spellchecker",
-                "Loaded intellisense",
-                "Loaded scratch pad",
-                "Loaded fragment overview",
-                "Loaded tab groups",
-                "Loaded search bad",
-                "Loaded notebook",
-                "Loaded status bar items",
-                "Loaded tab labels",
-                "Loaded text-to-speech debugger",
-                "Finished.",
-            ] as const, progress, workDivision)
-            : () => {};
+        const report = progress ? getSectionedProgressReporter ([
+            "Loaded outline",
+            "Loaded TODO tree",
+            "Loaded recycling bin",
+            "Loaded spellchecker",
+            "Loaded intellisense",
+            "Loaded scratch pad",
+            "Loaded fragment overview",
+            "Loaded tab groups",
+            "Loaded search bad",
+            "Loaded notebook",
+            "Loaded status bar items",
+            "Loaded tab labels",
+            "Loaded text-to-speech debugger",
+            "Finished.",
+        ] as const, progress, workDivision)
+        : (report: string) => {
+            console.log(report)
+        };
 
 
         const outline = new OutlineView(context, workspace);                // wt.outline
@@ -154,12 +156,10 @@ async function loadExtensionWorkspace (
         const tabStates = new TabStates(context, workspace);
         report("Loaded tab groups");
 
-        const notebook = new Notebook(workspace, context);
+        const notebook = new Notebook(workspace, context, notebookSerializer);
         await notebook.initialize();
-        context.subscriptions.push(
-            vscode.workspace.registerNotebookSerializer('wt.notebook', new WTNotebookSerializer(context, workspace, notebook))
-        );
-        
+        await notebookSerializer.init(context, workspace, notebook);
+        new WTNotebookController(context, workspace, notebook);
         report("Loaded notebook");
 
         ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notebook, todo, workspace, context);
@@ -201,13 +201,13 @@ async function loadExtensionWorkspace (
         // Initialize the file access manager
         // Manages any accesses of .wt fragments, for various uses such as drag/drop in outline view or creating new
         //        fragment/snips/chapters in the outline view
-        // FileAccessManager.initialize();
+        FileAccessManager.initialize(context);
         vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
-        context.subscriptions.push(vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
-            outline, synonyms, new FileAccessManager(),
-            personalDictionary, wh,  
-            autocorrection, 
-        ])));
+        vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
+            outline, synonyms, timedViews, new FileAccessManager(),
+            personalDictionary, colorGroups, wh, reloadWatcher, tabStates,
+            autocorrection, searchBarView
+        ]));
 
         // Lastly, clear the 'tmp' folder
         // This is used to store temporary data for a session and should not last between sessions
@@ -218,7 +218,7 @@ async function loadExtensionWorkspace (
         const configuration = vscode.workspace.getConfiguration();
         configuration.update("editor.autoClosingOvertype", "always", vscode.ConfigurationTarget.Workspace)
 
-        // await TabLabels.assignNamesForOpenTabs();
+        await TabLabels.assignNamesForOpenTabs();
         report("Loaded tab labels");
 
         activateSpeak(context);
@@ -258,12 +258,18 @@ async function loadExtensionWithProgress (context: vscode.ExtensionContext, titl
         globalWorkspace = workspace;
     
         await loadExtensionWorkspace(context, workspace, progress, 1);
-        progress.report({ message: "Loaded extension" })
+        progress.report({ message: "Loaded extension" });
         return true;
     });
 }
 
+let notebookSerializer: WTNotebookSerializer;
 async function activateImpl (context: vscode.ExtensionContext) {
+    notebookSerializer = new WTNotebookSerializer();
+    context.subscriptions.push(
+        vscode.workspace.registerNotebookSerializer('wt.notebook', notebookSerializer)
+    );
+
     // Load the root path of file system where the extension was loaded
     rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
         ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
