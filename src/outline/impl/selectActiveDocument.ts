@@ -3,7 +3,7 @@ import { OutlineView } from "../outlineView";
 import { OutlineNode } from '../nodes_impl/outlineNode';
 import { vagueNodeSearch } from '../../miscTools/help';
 import { ExtensionGlobals } from '../../extension';
-import { Note } from '../../notebook/notebook';
+import { NotebookPanelNote } from '../../notebook/notebookPanel';
 import { TabLabels } from '../../tabLabels/tabLabels';
 
 
@@ -47,7 +47,7 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
         });
     }
     else {
-        const note = nodeOrNote as Note;
+        const note = nodeOrNote as NotebookPanelNote;
         ExtensionGlobals.notebook.view.reveal(note, {
             expand: true,
             focus: false,

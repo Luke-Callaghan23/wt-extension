@@ -14,7 +14,7 @@ import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../intellisense/common';
 
 
-export interface Note {
+export interface NotebookPanelNote {
     kind: 'note';
     noteId: string;
     title: string;
@@ -41,13 +41,13 @@ export interface BulletPoint {
 
 export interface NoteMatch {
     range: vscode.Range;
-    note: Note;
+    note: NotebookPanelNote;
 }
 
-export class Notebook 
+export class NotebookPanel 
 implements 
-    vscode.TreeDataProvider<Note | NoteSection | BulletPoint>, 
-    vscode.HoverProvider, Timed, Renamable<Note>,
+    vscode.TreeDataProvider<NotebookPanelNote | NoteSection | BulletPoint>, 
+    vscode.HoverProvider, Timed, Renamable<NotebookPanelNote>,
     vscode.ReferenceProvider
 {
     addNote = addNote;
@@ -58,14 +58,14 @@ implements
     update = update;
     disable = disable;
 
-    static singleton: Notebook;
+    static singleton: NotebookPanel;
 
     public matchedNotebook: { [index: string]: NoteMatch[] };
     protected nounsRegex: RegExp | undefined;
 
-    public notebook: Note[];
+    public notebook: NotebookPanelNote[];
     protected notebookFolderPath: vscode.Uri;
-    public view: vscode.TreeView<Note | NoteSection | BulletPoint>;
+    public view: vscode.TreeView<NotebookPanelNote | NoteSection | BulletPoint>;
     constructor (
         public workspace: Workspace,
         public context: vscode.ExtensionContext,
@@ -80,14 +80,14 @@ implements
 
         // Read notebook from disk
         this.notebook = []; 
-        this.view = {} as vscode.TreeView<Note | NoteSection | BulletPoint>
+        this.view = {} as vscode.TreeView<NotebookPanelNote | NoteSection | BulletPoint>
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
-        Notebook.singleton = this;
+        NotebookPanel.singleton = this;
 
         this.context.subscriptions.push(notebookDecorations);
     }
 
-    async renameResource (node?: Note | undefined): Promise<void> {
+    async renameResource (node?: NotebookPanelNote | undefined): Promise<void> {
         if (!node) return;
         
         const originalName = node.title;
@@ -108,7 +108,7 @@ implements
     }
 
     async initialize () {
-        this.notebook = await this.serializer.readNotebook(this.notebookFolderPath);
+        this.notebook = await this.serializer.deserializeNotebookPanel(this.notebookFolderPath);
         this.nounsRegex = this.getNounsRegex();
         this.view = vscode.window.createTreeView(`wt.notebook.tree`, {
             treeDataProvider: this,
@@ -154,18 +154,18 @@ implements
 		return this._onDidChangeFile.event;
 	}
 
-	private _onDidChangeTreeData: vscode.EventEmitter<Note | NoteSection | BulletPoint | undefined> = new vscode.EventEmitter<Note | NoteSection | BulletPoint | undefined>();
-	readonly onDidChangeTreeData: vscode.Event<Note | NoteSection | BulletPoint | undefined> = this._onDidChangeTreeData.event;
+	private _onDidChangeTreeData: vscode.EventEmitter<NotebookPanelNote | NoteSection | BulletPoint | undefined> = new vscode.EventEmitter<NotebookPanelNote | NoteSection | BulletPoint | undefined>();
+	readonly onDidChangeTreeData: vscode.Event<NotebookPanelNote | NoteSection | BulletPoint | undefined> = this._onDidChangeTreeData.event;
 	async refresh (reload: boolean = false) {
         if (reload) {
-            this.notebook = await this.serializer.readNotebook(this.notebookFolderPath);
+            this.notebook = await this.serializer.deserializeNotebookPanel(this.notebookFolderPath);
         }
         // Also update the nouns regex
         this.nounsRegex = this.getNounsRegex();
 		this._onDidChangeTreeData.fire(undefined);
 	}
 
-    protected getNounPattern (note: Note, withId: boolean = true) {
+    protected getNounPattern (note: NotebookPanelNote, withId: boolean = true) {
         const realAliases = note.aliases
             .map(a => a.trim())
             .filter(a => a.length > 0);
@@ -179,7 +179,7 @@ implements
         return `(${idAddition}${note.title}${aliasesAddition})`
     }
 
-    private getNounsRegex (withId: boolean=true, withSeparator: boolean=true, subset?: Note[]): RegExp {
+    private getNounsRegex (withId: boolean=true, withSeparator: boolean=true, subset?: NotebookPanelNote[]): RegExp {
         if (this.notebook.length === 0) {
             return /^_^/
         }
@@ -202,17 +202,17 @@ implements
             if (note === undefined) return;
             this.serializer.writeSingleNote(note);
         }
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", (resource: Note | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) }));
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.removeNote", (resource: Note) => { doTheThingAndWrite(() => this.removeNote(resource)) }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.search', (resource: Note) => { this.searchInSearchPanel(resource) }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.editNote', (resource: Note | NoteSection | BulletPoint) => { this.editNote(resource) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", (resource: NotebookPanelNote | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.removeNote", (resource: NotebookPanelNote) => { doTheThingAndWrite(() => this.removeNote(resource)) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.search', (resource: NotebookPanelNote) => { this.searchInSearchPanel(resource) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.editNote', (resource: NotebookPanelNote | NoteSection | BulletPoint) => { this.editNote(resource) }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.getNotebook', () => this));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.refresh', () => {
             return this.refresh(true);
         }));
     }
 
-    getTreeItem(noteNode: Note | NoteSection | BulletPoint): vscode.TreeItem {
+    getTreeItem(noteNode: NotebookPanelNote | NoteSection | BulletPoint): vscode.TreeItem {
         const editCommand: vscode.Command = {
             command: "wt.notebook.editNote",
             title: "Edit Note",
@@ -251,7 +251,7 @@ implements
             }
         }
     }
-    getChildren(element?: Note | NoteSection | BulletPoint | undefined): vscode.ProviderResult<(Note | NoteSection | BulletPoint)[]> {
+    getChildren(element?: NotebookPanelNote | NoteSection | BulletPoint | undefined): vscode.ProviderResult<(NotebookPanelNote | NoteSection | BulletPoint)[]> {
         if (!element) return this.notebook;
         switch (element.kind) {
             case 'note': 
@@ -263,21 +263,21 @@ implements
         }
     }
 
-    getParent(element: Note | NoteSection | BulletPoint): vscode.ProviderResult<Note | NoteSection | BulletPoint> {
+    getParent(element: NotebookPanelNote | NoteSection | BulletPoint): vscode.ProviderResult<NotebookPanelNote | NoteSection | BulletPoint> {
         if (element.kind === 'note') {
             return null;
         }
         return this.notebook.find(note => note.noteId === element.noteId);
     }
 
-    getNote (noteUri: vscode.Uri): Note | null {
+    getNote (noteUri: vscode.Uri): NotebookPanelNote | null {
         return this.notebook.find(note => {
             const thisUri = note.uri;
             return compareFsPath(thisUri, noteUri);
         }) || null;
     }
 
-    async searchInSearchPanel (resource: Note) {
+    async searchInSearchPanel (resource: NotebookPanelNote) {
         vscode.commands.executeCommand('workbench.action.findInFiles', {
             query: this.getNounPattern(resource, false),
             triggerSearch: true,

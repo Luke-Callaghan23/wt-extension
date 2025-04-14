@@ -827,14 +827,19 @@
 				"icon": "$(arrow-up)"
 			},
 			{
-				"command": "wt.notebook.cell.changeToWtNote",
-				"title": "Notebook: Change Cell to WTNote",
-				"icon": "$(code)"
+				"command": "wt.notebook.cell.editCell",
+				"title": "Notebook: Edit Cell",
+				"icon": "$(debug-step-over)"
 			},
 			{
-				"command": "wt.notebook.cell.changeToHeader",
-				"title": "Notebook: Change Cell to Header",
-				"icon": "$(markdown)"
+				"command": "wt.notebook.cell.convertToHeader",
+				"title": "Notebook: Convert Cell to Header",
+				"icon": "$(diff-editor-toggle-whitespace)"
+			},
+			{
+				"command": "wt.notebook.cell.editHeader",
+				"title": "Notebook: Edit header text",
+				"icon": "$(debug-step-over)"
 			},
 			{
 				"title": "Writing Tool: Open Introduction Walkthrough",
@@ -1754,13 +1759,19 @@
 			],
 			"notebook/cell/title": [
 				{
-					"command": "wt.notebook.cell.changeToHeader",
-					"when": "notebookViewType == wtnote && notebookCellType == code",
+					"command": "wt.notebook.cell.convertToHeader",
+					"when": "notebookType == 'wt.notebook' && notebookCellType == 'code' && cellKindContextValue == 'input'",
 					"group": "inline@3"
 				},
 				{
-					"command": "wt.notebook.cell.changeToWtNote",
+					"command": "wt.notebook.cell.editCell",
+					"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'input'",
 					"group": "inline@3"
+				},
+				{
+					"command": "wt.notebook.cell.editHeader",
+					"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header'",
+					"group": "inline@4"
 				}
 			]
 		},

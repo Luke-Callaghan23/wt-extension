@@ -8,7 +8,7 @@ import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
 import { CodeModeState } from '../codeMode/codeMode';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
-import { Note, Notebook } from '../notebook/notebook';
+import { NotebookPanelNote, NotebookPanel } from '../notebook/notebookPanel';
 import { vagueNodeSearch } from '../miscTools/help';
 
 export class TabLabels {
@@ -26,14 +26,14 @@ export class TabLabels {
     private registerCommands() {
 
         const renameFromUri = async (uri: vscode.Uri) => {
-            type ViewSource = Renamable<OutlineNode | Note>;
-            let nodeResult: [ ViewSource, OutlineNode | Note ]
+            type ViewSource = Renamable<OutlineNode | NotebookPanelNote>;
+            let nodeResult: [ ViewSource, OutlineNode | NotebookPanelNote ]
             try {
                 nodeResult = await Promise.any([
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) => extension.ExtensionGlobals.outlineView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.outlineView, node ]) : reject())),
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.recyclingBinView, node ]) : reject())),
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.scratchPadView, node ]) : reject())),
-                    new Promise<[ ViewSource, Note ]>((resolve, reject) =>  {
+                    new Promise<[ ViewSource, NotebookPanelNote ]>((resolve, reject) =>  {
                         const note = extension.ExtensionGlobals.notebook.getNote(uri);
                         if (note) {
                             resolve([ extension.ExtensionGlobals.notebook, note ]);

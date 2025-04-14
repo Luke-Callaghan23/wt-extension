@@ -6,7 +6,7 @@ import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
 import { OutlineView } from '../outline/outlineView';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
-import { Note, Notebook } from '../notebook/notebook';
+import { NotebookPanelNote, NotebookPanel } from '../notebook/notebookPanel';
 import { TabLabels } from '../tabLabels/tabLabels';
 import * as childProcess from 'child_process'
 import * as vscodeUri from 'vscode-uri';
@@ -129,7 +129,7 @@ export type VagueNodeSearchResult = {
     node: OutlineNode,
 } | {
     source: 'notebook',
-    node: Note,
+    node: NotebookPanelNote,
 } | {
     source: null,
     node: null

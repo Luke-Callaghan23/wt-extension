@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Note, NoteMatch, Notebook } from './notebook';
+import { NotebookPanelNote, NoteMatch, NotebookPanel } from './notebookPanel';
 import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
 import { capitalize } from '../intellisense/common';
 
@@ -10,7 +10,7 @@ const decorationsOptions: vscode.DecorationRenderOptions = {
 };
 export const notebookDecorations = vscode.window.createTextEditorDecorationType(decorationsOptions);
 
-export async function update (this: Notebook, editor: vscode.TextEditor): Promise<void> {
+export async function update (this: NotebookPanel, editor: vscode.TextEditor): Promise<void> {
     if (!this.nounsRegex) return;
     let match: RegExpExecArray | null;
 
@@ -23,7 +23,7 @@ export async function update (this: Notebook, editor: vscode.TextEditor): Promis
     while ((match = this.nounsRegex.exec(text))) {
         const matchReal: RegExpExecArray = match;
 
-        let matchedNote: Note | undefined;
+        let matchedNote: NotebookPanelNote | undefined;
         let tag: string = match[0];
         const groups = matchReal.groups;
         if (groups) {
@@ -109,6 +109,6 @@ export async function update (this: Notebook, editor: vscode.TextEditor): Promis
     editor.setDecorations(notebookDecorations, decorationLocations);
 }
 
-export async function disable (this: Notebook): Promise<void> {
+export async function disable (this: NotebookPanel): Promise<void> {
     throw new Error('Method not implemented.');
 }

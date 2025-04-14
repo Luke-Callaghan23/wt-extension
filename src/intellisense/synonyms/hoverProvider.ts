@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
 import { capitalize, getHoverText, getHoveredWord } from '../common';
-import { Notebook } from '../../notebook/notebook';
+import { NotebookPanel } from '../../notebook/notebookPanel';
 import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
 
 export class HoverProvider implements vscode.HoverProvider {
@@ -16,7 +16,7 @@ export class HoverProvider implements vscode.HoverProvider {
         if (!hoverPosition) return new vscode.Hover('');
 
         // Don't give hover on words that have a matched world notebook Note
-        const worldNotebook = Notebook.singleton;
+        const worldNotebook = NotebookPanel.singleton;
         if (worldNotebook) {
             if (worldNotebook.matchedNotebook) {
                 const matches = worldNotebook.matchedNotebook[formatFsPathForCompare(document.uri)];

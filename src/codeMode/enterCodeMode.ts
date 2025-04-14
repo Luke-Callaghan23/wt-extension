@@ -4,7 +4,7 @@ import { Buff } from '../Buffer/bufferSource';
 import { isText } from 'istextorbinary';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { OutlineView } from '../outline/outlineView';
-import { Notebook } from '../notebook/notebook';
+import { NotebookPanel } from '../notebook/notebookPanel';
 import { ExtensionGlobals } from '../extension';
 
 export async function enter (this: CoderModer): Promise<void> {
@@ -42,7 +42,7 @@ export async function enter (this: CoderModer): Promise<void> {
 
     
     const outlineView: OutlineView = ExtensionGlobals.outlineView;
-    const notebookView: Notebook = ExtensionGlobals.notebook;
+    const notebookView: NotebookPanel = ExtensionGlobals.notebook;
     if (outlineView.view.visible) {
         vscode.commands.executeCommand('workbench.view.explorer');
         this.openedExplorer = true;

@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import { Note, Notebook, BulletPoint, NoteSection } from './notebook';
+import { NotebookPanelNote, NotebookPanel, BulletPoint, NoteSection } from './notebookPanel';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { determineAuxViewColumn } from '../miscTools/help';
 import { Buff } from '../Buffer/bufferSource';
 import * as extension from './../extension';
 import { SerializedNote } from './notebookApi/notebookSerializer';
 
-export async function addNote (this: Notebook, resource: Note | undefined): Promise<string | null> {
+export async function addNote (this: NotebookPanel, resource: NotebookPanelNote | undefined): Promise<string | null> {
     const noun = await vscode.window.showInputBox({
         ignoreFocusOut: false,
         placeHolder: 'Tom Tomington',
@@ -14,9 +14,9 @@ export async function addNote (this: Notebook, resource: Note | undefined): Prom
     });
     if (noun === undefined || noun === null || noun.length === 0) return null;
 
-    const noteId = Notebook.getNewNoteId();
+    const noteId = NotebookPanel.getNewNoteId();
     const notePath = vscode.Uri.joinPath(this.notebookFolderPath, `${noteId}.wtnote`);
-    const insert: Note = {
+    const insert: NotebookPanelNote = {
         title: noun,
         kind: 'note',
         noteId: noteId,
@@ -70,7 +70,7 @@ export async function addNote (this: Notebook, resource: Note | undefined): Prom
     return insert.noteId;
 }
 
-export async function removeNote (this: Notebook, resource: Note): Promise<string | null> {
+export async function removeNote (this: NotebookPanel, resource: NotebookPanelNote): Promise<string | null> {
     const no = 'No';
     const yes = 'Yes';
     const areYouSure = await vscode.window.showQuickPick([ no, yes ], {
@@ -92,11 +92,11 @@ export async function removeNote (this: Notebook, resource: Note): Promise<strin
     return resource.noteId;
 };
 
-export async function editNote (this: Notebook, resource: Note | NoteSection | BulletPoint) {
+export async function editNote (this: NotebookPanel, resource: NotebookPanelNote | NoteSection | BulletPoint) {
     
-    let note: Note | undefined = undefined;
+    let note: NotebookPanelNote | undefined = undefined;
     if (resource.kind === 'note') {
-        note = resource as Note;
+        note = resource as NotebookPanelNote;
     }
     else {
         note = this.notebook.find(note => {

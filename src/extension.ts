@@ -31,7 +31,7 @@ import { RecyclingBinView } from './recyclingBin/recyclingBinView';
 import { VeryIntellisense } from './intellisense/very/veryIntellisense';
 import { WordCount } from './wordCounts/wordCount';
 import { TextStyles } from './textStyles/textStyles';
-import { Notebook } from './notebook/notebook';
+import { NotebookPanel } from './notebook/notebookPanel';
 import { StatusBarTimer } from './statusBarTimer/statusBarTimer';
 import { TabLabels } from './tabLabels/tabLabels';
 import { searchFiles } from './miscTools/searchFiles';
@@ -62,7 +62,7 @@ export class ExtensionGlobals {
     public static outlineView: OutlineView;
     public static recyclingBinView: RecyclingBinView;
     public static scratchPadView: ScratchPadView;
-    public static notebook: Notebook;
+    public static notebook: NotebookPanel;
     public static todoView: TODOsView;
     public static workspace: Workspace;
     public static context: vscode.ExtensionContext;
@@ -71,7 +71,7 @@ export class ExtensionGlobals {
         outlineView: OutlineView, 
         recyclingBinView: RecyclingBinView, 
         scratchPadView: ScratchPadView, 
-        notebook: Notebook,
+        notebook: NotebookPanel,
         todoView: TODOsView,
         workspace: Workspace,
         context: vscode.ExtensionContext
@@ -156,7 +156,7 @@ async function loadExtensionWorkspace (
         const tabStates = new TabStates(context, workspace);
         report("Loaded tab groups");
 
-        const notebook = new Notebook(workspace, context, notebookSerializer);
+        const notebook = new NotebookPanel(workspace, context, notebookSerializer);
         await notebook.initialize();
         await notebookSerializer.init(context, workspace, notebook);
         new WTNotebookController(context, workspace, notebook);

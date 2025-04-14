@@ -9,7 +9,7 @@ import { TabLabels } from './../tabLabels/tabLabels';
 import { Workspace } from './../workspace/workspaceClass';
 import { RecyclingBinView } from './../recyclingBin/recyclingBinView';
 import { ScratchPadView } from './../scratchPad/scratchPadView';
-import { Notebook } from './../notebook/notebook';
+import { NotebookPanel } from '../notebook/notebookPanel';
 import { getFsPathKey, getRelativePath, setFsPathKey, vagueNodeSearch } from './../miscTools/help';
 
 export class FileAccessManager implements Packageable {

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Notebook } from './../notebook/notebook';
+import { NotebookPanel } from '../notebook/notebookPanel';
 import * as extension from '../extension';
 import { v4 as uuidv4 } from 'uuid';
 import { Buff } from '../Buffer/bufferSource';
@@ -219,7 +219,6 @@ export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: 
                         text: note.aliases.join("\n\n"),
                         editing: true,
                     }],
-                    editingHeader: false,
                 },
                 {
                     headerOrder: 0,
@@ -228,7 +227,6 @@ export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: 
                         text: note.appearance.join("\n\n"),
                         editing: true,
                     }],
-                    editingHeader: false,
                 },
                 {
                     headerOrder: 0,
@@ -237,7 +235,6 @@ export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: 
                         text: note.description.join("\n\n"),
                         editing: true,
                     }],
-                    editingHeader: false,
                 },
             ]
         };
