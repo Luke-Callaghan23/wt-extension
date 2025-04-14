@@ -42,8 +42,6 @@ export class WTNotebookController {
 
             const execution = this.controller.createNotebookCellExecution(cell);
             execution.start(Date.now());
-            
-            
             if (fullLines.length > 1) {
                 execution.replaceOutput([
                     new vscode.NotebookCellOutput([
@@ -64,6 +62,9 @@ export class WTNotebookController {
 
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editHeader", async (cell: vscode.NotebookCell) => {
             
+            const execution = this.controller.createNotebookCellExecution(cell);
+            execution.start(Date.now()); // Keep track of elapsed time to execute cell.
+
             let originalText: string;
             try {
                 // To call `editHeader` on a cell, that cell must have been created by `notebookSerializer.deserializeNotebook`
@@ -79,7 +80,6 @@ export class WTNotebookController {
                 }
             }
             catch (err: any) {
-                const execution = this.controller.createNotebookCellExecution(cell);
                 execution.replaceOutput([
                     new vscode.NotebookCellOutput([
                         vscode.NotebookCellOutputItem.stderr("[WARN] Cannot call editHeader on non-header notebook cell")
@@ -98,8 +98,6 @@ export class WTNotebookController {
             });
             if (!newName) return;
 
-
-            const execution = this.controller.createNotebookCellExecution(cell);
             execution.replaceOutput([
                 new vscode.NotebookCellOutput([], (<NotebookCellOutputMetadata> {
                     updateValue: newName
@@ -174,8 +172,7 @@ export class WTNotebookController {
         notebook: vscode.NotebookDocument
     ): Promise<void> {
         const execution = this.controller.createNotebookCellExecution(cell);
-        execution.start(Date.now()); // Keep track of elapsed time to execute cell.
-
+        execution.start(Date.now());
         execution.replaceOutput([
             new vscode.NotebookCellOutput([], (<NotebookCellOutputMetadata>{
                 convert: 'markdown'

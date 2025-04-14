@@ -385,6 +385,8 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 cellMetadata.originalText = cell.value;
             }
 
+            cellMetadata.originalText = this.getUpdatedText(cell) || cellMetadata.originalText;
+
             if (cellMetadata && cellMetadata.kind === 'header') {
                 lastHeader = cellMetadata.originalText || this.deserializeHeaderText(cell.value);
                 // If the header is not in the indexes map, then use the current length of the header
@@ -553,6 +555,17 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             // TODO: maybe return something different if thre is more than out output???
             // TODO: don't think that will ever happen, though
             return outputMetadata.convert;
+        }
+        return null;
+    }
+
+    private getUpdatedText (cell: vscode.NotebookCellData): string | null {
+        if (!cell.outputs) return null;
+
+        for (const output of cell.outputs) {
+            const outputMetadata: NotebookCellOutputMetadata | undefined = output.metadata;
+            if (!outputMetadata || !outputMetadata.updateValue) continue;
+            return outputMetadata.updateValue;
         }
         return null;
     }
