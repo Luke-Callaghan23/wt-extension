@@ -839,7 +839,7 @@
 			{
 				"command": "wt.notebook.cell.editHeader",
 				"title": "Notebook: Edit header text",
-				"icon": "$(debug-step-over)"
+				"icon": "$(keyboard)"
 			},
 			{
 				"title": "Writing Tool: Open Introduction Walkthrough",

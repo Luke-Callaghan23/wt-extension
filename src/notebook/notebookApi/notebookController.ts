@@ -32,109 +32,112 @@ export class WTNotebookController {
             vscode.commands.executeCommand("setContext", "cellKindContextValue", cellMetadata?.kind || 'unknown');
         });
 
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.convertToHeader", (cell: vscode.NotebookCell) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.convertToHeader", this.transformToHeader.bind(this)));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editHeader", this.editHeaderText.bind(this)));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editCell", this.transformToWTNote.bind(this)));
+    }
 
-            // 
-            const text = cell.document.getText();
-            const fullLines = text.split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0)
+    private async transformToHeader (cell: vscode.NotebookCell) {
+        // 
+        const text = cell.document.getText();
+        const fullLines = text.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
 
-            const execution = this.controller.createNotebookCellExecution(cell);
-            execution.start(Date.now());
-            if (fullLines.length > 1) {
-                execution.replaceOutput([
-                    new vscode.NotebookCellOutput([
-                        vscode.NotebookCellOutputItem.stderr(`[ERROR] Header cells must have text on exactly one line.  Please remove text from ${fullLines.length - 1} line(s) of this cell to convert it into a header.`)
-                    ], {})
-                ]);
+        const execution = this.controller.createNotebookCellExecution(cell);
+        execution.start(Date.now());
+        if (fullLines.length > 1) {
+            execution.replaceOutput([
+                new vscode.NotebookCellOutput([
+                    vscode.NotebookCellOutputItem.stderr(`[ERROR] Header cells must have text on exactly one line.  Please remove text from ${fullLines.length - 1} line(s) of this cell to convert it into a header.`)
+                ], {})
+            ]);
+        }
+        else {
+            execution.replaceOutput([
+                new vscode.NotebookCellOutput([], (<NotebookCellOutputMetadata>{
+                    convert: 'header'
+                }))
+            ]);
+        }
+        execution.end(true, Date.now());
+        this.reopenNotebook(cell.notebook);
+    }
+
+    private async editHeaderText (cell: vscode.NotebookCell) {
+        const execution = this.controller.createNotebookCellExecution(cell);
+        execution.start(Date.now()); // Keep track of elapsed time to execute cell.
+
+        let originalText: string;
+        try {
+            // To call `editHeader` on a cell, that cell must have been created by `notebookSerializer.deserializeNotebook`
+            // In that case, there must be a `metadata` object of type `NotebookCellMetadata` with kind === 'header'
+            // If any of that is not the case, then stop now
+            const metadata = cell.metadata! as NotebookCellMetadata;
+            if (metadata.kind !== 'header') {
+                throw 'Not a header';
             }
-            else {
-                execution.replaceOutput([
-                    new vscode.NotebookCellOutput([], (<NotebookCellOutputMetadata>{
-                        convert: 'header'
-                    }))
-                ]);
+            originalText = metadata.originalText;
+            if (!metadata.originalText) {
+                throw `Empty header`
             }
+        }
+        catch (err: any) {
+            execution.replaceOutput([
+                new vscode.NotebookCellOutput([
+                    vscode.NotebookCellOutputItem.stderr("[WARN] Cannot call editHeader on non-header notebook cell")
+                ])
+            ]);
             execution.end(true, Date.now());
-            this.reopenNotebook(cell.notebook);
-        }));
+            return;
+        }
 
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editHeader", async (cell: vscode.NotebookCell) => {
-            
-            const execution = this.controller.createNotebookCellExecution(cell);
-            execution.start(Date.now()); // Keep track of elapsed time to execute cell.
+        const newName = await vscode.window.showInputBox({
+            placeHolder: originalText,
+            prompt: `What would you like to rename header '${originalText}'?`,
+            ignoreFocusOut: false,
+            value: originalText,
+            valueSelection: [0, originalText.length]
+        });
+        if (!newName) return;
 
-            let originalText: string;
-            try {
-                // To call `editHeader` on a cell, that cell must have been created by `notebookSerializer.deserializeNotebook`
-                // In that case, there must be a `metadata` object of type `NotebookCellMetadata` with kind === 'header'
-                // If any of that is not the case, then stop now
-                const metadata = cell.metadata! as NotebookCellMetadata;
-                if (metadata.kind !== 'header') {
-                    throw 'Not a header';
-                }
-                originalText = metadata.originalText;
-                if (!metadata.originalText) {
-                    throw `Empty header`
-                }
-            }
-            catch (err: any) {
+        execution.replaceOutput([
+            new vscode.NotebookCellOutput([], (<NotebookCellOutputMetadata> {
+                updateValue: newName
+            }))
+        ]);
+        execution.end(true, Date.now());
+        this.reopenNotebook(cell.notebook);
+    }
+
+    private async transformToWTNote (cell: vscode.NotebookCell) {
+        const cellMetadata = cell.metadata as NotebookCellMetadata | undefined;
+        if (cellMetadata) {
+            if (cellMetadata.kind === 'header' || cellMetadata.kind === 'header-title') {
+                const execution = this.controller.createNotebookCellExecution(cell);
+                execution.start(Date.now());
                 execution.replaceOutput([
                     new vscode.NotebookCellOutput([
-                        vscode.NotebookCellOutputItem.stderr("[WARN] Cannot call editHeader on non-header notebook cell")
+                        vscode.NotebookCellOutputItem.stderr("[WARN] Cannot edit headers.  Either delete this header or select 'Edit header'")
                     ])
                 ]);
                 execution.end(true, Date.now());
-                return;
             }
-
-            const newName = await vscode.window.showInputBox({
-                placeHolder: originalText,
-                prompt: `What would you like to rename header '${originalText}'?`,
-                ignoreFocusOut: false,
-                value: originalText,
-                valueSelection: [0, originalText.length]
-            });
-            if (!newName) return;
-
-            execution.replaceOutput([
-                new vscode.NotebookCellOutput([], (<NotebookCellOutputMetadata> {
-                    updateValue: newName
-                }))
-            ]);
-            execution.end(true, Date.now());
-            this.reopenNotebook(cell.notebook);
-        }));
-
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editCell", (cell: vscode.NotebookCell) => {
-            const cellMetadata = cell.metadata as NotebookCellMetadata | undefined;
-            if (cellMetadata) {
-                if (cellMetadata.kind === 'header' || cellMetadata.kind === 'header-title') {
-                    const execution = this.controller.createNotebookCellExecution(cell);
-                    execution.start(Date.now());
-                    execution.replaceOutput([
-                        new vscode.NotebookCellOutput([
-                            vscode.NotebookCellOutputItem.stderr("[WARN] Cannot edit headers.  Either delete this header or select 'Edit header'")
-                        ])
-                    ]);
-                    execution.end(true, Date.now());
+            else if (cellMetadata.kind === 'input') {
+                const newMetadata = {
+                    ...cellMetadata
                 }
-                else if (cellMetadata.kind === 'input') {
-                    const newMetadata = {
-                        ...cellMetadata
-                    }
-                    newMetadata.markdown = !newMetadata.markdown;
-                    const notebookMetadata = cell.notebook.metadata as NotebookMetadata;
-                    notebookMetadata.modifications[cell.index] = newMetadata;
-                    return this.execute(cell, cell.notebook);
-                }
+                newMetadata.markdown = !newMetadata.markdown;
+                const notebookMetadata = cell.notebook.metadata as NotebookMetadata;
+                notebookMetadata.modifications[cell.index] = newMetadata;
+                return this.execute(cell, cell.notebook);
             }
-            else {
-                throw 'todo'
-            }
-        }));
+        }
+        else {
+            throw 'todo'
+        }
     }
+
 
     private async reopenNotebook (notebook: vscode.NotebookDocument) {
         await notebook.save();
