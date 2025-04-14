@@ -32,14 +32,14 @@ export class WTNotebookController {
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.changeToWtNote", (cell: vscode.NotebookCell) => {
             const cellMetadata = cell.metadata as NotebookCellMetadata | undefined;
             if (cellMetadata) {
-                if ('headerKind' in cellMetadata) {
+                if (cellMetadata.kind === 'header' || cellMetadata.kind === 'header-title') {
                     
                 }
-                else if ('inputKind' in cellMetadata) {
+                else if (cellMetadata.kind === 'input') {
                     const newMetadata = {
                         ...cellMetadata
                     }
-                    newMetadata.editing = !newMetadata.editing;
+                    newMetadata.markdown = !newMetadata.markdown;
                     const notebookMetadata = cell.notebook.metadata as NotebookMetadata;
                     notebookMetadata.modifications[cell.index] = newMetadata;
                     return this.execute(cell, cell.notebook);
