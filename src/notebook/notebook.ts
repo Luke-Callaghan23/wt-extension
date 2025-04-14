@@ -233,7 +233,7 @@ implements
                     command: editCommand
                 }
             case 'bullet': return {
-                id: `${noteNode.noteId}__${noteNode.idx}__${noteNode.kind}`,
+                id: `${noteNode.noteId}__${noteNode.sectionIdx}__${noteNode.kind}__${noteNode.idx}`,
                 contextValue: noteNode.kind,
                 label: noteNode.text,
                 collapsibleState: vscode.TreeItemCollapsibleState.None,

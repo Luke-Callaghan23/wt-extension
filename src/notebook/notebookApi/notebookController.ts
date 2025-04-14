@@ -3,7 +3,7 @@ import { Workspace } from '../../workspace/workspaceClass';
 import { Notebook } from '../notebook';
 import { compareFsPath } from '../../miscTools/help';
 import { TabLabels } from '../../tabLabels/tabLabels';
-import { DiskCellMetadata } from './notebookSerializer';
+import { DiskCellMetadata, NotebookCellMetadata, NotebookMetadata } from './notebookSerializer';
 
 export class WTNotebookController {
     readonly controllerId = 'wt.notebook.controller';
@@ -25,6 +25,51 @@ export class WTNotebookController {
 
         this.controller.supportedLanguages = this.supportedLanguages;
         this.controller.executeHandler = this.executionHandler.bind(this);
+
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.changeToHeader", (obj: any) => {
+        }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.changeToWtNote", (cell: vscode.NotebookCell) => {
+            const cellMetadata = cell.metadata as NotebookCellMetadata | undefined;
+            if (cellMetadata) {
+                if ('headerKind' in cellMetadata) {
+                    
+                }
+                else if ('inputKind' in cellMetadata) {
+                    const newMetadata = {
+                        ...cellMetadata
+                    }
+                    newMetadata.editing = !newMetadata.editing;
+                    const notebookMetadata = cell.notebook.metadata as NotebookMetadata;
+                    notebookMetadata.modifications[cell.index] = newMetadata;
+                    return this.execute(cell, cell.notebook);
+                }
+            }
+            else {
+
+            }
+        }));
+    }
+
+    private async reopenNotebook (notebook: vscode.NotebookDocument) {
+        await notebook.save();
+
+        const viewColumn = vscode.window.activeNotebookEditor!.viewColumn!;
+        
+        for (const group of vscode.window.tabGroups.all) {
+            for (const tab of group.tabs) {
+                if (!(tab.input instanceof vscode.TabInputNotebook)) continue;
+                if (!compareFsPath(tab.input.uri, notebook.uri)) continue;
+
+                await vscode.window.tabGroups.close(tab);
+                break;
+            }
+        }
+        
+        await vscode.window.showNotebookDocument(notebook, {
+            viewColumn: viewColumn,
+        });
+        return TabLabels.assignNamesForOpenTabs();
     }
 
     private executionHandler(
@@ -52,24 +97,6 @@ export class WTNotebookController {
             ])
         ]);
         execution.end(true, Date.now());
-        await notebook.save();
-
-        const viewColumn = vscode.window.activeNotebookEditor!.viewColumn!;
-        
-        for (const group of vscode.window.tabGroups.all) {
-            for (const tab of group.tabs) {
-                if (!(tab.input instanceof vscode.TabInputNotebook)) continue;
-                if (!compareFsPath(tab.input.uri, notebook.uri)) continue;
-
-                await vscode.window.tabGroups.close(tab);
-                break;
-            }
-        }
-        
-        await vscode.window.showNotebookDocument(notebook, {
-            viewColumn: viewColumn,
-        });
-        return TabLabels.assignNamesForOpenTabs();
-
+        await this.reopenNotebook(notebook);
     }
 }

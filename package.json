@@ -827,13 +827,13 @@
 				"icon": "$(arrow-up)"
 			},
 			{
-				"command": "wt.notebook.cell.changeToCode",
-				"title": "Notebook: Change Cell to Code",
+				"command": "wt.notebook.cell.changeToWtNote",
+				"title": "Notebook: Change Cell to WTNote",
 				"icon": "$(code)"
 			},
 			{
-				"command": "wt.notebook.cell.changeToMarkdown",
-				"title": "Notebook: Change Cell to Markdown",
+				"command": "wt.notebook.cell.changeToHeader",
+				"title": "Notebook: Change Cell to Header",
 				"icon": "$(markdown)"
 			},
 			{
@@ -1754,23 +1754,12 @@
 			],
 			"notebook/cell/title": [
 				{
-					"command": "wt.notebook.cell.moveDown",
-					"when": "notebookViewType == wtNote",
-					"group": "inline@1"
-				},
-				{
-					"command": "wt.notebook.cell.moveUp",
-					"when": "notebookViewType == wtNote",
-					"group": "inline@2"
-				},
-				{
-					"command": "wt.notebook.cell.changeToMarkdown",
-					"when": "notebookViewType == wtNote && notebookCellType == code",
+					"command": "wt.notebook.cell.changeToHeader",
+					"when": "notebookViewType == wtnote && notebookCellType == code",
 					"group": "inline@3"
 				},
 				{
-					"command": "wt.notebook.cell.changeToCode",
-					"when": "notebookViewType == wtNote && notebookCellType == markdown",
+					"command": "wt.notebook.cell.changeToWtNote",
 					"group": "inline@3"
 				}
 			]

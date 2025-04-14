@@ -219,6 +219,7 @@ export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: 
                         text: note.aliases.join("\n\n"),
                         editing: true,
                     }],
+                    editingHeader: false,
                 },
                 {
                     headerOrder: 0,
@@ -227,6 +228,7 @@ export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: 
                         text: note.appearance.join("\n\n"),
                         editing: true,
                     }],
+                    editingHeader: false,
                 },
                 {
                     headerOrder: 0,
@@ -234,7 +236,8 @@ export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: 
                     cells: [{
                         text: note.description.join("\n\n"),
                         editing: true,
-                    }]
+                    }],
+                    editingHeader: false,
                 },
             ]
         };

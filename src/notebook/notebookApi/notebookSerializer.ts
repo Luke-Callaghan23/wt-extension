@@ -7,37 +7,30 @@ import { wtToMd } from '../../export/wtToMd';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { capitalize } from '../../intellisense/common';
 
-const nounTitleIndex = 0;
-const nounIndex = 1;
-const aliasesTitleIndex = 2;
-const aliasesIndex = 3;
-const appearanceTitleIndex = 4;
-const appearanceIndex = 5;
-const descriptionTitleIndex = 6;
-const descriptionIndex = 7;
-
 type NoteId = string;
 export type DiskCellMetadata = { editing: boolean };
 export type DiskCellText = { text: string };
 export type SerializedCell = DiskCellText & DiskCellMetadata;
 type CellSection = "title" | "alias" | "appearance" | "note";
 
-type Concatenate<S1 extends string, S2 extends string> = `${S1}${S2}`;
-type HeaderCellKind = 'header' | 'header-title';
-type NotebookCellMetadata = {
-    inputKind: CellSection,
-    markdown: true,
-    originalText: string
-} | {
-    inputKind: CellSection,
-    markdown: false,
-} | {
-    headerKind: HeaderCellKind
-}
+export type Concatenate<S1 extends string, S2 extends string> = `${S1}${S2}`;
+export type HeaderCellKind = 'header' | 'header-title';
+export type NotebookCellMetadata = {
+    kind: 'input' | 'header' | 'header-title';
+    editing: boolean;
+    originalText: string;
+    title: boolean;
+};
+
+export type NotebookMetadata = {
+    noteId: string,
+    modifications: Record<number, NotebookCellMetadata>
+};
 
 export type SerializedHeader = {
     headerOrder: number,
     headerText: string,
+    editingHeader: boolean,
     cells: SerializedCell[]
 };
 
@@ -85,7 +78,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             .toLowerCase()
             .trim()
             .replace(/^#+?\s+/, '')
-            .replace(/es$/, '');
+            .replace(/:$/, '');
     }
 
     
@@ -104,7 +97,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                     
                     const aliasesHeaderIndex = serializedNote.headers.findIndex(head => {
                         const aliasText = this.deserializeHeaderText(head.headerText)
-                        return aliasText === 'alias';
+                        return aliasText === 'alias' || aliasText === 'aliases';
                     });
 
                     let serializedAliasHeader: SerializedHeader | null = null;
@@ -201,7 +194,8 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                             editing: true,
                             text: alias
                         }
-                    })
+                    }),
+                    editingHeader: false,
                 },
                 // Insert the remaining headers in the order they are on disk.
                 // Should be more or less accurate to disk contents
@@ -214,7 +208,8 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                             }
                         }),
                         headerOrder: sectionIndex + 1,
-                        headerText: section.header
+                        headerText: section.header,
+                        editingHeader: false,
                     }
                 })
             ]
@@ -230,8 +225,10 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         const serialiedCellToCellData = (serializedCell: SerializedCell, kind: CellSection): vscode.NotebookCellData => {
             if (serializedCell.editing) {
                 const metadata: NotebookCellMetadata = {
-                    inputKind: kind,
-                    markdown: false,
+                    kind: 'input',
+                    editing: false,
+                    originalText: serializedCell.text,
+                    title: false,
                 };
                 return {
                     kind: vscode.NotebookCellKind.Code,
@@ -242,9 +239,10 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             }
             else {
                 const metadata: NotebookCellMetadata = {
-                    inputKind: kind,
-                    markdown: true,
+                    kind: 'input',
+                    editing: true,
                     originalText: serializedCell.text,
+                    title: false,
                 }
                 return {
                     kind: vscode.NotebookCellKind.Markup,
@@ -261,8 +259,10 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             }
             else {
                 const metadata: NotebookCellMetadata = {
-                    inputKind: kind,
-                    markdown: false
+                    kind: 'input',
+                    editing: false,
+                    originalText: "",
+                    title: false,
                 };
                 return [{
                     kind: vscode.NotebookCellKind.Code,
@@ -287,9 +287,10 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                     ? `# Title: `
                     : `# ${wtToMd(serializedNote.title.text)}:`,
                 metadata: { 
-                    inputKind: "title",
-                    markdown: true,
-                    originalText: serializedNote.title.text
+                    kind: "input",
+                    editing: true,
+                    originalText: serializedNote.title.text,
+                    title: true,
                 } as NotebookCellMetadata,
             },
 
@@ -298,12 +299,16 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 kind: vscode.NotebookCellKind.Markup,
                 languageId: 'code',
                 value: serializedNote.title.text,
-                metadata: { "inputKind": "title" } as NotebookCellMetadata
+                metadata: { "kind": "input" } as NotebookCellMetadata,
+                title: true,
             }] : [],
 
             ...serializedNote.headers.map(header => {
                 const headerMetadata: NotebookCellMetadata = {
-                    headerKind: 'header',
+                    kind: 'header', 
+                    originalText: header.headerText,
+                    editing: header.editingHeader,
+                    title: false,
                 };
                 return [
                     {
@@ -316,7 +321,11 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 ];
             })
         ].flat());
-        notebookData.metadata = { "noteId": serializedNote.noteId };
+        const notebookMetadata: NotebookMetadata = { 
+            noteId: serializedNote.noteId,
+            modifications: {},
+        };
+        notebookData.metadata = notebookMetadata;
         TabLabels.assignNamesForOpenTabs();
         return notebookData;
     }   
@@ -324,15 +333,25 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     async serializeNotebook(data: vscode.NotebookData): Promise<Uint8Array> {
         // Convert your notebook data back to bytes
 
-        const metadata: { "noteId": string } = data.metadata! as any;
-        const noteId = metadata.noteId;
+        const notebookMetadata: NotebookMetadata = data.metadata! as any;
+        const noteId = notebookMetadata.noteId;
 
         type HeaderBucket = string;
         const headerBuckets: Record<HeaderBucket, SerializedCell[]> = {
             "header-title": [],
         };
-        const headerIndexes: Record<HeaderBucket, number> = {
-            'header-title': 0,
+        const headerMetadata: Record<HeaderBucket, {
+            originalText: string,
+            currentText: string
+            index: number,
+            editing: boolean,
+        }> = {
+            'header-title': {
+                currentText: 'tmp',
+                originalText: 'tmp',
+                index: 0,
+                editing: false,
+            },
         };
 
         // Since it is required to have exactly one item in the title bucket at the end of processing
@@ -347,12 +366,12 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
         for (let index = 0; index < data.cells.length; index++) {
             const cell = data.cells[index];
-            const cellMetadata = cell.metadata as NotebookCellMetadata | undefined;
-            if (cellMetadata && 'headerKind' in cellMetadata) {
+            const cellMetadata = notebookMetadata.modifications[index] || (cell.metadata as NotebookCellMetadata | undefined);
+            if (cellMetadata && (cellMetadata.kind === 'header' || cellMetadata.kind === 'header-title')) {
                 lastHeader = this.deserializeHeaderText(cell.value);
                 // If the header is not in the indexes map, then use the current length of the header
                 //      buckets to assign the index
-                if (!headerIndexes[lastHeader]) {
+                if (!headerMetadata[lastHeader]) {
                     // NOTE: can't be included in the same if statement as below because sometimes the 'notes'
                     //      bucket is manually created in this loop
                     // When it is manually created, it will exist in headerBuckets but not in headerIndexes
@@ -362,7 +381,12 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                     //      'notes' bucket in the document, we want to use that index for both
                     // (The next if statement won't be hit if lastHeader==='notes' and 'notes' was manually created
                     //      but we still want to retain this index)
-                    headerIndexes[lastHeader] = Object.keys(headerBuckets).length;
+                    headerMetadata[lastHeader] = {
+                        index: Object.keys(headerBuckets).length,
+                        currentText: cell.value,
+                        originalText: cellMetadata.originalText,
+                        editing: cellMetadata.editing,
+                    };
                 }
                 // And if it is not in the header buckets, then create an empty array
                 if (!headerBuckets[lastHeader]) {
@@ -371,23 +395,42 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 continue;
             }
 
-            if (cellMetadata && cellMetadata.inputKind && cellMetadata.inputKind === 'title' && cellMetadata.markdown === true) {
+            if (cellMetadata && cellMetadata.kind === 'input' && cellMetadata.title && cellMetadata.editing === true) {
                 titleHeaderIndex = index;
                 lastHeader = 'header-title';
-                continue;
             }
 
             const getDiskCell = (cell: vscode.NotebookCellData, metadata: NotebookCellMetadata | undefined): SerializedCell => {
-                if (cell.kind === vscode.NotebookCellKind.Code) {
+                let text: string | undefined;
+                if (metadata && 'inputKind' in metadata && metadata.originalText) {
+                    text = metadata.originalText;
+                }
+
+                if (cell.kind === vscode.NotebookCellKind.Code || (cell.outputs && cell.outputs.length > 0)) {
+                    let isEditing: boolean;
+                    if (cell.kind === vscode.NotebookCellKind.Code) {
+                        if (cell.outputs && cell.outputs.length > 0) {
+                            isEditing = false;
+                        }
+                        else {
+                            isEditing = true;
+                        }
+                    }
+                    else {
+                        if (cell.outputs && cell.outputs.length > 0) {
+                            isEditing = true;
+                        }
+                        else {
+                            isEditing = false;
+                        }
+                    }
                     return {
-                        editing: cell.outputs && cell.outputs.length > 0 ? false : true,
-                        text: cell.value
+                        editing: isEditing,
+                        text: text || cell.value
                     };
                 }
                 else {
-
-                    let text: string;
-                    if (metadata && 'inputKind' in metadata && metadata.markdown && metadata.originalText) {
+                    if (metadata && 'inputKind' in metadata && metadata.editing && metadata.originalText) {
                         text = metadata.originalText;
                     }
                     else {
@@ -447,13 +490,24 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             headerBuckets['notes'] = headerBuckets['notes'].concat(remaining);
         }
 
-        if (headerBuckets['notes'] && !headerIndexes['notes']) {
+        if (headerBuckets['notes'] && !headerMetadata['notes']) {
             // This case is hit when the 'notes' bucket was manually added through some of the bucketing logic above
             // 'notes' is generally a catch-all, so the bucketing process will sometimes manually create the bucket
+            // In which case metadata also needs to be manually added
+            headerMetadata['notes'] = {
+                currentText: '### Notes:',
+                originalText: 'notes',
+                index: Object.keys(headerBuckets).length,
+                editing: false,
+            };
+        }
+
+        if (headerBuckets['header-title']) {
+            delete headerBuckets['header-title'];
         }
 
         const sortedHeaders = Object.entries(headerBuckets).sort(([ headerTextA, _a ], [ headerTextB, _b ]) => {
-            return headerIndexes[headerTextA] - headerIndexes[headerTextB];
+            return headerMetadata[headerTextA].index - headerMetadata[headerTextB].index;
         });
         
         const fullySerialized: SerializedNote = {
@@ -463,7 +517,8 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 return {
                     headerText: headerText,
                     cells: contents,
-                    headerOrder: index
+                    headerOrder: index,
+                    editingHeader: headerMetadata[headerText].editing
                 }
             })
         };
