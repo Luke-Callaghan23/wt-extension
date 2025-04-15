@@ -5,21 +5,23 @@ import { capitalize } from '../intellisense/common';
 
 const decorationsOptions: vscode.DecorationRenderOptions = {
     color: '#006eff',
-    fontStyle: 'oblique',
+    textDecoration: 'underline',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
 };
 export const notebookDecorations = vscode.window.createTextEditorDecorationType(decorationsOptions);
 
-export async function update (this: NotebookPanel, editor: vscode.TextEditor): Promise<void> {
+
+export type TextMatchForNote = {
+    start: number,
+    end: number,
+    tag: string,
+    matchedNote: NotebookPanelNote | undefined
+};
+
+export function *getNoteMatchesInText (this: NotebookPanel, text: string): Generator<TextMatchForNote> {
     if (!this.nounsRegex) return;
+
     let match: RegExpExecArray | null;
-
-    
-    const decorationLocations: vscode.DecorationOptions[] = [];
-
-    const matches: NoteMatch[] = [];
-    let text = editor.document.getText();
-
     while ((match = this.nounsRegex.exec(text))) {
         const matchReal: RegExpExecArray = match;
 
@@ -77,6 +79,17 @@ export async function update (this: NotebookPanel, editor: vscode.TextEditor): P
         if (match.index + len !== text.length) {
             // end -= 1;
         }
+        yield { start, end, tag, matchedNote };
+    }
+}
+
+export async function update (this: NotebookPanel, editor: vscode.TextEditor): Promise<void> {
+    if (!this.nounsRegex) return;
+
+    const matches: NoteMatch[] = [];
+    const decorationLocations: vscode.DecorationOptions[] = [];
+
+    for (const { start, end, matchedNote, tag } of this.getNoteMatchesInText(editor.document.getText())) {
         const startPos = editor.document.positionAt(start);
         const endPos = editor.document.positionAt(end);
 
@@ -99,6 +112,7 @@ export async function update (this: NotebookPanel, editor: vscode.TextEditor): P
             }
         }
     }
+    
     if (matches.length > 0) {
         this.matchedNotebook[formatFsPathForCompare(editor.document.uri)] = matches;
     }

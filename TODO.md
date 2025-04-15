@@ -1,8 +1,9 @@
 TODO:
 - [ ] rename notes
-- [ ] handle users adding cells on their own
-- [ ] handle users editing markdown cells ------- should this be handled at all???
+- [x] handle users adding cells on their own
+- [x] handle users editing markdown cells ------- should this be handled at all???
+    - should not be handled
 - [ ] figure out nesting??? -- if four spaces in the start of a line, then make it bullet??
-- [ ] notebook links rendered in Markdown
+- [x] notebook links rendered in Markdown
 - [ ] fragment links rendered in Markdown
 - [ ] images

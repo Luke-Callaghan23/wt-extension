@@ -6,7 +6,8 @@ import { Buff } from '../../Buffer/bufferSource';
 import { wtToMd } from '../../export/wtToMd';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { capitalize } from '../../intellisense/common';
-import { _, } from '../../miscTools/help';
+import { _, formatFsPathForCompare, getRelativePath, statFile, } from '../../miscTools/help';
+import { TextMatchForNote } from '../timedViewUpdate';
 
 /*
 NOTES on NotebookSerializer and NotebookController and how wtnote files are handled
@@ -263,7 +264,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
     async writeSingleNote (note: NotebookPanelNote): Promise<vscode.Uri> {
         const uri = note.uri;
-        const serializedNote = this.serializeSingleNote(note);
+        const serializedNote = await this.serializeSingleNote(note);
         const jsonNote = JSON.stringify(serializedNote, undefined, 4);
         await vscode.workspace.fs.writeFile(uri, Buff.from(jsonNote));
         return uri;
@@ -279,17 +280,13 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     // TODO: Might be able to combat this by doing some matching of `Note` object contents VS disk contents
     //      not sure
     async serializeSingleNote (note: NotebookPanelNote): Promise<SerializedNote> {
-        const diskContents = await vscode.workspace.fs.readFile(
-            vscode.Uri.joinPath(this.workspace.notebookFolder, `${note.noteId}.wtnote`)
-        );
-        const serializedDiskNote = await this.readSerializedNote(diskContents);
         return {
             noteId: note.noteId,
             title: {
                 text: note.title,
-                editing: serializedDiskNote.title.editing
+                editing: false
             },
-            deletedInstructions: true,
+            deletedInstructions: false,
             headers: [
                 // Alias is being set to 0th section in the serialized cell... might not be true
                 //      for what is on disk right now
@@ -328,7 +325,43 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
     //#region SERIALIZE CELLS
 
-    private getCelldata (serializedCell: SerializedCell): vscode.NotebookCellData {
+    private createMarkdownString (wtText: string, noteId: string) {
+
+        // Add bullet points between every newline
+        const withBulletPoints = "- " + wtText.trim().replaceAll(/(\n\s*)+/g, "\n\n- ");
+
+        // Convert wt text stylings to md text stylings
+        const asMarkdown = wtToMd(withBulletPoints);
+        
+        // Search for all references to notes in this cell
+        const matches: TextMatchForNote[] = [];
+        for (const match of this.notebookPanel.getNoteMatchesInText(asMarkdown)) {
+            if (!match.matchedNote) continue;
+
+            // Skip any note that matches this note id
+            if (match.matchedNote.noteId === noteId) continue;
+            matches.push(match);
+        }
+        
+        // Iterate backwards over all the matched notes in this cell
+        const reversedMatches = matches.reverse();
+        let finalString: string = asMarkdown;
+        for (const { start, end, tag, matchedNote } of reversedMatches) {
+            if (!matchedNote) throw 'unreachable';
+
+            const nend = finalString.substring(end);
+            const nstart = finalString.substring(0, start);
+            const originalMatch = finalString.substring(start, end);
+
+            // Replace the matched text with a markdown-formatted link to that note
+            const link = `[${originalMatch}](${matchedNote.uri.path})`;
+            finalString = nstart + link + nend;
+        }
+
+        return finalString;
+    }
+
+    private getCelldata (serializedCell: SerializedCell, noteId: string): vscode.NotebookCellData {
         if (serializedCell.editing) {
             // If the cell is being edited, then return a vscode.NotebookCellData with kind===Code
             return {
@@ -348,7 +381,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             return {
                 kind: vscode.NotebookCellKind.Markup,
                 languageId: 'markdown',
-                value: wtToMd("- " + serializedCell.text.trim().replaceAll(/(\n\s*)+/g, "\n\n- ")),
+                value: this.createMarkdownString(serializedCell.text, noteId),
                 metadata: _<NotebookCellMetadata>({
                     kind: 'input',
                     markdown: true,
@@ -359,7 +392,9 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     };
 
     // Called on the children of a header that is read from serialized file
-    private deserializeCell (arr: SerializedCell[]): vscode.NotebookCellData[] {
+    private deserializeCell (arr: SerializedCell[], noteId: string): vscode.NotebookCellData[] {
+        
+        // EMPTY ARRAY:
         if (arr.length === 0) {
             // If the header does not have any children, then make an empty child cell for it
             return [{
@@ -375,7 +410,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         }
         
         // Otherwise iterate over all cells and get cell data for each
-        return arr.map(cell => this.getCelldata(cell));
+        return arr.map(cell => this.getCelldata(cell, noteId));
     };
 
     async deserializeNotebook(content: Uint8Array): Promise<vscode.NotebookData> {
@@ -401,6 +436,23 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         const notebookData = new vscode.NotebookData([
             title,
 
+            !serializedNote.deletedInstructions ? _<vscode.NotebookCellData>({
+                kind: vscode.NotebookCellKind.Markup,
+                value: `**Welcome to WTANIWE notebook**
+    • Here's how it works:
+    • Write notes about whatever you want in the notebook cells
+    • Language of the cells is 'wtnote', which is more or less equivalent to the regular 'wt' you've been using all along
+    • Save the document and see those notes appear in the notebook panel next to your terminal
+    • Execute a wtnote cell to convert the cell from a text box into a nicely formatted bullet point list
+    • Create new cells by hitting the "+ Code" button under each cell, NOT the "+ Markdown" button
+    • Modify bullet pointed markdown cells by clicking on the cell, then clicking on the blue icon with "Notebook: Edit cell" tooltip
+    • DO NOT double click edit any markdown cells created by this extension.  You probably won't break anything, but your changes will not be saved
+    • Create new headers by clicking on a wtnote text cell and hitting the fancy looking icon with tooltip "Notebook: Convert Cell to Header"
+    • Edit headers by clicking on an existing header and hitting the keyboad icon with tooltip "Notebook: Edit header text"`,
+                languageId: 'html',
+                metadata: _<NotebookCellMetadata>({ kind: 'instructions' })
+            }) : [],
+
             // For each header:
             serializedNote.headers.map(header => {
                 return [
@@ -416,39 +468,12 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                     },
 
                     // Then deserialize all the contents under this header
-                    ...this.deserializeCell(header.cells),
+                    ...this.deserializeCell(header.cells, serializedNote.noteId),
                 ];
             // Then flatten the contents into the main array
             }).flat(),
 
-            !serializedNote.deletedInstructions ? _<vscode.NotebookCellData>({
-                kind: vscode.NotebookCellKind.Markup,
-                value: `
-**Welcome to WTANIWE notebook!**
-
-Here's how it works:
-
-- Write notes about whatever you want in the notebook cells
-
-- Language of the cells is 'wtnote', which is more or less equivalent to the regular 'wt' you've been using all along
-
-- Save the document and see those notes appear in the notebook panel next to your terminal
-
-- Execute a wtnote cell to convert the cell from a text box into a nicely formatted bullet point list
-
-- Create new cells by hitting the "+ Code" button under each cell, NOT the "+ Markdown" button
-
-- Modify bullet pointed markdown cells by clicking on the cell, then clicking on the blue icon with "Notebook: Edit cell" tooltip
-
-- DO NOT double click edit any markdown cells created by this extension.  You probably won't break anything, but your changes will not be saved
-
-- Create new headers by clicking on a wtnote text cell and hitting the fancy looking icon with tooltip "Notebook: Convert Cell to Header"
-
-- Edit headers by clicking on an existing header and hitting the keyboad icon with tooltip "Notebook: Edit header text"
-`,
-                languageId: 'markdown',
-                metadata: _<NotebookCellMetadata>({ kind: 'instructions' })
-            }) : []
+            
         ].flat());
 
         // Only metadata needed for the main notebook is the id
@@ -666,7 +691,9 @@ Here's how it works:
             // And set editing to true
             return {
                 editing: true,
-                text: metadata?.originalText || cell.value
+                text: typeof metadata?.originalText === 'string'
+                    ? metadata.originalText
+                    : cell.value
             };
         }
         else {

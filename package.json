@@ -842,6 +842,11 @@
 				"icon": "$(keyboard)"
 			},
 			{
+				"command": "wt.notebook.cell.editNoteTitle",
+				"title": "Notebook: Edit title",
+				"icon": "$(tag)"
+			},
+			{
 				"title": "Writing Tool: Open Introduction Walkthrough",
 				"command": "wt.walkthroughs.openIntro"
 			},
@@ -1691,24 +1696,14 @@
 					"group": "inline"
 				},
 				{
-					"command": "wt.notebook.addNote",
-					"when": "view == wt.notebook.tree && viewItem == note",
-					"group": "inline@1"
-				},
-				{
 					"command": "wt.notebook.removeNote",
-					"when": "view == wt.notebook.tree && viewItem == note",
+					"when": "view == wt.notebook.tree",
 					"group": "inline@2"
-				},
-				{
-					"command": "wt.notebook.search",
-					"when": "view == wt.notebook.tree && viewItem == note",
-					"group": "search@1"
 				},
 				{
 					"command": "wt.notebook.editNote",
 					"when": "view == wt.notebook.tree",
-					"group": "inline@3"
+					"group": "inline@1"
 				},
 				{
 					"command": "wt.wtSearch.results.hideNode",
@@ -1771,6 +1766,11 @@
 				{
 					"command": "wt.notebook.cell.editHeader",
 					"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header'",
+					"group": "inline@4"
+				},
+				{
+					"command": "wt.notebook.cell.editNoteTitle",
+					"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header-title'",
 					"group": "inline@4"
 				}
 			]

@@ -2,13 +2,13 @@ import * as vscode from 'vscode';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 import { Timed } from '../timedView';
-import { disable, update, notebookDecorations } from './timedViewUpdate';
+import { disable, update, notebookDecorations, getNoteMatchesInText } from './timedViewUpdate';
 import { v4 as uuidv4 } from 'uuid';
 import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { compareFsPath, defaultProgress, formatFsPathForCompare } from '../miscTools/help';
+import { _, compareFsPath, defaultProgress, formatFsPathForCompare } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../intellisense/common';
@@ -48,7 +48,8 @@ export class NotebookPanel
 implements 
     vscode.TreeDataProvider<NotebookPanelNote | NoteSection | BulletPoint>, 
     vscode.HoverProvider, Timed, Renamable<NotebookPanelNote>,
-    vscode.ReferenceProvider
+    vscode.ReferenceProvider,
+    vscode.RenameProvider
 {
     addNote = addNote;
     removeNote = removeNote;
@@ -56,6 +57,7 @@ implements
 
     enabled: boolean;
     update = update;
+    getNoteMatchesInText = getNoteMatchesInText;
     disable = disable;
 
     static singleton: NotebookPanel;
@@ -137,6 +139,13 @@ implements
             language: "wtNote",
         }, this));
 
+        this.context.subscriptions.push(vscode.languages.registerRenameProvider({
+            language: "wt",
+        }, this));
+        this.context.subscriptions.push(vscode.languages.registerRenameProvider({
+            language: "wtNote",
+        }, this));
+
         this.registerCommands();
     }
 
@@ -179,7 +188,11 @@ implements
         return `(${idAddition}${note.title}${aliasesAddition})`
     }
 
-    private getNounsRegex (withId: boolean=true, withSeparator: boolean=true, subset?: NotebookPanelNote[]): RegExp {
+    private getNounsRegex (
+        withId: boolean=true, 
+        withSeparator: boolean=true, 
+        subset?: NotebookPanelNote[],
+    ): RegExp {
         if (this.notebook.length === 0) {
             return /^_^/
         }
@@ -245,7 +258,7 @@ implements
                 id: `${noteNode.noteId}__section__${noteNode.idx}`,
                 contextValue: noteNode.kind,
                 label: capitalize(noteNode.header),
-                collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
+                collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
                 tooltip: capitalize(noteNode.header),
                 command: editCommand
             }
@@ -369,4 +382,57 @@ implements
             )));
         });
     }
+
+    
+    async provideRenameEdits(document: vscode.TextDocument, position: vscode.Position, newName: string, token: vscode.CancellationToken): Promise<vscode.WorkspaceEdit | null> {
+        if (!this.matchedNotebook) return null;
+
+        const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
+        if (!documentMatches) return null;
+
+        const matchedNote = documentMatches.find(match => match.range.contains(position));
+        if (!matchedNote) return null;
+        
+        const locations = await defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
+            const aliasText = document.getText(matchedNote.range);
+            const aliasRegex = '(^|[^a-zA-Z0-9])?' + `(${aliasText})` + '([^a-zA-Z0-9]|$)?';
+            const grepLocations: vscode.Location[] = []; 
+            for await (const loc of grepExtensionDirectory(aliasRegex, true, true, true)) {
+                if (loc === null) return null;
+                grepLocations.push(loc);
+            }
+    
+            // For some reason the reference provider needs the locations to be indexed one less than the results from the 
+            //      grep of the nouns
+            // Not sure why that is -- but subtracting one from each character index works here
+            return grepLocations.map(loc => new vscode.Location(loc.uri, new vscode.Range(
+                new vscode.Position(loc.range.start.line, Math.max(loc.range.start.character - 1, 0)),
+                new vscode.Position(loc.range.end.line, Math.max(loc.range.end.character - 1, 0))
+            )));
+        });
+        if (!locations) return null;
+
+        return defaultProgress(`Collecting edits for '${matchedNote.note.title}'`, async () => {
+            const edits = new vscode.WorkspaceEdit();
+            for (const location of locations) {
+                if (location.uri.fsPath.endsWith('.wtnote')) {
+                    throw 'not implemented'
+                }
+                else if (location.uri.fsPath.endsWith('.wt')) {
+                    edits.replace(location.uri, location.range, newName);
+                }
+                else continue;
+            }
+            return edits;
+        });
+    }
+
+    prepareRename (document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Range> {
+        if (!this.matchedNotebook) return null;
+        const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
+        if (!documentMatches) return null;
+        const matchedNote = documentMatches.find(match => match.range.contains(position));
+        if (!matchedNote) return null;
+        return matchedNote.range;
+    }    
 }

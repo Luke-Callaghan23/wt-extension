@@ -32,8 +32,10 @@ export class WTNotebookController {
             vscode.commands.executeCommand("setContext", "cellKindContextValue", cellMetadata?.kind || 'unknown');
         });
 
+
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.convertToHeader", this.transformToHeader.bind(this)));
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editHeader", this.editHeaderText.bind(this)));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editNoteTitle", this.editNoteTitle.bind(this)));
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editCell", this.transformToWTNote.bind(this)));
     }
 
@@ -71,19 +73,18 @@ export class WTNotebookController {
         return this.reopenNotebook(cell.notebook);
     }
 
-    // Called on markdown cell with metadata.kind === 'header'
-    // Used to change the text of the header cell in the notebook and the NotebookPanel
-    private async editHeaderText (cell: vscode.NotebookCell) {
-        const execution = this.controller.createNotebookCellExecution(cell);
-        execution.start(Date.now()); // Keep track of elapsed time to execute cell.
-
+    private async getNewName (
+        cell: vscode.NotebookCell, 
+        targetCellKind: Exclude<NotebookCellMetadata['kind'], 'instructions'>,
+        execution: vscode.NotebookCellExecution
+    ): Promise<string | null> {
         let originalText: string;
         try {
             // To call `editHeader` on a cell, that cell must have been created by `notebookSerializer.deserializeNotebook`
             // In that case, there must be a `metadata` object of type `NotebookCellMetadata` with kind === 'header'
             // If any of that is not the case, then stop now
             const metadata = cell.metadata! as NotebookCellMetadata;
-            if (metadata.kind !== 'header') {
+            if (metadata.kind !== targetCellKind) {
                 throw 'Not a header';
             }
             originalText = metadata.originalText;
@@ -94,22 +95,61 @@ export class WTNotebookController {
         catch (err: any) {
             execution.replaceOutput([
                 new vscode.NotebookCellOutput([
-                    vscode.NotebookCellOutputItem.stderr("[WARN] Cannot call editHeader on non-header notebook cell")
+                    vscode.NotebookCellOutputItem.stderr(`[WARN] Can only call this on '${targetCellKind}' notebook cells`)
                 ])
             ]);
-            execution.end(true, Date.now());
-            return;
+            return null;
         }
 
         // If this is a valid cell to call editHeader on, then query the user for the updated header text value
         const newName = await vscode.window.showInputBox({
             placeHolder: originalText,
-            prompt: `What would you like to rename header '${originalText}'?`,
+            prompt: `What would you like to rename '${originalText}'?`,
             ignoreFocusOut: false,
             value: originalText,
             valueSelection: [0, originalText.length]
         });
-        if (!newName) return;
+        return newName || null;
+    }
+
+    // Called on markdown cell with metadata.kind === 'header'
+    // Used to change the text of the header cell in the notebook and the NotebookPanel
+    private async editHeaderText (cell: vscode.NotebookCell) {
+        const execution = this.controller.createNotebookCellExecution(cell);
+        execution.start(Date.now()); // Keep track of elapsed time to execute cell.
+
+        // Ask user for the new name for this header
+        const newName = await this.getNewName(cell, 'header', execution);
+        if (!newName) {
+            execution.end(false, Date.now());
+            return;
+        }
+
+        // And store that updated value in output metadata for the NotebookSerilizer to pick up
+        execution.replaceOutput([
+            new vscode.NotebookCellOutput([], _<NotebookCellOutputMetadata>({
+                updateValue: newName
+            }))
+        ]);
+
+
+        execution.end(true, Date.now());
+        return this.reopenNotebook(cell.notebook);
+    }
+
+    
+    // Called on markdown cell with metadata.kind === 'header-title'
+    // Used to change the title of the note
+    // Will also ask the user if they would like to replace all instances of this title throughout the work
+    private async editNoteTitle (cell: vscode.NotebookCell) {
+        const execution = this.controller.createNotebookCellExecution(cell);
+        execution.start(Date.now()); // Keep track of elapsed time to execute cell.
+
+        const newName = await this.getNewName(cell, 'header-title', execution);
+        if (!newName) {
+            execution.end(false, Date.now());
+            return;
+        }
 
         // And store that updated value in output metadata for the NotebookSerilizer to pick up
         execution.replaceOutput([
@@ -120,6 +160,8 @@ export class WTNotebookController {
         execution.end(true, Date.now());
         return this.reopenNotebook(cell.notebook);
     }
+
+
 
     // Called on a markdown cell with metadata.kind === 'input'
     // Used to convert the markdown cell back into its wtnote Code cell equivalent so that the user

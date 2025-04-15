@@ -47,7 +47,7 @@ export async function addNote (this: NotebookPanel, resource: NotebookPanelNote 
     else {
         // If the plus button in the header was hit, then resource === undefined
         // Insert the new note at the end of the note list
-        idx = this.notebook.length-1;
+        idx = this.notebook.length;
     }
 
     // Push the note in the selected index
@@ -59,8 +59,8 @@ export async function addNote (this: NotebookPanel, resource: NotebookPanelNote 
     this.refresh();
     this.serializer.writeSingleNote(insert).then(result => {
         if (result === null) return;
-        vscode.workspace.openTextDocument(result).then(async document => {
-            vscode.window.showTextDocument(document, {
+        vscode.workspace.openNotebookDocument(result).then(async document => {
+            vscode.window.showNotebookDocument(document, {
                 viewColumn: await determineAuxViewColumn((uri) => this.getNote(uri))
             });
         });
@@ -108,8 +108,8 @@ export async function editNote (this: NotebookPanel, resource: NotebookPanelNote
     const noteFileName = `${note.noteId}.wtnote`
     const notePath = vscode.Uri.joinPath(this.notebookFolderPath, noteFileName);
     
-    const document = await vscode.workspace.openTextDocument(notePath);
-    return vscode.window.showTextDocument(document, {
+    const document = await vscode.workspace.openNotebookDocument(notePath);
+    return vscode.window.showNotebookDocument(document, {
         preview: false,
         viewColumn: await determineAuxViewColumn((uri) => this.getNote(uri)),
     }).then(() => {
