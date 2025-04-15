@@ -6,6 +6,7 @@ import { Buff } from '../../Buffer/bufferSource';
 import { wtToMd } from '../../export/wtToMd';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { capitalize } from '../../intellisense/common';
+import { _, } from '../../miscTools/help';
 
 export type SerializedCell = {
     text: string,
@@ -29,7 +30,6 @@ export type NotebookCellMetadata = {
 
 export type NotebookMetadata = {
     noteId: string,
-    modifications: Record<number, NotebookCellMetadata>
 };
 
 export type SerializedHeader = {
@@ -44,17 +44,19 @@ export type SerializedNote = {
     headers: SerializedHeader[]
 };
 
-async function readSingleNote (buffer: ArrayBufferLike): Promise<SerializedNote> {
-    const text = extension.decoder.decode(buffer);
-    const serializedNote: SerializedNote = JSON.parse(text);
-    return serializedNote;
-};
+export type NotebookCellConvertTarget = 'header' | 'markdown' | 'input';
 
-export type NotebookCellConvertTarget = 'header' | 'markdown';
 
+// Cell changes made by the NotebookController are normally are appended to a cell's `output` array
+//      and stored in the `metadata` section of an output
+// This is the type that describes cell output metadata, created by the controller
 export type NotebookCellOutputMetadata = {
-    convert?: NotebookCellConvertTarget
-    updateValue?: string,
+    // Indicates that the controller wants to convert this cell into some other targeted type
+    convert?: NotebookCellConvertTarget;
+
+    // Indicates that the `originalText` field of a cell needs to be updated before it is written to
+    //      the file system
+    updateValue?: string;
 };
 
 export class WTNotebookSerializer implements vscode.NotebookSerializer {
@@ -65,6 +67,12 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     private notebookPanel: NotebookPanel;
     private finishedInitialization: boolean;
 
+    // Initialized with empty data
+    // Need the serializer to be created before anything else because
+    //      - An open notebook will initially display an error if `vscode.workspace.registerNotebookSerializer` is not one of the 
+    //              first things called after extension activation
+    //      - `deserializeNotebookPanel` is required in NotebookPanel initialization
+    // So, start a fake initialization now then actually init once NotebookPanel is finished
     constructor () {
         this.context = {} as any;
         this.workspace = {} as any;
@@ -72,7 +80,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         this.finishedInitialization = false;
     }
 
-
+    // Only called after the NotebookPanel is finished initializing
     async init (
         context: vscode.ExtensionContext,
         workspace: Workspace,
@@ -84,20 +92,10 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         this.finishedInitialization = true;
     }
 
-
-
-
-    private deserializeHeaderText (text: string): string {
-        return text
-            .toLowerCase()
-            .trim()
-            .replace(/^#+?\s+/, '')
-            .replace(/:$/, '');
-    }
-
     
     //#region SERIALIZE OBJECTS
 
+    // Copies changes serialized by this.serializeNotebook into the notebook panel
     private propagateNoteChanges (serializedNote: SerializedNote) {
         const updatedPanelNote = this.deserializeNote(serializedNote);
         let replaceIndex = this.notebookPanel.notebook.findIndex(panelNote => panelNote.noteId === updatedPanelNote.noteId);
@@ -109,50 +107,68 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         this.notebookPanel.refresh();
     }
 
+    private deserializeHeaderText (text: string): string {
+        return text
+            .toLowerCase()
+            .trim()
+            .replace(/^#+?\s+/, '')
+            .replace(/:$/, '');
+    }
+    
+    private sectionCellTextToString (cells: SerializedCell[]): string[] {
+        return cells.map(cell => {
+            return cell.text
+                .split("\n")
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+            ;
+        }).flat();
+    }
+
+    private sectionCellsToBulletPoints (noteId: string, sectionIdx: number, cells: SerializedCell[]): BulletPoint[] {
+        return this.sectionCellTextToString(cells).map((bullet, index) => {
+            return {
+                kind: 'bullet',
+                idx: index,
+                noteId: noteId,
+                sectionIdx: sectionIdx,
+                text: bullet
+            };
+        });
+    }
+    
+
     private deserializeNote (serializedNote: SerializedNote): NotebookPanelNote {
+        // serializedNote.headers array may be modified in this function, so get
+        //      a copy of the array as it is to work on here
         const copiedSections = [...serializedNote.headers];
 
+        // 'alias' is the single "special" header that the NotebookPanel cares about
+        //      and treats differently to other headers and sections
+        // It is used to highlight and link to this note when editing a '.wt' document
+        // Search for an alias header in the serialized note
         const aliasesHeaderIndex = copiedSections.findIndex(head => {
             const aliasText = this.deserializeHeaderText(head.headerText)
             return aliasText === 'alias' || aliasText === 'aliases';
         });
 
+        // If we found 'alias', store and remove it from the copied array
         let serializedAliasHeader: SerializedHeader | null = null;
         if (aliasesHeaderIndex >= 0) {
             const spliced = copiedSections.splice(aliasesHeaderIndex, 1);
             serializedAliasHeader = spliced[0];
         }
-        copiedSections.sort((a, b) => a.headerOrder - b.headerOrder)
-
-        const cellsToStrings = (cells: SerializedCell[]): string[] => {
-            return cells.map(cell => {
-                return cell.text
-                    .split("\n")
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0)
-                ;
-            }).flat();
-        }
-
-        const cellsToBullets = (sectionIdx: number, cells: SerializedCell[]): BulletPoint[] => {
-            return cellsToStrings(cells).map((bullet, index) => {
-                return {
-                    kind: 'bullet',
-                    idx: index,
-                    noteId: serializedNote.noteId,
-                    sectionIdx: sectionIdx,
-                    text: bullet
-                }
-            })
-            
-        }
         
+        // Sort based on header order
+        copiedSections.sort((a, b) => a.headerOrder - b.headerOrder);
+
+        // Create the note
         return {
             kind: "note",
             noteId: serializedNote.noteId,
             title: serializedNote.title.text,
             aliases: serializedAliasHeader?.cells 
-                ? cellsToStrings(serializedAliasHeader.cells)
+                ? this.sectionCellTextToString(serializedAliasHeader.cells)
                 : []
             ,
             sections: serializedNote.headers.map((section, index) => ({
@@ -160,28 +176,37 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 noteId: serializedNote.noteId,
                 idx: index,
                 header: capitalize(section.headerText.trim()),
-                bullets: cellsToBullets(index, section.cells),
+                bullets: this.sectionCellsToBulletPoints(serializedNote.noteId, index, section.cells),
             })),
             uri: vscode.Uri.joinPath(extension.globalWorkspace!.notebookFolder, `${serializedNote.noteId}.wtnote`),
         };
     }
 
+    // Read notebook folder from disk and return an array of Notes that can be used by NotebookPanel
     async deserializeNotebookPanel (notebookFolder: vscode.Uri): Promise<NotebookPanelNote[]> {
         const readPromises: PromiseLike<NotebookPanelNote>[] = [];
         for (const [ fileName, type ] of await vscode.workspace.fs.readDirectory(notebookFolder)) {
             if (type !== vscode.FileType.File) {
                 continue;
             }
+
+            // Create promises for each note
             const uri = vscode.Uri.joinPath(notebookFolder, fileName);
             readPromises.push(
-                vscode.workspace.fs.readFile(uri)
-                .then(readSingleNote)
-                .then(this.deserializeNote.bind(this))
+                vscode.workspace.fs.readFile(uri)               // read content
+                .then(this.readSerializedNote.bind(this))       // JSON parse to SerializedNote
+                .then(this.deserializeNote.bind(this))          // convert SerializedNote to NotebookPanelNote
             );
         }
-        const ret = await Promise.all(readPromises);
-        return ret;
+        return Promise.all(readPromises);
     }
+
+
+    async readSerializedNote (buffer: ArrayBufferLike): Promise<SerializedNote> {
+        const text = extension.decoder.decode(buffer);
+        const serializedNote: SerializedNote = JSON.parse(text);
+        return serializedNote;
+    };
 
     async writeSingleNote (note: NotebookPanelNote): Promise<vscode.Uri> {
         const uri = note.uri;
@@ -204,7 +229,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         const diskContents = await vscode.workspace.fs.readFile(
             vscode.Uri.joinPath(this.workspace.notebookFolder, `${note.noteId}.wtnote`)
         );
-        const serializedDiskNote = await readSingleNote(diskContents);
+        const serializedDiskNote = await this.readSerializedNote(diskContents);
         return {
             noteId: note.noteId,
             title: {
@@ -249,108 +274,131 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
     //#region SERIALIZE CELLS
 
+    private getCelldata (serializedCell: SerializedCell): vscode.NotebookCellData {
+        if (serializedCell.editing) {
+            // If the cell is being edited, then return a vscode.NotebookCellData with kind===Code
+            return {
+                kind: vscode.NotebookCellKind.Code,
+                languageId: 'wtnote',
+                value: serializedCell.text,
+                metadata: _<NotebookCellMetadata>({
+                    kind: 'input',
+                    markdown: false,
+                    originalText: serializedCell.text
+                })
+            }
+        }
+        else {
+            // If the cell is not being edited, then conver the text of the cell into its markdown equivalent
+            //      and return a vscode.NotebookCelldata using kind===Markup
+            return {
+                kind: vscode.NotebookCellKind.Markup,
+                languageId: 'markdown',
+                value: wtToMd("- " + serializedCell.text.trim().replaceAll(/\n+/g, "\n\n- ")),
+                metadata: _<NotebookCellMetadata>({
+                    kind: 'input',
+                    markdown: true,
+                    originalText: serializedCell.text,
+                }),
+            }
+        }
+    };
+
+    // Called on the children of a header that is read from serialized file
+    private deserializeCell (arr: SerializedCell[]): vscode.NotebookCellData[] {
+        if (arr.length !== 0) {
+            // If the header does not have any children, then make an empty child cell for it
+            return [{
+                kind: vscode.NotebookCellKind.Code,
+                value: "",
+                languageId: 'wtnote',
+                metadata: _<NotebookCellMetadata>({
+                    kind: 'input',
+                    markdown: false,
+                    originalText: "",
+                })
+            }];
+        }
+        
+        // Otherwise iterate over all cells and get cell data for each
+        return arr.map(cell => this.getCelldata(cell));
+    };
+
     async deserializeNotebook(content: Uint8Array): Promise<vscode.NotebookData> {
         while (!this.finishedInitialization) {
             await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        const serializedNote = await readSingleNote(content);
-        const serialiedCellToCellData = (serializedCell: SerializedCell, kind: CellSection): vscode.NotebookCellData => {
-            if (serializedCell.editing) {
-                const metadata: NotebookCellMetadata = {
-                    kind: 'input',
-                    markdown: false,
-                    originalText: serializedCell.text
-                };
-                return {
-                    kind: vscode.NotebookCellKind.Code,
-                    languageId: 'wtnote',
-                    value: serializedCell.text,
-                    metadata: metadata
-                }
-            }
-            else {
-                const metadata: NotebookCellMetadata = {
-                    kind: 'input',
-                    markdown: true,
-                    originalText: serializedCell.text,
-                }
-                return {
-                    kind: vscode.NotebookCellKind.Markup,
-                    languageId: 'markdown',
-                    value: wtToMd("- " + serializedCell.text.trim().replaceAll(/\n+/g, "\n\n- ")),
-                    metadata: metadata,
-                }
-            }
-        };
-
-        const textToCell = (arr: SerializedCell[], kind: CellSection): vscode.NotebookCellData[] => {
-            if (arr.length !== 0) {
-                return arr.map(cell => serialiedCellToCellData(cell, kind));
-            }
-            else {
-                const metadata: NotebookCellMetadata = {
-                    kind: 'input',
-                    markdown: false,
-                    originalText: "",
-                };
-                return [{
-                    kind: vscode.NotebookCellKind.Code,
-                    value: "",
-                    languageId: 'wtnote',
-                    metadata: metadata
-                }];
-            }
-        };
-
+        // Read and sort the contents of the note from disk
+        const serializedNote = await this.readSerializedNote(content);
         serializedNote.headers.sort((a, b) => a.headerOrder - b.headerOrder);
-
-
-        const titleMetadata: NotebookCellMetadata = { 
-            kind: 'header-title',
-            originalText: serializedNote.title.text
-        };
-
+        
+        // Create the title cell at the top of the document
         const title: vscode.NotebookCellData = {
             kind: vscode.NotebookCellKind.Markup,
             languageId: 'markdown',
             value: `# ${wtToMd(serializedNote.title.text)}:`,
-            metadata: titleMetadata,
+            metadata: _<NotebookCellMetadata>({ 
+                kind: 'header-title',
+                originalText: serializedNote.title.text
+            }),
         };
 
         const notebookData = new vscode.NotebookData([
             title,
 
-            ...serializedNote.headers.map(header => {
-                const headerMetadata: NotebookCellMetadata = {
-                    kind: 'header',
-                    originalText: header.headerText,
-                };
+            // For each header:
+            serializedNote.headers.map(header => {
                 return [
+                    // Create the header cell itself as a markdown cell
                     {
                         kind: vscode.NotebookCellKind.Markup,
                         languageId: 'markdown',
                         value: `### ${capitalize(header.headerText)}:`,
-                        metadata: headerMetadata,
+                        metadata: _<NotebookCellMetadata>({
+                            kind: 'header',
+                            originalText: header.headerText,
+                        }),
                     },
-                    ...textToCell(header.cells, 'alias'),
+
+                    // Then deserialize all the contents under this header
+                    ...this.deserializeCell(header.cells),
                 ];
-            })
+            // Then flatten the contents into the main array
+            }).flat()
         ].flat());
-        const notebookMetadata: NotebookMetadata = { 
+
+        // Only metadata needed for the main notebook is the id
+        notebookData.metadata = _<NotebookMetadata>({
             noteId: serializedNote.noteId,
-            modifications: {},
-        };
-        notebookData.metadata = notebookMetadata;
+        });
+        // Whenever a notebook is opened, set the tab name
         TabLabels.assignNamesForOpenTabs();
         return notebookData;
     }
 
+    // Convert cells in a wtnote notebook document into a SerializedNote array buffer
+    // NOTE: all cell conversions and edits are communicated from the notebook controller
+    //      to this serializer function through two methods:
+    //          cell metadata  -- see type `NotebookCellMetadata`
+    //          cell outputs   -- see type `NotebookCellOutputMetadata`
+    // Those changes are added to cells in the controller, and this function writes those
+    //      changes to the notebook wtnote file
+    // Then, usually, the controller closes this document, then reopens it
+    // When reopened, this.deserializeNotebook is called using the new wtnote file contents
+    //      and the notebook contents will be updated
+    // This is one large workaround while the VS Code notebook API is still in its early stages
+    // And all of this will hopefully change if the API is built out more
     async serializeNotebook(data: vscode.NotebookData): Promise<Uint8Array> {
-        // Convert your notebook data back to bytes
-
         const notebookMetadata: NotebookMetadata = data.metadata! as any;
         const noteId = notebookMetadata.noteId;
+
+        // Notebook serialization is done by bucketing all cells into groups denoted by 'header' cells
+        // When the serializer encounters a cell with metadata that has kind === 'header', all cells 
+        //      below that cell are considered children of that header (and will be displayed as such
+        //      in the wtnote document as well as the NotebookPanel), until the serializer encounters 
+        //      another 'header' cell
+        // 
 
         type HeaderBucket = string;
         const headerBuckets: Record<HeaderBucket, SerializedCell[]> = {
@@ -361,6 +409,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             currentText: string
             index: number,
         }> = {
+            // Temp header title... will be replaced in the loop below
             'header-title': {
                 currentText: 'tmp',
                 originalText: 'tmp',
@@ -368,74 +417,69 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             },
         };
 
-        // Since it is required to have exactly one item in the title bucket at the end of processing
-        //      we need to pay attention to where the 'header-title' cell is
-        // Whatever cell comes directly after that cell is the title cell, no matter what
-        // If there is no header-title, the user was annoying and deleted it
-        // So, if there is any non-header cell at the top of the document, that cell is used
-        // If the title header cell was deleted and the top cell of the document is another header
-        //      then there's nothing I can do for you :*(
-        let titleHeaderIndex: number = -1;
         let lastHeader: string = 'header-title';
 
+        // 
         for (let index = 0; index < data.cells.length; index++) {
             const cell = data.cells[index];
-            const cellMetadata = notebookMetadata.modifications[index] || (cell.metadata as NotebookCellMetadata | undefined);
+            let cellMetadata: NotebookCellMetadata | undefined = cell.metadata as any;
 
-            if (this.getCellConvertTarget(cell) === 'header') {
-                cellMetadata.kind = 'header';
-                cellMetadata.originalText = cell.value;
+            const convertTarget = this.getCellConvertTarget(cell);
+            if (convertTarget === 'input') {
+                // If convert target is 'input', a markdown cell is being converted to
+                //      a wtnote code cell
+                // So, the kind needs to remain as 'input', but `markdown` flag is now
+                //      set to false
+                // Called when 'Edit Cell' is clicked on a markdown cell
+                cellMetadata = {
+                    kind: 'input',
+                    markdown: false,
+                    originalText: cellMetadata!.originalText
+                };
+            }
+            else if (convertTarget === 'header') {
+                // When the convert target is 'header', then change the kind of this cell
+                //      to header and overwrite `originalText` to the current value of the 
+                //      input cell
+                // This is called when the 'Convert to Header' is clicked on a wtnote cell
+                // `originalText` is overwritten because this is the value used by the 
+                //      serializer to set the text value of the header
+                cellMetadata!.kind = 'header';
+                cellMetadata!.originalText = cell.value;
             }
 
-            cellMetadata.originalText = this.getUpdatedText(cell) || cellMetadata.originalText;
+            // Update the `originalText` attribute of the cell metadata if the controller
+            //      has indicated a new value is needed
+            // This happens when someone manually updates the text of a header cell
+            const updatedText = this.getUpdatedText(cell);
+            if (updatedText) {
+                cellMetadata!.originalText = updatedText;
+            }
 
             if (cellMetadata && cellMetadata.kind === 'header') {
-                lastHeader = cellMetadata.originalText || this.deserializeHeaderText(cell.value);
-                // If the header is not in the indexes map, then use the current length of the header
-                //      buckets to assign the index
-                if (!headerMetadata[lastHeader]) {
-                    // NOTE: can't be included in the same if statement as below because sometimes the 'notes'
-                    //      bucket is manually created in this loop
-                    // When it is manually created, it will exist in headerBuckets but not in headerIndexes
-                    // Usually, this means that at the end of this loop 'notes' will automatically be assigned
-                    //      the bucket index all the way at the end of the document
-                    // BUT if there is a case where 'notes' is manually created but there is also an existing
-                    //      'notes' bucket in the document, we want to use that index for both
-                    // (The next if statement won't be hit if lastHeader==='notes' and 'notes' was manually created
-                    //      but we still want to retain this index)
+                // If the current cell is a header, then create a bucket for it in the header buckets as well
+                //      as a metadata object
+                // Header key and text is taken from the original text field of the cell's metadata
+                lastHeader = cellMetadata.originalText;
+
+                // If this header is not known to the serializer yet, then create metadata for it
+                //      and an empty bucket to store the next cells
+                if (!headerBuckets[lastHeader]) {
                     headerMetadata[lastHeader] = {
+                        // Index is the last index of the header buckets (end of the list)
                         index: Object.keys(headerBuckets).length,
                         currentText: cell.value,
                         originalText: cellMetadata.originalText,
                     };
-                }
-                // And if it is not in the header buckets, then create an empty array
-                if (!headerBuckets[lastHeader]) {
+
+                    // And if it is not in the header buckets, then create an empty array
                     headerBuckets[lastHeader] = [];
                 }
                 continue;
             }
 
             if (cellMetadata && cellMetadata.kind === 'header-title') {
-                titleHeaderIndex = index;
                 lastHeader = 'header-title';
-            }
-
-
-            // If the previous header was the title header, then this is the title cell
-            if (lastHeader === 'header-title' && titleHeaderIndex !== -1 && titleHeaderIndex + 1 === index) {
-                if (headerBuckets['header-title'].length > 0) {
-                    vscode.window.showWarningMessage(`Moving ${headerBuckets['header-title'].length} cells from the "Title" section to the "Notes" section because changed the order of stuff. >:(`);
-                }
-
-                if (!headerBuckets['notes']) {
-                    headerBuckets['notes'] = [];
-                }
-
-                // Concat the "notes" bucket with anything that exists in the "title" bucket right now
-                headerBuckets['notes'] = headerBuckets['notes'].concat(headerBuckets['header-title']);
-                // Empty out the "title" bucket
-                headerBuckets['header-title'] = [];
             }
             headerBuckets[lastHeader].push(this.getSerializedCell(cell, cellMetadata));
         }
@@ -458,7 +502,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             // If there is more than one cell under the title header, we have to move everything that is not the first one into
             //      the notes bucket
             const remaining = headerBuckets['header-title'].slice(1);
-            vscode.window.showWarningMessage(`Moving ${remaining.length} cells from the "Title" section to the "Notes" section because changed the order of stuff. >:(`);
+            vscode.window.showWarningMessage(`Moving ${remaining.length} cells from the "Title" section to the "Notes" section because you changed the order of stuff. >:(`);
             headerBuckets['notes'] = headerBuckets['notes'].concat(remaining);
         }
 
@@ -473,14 +517,18 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             };
         }
 
+        // The title header is added to the serialized note in different format than all other sections,
+        //      so remove it from the header bucket object now
         if (headerBuckets['header-title']) {
             delete headerBuckets['header-title'];
         }
 
+        // Sort by header index
         const sortedHeaders = Object.entries(headerBuckets).sort(([ headerTextA, _a ], [ headerTextB, _b ]) => {
             return headerMetadata[headerTextA].index - headerMetadata[headerTextB].index;
         });
         
+        // Finish serializing by iterating header metadata and header buckets
         const fullySerialized: SerializedNote = {
             noteId: noteId,
             title: titleCell,
@@ -492,6 +540,8 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 }
             })
         };
+
+        // Propogate changes, serialize to JSON, finish
         this.propagateNoteChanges(fullySerialized);
         const json = JSON.stringify(fullySerialized, undefined, 4);
         return new TextEncoder().encode(json);

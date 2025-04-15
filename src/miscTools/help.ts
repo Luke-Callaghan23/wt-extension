@@ -409,3 +409,16 @@ export function progressOnViews_impl <T> (
     const next = viewIds.shift()!;
     return vscode.window.withProgress({ location: { viewId: next } }, () => progressOnViews_impl(viewIds, titleOrWorker, workerOrNothing));
 }
+
+
+// Dummy function to annotate an expression to a type
+// To me, both `{  } as Type` and `<Type> {  } ` do not
+//      have thorough enough type checking to be usefull
+//      but I still want to be able to use expressions 
+//      with type checking
+// Passing a type and an object through this function
+//      will do a thorough check on the passed object
+//      against the parameter type
+export function _ <T> (obj: T): T {
+    return obj;
+}
