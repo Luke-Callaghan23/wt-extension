@@ -320,6 +320,12 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         }
     }
 
+    async findAndReplace (notebookUri: vscode.Uri, search: RegExp, replace: string): Promise<SerializedNote> {
+        const note = await vscode.workspace.fs.readFile(notebookUri).then(this.readSerializedNote.bind(this));
+
+        throw 'not implemented'
+    }
+
     //#endregion
 
 

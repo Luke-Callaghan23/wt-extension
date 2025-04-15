@@ -1,5 +1,6 @@
 TODO:
 - [ ] rename notes
+- [ ] rename aliases
 - [x] handle users adding cells on their own
 - [x] handle users editing markdown cells ------- should this be handled at all???
     - should not be handled
@@ -7,3 +8,5 @@ TODO:
 - [x] notebook links rendered in Markdown
 - [ ] fragment links rendered in Markdown
 - [ ] images
+- [ ] integrate with search bar -- search bar will now be looking inside of jsons which we don't actually want
+    - probably can just search in NotebookPanelNotes -- won't have unsaved data but who cares

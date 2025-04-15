@@ -392,10 +392,11 @@ implements
 
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
+
+        const aliasText = document.getText(matchedNote.range);
+        const aliasRegex = '(^|[^a-zA-Z0-9])?' + `(${aliasText})` + '([^a-zA-Z0-9]|$)?';
         
         const locations = await defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
-            const aliasText = document.getText(matchedNote.range);
-            const aliasRegex = '(^|[^a-zA-Z0-9])?' + `(${aliasText})` + '([^a-zA-Z0-9]|$)?';
             const grepLocations: vscode.Location[] = []; 
             for await (const loc of grepExtensionDirectory(aliasRegex, true, true, true)) {
                 if (loc === null) return null;
@@ -412,14 +413,42 @@ implements
         });
         if (!locations) return null;
 
+        const resp = await vscode.window.showInformationMessage(`Are you sure you want to replace ${locations.length} instances of '${aliasText}'?`, {
+            detail: `This will include changes to file titles, wtnote files, and fragment text.  This can't be undone.  Also this will only change exact matches to '${aliasText}' not any near matches or misspellings.  ([Don't end up like Dwigt!](https://youtu.be/-FoKU54ITuI?si=AARaG7AjkqqQw4I0&t=110))`,
+            modal: true,
+        }, "Yes I'm sure");
+        if (resp !== "Yes I'm sure") return null;
+
+        const noteCovered: Set<string> = new Set<string>();
+
         return defaultProgress(`Collecting edits for '${matchedNote.note.title}'`, async () => {
             const edits = new vscode.WorkspaceEdit();
             for (const location of locations) {
                 if (location.uri.fsPath.endsWith('.wtnote')) {
-                    throw 'not implemented'
+                    // Edits to notes are done in one go, because it is difficult to track exact replacements otherwise
+                    if (noteCovered.has(location.uri.fsPath)) {
+                        continue;
+                    }
+
+                    // Run find and replace inside of the serializer and create an edit for overwriting this
+                    //      wtnote file entirely
+                    const updatedSerializedNote = this.serializer.findAndReplace(location.uri, new RegExp(aliasRegex, 'gi'), newName);
+                    edits.createFile(location.uri, {
+                        overwrite: true,
+                        contents: Buff.from(JSON.stringify(updatedSerializedNote, undefined, 4))
+                    });
+
+                    // Since serializer.findAndReplace covers all replacements for the whole wtnote document
+                    //      and we don't want to waste time performing the same replacements over and over
+                    //      again, we add this uri to the set of modified notes so that if we encounter
+                    //      this again we can just skip it
+                    noteCovered.add(location.uri.fsPath);
                 }
                 else if (location.uri.fsPath.endsWith('.wt')) {
                     edits.replace(location.uri, location.range, newName);
+                }
+                else if (location.uri.fsPath.endsWith('.config')) {
+                    throw 'not implemented'
                 }
                 else continue;
             }
