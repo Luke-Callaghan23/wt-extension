@@ -110,17 +110,19 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     }
 
     private deserializeNote (serializedNote: SerializedNote): NotebookPanelNote {
-        const aliasesHeaderIndex = serializedNote.headers.findIndex(head => {
+        const copiedSections = [...serializedNote.headers];
+
+        const aliasesHeaderIndex = copiedSections.findIndex(head => {
             const aliasText = this.deserializeHeaderText(head.headerText)
             return aliasText === 'alias' || aliasText === 'aliases';
         });
 
         let serializedAliasHeader: SerializedHeader | null = null;
         if (aliasesHeaderIndex >= 0) {
-            const spliced = serializedNote.headers.splice(aliasesHeaderIndex, 1);
+            const spliced = copiedSections.splice(aliasesHeaderIndex, 1);
             serializedAliasHeader = spliced[0];
         }
-        serializedNote.headers.sort((a, b) => a.headerOrder - b.headerOrder)
+        copiedSections.sort((a, b) => a.headerOrder - b.headerOrder)
 
         const cellsToStrings = (cells: SerializedCell[]): string[] => {
             return cells.map(cell => {

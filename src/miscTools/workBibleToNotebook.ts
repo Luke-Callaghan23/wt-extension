@@ -221,7 +221,7 @@ export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: 
                     }],
                 },
                 {
-                    headerOrder: 0,
+                    headerOrder: 1,
                     headerText: 'appearances',
                     cells: [{
                         text: note.appearance.join("\n\n"),
@@ -229,7 +229,7 @@ export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: 
                     }],
                 },
                 {
-                    headerOrder: 0,
+                    headerOrder: 2,
                     headerText: 'notes',
                     cells: [{
                         text: note.description.join("\n\n"),
