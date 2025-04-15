@@ -45,13 +45,9 @@ See NotebookSerializer.serializeNotebook to see how the serializer reads metadat
 */
 
 
-
-
 export type NotebookMetadata = {
     noteId: string,
 };
-
-
 
 export type NotebookCellMetadata = {
     // Headers are used as the main sections in the Notebook panel and cannot be 
@@ -74,6 +70,9 @@ export type NotebookCellMetadata = {
     
     // Markdown indicates whether or not the user is currently able to edit the contents
     markdown: boolean;                      
+} | {
+    // Extra metadata just for the instructions cell
+    kind: 'instructions';
 };
 
 
@@ -81,6 +80,7 @@ export type NotebookCellMetadata = {
 export type SerializedNote = {
     noteId: string;
     title: SerializedCell;
+    deletedInstructions: boolean;
     headers: SerializedHeader[]
 };
 
@@ -171,7 +171,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     private sectionCellTextToString (cells: SerializedCell[]): string[] {
         return cells.map(cell => {
             return cell.text
-                .split("\n")
+                .split(/\n|\r/g)
                 .map(line => line.trim())
                 .filter(line => line.length > 0)
             ;
@@ -289,6 +289,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 text: note.title,
                 editing: serializedDiskNote.title.editing
             },
+            deletedInstructions: true,
             headers: [
                 // Alias is being set to 0th section in the serialized cell... might not be true
                 //      for what is on disk right now
@@ -347,7 +348,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             return {
                 kind: vscode.NotebookCellKind.Markup,
                 languageId: 'markdown',
-                value: wtToMd("- " + serializedCell.text.trim().replaceAll(/\n+/g, "\n\n- ")),
+                value: wtToMd("- " + serializedCell.text.trim().replaceAll(/(\n\s*)+/g, "\n\n- ")),
                 metadata: _<NotebookCellMetadata>({
                     kind: 'input',
                     markdown: true,
@@ -359,7 +360,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
     // Called on the children of a header that is read from serialized file
     private deserializeCell (arr: SerializedCell[]): vscode.NotebookCellData[] {
-        if (arr.length !== 0) {
+        if (arr.length === 0) {
             // If the header does not have any children, then make an empty child cell for it
             return [{
                 kind: vscode.NotebookCellKind.Code,
@@ -418,7 +419,36 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                     ...this.deserializeCell(header.cells),
                 ];
             // Then flatten the contents into the main array
-            }).flat()
+            }).flat(),
+
+            !serializedNote.deletedInstructions ? _<vscode.NotebookCellData>({
+                kind: vscode.NotebookCellKind.Markup,
+                value: `
+**Welcome to WTANIWE notebook!**
+
+Here's how it works:
+
+- Write notes about whatever you want in the notebook cells
+
+- Language of the cells is 'wtnote', which is more or less equivalent to the regular 'wt' you've been using all along
+
+- Save the document and see those notes appear in the notebook panel next to your terminal
+
+- Execute a wtnote cell to convert the cell from a text box into a nicely formatted bullet point list
+
+- Create new cells by hitting the "+ Code" button under each cell, NOT the "+ Markdown" button
+
+- Modify bullet pointed markdown cells by clicking on the cell, then clicking on the blue icon with "Notebook: Edit cell" tooltip
+
+- DO NOT double click edit any markdown cells created by this extension.  You probably won't break anything, but your changes will not be saved
+
+- Create new headers by clicking on a wtnote text cell and hitting the fancy looking icon with tooltip "Notebook: Convert Cell to Header"
+
+- Edit headers by clicking on an existing header and hitting the keyboad icon with tooltip "Notebook: Edit header text"
+`,
+                languageId: 'markdown',
+                metadata: _<NotebookCellMetadata>({ kind: 'instructions' })
+            }) : []
         ].flat());
 
         // Only metadata needed for the main notebook is the id
@@ -472,10 +502,17 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
         let lastHeader: string = 'header-title';
 
+        let foundInstructionsCell = false;
+
         // 
         for (let index = 0; index < data.cells.length; index++) {
             const cell = data.cells[index];
             let cellMetadata: NotebookCellMetadata | undefined = cell.metadata as any;
+
+            if (cellMetadata && cellMetadata.kind === 'instructions') {
+                foundInstructionsCell = true;
+                continue;
+            }
 
             const convertTarget = this.getCellConvertTarget(cell);
             if (convertTarget === 'input') {
@@ -585,6 +622,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         const fullySerialized: SerializedNote = {
             noteId: noteId,
             title: titleCell,
+            deletedInstructions: !foundInstructionsCell,
             headers: sortedHeaders.map(([ headerText, contents ], index) => {
                 return {
                     headerText: headerText,
@@ -600,56 +638,48 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         return new TextEncoder().encode(json);
     }
 
+    private convertMarkdownCellToWTNoteText (markdown: string): string {
+        return markdown
+            .split("\n")                                        // Split lines
+            .map(line => line.trim())                           // Trim
+            .filter(line => line.length > 0)                    // Filter empty lines
+            .map(line => line.replace(/^-\s*/, ""))             // Remove leading '- ' that gets automatically added to markup
+            .join('\n')
+    }
     
     private getSerializedCell (cell: vscode.NotebookCellData, metadata: NotebookCellMetadata | undefined): SerializedCell {
-        let text: string | undefined;
-        
-        if (cell.kind === vscode.NotebookCellKind.Code || (this.getCellConvertTarget(cell) === 'markdown')) {
-            let isEditing: boolean;
-            if (cell.kind === vscode.NotebookCellKind.Code) {
-                if (this.getCellConvertTarget(cell) === 'markdown') {
-                    isEditing = false;
-                }
-                else {
-                    isEditing = true;
-                }
-            }
-            else {
-                if (metadata && metadata.kind === 'input' && metadata.originalText) {
-                    text = metadata.originalText;
-                }
-                isEditing = true;
-            }
+        if (metadata && metadata.kind === 'instructions') throw 'unreachable';
+
+        const convertTarget = this.getCellConvertTarget(cell);
+
+        if (cell.kind === vscode.NotebookCellKind.Code) {
+            // If the cell is not being converted into markdown, then set isEditing to true
+            const isEditing: boolean = convertTarget !== 'markdown';
             return {
                 editing: isEditing,
-                text: text || cell.value
+                text: cell.value
+            };
+        }
+        else if (convertTarget === 'input') {
+            // If converting from markdown into an input, then take the text value of the input
+            //      from the originalText field of the metadata
+            // And set editing to true
+            return {
+                editing: true,
+                text: metadata?.originalText || cell.value
             };
         }
         else {
-            if (metadata && metadata.kind === 'input' && metadata.markdown && metadata.originalText) {
-                text = metadata.originalText;
-            }
-            else if (metadata && metadata.kind === 'header-title' && metadata.originalText) {
-                text = metadata.originalText;
-            }
-            else {
-                const lines = cell.value
-                    .split("\n")                                        // Split lines
-                    .map(line => line.trim())                           // Trim
-                    .filter(line => line.length > 0)                    // Filter empty lines
-                    .map(line => line.replace(/^-\s*/, ""))             // Remove leading '- ' that gets automatically added to markup
-                ;
-                text = lines.join("\n\n");
-            }
-
             return {
-                editing: false,
-                text: text
+                editing: false, 
+                // metadata can possibly be null
+                // If that is the case, do a quick conversion of the markdown text to wtnote text and store that as the `text` field
+                text: metadata?.originalText || this.convertMarkdownCellToWTNoteText(cell.value)
             }
         }
     }
 
-
+    // Reads output metadata to see if there is a target type for this cell to convert into
     private getCellConvertTarget (cell: vscode.NotebookCellData): NotebookCellConvertTarget | null {
         if (!cell.outputs) return null;
 
@@ -664,6 +694,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         return null;
     }
 
+    // Reads output metadata to see if there is updated text to set this cells value to
     private getUpdatedText (cell: vscode.NotebookCellData): string | null {
         if (!cell.outputs) return null;
 
@@ -675,6 +706,3 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         return null;
     }
 }
-
-
-

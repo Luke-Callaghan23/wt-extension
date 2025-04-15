@@ -211,6 +211,7 @@ export async function wbToNb (workBibleFolderPath: vscode.Uri, notebookUriPath: 
                 editing: false,
                 text: note.noun
             },
+            deletedInstructions: false,
             headers: [
                 {
                     headerOrder: 0,

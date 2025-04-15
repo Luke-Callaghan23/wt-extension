@@ -5,3 +5,4 @@ TODO:
 - [ ] figure out nesting??? -- if four spaces in the start of a line, then make it bullet??
 - [ ] notebook links rendered in Markdown
 - [ ] fragment links rendered in Markdown
+- [ ] images
