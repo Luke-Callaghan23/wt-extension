@@ -198,14 +198,13 @@ export class WTNotebookController {
 
     // Saves the notebook document, stores the view column, closes the document
     //      then reopens it
-    // Since there is not real API to modify the contents of a notebook directly,
-    //      this function is to simulate an update of the document after the 
-    //      controller has requested some kind of update of the contents
+    // See: note at the top of `NotebookSerializer.ts` about how the notebook
+    //      serilaizer and controller function
     // Once updates are stored in the metadata of the cells or the cells' outputs,
-    //      those updates are saved to the wtnote file on the file system by 
-    //      the NotebookSerializer (during notebook.save())
+    //     those updates are saved to the wtnote file on the file system by 
+    //     the NotebookSerializer (during notebook.save())
     // And those changes are then reflected in the notebook document when it is 
-    //      deserialized again and opened by VSCode
+    //     deserialized again and opened by VSCode
     private async reopenNotebook (notebook: vscode.NotebookDocument) {
         await notebook.save();
 

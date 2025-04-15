@@ -8,40 +8,93 @@ import { TabLabels } from '../../tabLabels/tabLabels';
 import { capitalize } from '../../intellisense/common';
 import { _, } from '../../miscTools/help';
 
-export type SerializedCell = {
-    text: string,
-    editing: boolean,
-};
+/*
+NOTES on NotebookSerializer and NotebookController and how wtnote files are handled
+
+How the notebook works:
+    wtnote files are edited using a notebook editor, where the contents are separated into
+        different sections under Markdown formatted header cells
+    In the NotebookPanel, these headers are displayed as foldable tree items and the 
+        cells underneath are displayed as bullet points
+    Whena user 'executes' a wtnote cell in a notebook, that cell is swapped out for 
+        a markdown cell with bullet points displayed in the markdown
+    To modify or add a header, you can use special commands created for those operations
+
+How it is done:
+    Since there is no real API to modify the contents of a notebook in VScode directly,
+        WTANIWE needs to use some janky workarounds to perform updates
+    Mainly, this is done through the NotebookController updating cell metadata
+        When the controller wants to make a change to the content, it stores those changes
+            in the updated cell's output metadata 
+                ^^ updates are stored in output metadata because the controller is blocked from
+                    modifying cell metadata -- output metadata is really the only thing it can change
+
+    Once changes are stored in metadata, the document is saved
+        Saving the document calls NotebookSerializer.serializeNotebook which will read
+            the metadata created by NotebookController and reflect those changes in
+            the wtnote file on the file system
+    Once saved, it closes the document
+    Finally, it reopens the document in the same location and tab where it was just opened
+        Opening the document will lead to the changes written by serializeNotebook being
+            read by NotebookSerializer.deserializeNotebook and reflected in the actual
+            cells of the document
+
+See NotebookController.reopenNotebook for how reopening is done
+See NotebookSerializer.serializeNotebook to see how the serializer reads metadata updates
+    from the NotebookController and reflects those changes in the wtnote file
+*/
 
 
-type CellSection = "title" | "alias" | "appearance" | "note";
-
-export type Concatenate<S1 extends string, S2 extends string> = `${S1}${S2}`;
-export type HeaderCellKind = 'header' | 'header-title';
-export type NotebookCellMetadata = {
-    kind: 'input';
-    markdown: boolean;
-    originalText: string;
-} | {
-    kind: 'header' | 'header-title';
-    originalText: string;
-};
 
 
 export type NotebookMetadata = {
     noteId: string,
 };
 
-export type SerializedHeader = {
-    headerOrder: number,
-    headerText: string,
-    cells: SerializedCell[]
+
+
+export type NotebookCellMetadata = {
+    // Headers are used as the main sections in the Notebook panel and cannot be 
+    //      modified directly by the user
+    // The user can modify header text with "wt.notebook.cell.editHeader"
+    // But double clicking on the Markdown cell and editing there does nothing
+    kind: 'header' | 'header-title';
+    originalText: string;
+} | {
+    // Inputs are the main bodies (bullet points) of a note, displayed under the headers
+    //      in the NotebookPanel
+    // Inputs operate in two main modes -- markdown and wtnote
+    // When in markdown mode, the text is unmodifiable and displayed as markdown in the notebook
+    // When in wtnote mode, the user is modifying the text of cell
+    // The controller can swap between the two modes by:
+    //      in wtnote mode   --> execute the cell
+    //      in markdown mode --> "wt.notebook.cell.editCell"
+    kind: 'input';
+    originalText: string;
+    
+    // Markdown indicates whether or not the user is currently able to edit the contents
+    markdown: boolean;                      
 };
+
+
 
 export type SerializedNote = {
     noteId: string;
     title: SerializedCell;
     headers: SerializedHeader[]
+};
+
+
+export type SerializedCell = {
+    text: string,
+    editing: boolean,
+};
+
+
+export type SerializedHeader = {
+    headerOrder: number,
+    headerText: string,
+    cells: SerializedCell[]
 };
 
 export type NotebookCellConvertTarget = 'header' | 'markdown' | 'input';
