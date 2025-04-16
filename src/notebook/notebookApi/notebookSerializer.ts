@@ -8,6 +8,7 @@ import { TabLabels } from '../../tabLabels/tabLabels';
 import { capitalize } from '../../intellisense/common';
 import { _, formatFsPathForCompare, getRelativePath, statFile, } from '../../miscTools/help';
 import { TextMatchForNote } from '../timedViewUpdate';
+import { WTNotebookController } from './notebookController';
 
 /*
 NOTES on NotebookSerializer and NotebookController and how wtnote files are handled
@@ -119,6 +120,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     private context: vscode.ExtensionContext;
     private workspace: Workspace;
     private notebookPanel: NotebookPanel;
+    private controller: WTNotebookController;
     private finishedInitialization: boolean;
 
     // Initialized with empty data
@@ -131,6 +133,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         this.context = {} as any;
         this.workspace = {} as any;
         this.notebookPanel = {} as any;
+        this.controller = {} as any;
         this.finishedInitialization = false;
     }
 
@@ -139,10 +142,12 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         context: vscode.ExtensionContext,
         workspace: Workspace,
         notebook: NotebookPanel,
+        controller: WTNotebookController
     ) {
         this.context = context;
         this.workspace = workspace;
         this.notebookPanel = notebook;
+        this.controller = controller;
         this.finishedInitialization = true;
     }
 
@@ -324,7 +329,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
     //#region SERIALIZE CELLS
 
-    private createMarkdownString (wtText: string, noteId: string) {
+    public createMarkdownStringFromCellText (wtText: string, noteId: string) {
 
         // Add bullet points between every newline
         const withBulletPoints = "- " + wtText.trim().replaceAll(/(\n\s*)+/g, "\n\n- ");
@@ -380,7 +385,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             return {
                 kind: vscode.NotebookCellKind.Markup,
                 languageId: 'markdown',
-                value: this.createMarkdownString(serializedCell.text, noteId),
+                value: this.createMarkdownStringFromCellText(serializedCell.text, noteId),
                 metadata: _<NotebookCellMetadata>({
                     kind: 'input',
                     markdown: true,
@@ -429,28 +434,54 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             metadata: _<NotebookCellMetadata>({ 
                 kind: 'header-title',
                 originalText: serializedNote.title.text
-            }),
+            })
         };
 
         const notebookData = new vscode.NotebookData([
-            title,
 
             !serializedNote.deletedInstructions ? _<vscode.NotebookCellData>({
-                kind: vscode.NotebookCellKind.Markup,
-                value: `**Welcome to WTANIWE notebook**
-    • Here's how it works:
-    • Write notes about whatever you want in the notebook cells
-    • Language of the cells is 'wtnote', which is more or less equivalent to the regular 'wt' you've been using all along
-    • Save the document and see those notes appear in the notebook panel next to your terminal
-    • Execute a wtnote cell to convert the cell from a text box into a nicely formatted bullet point list
-    • Create new cells by hitting the "+ Code" button under each cell, NOT the "+ Markdown" button
-    • Modify bullet pointed markdown cells by clicking on the cell, then clicking on the blue icon with "Notebook: Edit cell" tooltip
-    • DO NOT double click edit any markdown cells created by this extension.  You probably won't break anything, but your changes will not be saved
-    • Create new headers by clicking on a wtnote text cell and hitting the fancy looking icon with tooltip "Notebook: Convert Cell to Header"
-    • Edit headers by clicking on an existing header and hitting the keyboad icon with tooltip "Notebook: Edit header text"`,
+                kind: vscode.NotebookCellKind.Code,
+                value: ``,
                 languageId: 'html',
-                metadata: _<NotebookCellMetadata>({ kind: 'instructions' })
+                metadata: _<NotebookCellMetadata>({ kind: 'instructions' }),
+                outputs: [ new vscode.NotebookCellOutput([
+                    vscode.NotebookCellOutputItem.text(`
+                    <body>
+                        <style>
+                            li, p { font-size: 17px; }
+                        </style>
+                        <h1><b>Welcome to WTANIWE notebook</b></h1>
+                        <p>Here's how it works:</p>
+                        <ul>
+                            <li><a href="/Users/lcallagh/Desktop/vs-code/git/wt-extension/src/notebook/notebookApi/notebookSerializer.ts">Hello</a></li>
+                            <li>All instances of this note's title will appear highlighted blue in fragment files and will link here if you ctrl+click on it</li>
+                            <li>Write notes about your subject in the notebook cells below, or add more cells with "+ Code" <b>(NOT "+ Markdown"!!)</b></li>
+                            <li>When you save the notebook document, your changes notes will appear in the "Notes" panel of the extension and when you hover a notebook term or alias</li>
+                            <li>The language of these cells are 'wtnote', which is more or less equivalent to the regular 'wt' you've been using all along, so you have all the same styling and keybindings as usual</li>
+                            <li>Headers:</li>
+                            <ul>
+                                <li>The main tool for organizing details of a wtnote file.</li>
+                                <li>Default headers are "Aliases", "Appearance", and "Notes", but you can add more headers selecting an input cell and hitting the fancy looking icon with tooltip "Notebook: Convert Cell to Header"</li>
+                                <li>Edit the text of existing headers by clicking on an the header cell and hitting the keyboad icon with tooltip "Notebook: Edit header text"</li>
+                            </ul>
+                            <li>Cells:</li>
+                            <ul>
+                                <li>"Execute" a wtnote cell to convert it into nicely formatted bullet point list under a header</li>
+                                <li>Modify bullet pointed markdown cells by clicking on the cell, then clicking on the blue icon with "Notebook: Edit cell" tooltip</li>
+                                <li>DO NOT double click edit any markdown cells created by this extension.  You probably won't break anything, but your changes will not be saved</li>
+                            </ul>
+                            <li>Delete this cell whatever you like and it won't appear next time you open this document</li>
+                        </ul>
+                    </body>`, 'text/html')
+                ]) ],
+                executionSummary: {
+                    executionOrder: 0,
+                    success: true,
+                    timing: { startTime: 0, endTime: 0 }
+                }
             }) : [],
+
+            title,
 
             // For each header:
             serializedNote.headers.map(header => {
@@ -550,6 +581,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                     markdown: false,
                     originalText: cellMetadata!.originalText
                 };
+                cell.metadata = cellMetadata;
             }
             else if (convertTarget === 'header') {
                 // When the convert target is 'header', then change the kind of this cell

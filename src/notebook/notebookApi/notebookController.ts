@@ -3,7 +3,7 @@ import { Workspace } from '../../workspace/workspaceClass';
 import { NotebookPanel } from '../notebookPanel';
 import { _, compareFsPath } from '../../miscTools/help';
 import { TabLabels } from '../../tabLabels/tabLabels';
-import { NotebookCellMetadata, NotebookCellOutputMetadata, NotebookMetadata } from './notebookSerializer';
+import { NotebookCellMetadata, NotebookCellOutputMetadata, NotebookMetadata, WTNotebookSerializer } from './notebookSerializer';
 
 export class WTNotebookController {
     readonly controllerId = 'wt.notebook.controller';
@@ -16,6 +16,7 @@ export class WTNotebookController {
         private context: vscode.ExtensionContext,
         private workspace: Workspace,
         private notebook: NotebookPanel,
+        private serializer: WTNotebookSerializer
     ) {
         this.controller = vscode.notebooks.createNotebookController(
             this.controllerId,
@@ -248,29 +249,67 @@ export class WTNotebookController {
     // And those changes are then reflected in the notebook document when it is 
     //     deserialized again and opened by VSCode
     private async reopenNotebook (notebook: vscode.NotebookDocument) {
-        await notebook.save();
+        const defaultReopen = async () => {
+            await notebook.save();
 
-        // Store the view column of this notebook so that it can be reopened
-        //      in the same location that it was closed
-        const viewColumn = vscode.window.activeNotebookEditor!.viewColumn!;
+            // Store the view column of this notebook so that it can be reopened
+            //      in the same location that it was closed
+            const viewColumn = vscode.window.activeNotebookEditor!.viewColumn!;
 
-        // Search for the tab that this notebook occupies, and close it
-        for (const group of vscode.window.tabGroups.all) {
-            for (const tab of group.tabs) {
-                if (!(tab.input instanceof vscode.TabInputNotebook)) continue;
-                if (!compareFsPath(tab.input.uri, notebook.uri)) continue;
+            // Search for the tab that this notebook occupies, and close it
+            for (const group of vscode.window.tabGroups.all) {
+                for (const tab of group.tabs) {
+                    if (!(tab.input instanceof vscode.TabInputNotebook)) continue;
+                    if (!compareFsPath(tab.input.uri, notebook.uri)) continue;
 
-                await vscode.window.tabGroups.close(tab);
-                break;
+                    await vscode.window.tabGroups.close(tab);
+                    break;
+                }
+            }
+            
+            // Reopen the document
+            await vscode.window.showNotebookDocument(notebook, {
+                viewColumn: viewColumn,
+            });
+
+            // Assign tab labels again
+            return TabLabels.assignNamesForOpenTabs();
+        }
+    }
+
+    // TODO: if VSCode ever add the ability to modify notebook contents from the API replace `reopendNotebook`
+    //      to use this function instead
+    private async _reopenNotebook (notebook: vscode.NotebookDocument, cellActions: {
+        cell: vscode.NotebookCell,
+        update: NotebookCellOutputMetadata
+    }[]) {
+        const noteId = (notebook.metadata as NotebookMetadata).noteId;
+        for (const cellAction of cellActions) {
+            const cell = cellAction.cell;
+            const action = cellAction.update;
+            const cellMetadata: NotebookCellMetadata | undefined = cell.metadata as any;
+            if (!cellMetadata || cellMetadata.kind === 'instructions') {
+                return this.reopenNotebook(notebook);
+            }
+
+            let updated: string | undefined;
+            if (action.updateValue) {
+                cellMetadata.originalText = action.updateValue;
+                updated = action.updateValue
+            }
+
+            if (action.convert) {
+                if (action.convert === 'header' || action.convert === 'markdown') {
+                    const markdownString = this.serializer.createMarkdownStringFromCellText(updated || cell.document.getText(), noteId);
+                    // SET CELL TEXT VALUE TO MARKDOWN STRING
+                    vscode.commands.executeCommand("notebook.cell.changeToMarkdown");
+                }
+                else if (action.convert === 'input') {
+                    // SET CELL TEXT VALUE TO ORIGINAL TEXT
+                    vscode.commands.executeCommand("notebook.cell.changeToCode");
+                }
+                else ((a: never) => {})(action.convert);
             }
         }
-        
-        // Reopen the document
-        await vscode.window.showNotebookDocument(notebook, {
-            viewColumn: viewColumn,
-        });
-
-        // Assign tab labels again
-        return TabLabels.assignNamesForOpenTabs();
     }
 }

@@ -158,8 +158,8 @@ async function loadExtensionWorkspace (
 
         const notebook = new NotebookPanel(workspace, context, notebookSerializer);
         await notebook.initialize();
-        await notebookSerializer.init(context, workspace, notebook);
-        new WTNotebookController(context, workspace, notebook);
+        const notebookController = new WTNotebookController(context, workspace, notebook, notebookSerializer);
+        await notebookSerializer.init(context, workspace, notebook, notebookController);
         report("Loaded notebook");
 
         ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notebook, todo, workspace, context);
