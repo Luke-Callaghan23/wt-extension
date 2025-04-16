@@ -249,32 +249,30 @@ export class WTNotebookController {
     // And those changes are then reflected in the notebook document when it is 
     //     deserialized again and opened by VSCode
     private async reopenNotebook (notebook: vscode.NotebookDocument) {
-        const defaultReopen = async () => {
-            await notebook.save();
+        await notebook.save();
 
-            // Store the view column of this notebook so that it can be reopened
-            //      in the same location that it was closed
-            const viewColumn = vscode.window.activeNotebookEditor!.viewColumn!;
+        // Store the view column of this notebook so that it can be reopened
+        //      in the same location that it was closed
+        const viewColumn = vscode.window.activeNotebookEditor!.viewColumn!;
 
-            // Search for the tab that this notebook occupies, and close it
-            for (const group of vscode.window.tabGroups.all) {
-                for (const tab of group.tabs) {
-                    if (!(tab.input instanceof vscode.TabInputNotebook)) continue;
-                    if (!compareFsPath(tab.input.uri, notebook.uri)) continue;
+        // Search for the tab that this notebook occupies, and close it
+        for (const group of vscode.window.tabGroups.all) {
+            for (const tab of group.tabs) {
+                if (!(tab.input instanceof vscode.TabInputNotebook)) continue;
+                if (!compareFsPath(tab.input.uri, notebook.uri)) continue;
 
-                    await vscode.window.tabGroups.close(tab);
-                    break;
-                }
+                await vscode.window.tabGroups.close(tab);
+                break;
             }
-            
-            // Reopen the document
-            await vscode.window.showNotebookDocument(notebook, {
-                viewColumn: viewColumn,
-            });
-
-            // Assign tab labels again
-            return TabLabels.assignNamesForOpenTabs();
         }
+        
+        // Reopen the document
+        await vscode.window.showNotebookDocument(notebook, {
+            viewColumn: viewColumn,
+        });
+
+        // Assign tab labels again
+        return TabLabels.assignNamesForOpenTabs();
     }
 
     // TODO: if VSCode ever add the ability to modify notebook contents from the API replace `reopendNotebook`

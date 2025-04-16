@@ -69,16 +69,26 @@ export function *getNoteMatchesInText (this: NotebookPanel, text: string): Gener
             catch (err: any) {}
         }
 
-        let start: number = match.index;
-        if (match.index !== 0) {
-            start += 1;
+
+        let start: number;
+        let end: number;
+        if (match.groups && matchedNote) {
+            start = match.index + match[0].indexOf(match.groups[matchedNote.noteId]);
+            end = start + match.groups[matchedNote.noteId].length;
+        }
+        else {
+            start = match.index;
+            const len = ((match.groups?.[matchedNote?.noteId || ''] || '').length + 1) || match[0].length;
+            end = match.index + len;
+    
+            if (match.index + len !== text.length && text[match.index + len] !== '\n' && text[match.index + len] !== '\r') {
+                end -= 1;
+            }
+            else {
+                start += 1;
+            }
         }
 
-        const len = ((match.groups?.[matchedNote?.noteId || ''] || '').length + 1) || match[0].length;
-        let end: number = match.index + len;
-        if (match.index + len !== text.length) {
-            // end -= 1;
-        }
         yield { start, end, tag, matchedNote };
     }
 }

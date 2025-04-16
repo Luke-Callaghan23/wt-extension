@@ -38,6 +38,7 @@ export interface BulletPoint {
     sectionIdx: number;
     idx: number;
     text: string;
+    subBullets?: BulletPoint[];
 }
 
 export interface NoteMatch {
@@ -64,7 +65,7 @@ implements
     static singleton: NotebookPanel;
 
     public matchedNotebook: { [index: string]: NoteMatch[] };
-    protected nounsRegex: RegExp | undefined;
+    public nounsRegex: RegExp | undefined;
 
     public notebook: NotebookPanelNote[];
     protected notebookFolderPath: vscode.Uri;
@@ -247,10 +248,10 @@ implements
                     command: editCommand
                 }
             case 'bullet': return {
-                id: `${noteNode.noteId}__${noteNode.sectionIdx}__${noteNode.kind}__${noteNode.idx}`,
+                id: `${noteNode.noteId}__${noteNode.sectionIdx}__${noteNode.kind}__${noteNode.idx}__${Math.random()}`,
                 contextValue: noteNode.kind,
                 label: noteNode.text,
-                collapsibleState: vscode.TreeItemCollapsibleState.None,
+                collapsibleState: noteNode.subBullets && noteNode.subBullets.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
                 tooltip: noteNode.text,
                 iconPath: new vscode.ThemeIcon("debug-breakpoint-disabled"),
                 command: editCommand
@@ -273,7 +274,7 @@ implements
             case 'section': 
                 return element.bullets;
             case 'bullet':
-                return [];
+                return element.subBullets || [];
         }
     }
 

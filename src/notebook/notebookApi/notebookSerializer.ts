@@ -174,26 +174,55 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             .replace(/:$/, '');
     }
     
-    private sectionCellTextToString (cells: SerializedCell[]): string[] {
-        return cells.map(cell => {
-            return cell.text
-                .split(/\n|\r/g)
-                .map(line => line.trim())
-                .filter(line => line.length > 0)
-            ;
-        }).flat();
+    private sectionCellTextToString (lines: string[], noteId: string, sectionIdx: number): BulletPoint[] {
+        const bullets: BulletPoint[] = [];
+        
+        lines = lines.filter(line => line.trim().length > 0);
+
+        for (let index = 0; index < lines.length; index++) {
+            const line = lines[index];
+            if (line.trim().length === 0) {
+                continue;
+            }
+
+            let current = line;
+            let offset = 0;
+            const subBullets: string[] = [];
+            while (current.startsWith('    ') || current.startsWith('\t')) {
+                if (current.startsWith('    ')) {
+                    subBullets.push(current.substring(4));
+                }
+                else {
+                    subBullets.push(current.substring(1));
+                }
+                offset += 1;
+                current = lines[index + offset];
+                if (!current) break;
+            }
+
+            if (subBullets.length > 0 && bullets.length > 0) {
+                bullets[bullets.length - 1].subBullets = this.sectionCellTextToString(subBullets, noteId, sectionIdx);
+
+                // If there were any sub bullets, skip past them
+                index += subBullets.length - 1;
+            }
+            else {
+                bullets.push({
+                    kind: 'bullet',
+                    idx: index,
+                    noteId: noteId,
+                    sectionIdx: sectionIdx,
+                    text: line.trim(),
+                });
+            }
+        }
+        return bullets;
     }
 
     private sectionCellsToBulletPoints (noteId: string, sectionIdx: number, cells: SerializedCell[]): BulletPoint[] {
-        return this.sectionCellTextToString(cells).map((bullet, index) => {
-            return {
-                kind: 'bullet',
-                idx: index,
-                noteId: noteId,
-                sectionIdx: sectionIdx,
-                text: bullet
-            };
-        });
+        return cells.map((cell, index) => {
+            return this.sectionCellTextToString(cell.text.split(/\n|\r/g), noteId, index);
+        }).flat();
     }
     
 
@@ -227,7 +256,12 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             noteId: serializedNote.noteId,
             title: serializedNote.title.text,
             aliases: serializedAliasHeader?.cells 
-                ? this.sectionCellTextToString(serializedAliasHeader.cells)
+                ? serializedAliasHeader.cells.map(cell => {
+                    return cell.text
+                        .split(/\n|\r/g)
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0)
+                }).flat()
                 : []
             ,
             sections: serializedNote.headers.map((section, index) => ({
@@ -285,6 +319,13 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     // TODO: Might be able to combat this by doing some matching of `Note` object contents VS disk contents
     //      not sure
     async serializeSingleNote (note: NotebookPanelNote): Promise<SerializedNote> {
+        const bulletParse = (bullet: BulletPoint, prefix=''): string => {
+            if (bullet.subBullets) {
+                return bullet.text + "\n" + bullet.subBullets.map(b => prefix + '    ' + bulletParse(b, prefix + '    ')).join('\n');
+            }
+            return bullet.text;
+        }
+
         return {
             noteId: note.noteId,
             title: {
@@ -311,10 +352,10 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 // Should be more or less accurate to disk contents
                 ...note.sections.map((section, sectionIndex) => {
                     return {
-                        cells: section.bullets.map(bullet => {
+                        cells: section.bullets.map(b => {
                             return {
                                 editing: true,
-                                text: bullet.text
+                                text: bulletParse(b)
                             }
                         }),
                         headerOrder: sectionIndex + 1,
@@ -331,8 +372,38 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
     public createMarkdownStringFromCellText (wtText: string, noteId: string) {
 
-        // Add bullet points between every newline
-        const withBulletPoints = "- " + wtText.trim().replaceAll(/(\n\s*)+/g, "\n\n- ");
+        
+        let withBulletPoints: string = '';
+        for (let line of wtText.trim().split('\n')) {
+            let replacements = 0;
+            while (line.startsWith("    ") || line.startsWith('\t')) {
+                replacements++;
+
+                if (line.startsWith("    ")) {
+                    line = line.substring(4)
+                }
+                else {
+                    line = line.substring(1);
+                }
+            }
+            line = line.trim();
+            if (line.length === 0) {
+                continue;
+            }
+
+            let prefix = '';
+            for (let index = 0; index < replacements; index++) {
+                prefix += '  ';
+            }
+            line = prefix + '- ' + line;
+
+            if (withBulletPoints === '') {
+                withBulletPoints += line;
+            }
+            else {
+                withBulletPoints += '\n' + line;
+            }
+        }
 
         // Convert wt text stylings to md text stylings
         const asMarkdown = wtToMd(withBulletPoints);
@@ -453,10 +524,10 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                         <h1><b>Welcome to WTANIWE notebook</b></h1>
                         <p>Here's how it works:</p>
                         <ul>
-                            <li><a href="/Users/lcallagh/Desktop/vs-code/git/wt-extension/src/notebook/notebookApi/notebookSerializer.ts">Hello</a></li>
                             <li>All instances of this note's title will appear highlighted blue in fragment files and will link here if you ctrl+click on it</li>
                             <li>Write notes about your subject in the notebook cells below, or add more cells with "+ Code" <b>(NOT "+ Markdown"!!)</b></li>
                             <li>When you save the notebook document, your changes notes will appear in the "Notes" panel of the extension and when you hover a notebook term or alias</li>
+                            <ul><li>Text on each new line is a bullet point.  To add a sub-bullet insert 4 spaces or a tab character before the text on your line</li></ul>
                             <li>The language of these cells are 'wtnote', which is more or less equivalent to the regular 'wt' you've been using all along, so you have all the same styling and keybindings as usual</li>
                             <li>Headers:</li>
                             <ul>
