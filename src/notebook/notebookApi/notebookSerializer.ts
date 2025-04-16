@@ -6,9 +6,10 @@ import { Buff } from '../../Buffer/bufferSource';
 import { wtToMd } from '../../export/wtToMd';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { capitalize } from '../../intellisense/common';
-import { _, formatFsPathForCompare, getRelativePath, statFile, } from '../../miscTools/help';
+import { _, formatFsPathForCompare, getRelativePath, statFile, vagueNodeSearch, } from '../../miscTools/help';
 import { TextMatchForNote } from '../timedViewUpdate';
 import { WTNotebookController } from './notebookController';
+import { markdownFormattedFragmentLinkRegex } from '../../miscTools/fragmentLinker';
 
 /*
 NOTES on NotebookSerializer and NotebookController and how wtnote files are handled
@@ -370,11 +371,14 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
     //#region SERIALIZE CELLS
 
-    public createMarkdownStringFromCellText (wtText: string, noteId: string) {
+    public async createMarkdownStringFromCellText (wtText: string, noteId: string): Promise<string> {
 
-        
-        let withBulletPoints: string = '';
+        // Add '- ' to the beginning of every valid line
+        // Replace all sets of four spaces (or one tab character) with two spaces to 
+        //      do Markdown formatted bullet indentation
+        const withBulletPointsLines: string[] = [];
         for (let line of wtText.trim().split('\n')) {
+            // Count how many groups of 4 spaces or tabs come before the text in this line
             let replacements = 0;
             while (line.startsWith("    ") || line.startsWith('\t')) {
                 replacements++;
@@ -391,22 +395,59 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 continue;
             }
 
+            // For each 4 space group or tab, fill in two spaces 
             let prefix = '';
             for (let index = 0; index < replacements; index++) {
                 prefix += '  ';
             }
+
+            // Add '- ' to turn this into a bullet
             line = prefix + '- ' + line;
 
-            if (withBulletPoints === '') {
-                withBulletPoints += line;
+            // If this is the first line, then don't add the newline
+            withBulletPointsLines.push(line);
+        }
+        const withBulletPoints = withBulletPointsLines.join('\n');
+        
+        const replacements: {
+            start: number,
+            end: number,
+            replace: string
+        }[] = [];
+        let match: RegExpExecArray | null;
+        while ((match = markdownFormattedFragmentLinkRegex.exec(withBulletPoints))) {
+            if (!match.groups || !match.groups.link || !match.groups.description) {
+                continue;
             }
-            else {
-                withBulletPoints += '\n' + line;
-            }
+
+            const start = match.index;
+            const end = match.index + match[0].length;
+
+            const { link, description } = match.groups as { 
+                link: string;
+                description: string;
+            };
+            const node = await vagueNodeSearch(vscode.Uri.file(link), true);
+            if (!node || node.source === 'notebook') continue
+            const uri = node.node!.data.ids.uri;
+
+            replacements.push({
+                replace: `[${description}](${uri.path})`,
+                start: start,
+                end: end
+            });
+        }
+
+        const reversedReplacements = replacements.reverse();
+        let withFragmentLinks = withBulletPoints;
+        for (const { start, end, replace } of reversedReplacements) {
+            const nend = withFragmentLinks.substring(end);
+            const nstart = withFragmentLinks.substring(0, start);
+            withFragmentLinks = nstart + replace + nend;
         }
 
         // Convert wt text stylings to md text stylings
-        const asMarkdown = wtToMd(withBulletPoints);
+        const asMarkdown = wtToMd(withFragmentLinks);
         
         // Search for all references to notes in this cell
         const matches: TextMatchForNote[] = [];
@@ -436,7 +477,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         return finalString;
     }
 
-    private getCelldata (serializedCell: SerializedCell, noteId: string): vscode.NotebookCellData {
+    private async getCelldata (serializedCell: SerializedCell, noteId: string): Promise<vscode.NotebookCellData> {
         if (serializedCell.editing) {
             // If the cell is being edited, then return a vscode.NotebookCellData with kind===Code
             return {
@@ -456,7 +497,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             return {
                 kind: vscode.NotebookCellKind.Markup,
                 languageId: 'markdown',
-                value: this.createMarkdownStringFromCellText(serializedCell.text, noteId),
+                value: await this.createMarkdownStringFromCellText(serializedCell.text, noteId),
                 metadata: _<NotebookCellMetadata>({
                     kind: 'input',
                     markdown: true,
@@ -467,7 +508,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     };
 
     // Called on the children of a header that is read from serialized file
-    private deserializeCell (arr: SerializedCell[], noteId: string): vscode.NotebookCellData[] {
+    private async deserializeCell (arr: SerializedCell[], noteId: string): Promise<vscode.NotebookCellData[]> {
         
         // EMPTY ARRAY:
         if (arr.length === 0) {
@@ -485,7 +526,11 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         }
         
         // Otherwise iterate over all cells and get cell data for each
-        return arr.map(cell => this.getCelldata(cell, noteId));
+        const final = [];
+        for (const cell of arr) {
+            final.push(await this.getCelldata(cell, noteId));
+        }
+        return final;
     };
 
     async deserializeNotebook(content: Uint8Array): Promise<vscode.NotebookData> {
@@ -553,29 +598,25 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             }) : [],
 
             title,
-
-            // For each header:
-            serializedNote.headers.map(header => {
-                return [
-                    // Create the header cell itself as a markdown cell
-                    {
-                        kind: vscode.NotebookCellKind.Markup,
-                        languageId: 'markdown',
-                        value: `### ${capitalize(header.headerText)}:`,
-                        metadata: _<NotebookCellMetadata>({
-                            kind: 'header',
-                            originalText: header.headerText,
-                        }),
-                    },
-
-                    // Then deserialize all the contents under this header
-                    ...this.deserializeCell(header.cells, serializedNote.noteId),
-                ];
-            // Then flatten the contents into the main array
-            }).flat(),
-
-            
         ].flat());
+
+        // For each header:
+        for (const header of serializedNote.headers) {
+            notebookData.cells.push({
+                kind: vscode.NotebookCellKind.Markup,
+                languageId: 'markdown',
+                value: `### ${capitalize(header.headerText)}:`,
+                metadata: _<NotebookCellMetadata>({
+                    kind: 'header',
+                    originalText: header.headerText,
+                }),
+            });
+
+            // Then deserialize all the contents under this header
+            notebookData.cells.push(
+                ...(await this.deserializeCell(header.cells, serializedNote.noteId))
+            );
+        }
 
         // Only metadata needed for the main notebook is the id
         notebookData.metadata = _<NotebookMetadata>({

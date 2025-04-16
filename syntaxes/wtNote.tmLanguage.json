@@ -1,13 +1,29 @@
 {
     "scopeName": "source.wtNote",
-    "patterns": [{ "include": "#expression" }],
+    "patterns": [
+        { "include": "#mdLink" },
+        { "include": "#expression" },
+        { "include": "#comments" }
+    ],
     "repository": {
+        "mdLink": {
+            "match": "\\[.*?\\]\\(.*?\\)",
+            "name": "keyword"
+        },
         "expression": {
             "patterns": [{ "include": "#separatorLine" }]
         },
         "separatorLine": {
             "match": ".*-- ALSO, DON'T DELETE THIS LINE!",
             "name": "keyword.separatorLine"
+        },
+        "comments": {
+            "name": "comment.line.number-sign.wt",
+            "begin": "\\[",
+            "patterns": [{
+                "include": "#comments"
+            }],
+            "end": "\\]"
         }
     }
 }

@@ -51,7 +51,8 @@ implements
     vscode.TreeDataProvider<NotebookPanelNote | NoteSection | BulletPoint>, 
     vscode.HoverProvider, Timed, Renamable<NotebookPanelNote>,
     vscode.ReferenceProvider,
-    vscode.RenameProvider
+    vscode.RenameProvider,
+    vscode.DocumentLinkProvider
 {
     addNote = addNote;
     removeNote = removeNote;
@@ -127,10 +128,10 @@ implements
             language: 'wtNote',
         }, this));
 
-        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider({
+        this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({
             language: 'wt',
         }, this));
-        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider({
+        this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({
             language: 'wtNote',
         }, this));
 
@@ -324,33 +325,32 @@ implements
         }
         return null;
     }
-
-    provideDefinition (
-        document: vscode.TextDocument, 
-        position: vscode.Position, 
-        token: vscode.CancellationToken
-    ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
+    
+    async provideDocumentLinks(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.DocumentLink[] | null> {
         if (!this.matchedNotebook) return null;
 
         const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
         if (!documentMatches) return null;
 
-        const matchedNote = documentMatches.find(match => match.range.contains(position));
-        if (!matchedNote) return null;
-    
-        if (this.view.visible) {
-            this.view.reveal(matchedNote.note, {
-                select: true,
-                expand: true,
+        const documentLinks: vscode.DocumentLink[] = [];
+        for (const match of documentMatches) {
+            const matchedNote = match.note;
+        
+            if (this.view.visible) {
+                this.view.reveal(matchedNote, {
+                    select: true,
+                    expand: true,
+                });
+            }
+        
+            const fileName = `${matchedNote.noteId}.wtnote`;
+            const filePath = vscode.Uri.joinPath(this.notebookFolderPath, fileName);
+            documentLinks.push({
+                target: filePath,
+                range: match.range,
             });
         }
-    
-        const fileName = `${matchedNote.note.noteId}.wtnote`;
-        const filePath = vscode.Uri.joinPath(this.notebookFolderPath, fileName);
-        return <vscode.Definition>{
-            uri: filePath,
-            range: new vscode.Range(position, position),
-        };
+        return documentLinks;
     }
 
     async provideReferences(
