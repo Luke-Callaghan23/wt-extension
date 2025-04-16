@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { CoderModer } from './codeMode';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { OutlineView } from '../outline/outlineView';
-import { compareFsPath } from '../miscTools/help';
+import { compareFsPath, showDocument } from '../miscTools/help';
 
 export async function exit (this: CoderModer): Promise<void> {
     if (!this.repoUris) return;
@@ -52,7 +52,7 @@ export async function exit (this: CoderModer): Promise<void> {
     this.openedOutput = false;
     
     if (this.previousActiveDocument && this.previousActiveViewColumn) {
-        await vscode.window.showTextDocument(this.previousActiveDocument, {
+        await showDocument(this.previousActiveDocument, {
             viewColumn: this.previousActiveViewColumn
         });
         this.previousActiveDocument = null;

@@ -422,3 +422,14 @@ export function progressOnViews_impl <T> (
 export function _ <T> (obj: T): T {
     return obj;
 }
+
+export async function showDocument (uri: vscode.Uri, options?: vscode.TextDocumentShowOptions) {
+    if (uri.fsPath.toLowerCase().endsWith('.wtnote')) {
+        return vscode.workspace.openNotebookDocument(uri).then(notebook => {
+            return vscode.window.showNotebookDocument(notebook, options);
+        })
+    }
+    else {
+        return vscode.window.showTextDocument(uri, options);
+    }
+}

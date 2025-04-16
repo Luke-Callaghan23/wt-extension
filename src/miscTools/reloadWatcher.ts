@@ -21,6 +21,10 @@ export class ReloadWatcher implements Packageable {
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.reloadWatcher.reloadWorkspace", () => {
             return ReloadWatcher.changedContextValues(true);
         }));
+        
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.reloadWatcher.reloadViews", () => {
+            return ReloadWatcher.changedContextValues(true, true);
+        }));
         ReloadWatcher.enableReloadWatch();
     }
     
@@ -42,6 +46,7 @@ export class ReloadWatcher implements Packageable {
 
     static async changedContextValues (
         overrideCommitCheck: boolean = false,
+        justViews: boolean = false,
     ) {
         
         let reloadTabs = overrideCommitCheck;
@@ -65,7 +70,7 @@ export class ReloadWatcher implements Packageable {
         // Load context items from the new context values json 
         const contextValues: DiskContextType = await loadWorkspaceContext(ReloadWatcher.context, ReloadWatcher.contextValuesUri);
 
-        if (reloadTabs) {
+        if (reloadTabs && !justViews) {
             const tabContext = contextValues["wt.reloadWatcher.openedTabs"];
             TabStates.restoreTabState(tabContext, "Previous Workspace");
         }

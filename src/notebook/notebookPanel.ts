@@ -8,10 +8,11 @@ import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { _, compareFsPath, defaultProgress, formatFsPathForCompare } from '../miscTools/help';
+import { _, compareFsPath, defaultProgress, formatFsPathForCompare, readDotConfig, writeDotConfig } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../intellisense/common';
+import { ExtensionGlobals } from '../extension';
 
 
 export interface NotebookPanelNote {
@@ -239,7 +240,7 @@ implements
                     contextValue: 'note',
                     label: noteNode.title,
                     description: aliasesString,
-                    collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
+                    collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
                     tooltip: aliasesString.length !== 0 
                         ? `${noteNode.title} (${aliasesString})`
                         : `${noteNode.title}`,
@@ -394,11 +395,12 @@ implements
         if (!matchedNote) return null;
 
         const aliasText = document.getText(matchedNote.range);
-        const aliasRegex = '(^|[^a-zA-Z0-9])?' + `(${aliasText})` + '([^a-zA-Z0-9]|$)?';
+        const aliasRegexString = `(${aliasText})`;
+        const aliasRegex = new RegExp(aliasRegexString, 'gi');
         
         const locations = await defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
             const grepLocations: vscode.Location[] = []; 
-            for await (const loc of grepExtensionDirectory(aliasRegex, true, true, true)) {
+            for await (const loc of grepExtensionDirectory(aliasRegexString, true, true, true)) {
                 if (loc === null) return null;
                 grepLocations.push(loc);
             }
@@ -407,32 +409,64 @@ implements
             //      grep of the nouns
             // Not sure why that is -- but subtracting one from each character index works here
             return grepLocations.map(loc => new vscode.Location(loc.uri, new vscode.Range(
-                new vscode.Position(loc.range.start.line, Math.max(loc.range.start.character - 1, 0)),
-                new vscode.Position(loc.range.end.line, Math.max(loc.range.end.character - 1, 0))
+                new vscode.Position(loc.range.start.line, Math.max(loc.range.start.character - 1, 1)),
+                new vscode.Position(loc.range.end.line, Math.max(loc.range.end.character - 1, 1))
             )));
         });
         if (!locations) return null;
 
-        const resp = await vscode.window.showInformationMessage(`Are you sure you want to replace ${locations.length} instances of '${aliasText}'?`, {
-            detail: `This will include changes to file titles, wtnote files, and fragment text.  This can't be undone.  Also this will only change exact matches to '${aliasText}' not any near matches or misspellings.  ([Don't end up like Dwigt!](https://youtu.be/-FoKU54ITuI?si=AARaG7AjkqqQw4I0&t=110))`,
-            modal: true,
-        }, "Yes I'm sure");
-        if (resp !== "Yes I'm sure") return null;
+        while (true) {
+            const resp = await vscode.window.showInformationMessage(`Are you sure you want to replace ${locations.length} instances of '${aliasText}'?`, {
+                detail: `This will include changes to file titles, wtnote files, and fragment text.  This can't be undone.  Also this will only change exact matches to '${aliasText}' not any near matches or misspellings.  Also whatever capitalization you just entered will be the capitalization used for all instances of replacement.`,
+                modal: true,
+            }, "Yes I'm sure", 'Show me the the office clip');
+            if (resp === 'Show me the the office clip') {
+                await vscode.env.openExternal(vscode.Uri.parse(
+                    "https://youtu.be/-FoKU54ITuI?si=AARaG7AjkqqQw4I0&t=110"
+                ));
+                continue;
+            }
+            if (resp !== "Yes I'm sure") return null;
+            break;
+        }
 
-        const noteCovered: Set<string> = new Set<string>();
+        const replacedUris: Set<string> = new Set<string>();
 
-        return defaultProgress(`Collecting edits for '${matchedNote.note.title}'`, async () => {
+        const edits = await defaultProgress(`Collecting edits for '${matchedNote.note.title}'`, async () => {
             const edits = new vscode.WorkspaceEdit();
             for (const location of locations) {
-                if (location.uri.fsPath.endsWith('.wtnote')) {
+                if (location.uri.fsPath.endsWith('.wt')) {
+                    edits.replace(location.uri, location.range, newName);
+                }
+                else if (location.uri.fsPath.endsWith('.wtnote')) {
                     // Edits to notes are done in one go, because it is difficult to track exact replacements otherwise
-                    if (noteCovered.has(location.uri.fsPath)) {
+                    if (replacedUris.has(location.uri.fsPath)) {
                         continue;
                     }
 
-                    // Run find and replace inside of the serializer and create an edit for overwriting this
-                    //      wtnote file entirely
-                    const updatedSerializedNote = this.serializer.findAndReplace(location.uri, new RegExp(aliasRegex, 'gi'), newName);
+                    const note = await vscode.workspace.fs.readFile(location.uri).then(buffer => {
+                        return this.serializer.readSerializedNote(buffer);
+                    });
+
+                    // Find and replace inside of all the bullet points of this note
+                    for (const [ _, section ] of Object.entries(note.headers)) {
+                        const repl = section.cells.map(bullet => ({
+                            ...bullet,
+                            text: bullet.text.replaceAll(
+                                aliasRegex, 
+                                // Pass in replacement function that replaces only `aliasText`
+                                //      with newName
+                                // This is because the alias regex adds spaces to ensure that it
+                                //      is matching a whole word, but we do not want those
+                                //      spaces being replaced in the final string
+                                rep => rep.replace(aliasText, newName)
+                            )
+                        }));
+                        section.cells = repl;
+                    }
+                    const updatedSerializedNote = note;
+
+                    // Create an edit to overwrite the whole file with the new replaced contents
                     edits.createFile(location.uri, {
                         overwrite: true,
                         contents: Buff.from(JSON.stringify(updatedSerializedNote, undefined, 4))
@@ -442,18 +476,36 @@ implements
                     //      and we don't want to waste time performing the same replacements over and over
                     //      again, we add this uri to the set of modified notes so that if we encounter
                     //      this again we can just skip it
-                    noteCovered.add(location.uri.fsPath);
-                }
-                else if (location.uri.fsPath.endsWith('.wt')) {
-                    edits.replace(location.uri, location.range, newName);
+                    replacedUris.add(location.uri.fsPath);
                 }
                 else if (location.uri.fsPath.endsWith('.config')) {
-                    throw 'not implemented'
+                    const config = await readDotConfig(location.uri);
+                    if (!config) continue;
+                    
+                    // See notes above for replacing the inner text of the alias match
+                    for (const [ _, entry ] of Object.entries(config)) {
+                        entry.title = entry.title.replaceAll(aliasRegex, rep => rep.replace(aliasText, newName));
+                    }
+
+                    // See notes above about overwriting files
+                    edits.createFile(location.uri, {
+                        overwrite: true,
+                        contents: Buff.from(JSON.stringify(config, undefined))
+                    });
+                    replacedUris.add(location.uri.fsPath);
                 }
                 else continue;
             }
             return edits;
         });
+        if (!edits) return null;
+
+        // `onDidRenameFiles` will be called after the edits are applied.  When that happens, we want to reload
+        setTimeout(() => {
+            vscode.commands.executeCommand("wt.reloadWatcher.reloadViews");
+            vscode.window.showInformationMessage("Finished updating.  If you see some inaccuracies in a wtnote notebook window please just close and re-open.")
+        }, 2000);
+        return edits;
     }
 
     prepareRename (document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Range> {

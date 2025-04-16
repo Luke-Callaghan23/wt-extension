@@ -5,6 +5,7 @@ import { Packageable } from '../packageable';
 import { FileAccessManager } from './fileAccesses';
 import * as extension from './../extension';
 import { TabLabels } from '../tabLabels/tabLabels';
+import { showDocument } from './help';
 
 
 type StateOption <T> = { label: string, isStateId: true } | { label: T, isStateId: false };
@@ -102,7 +103,7 @@ export class TabStates implements Packageable {
                 for (const [ relativePath, positions ] of Object.entries(tabs)) {
                     const openUri = vscode.Uri.joinPath(extension.rootPath, relativePath);
                     
-                    await vscode.window.showTextDocument(openUri, {
+                    await showDocument(openUri, {
                         viewColumn: viewCol,
                         selection: new vscode.Range(
                             new vscode.Position(positions.activeLine, positions.activeChar),
@@ -119,7 +120,7 @@ export class TabStates implements Packageable {
 
                 // If we came across the active tab, then re-show that document
                 if (activeUri) {
-                    await vscode.window.showTextDocument(activeUri, {
+                    await showDocument(activeUri, {
                         viewColumn: viewCol,
                         // Since we opened it with the correct positions earlier, we don't need to do it again here
                         preview: false,

@@ -10,3 +10,4 @@ TODO:
 - [ ] images
 - [ ] integrate with search bar -- search bar will now be looking inside of jsons which we don't actually want
     - probably can just search in NotebookPanelNotes -- won't have unsaved data but who cares
+- [ ] anywhere that opens a document needs to open a notebook for this
