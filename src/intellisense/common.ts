@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { SynonymsProvider } from './synonymsProvider/provideSynonyms';
+import { capitalize } from '../miscTools/help';
 
 export type HoverPosition = {
     start: number;
@@ -7,33 +8,7 @@ export type HoverPosition = {
     text: string;
 };
 
-export type Capitalization = 'firstLetter' | 'allCaps' | 'noCapFrFrOnGod';
-export function getTextCapitalization (text: string): Capitalization {
-    let cap: Capitalization = 'noCapFrFrOnGod';
-    let capCount = 0;
-    for (let index = 0; index < text.length; index++) {
-        const char = text[index];
-        if (/[A-Z]/.test(char)) {
-            if (index === 0) {
-                cap = 'firstLetter';
-            }
-            capCount += 1;
-        }
-    }
 
-    if (capCount === text.length) {
-        cap = 'allCaps';
-    }
-    return cap;
-}
-
-export function transformToCapitalization (input: string, capitalization: Capitalization): string {
-    switch (capitalization) {
-        case 'allCaps': return input.toUpperCase();
-        case 'firstLetter': return capitalize(input.toLocaleLowerCase());
-        case 'noCapFrFrOnGod': return input.toLocaleLowerCase();
-    }
-}
 
 
 export function getHoveredWord (document: vscode.TextDocument, position: vscode.Position): HoverPosition | null {
@@ -148,13 +123,6 @@ export async function getHoverText (text: string): Promise<string> {
 
     return fullString;
 }
-
-export function capitalize (str: string): string {
-    const end = str.substring(1);
-    return str[0].toLocaleUpperCase() + end;
-}
-
-
 
 export type WordRange = {
     text: string,

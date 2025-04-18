@@ -433,3 +433,61 @@ export async function showDocument (uri: vscode.Uri, options?: vscode.TextDocume
         return vscode.window.showTextDocument(uri, options);
     }
 }
+
+
+export function capitalize(str: string, justFirstWord=true): string {
+    if (justFirstWord) {
+        const end = str.substring(1);
+        return str[0].toLocaleUpperCase() + end;
+    }
+
+    // Iterate characters and capitalize each
+    let final: string = '';
+    let current: string = '';
+    for (let index = 0; index < str.length; index++) {
+        if (/[^a-zA-Z]/.test(str[index])) {
+            final += (current + str[index]);
+            current = '';
+            continue;
+        }
+
+        if (current.length === 0) {
+            current += str[index].toLocaleUpperCase();
+        }
+        else {
+            current += str[index];
+        }
+    }
+
+
+    final += current;
+    return final;
+}
+
+export type Capitalization = 'firstLetter' | 'allCaps' | 'noCapFrFrOnGod';
+export function getTextCapitalization(text: string): Capitalization {
+    let cap: Capitalization = 'noCapFrFrOnGod';
+    let capCount = 0;
+    for (let index = 0; index < text.length; index++) {
+        const char = text[index];
+        if (/[A-Z]/.test(char)) {
+            if (index === 0) {
+                cap = 'firstLetter';
+            }
+            capCount += 1;
+        }
+    }
+
+    if (capCount === text.length) {
+        cap = 'allCaps';
+    }
+    return cap;
+}
+
+export function transformToCapitalization(input: string, capitalization: Capitalization): string {
+    switch (capitalization) {
+        case 'allCaps': return input.toUpperCase();
+        case 'firstLetter': return capitalize(input.toLocaleLowerCase());
+        case 'noCapFrFrOnGod': return input.toLocaleLowerCase();
+    }
+}

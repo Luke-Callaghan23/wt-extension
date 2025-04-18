@@ -5,7 +5,7 @@ import * as extension from './../../extension';
 import * as vscodeUri from 'vscode-uri';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
-import { capitalize } from '../../intellisense/common';
+import { capitalize } from '../../miscTools/help';
 import { formatFsPathForCompare, readDotConfig, vagueNodeSearch, VagueNodeSearchResult } from '../../miscTools/help';
 
 

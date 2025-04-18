@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
-import { Capitalization, HoverPosition, capitalize, getHoverText, getHoveredWord, getTextCapitalization, transformToCapitalization } from '../common';
+import { HoverPosition, getHoverText, getHoveredWord } from '../common';
+import { Capitalization, getTextCapitalization, transformToCapitalization } from '../../miscTools/help';
+import { capitalize } from '../../miscTools/help';
 import { SynonymError, SynonymSearchResult, Synonyms, SynonymsProvider } from '../synonymsProvider/provideSynonyms';
 
 const NUMBER_COMPLETES = 20;

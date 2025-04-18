@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { NotebookPanelNote, NoteMatch, NotebookPanel } from './notebookPanel';
 import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
-import { capitalize } from '../intellisense/common';
+import { capitalize } from '../miscTools/help';
 
 const decorationsOptions: vscode.DecorationRenderOptions = {
     color: '#006eff',

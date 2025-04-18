@@ -11,7 +11,7 @@ import { TabLabels } from '../tabLabels/tabLabels';
 import { _, compareFsPath, defaultProgress, formatFsPathForCompare, readDotConfig, writeDotConfig } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
-import { capitalize } from '../intellisense/common';
+import { capitalize } from '../miscTools/help';
 import { ExtensionGlobals } from '../extension';
 
 

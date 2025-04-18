@@ -7,7 +7,7 @@ import { MoveNodeResult } from '../nodes_impl/handleMovement/common';
 import { ScratchPadView } from '../../scratchPad/scratchPadView';
 import { ExtensionGlobals } from '../../extension';
 import { defaultProgress, getSectionedProgressReporter, progressOnViews, setFsPathKey } from '../../miscTools/help';
-import { capitalize } from '../../intellisense/common';
+import { capitalize } from '../../miscTools/help';
 
 export type DataTransferType = 
     'application/vnd.code.tree.outline'

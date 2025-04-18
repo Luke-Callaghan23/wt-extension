@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
-import { capitalize, getHoverText, getHoveredWord } from '../common';
+import { getHoverText, getHoveredWord } from '../common';
+import { capitalize } from '../../miscTools/help';
 import { NotebookPanel } from '../../notebook/notebookPanel';
 import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
 

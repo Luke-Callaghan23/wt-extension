@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Packageable } from '../../packageable';
 import * as console from '../../miscTools/vsconsole';
-import { capitalize } from '../common';
+import { capitalize } from '../../miscTools/help';
 
 type Colors = { [index: string]: 1 };
 

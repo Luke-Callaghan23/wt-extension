@@ -5,7 +5,7 @@ import { BulletPoint, NotebookPanelNote, NotebookPanel, NoteSection } from '../n
 import { Buff } from '../../Buffer/bufferSource';
 import { wtToMd } from '../../export/wtToMd';
 import { TabLabels } from '../../tabLabels/tabLabels';
-import { capitalize } from '../../intellisense/common';
+import { capitalize } from '../../miscTools/help';
 import { _, formatFsPathForCompare, getRelativePath, statFile, vagueNodeSearch, } from '../../miscTools/help';
 import { TextMatchForNote } from '../timedViewUpdate';
 import { WTNotebookController } from './notebookController';
