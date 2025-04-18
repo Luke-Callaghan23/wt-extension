@@ -152,14 +152,18 @@ export class WTNotebookController {
             return;
         }
 
-        // And store that updated value in output metadata for the NotebookSerilizer to pick up
-        execution.replaceOutput([
-            new vscode.NotebookCellOutput([], _<NotebookCellOutputMetadata>({
-                updateValue: newName
-            }))
-        ]);
-        execution.end(true, Date.now());
-        return this.reopenNotebook(cell.notebook);
+        const noteId = (cell.notebook.metadata! as NotebookMetadata).noteId;
+        const notebookPanelNote = this.notebook.notebook.find(note => note.noteId === noteId);
+        if (!notebookPanelNote) throw 'not possible';
+
+        const edits = await this.notebook.getRenameEditsForNote(notebookPanelNote, notebookPanelNote.title, newName);
+        if (!edits) return;
+        await vscode.workspace.applyEdit(edits, {
+            isRefactoring: true
+        });
+
+        vscode.commands.executeCommand("wt.reloadWatcher.reloadViews");
+        vscode.window.showInformationMessage("Finished updating.  If you see some inaccuracies in a wtnote notebook window please just close and re-open.")
     }
 
 

@@ -393,10 +393,22 @@ implements
         if (!matchedNote) return null;
 
         const aliasText = document.getText(matchedNote.range);
+        const edits = this.getRenameEditsForNote(matchedNote.note, aliasText, newName);
+        
+        // `onDidRenameFiles` will be called after the edits are applied.  When that happens, we want to reload
+        setTimeout(() => {
+            vscode.commands.executeCommand("wt.reloadWatcher.reloadViews");
+            vscode.window.showInformationMessage("Finished updating.  If you see some inaccuracies in a wtnote notebook window please just close and re-open.")
+        }, 2000);
+
+        return edits;
+    }
+
+    async getRenameEditsForNote (notePanelNote: NotebookPanelNote, aliasText: string, newName: string): Promise<vscode.WorkspaceEdit | null> {
         const aliasRegexString = `(${aliasText})`;
         const aliasRegex = new RegExp(aliasRegexString, 'gi');
         
-        const locations: [ vscode.Location, string ][] | null= await defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
+        const locations: [ vscode.Location, string ][] | null= await defaultProgress(`Collecting references for '${notePanelNote.title}'`, async () => {
             const grepLocations: [ vscode.Location, string ][] = []; 
             for await (const loc of grepExtensionDirectory(aliasRegexString, true, true, true)) {
                 if (loc === null) return null;
@@ -437,7 +449,7 @@ WARNING: this is kinda dangerous.
 
         const replacedUris: Set<string> = new Set<string>();
 
-        const edits = await defaultProgress(`Collecting edits for '${matchedNote.note.title}'`, async () => {
+        const edits = await defaultProgress(`Collecting edits for '${notePanelNote.title}'`, async () => {
             const edits = new vscode.WorkspaceEdit();
             for (const [ location, matchedText ] of locations) {
 
@@ -475,6 +487,7 @@ WARNING: this is kinda dangerous.
                         }));
                         section.cells = repl;
                     }
+                    note.title.text = note.title.text.replaceAll(aliasRegex, rep => rep.replace(aliasRegex, correctedCapitalization));
                     const updatedSerializedNote = note;
 
                     // Create an edit to overwrite the whole file with the new replaced contents
@@ -495,7 +508,7 @@ WARNING: this is kinda dangerous.
                     
                     // See notes above for replacing the inner text of the alias match
                     for (const [ _, entry ] of Object.entries(config)) {
-                        entry.title = entry.title.replaceAll(aliasRegex, rep => rep.replace(aliasText, correctedCapitalization));
+                        entry.title = entry.title.replaceAll(aliasRegex, rep => rep.replace(aliasRegex, correctedCapitalization));
                     }
 
                     // See notes above about overwriting files
@@ -509,13 +522,6 @@ WARNING: this is kinda dangerous.
             }
             return edits;
         });
-        if (!edits) return null;
-
-        // `onDidRenameFiles` will be called after the edits are applied.  When that happens, we want to reload
-        setTimeout(() => {
-            vscode.commands.executeCommand("wt.reloadWatcher.reloadViews");
-            vscode.window.showInformationMessage("Finished updating.  If you see some inaccuracies in a wtnote notebook window please just close and re-open.")
-        }, 2000);
         return edits;
     }
 
