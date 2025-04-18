@@ -483,6 +483,7 @@ export function getTextCapitalization(text: string): Capitalization {
                 //      increment the word count quite yet
                 wordCount++;
             }
+            capCount++;
             startOfWord = true;
             continue
         }
@@ -499,9 +500,8 @@ export function getTextCapitalization(text: string): Capitalization {
             if (startOfWord) {
                 capitalizedFirstLetterCount++;
             }
-
-            // Increase total count of capitalized letterss
-            capCount += 1;
+            
+            capCount ++ ;
         }
 
         // Reset word start flag

@@ -125,6 +125,10 @@ export async function *grepExtensionDirectory (
 
     const parseOutput: RegExp = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
 
+    for await (const result of grep(regex)) {
+        console.log(result)
+    }
+
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
     for await (const result of grep(regex)) {
@@ -147,9 +151,9 @@ export async function *grepExtensionDirectory (
             let characterStart = lineMatch.index;
 
             // No clue what this does... I just know I found an off by one error somewhere
-            if (characterStart !== 0) {
-                characterStart += 1;
-            }
+            // if (characterStart !== 0) {
+            //     characterStart += 1;
+            // }
 
             // Using the captureGroupId we baked into the inlineSearchRegex, we can isolate just the current 
             //      matched text from the whole line

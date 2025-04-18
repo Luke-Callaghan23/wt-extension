@@ -8,7 +8,7 @@ import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { _, compareFsPath, defaultProgress, formatFsPathForCompare, readDotConfig, writeDotConfig } from '../miscTools/help';
+import { _, compareFsPath, defaultProgress, formatFsPathForCompare, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
@@ -378,10 +378,7 @@ implements
             // For some reason the reference provider needs the locations to be indexed one less than the results from the 
             //      grep of the nouns
             // Not sure why that is -- but subtracting one from each character index works here
-            return grepLocations.map(loc => new vscode.Location(loc.uri, new vscode.Range(
-                new vscode.Position(loc.range.start.line, Math.max(loc.range.start.character - 1, 0)),
-                new vscode.Position(loc.range.end.line, Math.max(loc.range.end.character - 1, 0))
-            )));
+            return grepLocations;
         });
     }
 
@@ -410,10 +407,7 @@ implements
             //      grep of the nouns
             // Not sure why that is -- but subtracting one from each character index works here
             return grepLocations.map(([loc, match]) => [ 
-                new vscode.Location(loc.uri, new vscode.Range(
-                    new vscode.Position(loc.range.start.line, Math.max(loc.range.start.character - 1, 1)),
-                    loc.range.end
-                )), 
+                loc, 
                 match 
             ]);
         });
@@ -445,9 +439,15 @@ WARNING: this is kinda dangerous.
 
         const edits = await defaultProgress(`Collecting edits for '${matchedNote.note.title}'`, async () => {
             const edits = new vscode.WorkspaceEdit();
-            for (const [ location, match ] of locations) {
+            for (const [ location, matchedText ] of locations) {
+
+                // Copy the capitalization format from aliasText over to newName, 
+                const docMatchedText = matchedText.substring(matchedText.indexOf(aliasText), aliasText.length);
+                const capialization = getTextCapitalization(docMatchedText);
+                const correctedCapitalization = transformToCapitalization(newName, capialization);
+
                 if (location.uri.fsPath.endsWith('.wt')) {
-                    edits.replace(location.uri, location.range, newName);
+                    edits.replace(location.uri, location.range, correctedCapitalization);
                 }
                 else if (location.uri.fsPath.endsWith('.wtnote')) {
                     // Edits to notes are done in one go, because it is difficult to track exact replacements otherwise
@@ -466,11 +466,11 @@ WARNING: this is kinda dangerous.
                             text: bullet.text.replaceAll(
                                 aliasRegex, 
                                 // Pass in replacement function that replaces only `aliasText`
-                                //      with newName
+                                //      with correctedCapitalization
                                 // This is because the alias regex adds spaces to ensure that it
                                 //      is matching a whole word, but we do not want those
                                 //      spaces being replaced in the final string
-                                rep => rep.replace(aliasText, newName)
+                                rep => rep.replace(aliasRegex, correctedCapitalization)
                             )
                         }));
                         section.cells = repl;
@@ -495,7 +495,7 @@ WARNING: this is kinda dangerous.
                     
                     // See notes above for replacing the inner text of the alias match
                     for (const [ _, entry ] of Object.entries(config)) {
-                        entry.title = entry.title.replaceAll(aliasRegex, rep => rep.replace(aliasText, newName));
+                        entry.title = entry.title.replaceAll(aliasRegex, rep => rep.replace(aliasText, correctedCapitalization));
                     }
 
                     // See notes above about overwriting files
