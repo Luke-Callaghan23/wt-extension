@@ -149,7 +149,7 @@ export class SearchResultsView
             const grepResults: vscode.Location[] = [];
             for await (const result of grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord)) {
                 if (result === null) return this.searchCleared();
-                grepResults.push(result);
+                grepResults.push(result[0]);
         
                 // Create file system-esque tree from the grep results
                 const fsTree = await createFileSystemTree(grepResults);

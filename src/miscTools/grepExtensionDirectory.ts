@@ -77,7 +77,7 @@ export async function *grepExtensionDirectory (
     useRegex: boolean, 
     caseInsensitive: boolean, 
     wholeWord: boolean,
-): AsyncGenerator<vscode.Location | null>  {
+): AsyncGenerator<[vscode.Location, string] | null>  {
 
     const captureGroupId = 'searchResult';
 
@@ -186,7 +186,7 @@ export async function *grepExtensionDirectory (
                 )
             ) {
                 // Finally, finally, finally yield the result
-                yield new vscode.Location(uri, foundRange);
+                yield [ new vscode.Location(uri, foundRange), lineMatch[0] ];
             }
         }
     }

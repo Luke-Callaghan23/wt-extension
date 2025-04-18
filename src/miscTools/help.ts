@@ -511,7 +511,7 @@ export function getTextCapitalization(text: string): Capitalization {
     if (capCount === text.length) {
         cap = 'allCaps';
     }
-    else if (capitalizedFirstLetterCount === wordCount) {
+    else if (capitalizedFirstLetterCount === wordCount && wordCount > 1) {
         cap = 'titleCase';
     }
     return cap;

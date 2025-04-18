@@ -4,7 +4,7 @@ import { compareFsPath, formatFsPathForCompare } from '../miscTools/help';
 import { capitalize } from '../miscTools/help';
 
 const decorationsOptions: vscode.DecorationRenderOptions = {
-    color: '#006eff',
+    color: new vscode.ThemeColor('textLink.foreground'),
     textDecoration: 'underline',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
 };

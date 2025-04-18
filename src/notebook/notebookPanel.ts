@@ -201,7 +201,7 @@ implements
         }
         const nounFragments = (subset || this.notebook).map(note => this.getNounPattern(note, withId))
         const regexString = withSeparator 
-            ? '(^|[^a-zA-Z0-9])?' + `(${nounFragments.join('|')})` + '([^a-zA-Z0-9]|$)?'
+            ? '(^|[^a-zA-Z0-9])' + `(${nounFragments.join('|')})` + '([^a-zA-Z0-9]|$)'
             : `(${nounFragments.join('|')})`;
         const nounsRegex = new RegExp(regexString, 'gi');
         return nounsRegex;
@@ -372,7 +372,7 @@ implements
             const grepLocations: vscode.Location[] = []; 
             for await (const loc of grepExtensionDirectory(subsetNounsRegex.source, true, true, true)) {
                 if (loc === null) return null;
-                grepLocations.push(loc);
+                grepLocations.push(loc[0]);
             }
     
             // For some reason the reference provider needs the locations to be indexed one less than the results from the 
@@ -399,8 +399,8 @@ implements
         const aliasRegexString = `(${aliasText})`;
         const aliasRegex = new RegExp(aliasRegexString, 'gi');
         
-        const locations = await defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
-            const grepLocations: vscode.Location[] = []; 
+        const locations: [ vscode.Location, string ][] | null= await defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
+            const grepLocations: [ vscode.Location, string ][] = []; 
             for await (const loc of grepExtensionDirectory(aliasRegexString, true, true, true)) {
                 if (loc === null) return null;
                 grepLocations.push(loc);
@@ -409,19 +409,29 @@ implements
             // For some reason the reference provider needs the locations to be indexed one less than the results from the 
             //      grep of the nouns
             // Not sure why that is -- but subtracting one from each character index works here
-            return grepLocations.map(loc => new vscode.Location(loc.uri, new vscode.Range(
-                new vscode.Position(loc.range.start.line, Math.max(loc.range.start.character - 1, 1)),
-                new vscode.Position(loc.range.end.line, Math.max(loc.range.end.character - 1, 1))
-            )));
+            return grepLocations.map(([loc, match]) => [ 
+                new vscode.Location(loc.uri, new vscode.Range(
+                    new vscode.Position(loc.range.start.line, Math.max(loc.range.start.character - 1, 1)),
+                    loc.range.end
+                )), 
+                match 
+            ]);
         });
         if (!locations) return null;
 
         while (true) {
             const resp = await vscode.window.showInformationMessage(`Are you sure you want to replace ${locations.length} instances of '${aliasText}'?`, {
-                detail: `This will include changes to file titles, wtnote files, and fragment text.  This can't be undone.  Also this will only change exact matches to '${aliasText}' not any near matches or misspellings.  Also whatever capitalization you just entered will be the capitalization used for all instances of replacement.`,
+                detail: `
+WARNING: this is kinda dangerous.
+• This will replace '${aliasText}' to '${newName}' in all possible locations, including: titles, wtnote notebooks, and fragment text files.  
+• This can be undone... probably.  I don't trust VSCode enough to promise you that ctrl+z will do exactly as you expect, but it has worked in my experience.  I still recommend you do a git commit first.
+• Also I'll try my best to match all the capitalizations for all replacements but, really, really, no promises.
+• Also, this will only replace exact matches to the original text '${aliasText}'.  No near matches or misspellings.  (Threat Level Midnight, The Office, etc., etc.)
+• Basically, I don't really recommend you doing this unless you're planning on reading through your whole project again and manually fixing anything this might break.
+                `,
                 modal: true,
-            }, "Yes I'm sure", 'Show me the the office clip');
-            if (resp === 'Show me the the office clip') {
+            }, "Yes I'm sure", 'Show me the clip from The Office');
+            if (resp === 'Show me the clip from The Office') {
                 await vscode.env.openExternal(vscode.Uri.parse(
                     "https://youtu.be/-FoKU54ITuI?si=AARaG7AjkqqQw4I0&t=110"
                 ));
@@ -435,7 +445,7 @@ implements
 
         const edits = await defaultProgress(`Collecting edits for '${matchedNote.note.title}'`, async () => {
             const edits = new vscode.WorkspaceEdit();
-            for (const location of locations) {
+            for (const [ location, match ] of locations) {
                 if (location.uri.fsPath.endsWith('.wt')) {
                     edits.replace(location.uri, location.range, newName);
                 }
