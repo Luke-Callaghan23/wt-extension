@@ -441,7 +441,7 @@ export function capitalize(str: string, justFirstWord=true): string {
         return str[0].toLocaleUpperCase() + end;
     }
 
-    // Iterate characters and capitalize each
+    // Iterate characters and capitalize each alphabetic
     let final: string = '';
     let current: string = '';
     for (let index = 0; index < str.length; index++) {
@@ -463,23 +463,56 @@ export function capitalize(str: string, justFirstWord=true): string {
     final += current;
     return final;
 }
+const titleCaseExceptions: RegExp = /^(a|the|and|as|at|but|by|down|for|from|if|in|into|like|near|nor|of|off|on|once|onto|or|over|past|so|than|that|to|upon|when|with|yet)([\.\?\:\;,\(\)!\&\s\+\-\n"\'^_*~]|$)/
 
-export type Capitalization = 'firstLetter' | 'allCaps' | 'noCapFrFrOnGod';
+export type Capitalization = 'firstLetter' | 'titleCase' | 'allCaps' | 'noCapFrFrOnGod';
 export function getTextCapitalization(text: string): Capitalization {
     let cap: Capitalization = 'noCapFrFrOnGod';
     let capCount = 0;
+    let startOfWord = true;
+    let wordCount: number = 1;
+    let capitalizedFirstLetterCount: number = 0;
     for (let index = 0; index < text.length; index++) {
         const char = text[index];
-        if (/[A-Z]/.test(char)) {
+
+        // If the letter is not alphanumeric, count it as the start of a new word
+        if (/\W/.test(char)) {
+            if (!startOfWord) {
+                // If start of word is already true that means we're either at the start or
+                //      there's something wierd like '--' double punctuation or spacing, so do not 
+                //      increment the word count quite yet
+                wordCount++;
+            }
+            startOfWord = true;
+            continue
+        }
+
+        // If this character is a capital or the start of one of the title case exceptions
+        if (/[A-Z]/.test(char) || (startOfWord && titleCaseExceptions.exec(text.substring(index))?.index === 0 && index !== 0)) {
+
+            // And index === 0: then we know for sure this is a candidate for first letter capitalization
             if (index === 0) {
                 cap = 'firstLetter';
             }
+
+            // And it is the start of the word, then increase the count of the capitalized starts of words
+            if (startOfWord) {
+                capitalizedFirstLetterCount++;
+            }
+
+            // Increase total count of capitalized letterss
             capCount += 1;
         }
+
+        // Reset word start flag
+        startOfWord = false;
     }
 
     if (capCount === text.length) {
         cap = 'allCaps';
+    }
+    else if (capitalizedFirstLetterCount === wordCount) {
+        cap = 'titleCase';
     }
     return cap;
 }
@@ -488,6 +521,7 @@ export function transformToCapitalization(input: string, capitalization: Capital
     switch (capitalization) {
         case 'allCaps': return input.toUpperCase();
         case 'firstLetter': return capitalize(input.toLocaleLowerCase());
+        case 'titleCase': return capitalize(input.toLocaleLowerCase(), false);
         case 'noCapFrFrOnGod': return input.toLocaleLowerCase();
     }
 }
