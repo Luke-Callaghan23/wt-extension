@@ -1,7 +1,7 @@
 TODO:
 - [x] rename notes
 - [x] rename aliases
-    - [ ] give user a choice over what kind of capitalization -- always use caps they entered or copy capitalization of the destination
+    - [x] give user a choice over what kind of capitalization -- always use caps they entered or copy capitalization of the destination
 - [x] handle users adding cells on their own
 - [x] handle users editing markdown cells ------- should this be handled at all???
     - should not be handled

@@ -447,19 +447,38 @@ WARNING: this is kinda dangerous.
             break;
         }
 
+        const resp = await vscode.window.showInformationMessage(`Copy case of source or destination?`, {
+            detail: `
+When replacing values of '${aliasText}' with '${newName}' would you to copy the capitalization of the '${newName}' exaclty as you entered it, or attempt to to copy the case of each location that is being over written?
+For example if you wrote all caps '${aliasText.toLocaleUpperCase()}' somewhere in your project would you like WTANIWE to overwrite that with '${newName.toUpperCase()}'
+Or to always use '${newName}' exactly as you entered it?
+            `,
+            modal: true,
+        }, "Attempt to match the case", 'Exactly as I entered it');
+        if (!resp) return null;
+
+        const copyingDestinationCase = resp === 'Attempt to match the case';
+
         const replacedUris: Set<string> = new Set<string>();
 
         const edits = await defaultProgress(`Collecting edits for '${notePanelNote.title}'`, async () => {
             const edits = new vscode.WorkspaceEdit();
             for (const [ location, matchedText ] of locations) {
 
-                // Copy the capitalization format from aliasText over to newName, 
-                const docMatchedText = matchedText.substring(matchedText.indexOf(aliasText), aliasText.length);
-                const capialization = getTextCapitalization(docMatchedText);
-                const correctedCapitalization = transformToCapitalization(newName, capialization);
+                let replacementString: string;
+                if (copyingDestinationCase) {
+                    // Copy the capitalization format from aliasText over to newName, 
+                    const docMatchedText = matchedText.substring(matchedText.indexOf(aliasText), aliasText.length);
+                    const capialization = getTextCapitalization(docMatchedText);
+                    const correctedCapitalization = transformToCapitalization(newName, capialization);
+                    replacementString = correctedCapitalization;
+                }
+                else {
+                    replacementString = newName;
+                }
 
                 if (location.uri.fsPath.endsWith('.wt')) {
-                    edits.replace(location.uri, location.range, correctedCapitalization);
+                    edits.replace(location.uri, location.range, replacementString);
                 }
                 else if (location.uri.fsPath.endsWith('.wtnote')) {
                     // Edits to notes are done in one go, because it is difficult to track exact replacements otherwise
@@ -478,16 +497,16 @@ WARNING: this is kinda dangerous.
                             text: bullet.text.replaceAll(
                                 aliasRegex, 
                                 // Pass in replacement function that replaces only `aliasText`
-                                //      with correctedCapitalization
+                                //      with finalReplacement
                                 // This is because the alias regex adds spaces to ensure that it
                                 //      is matching a whole word, but we do not want those
                                 //      spaces being replaced in the final string
-                                rep => rep.replace(aliasRegex, correctedCapitalization)
+                                rep => rep.replace(aliasRegex, replacementString)
                             )
                         }));
                         section.cells = repl;
                     }
-                    note.title.text = note.title.text.replaceAll(aliasRegex, rep => rep.replace(aliasRegex, correctedCapitalization));
+                    note.title.text = note.title.text.replaceAll(aliasRegex, rep => rep.replace(aliasRegex, replacementString));
                     const updatedSerializedNote = note;
 
                     // Create an edit to overwrite the whole file with the new replaced contents
@@ -508,7 +527,7 @@ WARNING: this is kinda dangerous.
                     
                     // See notes above for replacing the inner text of the alias match
                     for (const [ _, entry ] of Object.entries(config)) {
-                        entry.title = entry.title.replaceAll(aliasRegex, rep => rep.replace(aliasRegex, correctedCapitalization));
+                        entry.title = entry.title.replaceAll(aliasRegex, rep => rep.replace(aliasRegex, replacementString));
                     }
 
                     // See notes above about overwriting files
