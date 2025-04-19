@@ -12,9 +12,14 @@ TODO:
     - probably can just search in NotebookPanelNotes -- won't have unsaved data but who cares
 - [x] anywhere that opens a document needs to open a notebook for this
 - [ ] validation
-    - [ ] no empty cells
+    - [x] no empty cells
+        - unecessary
     - [ ] for aliases and note titles, no special characters besides dashes and spaces
-- [ ] reload tabs and views makes it so the serializer never gets called again :(((
+- [x] reload tabs and views makes it so the serializer never gets called again :(((
+    - seems like this is fixed opening docs with `vscode.commands.executeCommand('vscode.openWith', uri, 'wt.notebook', options);` for whatever reason
+- [ ] keybindings 
+    - [ ] f2 to rename headers
+    - [ ] f2 to swap bullets with text boxes
 
 
 Later

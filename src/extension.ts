@@ -66,6 +66,9 @@ export class ExtensionGlobals {
     public static todoView: TODOsView;
     public static workspace: Workspace;
     public static context: vscode.ExtensionContext;
+    
+    public static notebookSerializer: WTNotebookSerializer;
+    public static notebookSerializerDispose: vscode.Disposable;
 
     public static initialize (
         outlineView: OutlineView, 
@@ -156,10 +159,10 @@ async function loadExtensionWorkspace (
         const tabStates = new TabStates(context, workspace);
         report("Loaded tab groups");
 
-        const notebook = new NotebookPanel(workspace, context, notebookSerializer);
+        const notebook = new NotebookPanel(workspace, context, ExtensionGlobals.notebookSerializer);
         await notebook.initialize();
-        const notebookController = new WTNotebookController(context, workspace, notebook, notebookSerializer);
-        await notebookSerializer.init(context, workspace, notebook, notebookController);
+        const notebookController = new WTNotebookController(context, workspace, notebook, ExtensionGlobals.notebookSerializer);
+        await ExtensionGlobals.notebookSerializer.init(context, workspace, notebook, notebookController);
         report("Loaded notebook");
 
         ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notebook, todo, workspace, context);
@@ -263,12 +266,10 @@ async function loadExtensionWithProgress (context: vscode.ExtensionContext, titl
     });
 }
 
-let notebookSerializer: WTNotebookSerializer;
 async function activateImpl (context: vscode.ExtensionContext) {
-    notebookSerializer = new WTNotebookSerializer();
-    context.subscriptions.push(
-        vscode.workspace.registerNotebookSerializer('wt.notebook', notebookSerializer)
-    );
+    ExtensionGlobals.notebookSerializer = new WTNotebookSerializer();
+    ExtensionGlobals.notebookSerializerDispose = vscode.workspace.registerNotebookSerializer('wt.notebook', ExtensionGlobals.notebookSerializer)
+    
 
     // Load the root path of file system where the extension was loaded
     rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))

@@ -59,11 +59,11 @@ export async function addNote (this: NotebookPanel, resource: NotebookPanelNote 
     this.refresh();
     this.serializer.writeSingleNote(insert).then(result => {
         if (result === null) return;
-        vscode.workspace.openNotebookDocument(result).then(async document => {
-            vscode.window.showNotebookDocument(document, {
-                viewColumn: await determineAuxViewColumn((uri) => this.getNote(uri))
+        determineAuxViewColumn((uri) => this.getNote(uri)).then(col => {
+            return vscode.commands.executeCommand('vscode.openWith', result, 'wt.notebook', {
+                viewColumn: col
             });
-        });
+        })
     })
 
 
@@ -107,12 +107,8 @@ export async function editNote (this: NotebookPanel, resource: NotebookPanelNote
 
     const noteFileName = `${note.noteId}.wtnote`
     const notePath = vscode.Uri.joinPath(this.notebookFolderPath, noteFileName);
-    
-    const document = await vscode.workspace.openNotebookDocument(notePath);
-    return vscode.window.showNotebookDocument(document, {
-        preview: false,
-        viewColumn: await determineAuxViewColumn((uri) => this.getNote(uri)),
-    }).then(() => {
-        TabLabels.assignNamesForOpenTabs();
+    const col = await determineAuxViewColumn((uri) => this.getNote(uri));
+    await vscode.commands.executeCommand('vscode.openWith', notePath, 'wt.notebook', {
+        viewColumn: col,
     });
 }

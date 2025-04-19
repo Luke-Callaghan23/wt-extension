@@ -4,6 +4,7 @@ import { NotebookPanel } from '../notebookPanel';
 import { _, compareFsPath } from '../../miscTools/help';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { NotebookCellMetadata, NotebookCellOutputMetadata, NotebookMetadata, WTNotebookSerializer } from './notebookSerializer';
+import { ExtensionGlobals,  } from '../../extension';
 
 export class WTNotebookController {
     readonly controllerId = 'wt.notebook.controller';
@@ -259,24 +260,14 @@ export class WTNotebookController {
         //      in the same location that it was closed
         const viewColumn = vscode.window.activeNotebookEditor!.viewColumn!;
 
-        // Search for the tab that this notebook occupies, and close it
-        for (const group of vscode.window.tabGroups.all) {
-            for (const tab of group.tabs) {
-                if (!(tab.input instanceof vscode.TabInputNotebook)) continue;
-                if (!compareFsPath(tab.input.uri, notebook.uri)) continue;
-
-                await vscode.window.tabGroups.close(tab);
-                break;
-            }
-        }
-        
-        // Reopen the document
-        await vscode.window.showNotebookDocument(notebook, {
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        await vscode.commands.executeCommand('vscode.openWith', notebook.uri, 'wt.notebook', {
             viewColumn: viewColumn,
         });
 
         // Assign tab labels again
         return TabLabels.assignNamesForOpenTabs();
+
     }
 
     // TODO: if VSCode ever add the ability to modify notebook contents from the API replace `reopendNotebook`

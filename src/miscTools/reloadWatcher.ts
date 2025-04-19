@@ -62,9 +62,9 @@ export class ReloadWatcher implements Packageable {
             const response = await vscode.window.showInformationMessage("Reload", {
                 modal: true,
                 detail: "We detected a change in your WTANIWE environment not done by WTANIWE itself, would you like to reload the extension?  (This will update all views to reflect any changes made outside of WTANIWE).\nIn the case of a git pull or branch change, we can also close all current tabs and open the tabs from the branch or remote origin you pulled from.",
-            }, "Reload view and tabs", "Don't reload tabs", "Don't reload");
+            }, "Reload views and tabs", "Don't reload tabs", "Don't reload");
             if (!response || response === "Don't reload") return;
-            reloadTabs = response === 'Reload view and tabs';
+            reloadTabs = response === 'Reload views and tabs';
         }
 
         // Load context items from the new context values json 
