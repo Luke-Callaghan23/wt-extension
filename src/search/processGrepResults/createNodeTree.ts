@@ -5,7 +5,7 @@ import * as extension from './../../extension';
 import * as vscodeUri from 'vscode-uri';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
-import { capitalize } from '../../miscTools/help';
+import { capitalize, getFullJSONStringFromLocation } from '../../miscTools/help';
 import { formatFsPathForCompare, readDotConfig, vagueNodeSearch, VagueNodeSearchResult } from '../../miscTools/help';
 
 
@@ -29,28 +29,6 @@ const getResultsCount = (childContents: SearchNode<SearchContainerNode | FileRes
 export const createLabelFromTitleAndPrefix = (title: string, prefix: string) => {
     if (prefix.length === 0) return title;
     return `(${prefix}) ${title}`;
-}
-
-const getFullJSONStringFromLocation = (document: vscode.TextDocument, fullText: string, location: vscode.Location): string => {
-    const startOff = document.offsetAt(location.range.start);
-    const endOff = document.offsetAt(location.range.end);
-
-    let stringStartOff;
-    for (stringStartOff = startOff - 1; stringStartOff >= 0; stringStartOff--) {
-        if (fullText[stringStartOff] === '"' && fullText[stringStartOff - 1] !== '\\') {
-            stringStartOff++;
-            break;
-        }
-    }
-
-    let stringEndOff;
-    for (stringEndOff = endOff; stringEndOff < fullText.length; stringEndOff++) {
-        if (fullText[stringEndOff] === '"' && fullText[stringEndOff - 1] !== '\\') {
-            break;
-        }
-    }
-
-    return document.getText(new vscode.Range(document.positionAt(stringStartOff), document.positionAt(stringEndOff))).replaceAll('\\"', '"');
 }
 
 async function convertFolderToSearchNode (

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { formatFsPathForCompare, getRelativePath, getSurroundingTextInRange, VagueSearchSource } from '../../miscTools/help';
+import { formatFsPathForCompare, getFullJSONStringFromLocation, getRelativePath, getSurroundingTextInRange, VagueSearchSource } from '../../miscTools/help';
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import * as vscodeUri from 'vscode-uri';
@@ -65,11 +65,27 @@ export async function createFileSystemTree (locations: vscode.Location[]): Promi
             const uri = vscode.Uri.joinPath(extension.rootPath, ...relativePath);
             const isLeaf = index === pathSegments.length - 1;
 
-            const cachedDocument = docMap[formatFsPathForCompare(location.uri)];
-            const fullTextSize = cachedDocument.getText().length;
+            let targetDoc: vscode.TextDocument;
+            if (location.uri.fsPath.toLowerCase().endsWith('.wtnote')) {
+                // wtnote docs have to have their surrounding text pulled not from the entire document, but
+                //      from just the text field where the vscode.Location points
+                // Extract that full JSON string and create a dummy vscode.TextDocument whose text is ONLY
+                //      that substring
+                const noteDocument = docMap[formatFsPathForCompare(location.uri)];
+                const jsonTextField = getFullJSONStringFromLocation(noteDocument, noteDocument.getText(), location);
+                targetDoc = await vscode.workspace.openTextDocument({
+                    language: 'wtnote',
+                    content: jsonTextField
+                });
+            }
+            else {
+                // Otherwise pull from the cached doc map
+                targetDoc = docMap[formatFsPathForCompare(location.uri)];
+            }
+            const fullTextSize = targetDoc.getText().length;
 
-            const smallSurrounding = getSurroundingTextInRange(cachedDocument, fullTextSize, location, [ 20, 100 ]);
-            const largerSurrounding = getSurroundingTextInRange(cachedDocument, fullTextSize, location, 400);
+            const smallSurrounding = getSurroundingTextInRange(targetDoc, fullTextSize, location, [ 20, 100 ]);
+            const largerSurrounding = getSurroundingTextInRange(targetDoc, fullTextSize, location, 400);
 
             if (current.contents[segment]) {
                 if (isLeaf) {

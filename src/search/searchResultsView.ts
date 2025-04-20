@@ -8,7 +8,7 @@ import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { cleanNodeTree, pairMatchedTitlesToNeighborNodes, recreateNodeTree } from './processGrepResults/createNodeTree';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import { compareFsPath, vagueNodeSearch } from '../miscTools/help';
+import { compareFsPath, determineAuxViewColumn, vagueNodeSearch } from '../miscTools/help';
 
 
 export type SearchNodeKind = 
@@ -72,6 +72,16 @@ export class SearchResultsView
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {
+            if (location.uri.fsPath.toLowerCase().endsWith('.wtnote')) {
+                const options: vscode.NotebookDocumentShowOptions = {
+                    preview: false,
+                    viewColumn: await determineAuxViewColumn(extension.ExtensionGlobals.notebook.getNote.bind(extension.ExtensionGlobals.notebook)),
+                    preserveFocus: false,
+                };
+                vscode.commands.executeCommand('vscode.openWith', location.uri, 'wt.notebook', options)
+                return;
+            }
+
             // Called when a file location node is clicked in the results tree, opens the location in the editor
             const doc = await vscode.workspace.openTextDocument(location.uri);
             const editor = await vscode.window.showTextDocument(doc);

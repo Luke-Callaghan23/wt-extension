@@ -299,20 +299,21 @@ export function getRelativePath (uri: vscode.Uri): string {
 }
 
 
+export type SurroundingTextResult = {
+    surroundingText: string,
+    highlight: [ number, number ]
+};
+
 export function getSurroundingTextInRange(
     sourceDocument: vscode.TextDocument, 
     fullTextSize: number, 
     surroundingLocation: vscode.Location,
     surroundingBounds: number | [ number, number ],
     stopAtEol: boolean = false
-): {
-    surroundingText: string,
-    highlight: [ number, number ]
-} {
+): SurroundingTextResult {
     if (typeof surroundingBounds === 'number') {
         surroundingBounds = [ surroundingBounds, surroundingBounds ];
     }
-    
     
     let eolOffset = Number.MAX_VALUE;
     if (stopAtEol) {
@@ -348,6 +349,30 @@ export function getSurroundingTextInRange(
         highlight: [ surroundingTextHighlightStart, surroundingTextHighlightEnd ],
     }
 }
+
+
+export const getFullJSONStringFromLocation = (document: vscode.TextDocument, fullText: string, location: vscode.Location): string => {
+    const startOff = document.offsetAt(location.range.start);
+    const endOff = document.offsetAt(location.range.end);
+
+    let stringStartOff;
+    for (stringStartOff = startOff - 1; stringStartOff >= 0; stringStartOff--) {
+        if (fullText[stringStartOff] === '"' && fullText[stringStartOff - 1] !== '\\') {
+            stringStartOff++;
+            break;
+        }
+    }
+
+    let stringEndOff;
+    for (stringEndOff = endOff; stringEndOff < fullText.length; stringEndOff++) {
+        if (fullText[stringEndOff] === '"' && fullText[stringEndOff - 1] !== '\\') {
+            break;
+        }
+    }
+
+    return document.getText(new vscode.Range(document.positionAt(stringStartOff), document.positionAt(stringEndOff))).replaceAll('\\"', '"');
+}
+
 
 
 export function defaultProgress <T>(title: string, worker: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>): Thenable<T> {
