@@ -3,7 +3,7 @@ import { Workspace } from '../../workspace/workspaceClass';
 import { NotebookPanel } from '../notebookPanel';
 import { _, compareFsPath } from '../../miscTools/help';
 import { TabLabels } from '../../tabLabels/tabLabels';
-import { NotebookCellMetadata, NotebookCellOutputMetadata, NotebookMetadata, WTNotebookSerializer } from './notebookSerializer';
+import { invalidAliasCharactersRegex, NotebookCellMetadata, NotebookCellOutputMetadata, NotebookMetadata, WTNotebookSerializer } from './notebookSerializer';
 import { ExtensionGlobals,  } from '../../extension';
 
 export class WTNotebookController {
@@ -147,10 +147,26 @@ export class WTNotebookController {
         const execution = this.controller.createNotebookCellExecution(cell);
         execution.start(Date.now()); // Keep track of elapsed time to execute cell.
 
-        const newName = await this.getNewName(cell, 'header-title', execution);
-        if (!newName) {
-            execution.end(false, Date.now());
-            return;
+
+        let newName: string;
+
+        while (true) {
+            const responseName = await this.getNewName(cell, 'header-title', execution);
+            if (!responseName) {
+                execution.end(false, Date.now());
+                return;
+            }
+            if (invalidAliasCharactersRegex.exec(responseName)) {
+                const resp = await vscode.window.showInformationMessage(`Invalid input`, {
+                    detail: `Notebook titles can only have alphanumeric, whitespace, and regular hyphen (-) characters in them.  Please try again.`,
+                    modal: true,
+                }, "Okay");
+                if (!resp) return;
+            }
+            else {
+                newName = responseName;
+                break;
+            }
         }
 
         const noteId = (cell.notebook.metadata! as NotebookMetadata).noteId;
@@ -208,9 +224,38 @@ export class WTNotebookController {
         cell: vscode.NotebookCell,
         notebook: vscode.NotebookDocument,
         update: boolean = true
-    ): Promise<void> {
+    ): Promise<boolean> {
         const execution = this.controller.createNotebookCellExecution(cell);
         execution.start(Date.now());
+
+        let isAliasTextBox: boolean = false;
+        const cellMetadata: NotebookCellMetadata | undefined = cell.metadata as any;
+        if (cellMetadata && cellMetadata.kind === 'input') {
+            const cells = notebook.getCells();
+            for (let idx = cell.index; idx >= 0; idx--) {
+                const curCell = cells[idx - 1];
+                if (curCell && curCell.metadata) {
+                    const headerMetadata = (curCell.metadata as NotebookCellMetadata);
+                    if (headerMetadata.kind === 'header') {
+                        const formattedHeader = headerMetadata.originalText.toLowerCase().trim();
+                        if (formattedHeader === 'alias' || formattedHeader === 'aliases') {
+                            isAliasTextBox = true;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (isAliasTextBox && invalidAliasCharactersRegex.exec(cell.document.getText())) {
+            execution.replaceOutput([
+                new vscode.NotebookCellOutput([
+                    vscode.NotebookCellOutputItem.stderr("ERROR: Cells under the alias header can only use alphanumeric, whitespace, and regular hyphens (-) characters.  Please clean up your input and try again.")
+                ])
+            ]);
+            execution.end(true, Date.now());
+            return false;
+        }
 
         // Add an output to the cell with `convert` set to `markdown`
         // The NotebookSerializer will see this flag and will update the 
@@ -224,23 +269,31 @@ export class WTNotebookController {
 
         // Then, reopen the notebook
         if (update) {
-            return this.reopenNotebook(notebook);
+            await this.reopenNotebook(notebook);
         }
+        return true;
     }
 
 
-    private executionHandler(
+    private async executionHandler(
         cells: vscode.NotebookCell[],
         notebook: vscode.NotebookDocument,
         controller: vscode.NotebookController
-    ): void {
+    ): Promise<void> {
+        let allSucceeded = true;
         for (let cell of cells) {
             // Since we may be updating more than one cell, we call execute with update=false,
             //      so that all the updates can be applied at once before we manually call
             //      `reopenNotebook` at the end of this method
-            this.execute(cell, notebook, false);
+            const success = await this.execute(cell, notebook, false);
+            if (!success) {
+                allSucceeded = false;
+            }
         }
-        this.reopenNotebook(notebook);
+
+        if (allSucceeded) {
+            return this.reopenNotebook(notebook);
+        }
     }
 
 

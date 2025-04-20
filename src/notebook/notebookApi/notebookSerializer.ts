@@ -11,6 +11,8 @@ import { TextMatchForNote } from '../timedViewUpdate';
 import { WTNotebookController } from './notebookController';
 import { markdownFormattedFragmentLinkRegex } from '../../miscTools/fragmentLinker';
 
+export const invalidAliasCharactersRegex = /([^a-zA-Z0-9\s-])/;
+
 /*
 NOTES on NotebookSerializer and NotebookController and how wtnote files are handled
 
@@ -668,6 +670,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         };
 
         let lastHeader: string = 'header-title';
+        let lastHeaderWasAlias = false;
 
         let foundInstructionsCell = false;
 
@@ -733,13 +736,27 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                     // And if it is not in the header buckets, then create an empty array
                     headerBuckets[lastHeader] = [];
                 }
+
+                const formattedHeaderName = cellMetadata.originalText.toLocaleLowerCase().trim();
+                if (formattedHeaderName === 'alias' || formattedHeaderName === 'aliases') {
+                    lastHeaderWasAlias = true;
+                }
+                else {
+                    lastHeaderWasAlias = false;
+                }
+
                 continue;
             }
 
             if (cellMetadata && cellMetadata.kind === 'header-title') {
                 lastHeader = 'header-title';
             }
-            headerBuckets[lastHeader].push(this.getSerializedCell(cell, cellMetadata));
+
+            const serializedCell = this.getSerializedCell(cell, cellMetadata);
+            if (lastHeaderWasAlias && invalidAliasCharactersRegex.exec(serializedCell.text)) {
+                throw "Cells under the alias header can only use alphanumeric, whitespace, and regular hyphens (-) characters.";
+            }   
+            headerBuckets[lastHeader].push(serializedCell);
         }
 
         // No cells in the header bucket -- nothing I can do.  Have to emit an error and hope the user
