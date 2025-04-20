@@ -3,6 +3,7 @@ import { formatFsPathForCompare, getFullJSONStringFromLocation, getRelativePath,
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import * as vscodeUri from 'vscode-uri';
+import { Buff } from '../../Buffer/bufferSource';
 
 
 export type FileSystemFormat = {
@@ -65,27 +66,29 @@ export async function createFileSystemTree (locations: vscode.Location[]): Promi
             const uri = vscode.Uri.joinPath(extension.rootPath, ...relativePath);
             const isLeaf = index === pathSegments.length - 1;
 
-            let targetDoc: vscode.TextDocument;
+            const cachedDoc = docMap[formatFsPathForCompare(location.uri)];
+            
+            let fullText: string;
+            let locationStart: number;
+            let locationEnd: number;
             if (location.uri.fsPath.toLowerCase().endsWith('.wtnote')) {
-                // wtnote docs have to have their surrounding text pulled not from the entire document, but
-                //      from just the text field where the vscode.Location points
-                // Extract that full JSON string and create a dummy vscode.TextDocument whose text is ONLY
-                //      that substring
-                const noteDocument = docMap[formatFsPathForCompare(location.uri)];
-                const jsonTextField = getFullJSONStringFromLocation(noteDocument, noteDocument.getText(), location);
-                targetDoc = await vscode.workspace.openTextDocument({
-                    language: 'wtnote',
-                    content: jsonTextField
-                });
+
+                // WTNOTE documents are formatted using JSON, so we need to extract the full JSON string of the location
+                //      this search found
+                const jsonSubstring = getFullJSONStringFromLocation(cachedDoc, cachedDoc.getText(), location);
+                fullText = jsonSubstring.jsonString;
+                locationStart = cachedDoc.offsetAt(location.range.start) - jsonSubstring.startOff;
+                locationEnd = cachedDoc.offsetAt(location.range.end) - jsonSubstring.startOff;
             }
             else {
                 // Otherwise pull from the cached doc map
-                targetDoc = docMap[formatFsPathForCompare(location.uri)];
+                fullText = cachedDoc.getText();
+                locationStart = cachedDoc.offsetAt(location.range.start);
+                locationEnd = cachedDoc.offsetAt(location.range.end);
             }
-            const fullTextSize = targetDoc.getText().length;
 
-            const smallSurrounding = getSurroundingTextInRange(targetDoc, fullTextSize, location, [ 20, 100 ]);
-            const largerSurrounding = getSurroundingTextInRange(targetDoc, fullTextSize, location, 400);
+            const smallSurrounding = getSurroundingTextInRange(fullText, locationStart, locationEnd, [ 20, 100 ]);
+            const largerSurrounding = getSurroundingTextInRange(fullText, locationStart, locationEnd, 400);
 
             if (current.contents[segment]) {
                 if (isLeaf) {

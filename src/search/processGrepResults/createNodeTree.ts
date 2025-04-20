@@ -55,7 +55,7 @@ async function convertFolderToSearchNode (
 
             const createdEntriesFileNames: string[] = [];
             for (const location of configFileNode.locations) {
-                const fullTitleString = getFullJSONStringFromLocation(configDoc, configFullText, location.location);
+                const {jsonString: fullTitleString} = getFullJSONStringFromLocation(configDoc, configFullText, location.location);
                 for (const [ entryFileName, configEntry ] of Object.entries(dotConfig)) {
                     // If the entry title is not the same as the full title string we retrieved above, then skip over it
                     if (configEntry.title !== fullTitleString) continue;

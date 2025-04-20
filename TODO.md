@@ -18,7 +18,7 @@ TODO:
 - [ ] keybindings 
     - [ ] f2 to rename headers
     - [ ] f2 to swap bullets with text boxes
-- [ ] integrate with search bar -- search bar will now be looking inside of jsons which we don't actually want
+- [x] integrate with search bar -- search bar will now be looking inside of jsons which we don't actually want
     - probably can just search in NotebookPanelNotes -- won't have unsaved data but who cares
 
 

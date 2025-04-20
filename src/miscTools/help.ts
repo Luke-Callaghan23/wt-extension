@@ -305,9 +305,9 @@ export type SurroundingTextResult = {
 };
 
 export function getSurroundingTextInRange(
-    sourceDocument: vscode.TextDocument, 
-    fullTextSize: number, 
-    surroundingLocation: vscode.Location,
+    fullText: string, 
+    surroundingStartOff: number,
+    surroundingEndOff: number,
     surroundingBounds: number | [ number, number ],
     stopAtEol: boolean = false
 ): SurroundingTextResult {
@@ -317,23 +317,25 @@ export function getSurroundingTextInRange(
     
     let eolOffset = Number.MAX_VALUE;
     if (stopAtEol) {
-        const eolPosition = new vscode.Position(surroundingLocation.range.end.line + 1, 0);
-        eolOffset = sourceDocument.offsetAt(eolPosition) - sourceDocument.eol;
+        eolOffset = surroundingEndOff;
+        while (eolOffset < fullText.length && fullText[eolOffset] != '\n') {
+            eolOffset++;
+        }
     }
 
-    const surroundingTextStart = Math.max(sourceDocument.offsetAt(surroundingLocation.range.start) - surroundingBounds[0], 0);
-    const surroundingTextEnd = Math.min(sourceDocument.offsetAt(surroundingLocation.range.end) + surroundingBounds[1], fullTextSize, eolOffset);
+    const surroundingTextStart = Math.max(surroundingStartOff - surroundingBounds[0], 0);
+    const surroundingTextEnd = Math.min(surroundingEndOff + surroundingBounds[1], fullText.length, eolOffset);
     
-    let surroundingTextHighlightStart = sourceDocument.offsetAt(surroundingLocation.range.start) - surroundingTextStart;
-    let surroundingTextHighlightEnd = surroundingTextHighlightStart + (sourceDocument.offsetAt(surroundingLocation.range.end) - sourceDocument.offsetAt(surroundingLocation.range.start));
+    let surroundingTextHighlightStart = surroundingStartOff - surroundingTextStart;
+    let surroundingTextHighlightEnd = surroundingTextHighlightStart + (surroundingEndOff - surroundingStartOff);
     
-    let surroundingText = sourceDocument.getText(new vscode.Selection(sourceDocument.positionAt(surroundingTextStart), sourceDocument.positionAt(surroundingTextEnd)));
+    let surroundingText = fullText.substring(surroundingTextStart, surroundingTextEnd);
     if (surroundingTextStart !== 0 && surroundingBounds[0] !== 0) {
         surroundingText = '…' + surroundingText;
         surroundingTextHighlightEnd += 1;
         surroundingTextHighlightStart += 1;
     }
-    if (surroundingTextEnd !== fullTextSize) {
+    if (surroundingTextEnd !== fullText.length) {
         if (stopAtEol) {
             if (surroundingTextEnd !== eolOffset) {
                 surroundingText += '…';
@@ -351,7 +353,11 @@ export function getSurroundingTextInRange(
 }
 
 
-export const getFullJSONStringFromLocation = (document: vscode.TextDocument, fullText: string, location: vscode.Location): string => {
+export const getFullJSONStringFromLocation = (document: vscode.TextDocument, fullText: string, location: vscode.Location): {
+    jsonString: string,
+    startOff: number,
+    endOff: number
+} => {
     const startOff = document.offsetAt(location.range.start);
     const endOff = document.offsetAt(location.range.end);
 
@@ -370,7 +376,11 @@ export const getFullJSONStringFromLocation = (document: vscode.TextDocument, ful
         }
     }
 
-    return document.getText(new vscode.Range(document.positionAt(stringStartOff), document.positionAt(stringEndOff))).replaceAll('\\"', '"');
+    return {
+        jsonString: document.getText(new vscode.Range(document.positionAt(stringStartOff), document.positionAt(stringEndOff))).replaceAll('\\"', '"'),
+        startOff: stringStartOff,
+        endOff: stringEndOff,
+    };
 }
 
 

@@ -106,7 +106,10 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
                 const line = lines[lineIndex].trim();
                 if (line.length === 0 || /^\s*$/.test(line)) continue;
     
-                const surrounding = getSurroundingTextInRange(editor.document, text.length, new vscode.Location(editor.document.uri, new vscode.Position(lineIndex, 0)), [0, 120], true);
+                const doc = editor.document;
+                const offset = doc.offsetAt(new vscode.Position(lineIndex, 0));
+
+                const surrounding = getSurroundingTextInRange(text, offset, offset, [0, 120], true);
                 this.bulletPoints.push({
                     beginningOfLine: surrounding.surroundingText.trim(),
                     fullLine: line,
