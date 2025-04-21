@@ -41,11 +41,26 @@ export class WTNotebookController {
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editCell", this.transformToWTNote.bind(this)));
     }
 
+    private getSelectedCell (cell: vscode.NotebookCell | null): vscode.NotebookCell | null {
+        if (cell) return cell;
+        if (!vscode.window.activeNotebookEditor) return null;
+        if (vscode.window.activeNotebookEditor.selection.start !== vscode.window.activeNotebookEditor.selection.end - 1) {
+            // Start and end are indexes into the cell array.  To use this method without a cell passed in, there
+            //      need to be exactly one cell selected
+            return null;
+        }
+        const notebookEditor = vscode.window.activeNotebookEditor;
+        return notebookEditor.notebook.cellAt(notebookEditor.selection.start)
+    }
+
+
     // Called on a wtnote Code cell -- if that cell has content on exactly one line,
     //      then that cell will be swapped out for a 'header' cell, and the cells 
     //      beneath it will be treated as its children
-    private async transformToHeader (cell: vscode.NotebookCell) {
-        
+    private async transformToHeader (cell: vscode.NotebookCell | null) {
+        cell = this.getSelectedCell(cell);
+        if (!cell) return null;
+
         const execution = this.controller.createNotebookCellExecution(cell);
         execution.start(Date.now());
         
@@ -116,7 +131,10 @@ export class WTNotebookController {
 
     // Called on markdown cell with metadata.kind === 'header'
     // Used to change the text of the header cell in the notebook and the NotebookPanel
-    private async editHeaderText (cell: vscode.NotebookCell) {
+    private async editHeaderText (cell: vscode.NotebookCell | null) {
+        cell = this.getSelectedCell(cell);
+        if (!cell) return null;
+
         const execution = this.controller.createNotebookCellExecution(cell);
         execution.start(Date.now()); // Keep track of elapsed time to execute cell.
 
@@ -143,7 +161,10 @@ export class WTNotebookController {
     // Called on markdown cell with metadata.kind === 'header-title'
     // Used to change the title of the note
     // Will also ask the user if they would like to replace all instances of this title throughout the work
-    private async editNoteTitle (cell: vscode.NotebookCell) {
+    private async editNoteTitle (cell: vscode.NotebookCell | null) {
+        cell = this.getSelectedCell(cell);
+        if (!cell) return null;
+
         const execution = this.controller.createNotebookCellExecution(cell);
         execution.start(Date.now()); // Keep track of elapsed time to execute cell.
 
@@ -188,7 +209,10 @@ export class WTNotebookController {
     // Called on a markdown cell with metadata.kind === 'input'
     // Used to convert the markdown cell back into its wtnote Code cell equivalent so that the user
     //      can then update contents
-    private async transformToWTNote (cell: vscode.NotebookCell) {
+    private async transformToWTNote (cell: vscode.NotebookCell | null) {
+        cell = this.getSelectedCell(cell);
+        if (!cell) return null;
+        
         const cellMetadata = cell.metadata as NotebookCellMetadata | undefined;
         if (cellMetadata) {
             const execution = this.controller.createNotebookCellExecution(cell);

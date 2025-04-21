@@ -1792,6 +1792,21 @@
 		],
 		"keybindings": [
 			{
+				"command": "wt.notebook.cell.editCell",
+				"key": "f2",
+				"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'input'"
+			},
+			{
+				"command": "wt.notebook.cell.editHeader",
+				"key": "f2",
+				"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header'"
+			},
+			{
+				"command": "wt.notebook.cell.editNoteTitle",
+				"key": "f2",
+				"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header-title'"
+			},
+			{
 				"command": "wt.tabStates.showStatusBarMenu",
 				"win": "ctrl+alt+shift+g",
 				"linux": "ctrl+alt+shift+g",
