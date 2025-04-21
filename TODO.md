@@ -20,8 +20,8 @@ TODO:
     - [ ] f2 to swap bullets with text boxes
 - [x] integrate with search bar -- search bar will now be looking inside of jsons which we don't actually want
     - probably can just search in NotebookPanelNotes -- won't have unsaved data but who cares
+- [x] alter rename to not completely rewrite .config and .wtnote files
 
 
 Later
 - [ ] images
-- [ ] alter rename to not completely rewrite .config and .wtnote files

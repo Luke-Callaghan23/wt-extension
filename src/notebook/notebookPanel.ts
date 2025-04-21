@@ -8,7 +8,7 @@ import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { _, compareFsPath, defaultProgress, formatFsPathForCompare, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
+import { _, compareFsPath, defaultProgress, formatFsPathForCompare, getFullJSONStringFromLocation, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
@@ -304,15 +304,34 @@ implements
         });
     }
 
+    async forceUpdate () {
+        if (vscode.window.activeTextEditor) {
+            return this.update(vscode.window.activeTextEditor);
+        }
+    }
 
-    provideHover(
-        document: vscode.TextDocument, 
-        position: vscode.Position, 
-        token: vscode.CancellationToken
-    ): vscode.ProviderResult<vscode.Hover> {
+    async getDocumentMatch (document: vscode.TextDocument): Promise<NoteMatch[] | null> {
+        if (!this.matchedNotebook) {
+            await this.forceUpdate();
+        }
         if (!this.matchedNotebook) return null;
 
         const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
+        if (!documentMatches) {
+            await this.forceUpdate();
+            return this.matchedNotebook[formatFsPathForCompare(document.uri)] || null;
+        }
+        else {
+            return documentMatches;
+        }
+    }
+
+    async provideHover(
+        document: vscode.TextDocument, 
+        position: vscode.Position, 
+        token: vscode.CancellationToken
+    ): Promise<vscode.Hover | null> {
+        const documentMatches = await this.getDocumentMatch(document);
         if (!documentMatches) return null;
 
         const matchedNote = documentMatches.find(match => match.range.contains(position));
@@ -327,9 +346,7 @@ implements
     }
     
     async provideDocumentLinks(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.DocumentLink[] | null> {
-        if (!this.matchedNotebook) return null;
-
-        const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
+        const documentMatches = await this.getDocumentMatch(document);
         if (!documentMatches) return null;
 
         const documentLinks: vscode.DocumentLink[] = [];
@@ -359,9 +376,7 @@ implements
         context: vscode.ReferenceContext, 
         token: vscode.CancellationToken
     ): Promise<vscode.Location[] | null> {
-        if (!this.matchedNotebook) return null;
-        
-        const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
+        const documentMatches = await this.getDocumentMatch(document);
         if (!documentMatches) return null;
 
         const matchedNote = documentMatches.find(match => match.range.contains(position));
@@ -384,9 +399,7 @@ implements
 
     
     async provideRenameEdits(document: vscode.TextDocument, position: vscode.Position, newName: string, token: vscode.CancellationToken): Promise<vscode.WorkspaceEdit | null> {
-        if (!this.matchedNotebook) return null;
-
-        const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
+        const documentMatches = await this.getDocumentMatch(document);
         if (!documentMatches) return null;
 
         const matchedNote = documentMatches.find(match => match.range.contains(position));
@@ -399,7 +412,7 @@ implements
         setTimeout(() => {
             vscode.commands.executeCommand("wt.reloadWatcher.reloadViews");
             vscode.window.showInformationMessage("Finished updating.  If you see some inaccuracies in a wtnote notebook window please just close and re-open.")
-        }, 2000);
+        }, 3000);
 
         return edits;
     }
@@ -429,8 +442,12 @@ implements
             const resp = await vscode.window.showInformationMessage(`Are you sure you want to replace ${locations.length} instances of '${aliasText}'?`, {
                 detail: `
 WARNING: this is kinda dangerous.
-• This will replace '${aliasText}' to '${newName}' in all possible locations, including: titles, wtnote notebooks, and fragment text files.  
-• This can be undone... probably.  I don't trust VSCode enough to promise you that ctrl+z will do exactly as you expect, but it has worked in my experience.  I still recommend you do a git commit first.
+• This will replace '${aliasText}' to '${newName}' in all possible locations, including: titles, wtnote Notebooks, and fragment text files.  
+• This can be undone... kinda.  
+    • If you want to undo with ctrl+z, I would recommend all notebook documents being CLOSED, because VSCode does not currently re-render Notebook documents after a refactor like this, and if you undo, then save non-re-serialized document you're going to mess something up.  
+    • After the undo is finished, MAKE SURE to run "Writing Tool: Refresh Workspace" (wt.reloadWatcher.reloadWorkspace) from your comand palette for those changes to be reflected in your workspace
+    • For best results, just don't ctrl+z undo.  You can either undo this rename by running the rename again with the original word -- which will probably avoid all the issue listed above.
+    • Or, even better, make a git commit before doing this, then revert to that commit if you mess something up
 • Also I'll try my best to match all the capitalizations for all replacements but, really, really, no promises.
 • Also, this will only replace exact matches to the original text '${aliasText}'.  No near matches or misspellings.  (Threat Level Midnight, The Office, etc., etc.)
 • Basically, I don't really recommend you doing this unless you're planning on reading through your whole project again and manually fixing anything this might break.
@@ -459,8 +476,6 @@ Or to always use '${newName}' exactly as you entered it?
 
         const copyingDestinationCase = resp === 'Attempt to match the case';
 
-        const replacedUris: Set<string> = new Set<string>();
-
         const edits = await defaultProgress(`Collecting edits for '${notePanelNote.title}'`, async () => {
             const edits = new vscode.WorkspaceEdit();
             for (const [ location, matchedText ] of locations) {
@@ -480,62 +495,23 @@ Or to always use '${newName}' exactly as you entered it?
                 if (location.uri.fsPath.endsWith('.wt')) {
                     edits.replace(location.uri, location.range, replacementString);
                 }
-                else if (location.uri.fsPath.endsWith('.wtnote')) {
-                    // Edits to notes are done in one go, because it is difficult to track exact replacements otherwise
-                    if (replacedUris.has(location.uri.fsPath)) {
+                else if (location.uri.fsPath.endsWith('.wtnote') || location.uri.fsPath.endsWith('.config')) {
+                    const wtnoteDoc = await vscode.workspace.openTextDocument(location.uri);
+
+                    const text = wtnoteDoc.getText();
+                    const surroundingString = getFullJSONStringFromLocation(wtnoteDoc, text, location);
+                    if (text[surroundingString.endOff] !== '"') throw 'bad';
+
+                    let nextNonWhitespaceOff = surroundingString.endOff + 1;
+                    while (/\s/.test(text[nextNonWhitespaceOff])) {
+                        nextNonWhitespaceOff++;
+                    }
+
+                    if (text[nextNonWhitespaceOff] === ':') {
+                        // Skip the replacement if it is the name of a field
                         continue;
                     }
-
-                    const note = await vscode.workspace.fs.readFile(location.uri).then(buffer => {
-                        return this.serializer.readSerializedNote(buffer);
-                    });
-
-                    // Find and replace inside of all the bullet points of this note
-                    for (const [ _, section ] of Object.entries(note.headers)) {
-                        const repl = section.cells.map(bullet => ({
-                            ...bullet,
-                            text: bullet.text.replaceAll(
-                                aliasRegex, 
-                                // Pass in replacement function that replaces only `aliasText`
-                                //      with finalReplacement
-                                // This is because the alias regex adds spaces to ensure that it
-                                //      is matching a whole word, but we do not want those
-                                //      spaces being replaced in the final string
-                                rep => rep.replace(aliasRegex, replacementString)
-                            )
-                        }));
-                        section.cells = repl;
-                    }
-                    note.title.text = note.title.text.replaceAll(aliasRegex, rep => rep.replace(aliasRegex, replacementString));
-                    const updatedSerializedNote = note;
-
-                    // Create an edit to overwrite the whole file with the new replaced contents
-                    edits.createFile(location.uri, {
-                        overwrite: true,
-                        contents: Buff.from(JSON.stringify(updatedSerializedNote, undefined, 4))
-                    });
-
-                    // Since serializer.findAndReplace covers all replacements for the whole wtnote document
-                    //      and we don't want to waste time performing the same replacements over and over
-                    //      again, we add this uri to the set of modified notes so that if we encounter
-                    //      this again we can just skip it
-                    replacedUris.add(location.uri.fsPath);
-                }
-                else if (location.uri.fsPath.endsWith('.config')) {
-                    const config = await readDotConfig(location.uri);
-                    if (!config) continue;
-                    
-                    // See notes above for replacing the inner text of the alias match
-                    for (const [ _, entry ] of Object.entries(config)) {
-                        entry.title = entry.title.replaceAll(aliasRegex, rep => rep.replace(aliasRegex, replacementString));
-                    }
-
-                    // See notes above about overwriting files
-                    edits.createFile(location.uri, {
-                        overwrite: true,
-                        contents: Buff.from(JSON.stringify(config, undefined))
-                    });
-                    replacedUris.add(location.uri.fsPath);
+                    edits.replace(location.uri, location.range, replacementString);
                 }
                 else continue;
             }
@@ -544,9 +520,8 @@ Or to always use '${newName}' exactly as you entered it?
         return edits;
     }
 
-    prepareRename (document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Range> {
-        if (!this.matchedNotebook) return null;
-        const documentMatches = this.matchedNotebook[formatFsPathForCompare(document.uri)];
+    async prepareRename (document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.Range | null> {
+        const documentMatches = await this.getDocumentMatch(document);
         if (!documentMatches) return null;
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
