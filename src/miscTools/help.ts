@@ -231,6 +231,9 @@ export const formatFsPathForCompare = (path: vscode.Uri): string => {
     if (fsPath.endsWith("\\") || fsPath.endsWith("/")) {
         fsPath = fsPath.substring(0, fsPath.length-1);
     }
+    if (path.fragment && path.fragment.length > 0) {
+        fsPath += `#${path.fragment}`;
+    }
     return fsPath;
 };
 

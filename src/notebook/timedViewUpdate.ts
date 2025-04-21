@@ -99,6 +99,15 @@ export async function update (this: NotebookPanel, editor: vscode.TextEditor): P
     const matches: NoteMatch[] = [];
     const decorationLocations: vscode.DecorationOptions[] = [];
 
+    // Used for comparing the uri of this document VS note uris.
+    // If this document is a cell inside of a notebook, it will be assigned a unique value in 'fragment'
+    //      but we do not want to use that when comparing against notes
+    // So, copy the document uri and strip the fragment if it has one
+    const compareUri = vscode.Uri.from({
+        ...editor.document.uri,
+        fragment: '',
+    });
+
     for (const { start, end, matchedNote, tag } of this.getNoteMatchesInText(editor.document.getText())) {
         const startPos = editor.document.positionAt(start);
         const endPos = editor.document.positionAt(end);
@@ -110,10 +119,10 @@ export async function update (this: NotebookPanel, editor: vscode.TextEditor): P
                 note: matchedNote
             });
 
-            // Do not add stylization to the note document of the note's note thingy
-            // Too much blue everywhere
-            // Still want stylization for other note's note thingies, just not your own
-            if (!compareFsPath(matchedNote.uri, editor.document.uri)) {
+            // When the document that is being edited is a cell inside of a notebook, we do not want to add the decorations
+            //      to our own note's aliases or title
+            // Simply because there is just too much blue everywhere, and it is annoying
+            if (!compareFsPath(matchedNote.uri, compareUri)) {
                 const decorationOptions: vscode.DecorationOptions = { 
                     range: range, 
                     hoverMessage: new vscode.MarkdownString(tag)
