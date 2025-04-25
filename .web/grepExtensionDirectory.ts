@@ -36,7 +36,7 @@ export async function *grepExtensionDirectory (
     useRegex: boolean, 
     caseInsensitive: boolean, 
     wholeWord: boolean,
-): AsyncGenerator<vscode.Location | null>  {
+): AsyncGenerator<[vscode.Location, string] | null>  {
 
     const captureGroupId = 'searchTerm';
 
@@ -68,12 +68,12 @@ export async function *grepExtensionDirectory (
 
         const documents: vscode.TextDocument[] = [];
 
-        const locations: vscode.Location[] = [];
+        const locations: [vscode.Location, string][] = [];
         const totalCount = documentPromises.length;
         let completedFilesCount = 0;
         while (completedFilesCount < totalCount) {
             const [ openedDoc, index ] = await Promise.any<[vscode.TextDocument, number]>(documentPromises
-                .map((p, i) => p.then(v => [v, i]))
+                .map((p, i) => p.then(v => [v, i] as [vscode.TextDocument, number]))
             );
 
             const lines = openedDoc.getText().split('\n');
@@ -103,7 +103,7 @@ export async function *grepExtensionDirectory (
                     const endPosition = new vscode.Position(lineIndex, characterEnd);
                     const foundRange = new vscode.Selection(startPosition, endPosition);
             
-                    yield new vscode.Location(openedDoc.uri, foundRange);
+                    yield [new vscode.Location(openedDoc.uri, foundRange), searchedText];
                     lastLineMatch = lineMatch;
                 }
             }

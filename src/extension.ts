@@ -206,11 +206,11 @@ async function loadExtensionWorkspace (
         //        fragment/snips/chapters in the outline view
         FileAccessManager.initialize(context);
         vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
-        vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
+        context.subscriptions.push(vscode.commands.registerCommand('wt.getPackageableItems', () => packageForExport([
             outline, synonyms, timedViews, new FileAccessManager(),
             personalDictionary, colorGroups, wh, reloadWatcher, tabStates,
             autocorrection, searchBarView
-        ]));
+        ])));
 
         // Lastly, clear the 'tmp' folder
         // This is used to store temporary data for a session and should not last between sessions

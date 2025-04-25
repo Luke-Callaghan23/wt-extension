@@ -24,7 +24,7 @@
 		"onView:wt.synonyms",
 		"onView:wt.scratchPad",
 		"onView:wt.recyclingBin",
-		"onView:wt.workBible.tree"
+		"onView:wt.notebook.tree"
 	],
 	"browser": "./dist/web/extension.js",
 	"contributes": {
@@ -81,7 +81,7 @@
 					"default": true,
 					"description": "Determines whether you want to show the 'Recycling Bin' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
 				},
-				"wt.showPanels.workBible": {
+				"wt.showPanels.notebook": {
 					"type": "boolean",
 					"default": true,
 					"description": "Determines whether you want to show the 'Work Bible' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
@@ -121,7 +121,7 @@
 					"type": "boolean",
 					"default": true
 				},
-				"wt.timedSearches.workBible": {
+				"wt.timedSearches.notebook": {
 					"description": "Enable automatic querying for terms in your notebook",
 					"type": "boolean",
 					"default": true
@@ -175,9 +175,14 @@
 		},
 		"viewsWelcome": [
 			{
-				"view": "wt.outline",
+				"view": "wt.welcome",
+				"contents": "Loading your WT environment.\n[Loading . . . ](command:wt.reload)",
+				"when": "!wt.loaded"
+			},
+			{
+				"view": "wt.welcome",
 				"contents": "No WT workspace found.\n[Create Workspace](command:wt.createWorkspace)\nImport a workspace from a .iwe file.\n[Import Workspace](command:wt.importWorkspace)\nAttempt to reload the current workspace.\n[Reload](command:wt.reload)",
-				"when": "!wt.valid"
+				"when": "wt.loaded && !wt.valid"
 			},
 			{
 				"view": "wt.export",
@@ -199,7 +204,7 @@
 			],
 			"panel": [
 				{
-					"id": "workBible",
+					"id": "notebook",
 					"title": "Notes",
 					"icon": "$(bookmark)"
 				}
@@ -208,54 +213,70 @@
 		"views": {
 			"wt": [
 				{
+					"id": "wt.welcome",
+					"name": "Welcome",
+					"contextualTitle": "Welcome",
+					"when": "!wt.loaded || !wt.valid",
+					"icon": "$(edit)"
+				},
+				{
 					"id": "wt.outline",
 					"name": "Outline",
-					"contextualTitle": "Outline"
+					"contextualTitle": "Outline",
+					"when": "wt.valid",
+					"icon": "$(edit)"
 				},
 				{
 					"id": "wt.wordWatcher",
 					"name": "Word Watcher",
 					"contextualTitle": "Word Watcher",
-					"when": "wt.valid && config.wt.showPanels.wordWatcher"
+					"when": "wt.valid && config.wt.showPanels.wordWatcher",
+					"icon": "$(edit)"
 				},
 				{
 					"id": "wt.overview",
 					"name": "Text Overview",
 					"contextualTitle": "Text Overview",
-					"when": "wt.valid && config.wt.showPanels.overview"
+					"when": "wt.valid && config.wt.showPanels.overview",
+					"icon": "$(edit)"
 				},
 				{
 					"id": "wt.todo",
 					"name": "TODOs",
 					"contextualTitle": "TODOs",
-					"when": "wt.valid && config.wt.showPanels.TODO"
+					"when": "wt.valid && config.wt.showPanels.TODO",
+					"icon": "$(edit)"
 				},
 				{
 					"type": "webview",
 					"id": "wt.synonyms",
 					"name": "Synonyms",
 					"contextualTitle": "Synonyms",
-					"when": "wt.valid && config.wt.showPanels.synonyms"
+					"when": "wt.valid && config.wt.showPanels.synonyms",
+					"icon": "$(edit)"
 				},
 				{
 					"id": "wt.scratchPad",
 					"name": "Scratch Pad",
 					"contextualTitle": "Scratch Pad",
-					"when": "wt.valid && config.wt.showPanels.scratchPad"
+					"when": "wt.valid && config.wt.showPanels.scratchPad",
+					"icon": "$(edit)"
 				},
 				{
 					"id": "wt.recyclingBin",
 					"name": "Recycling Bin",
 					"contextualTitle": "Recycling Bin",
-					"when": "wt.valid && config.wt.showPanels.recyclingBin"
+					"when": "wt.valid && config.wt.showPanels.recyclingBin",
+					"icon": "$(edit)"
 				}
 			],
-			"workBible": [
+			"notebook": [
 				{
-					"id": "wt.workBible.tree",
+					"id": "wt.notebook.tree",
 					"name": "Notes",
 					"contextualTitle": "Notes",
-					"when": "wt.valid && config.wt.showPanels.workBible"
+					"when": "wt.valid && config.wt.showPanels.notebook",
+					"icon": "$(edit)"
 				}
 			],
 			"wtSearch": [
@@ -264,13 +285,15 @@
 					"id": "wt.wtSearch.search",
 					"name": "Writing Tool Search: Search",
 					"contextualTitle": "Writing Tool Search: Search",
-					"when": "wt.valid"
+					"when": "wt.valid",
+					"icon": "$(edit)"
 				},
 				{
 					"id": "wt.wtSearch.results",
 					"name": "Writing Tool Search: Results",
 					"contextualTitle": "Writing Tool Search: Results",
-					"when": "wt.valid"
+					"when": "wt.valid",
+					"icon": "$(edit)"
 				}
 			]
 		},
@@ -704,31 +727,65 @@
 			},
 			{
 				"title": "Writing Tool: Add Note",
-				"command": "wt.workBible.addNote",
+				"command": "wt.notebook.addNote",
 				"icon": "$(add)"
 			},
 			{
 				"title": "Writing Tool: Remove Note",
-				"command": "wt.workBible.removeNote",
+				"command": "wt.notebook.removeNote",
 				"icon": "$(trashcan)"
 			},
 			{
 				"title": "Writing Tool: Search For Note",
-				"command": "wt.workBible.search"
+				"command": "wt.notebook.search"
 			},
 			{
 				"title": "Writing Tool: Add Alias",
-				"command": "wt.workBible.addAlias",
+				"command": "wt.notebook.addAlias",
 				"icon": "$(add)"
 			},
 			{
 				"title": "Writing Tool: Search For Note",
-				"command": "wt.workBible.search"
+				"command": "wt.notebook.search"
 			},
 			{
 				"title": "Writing Tool: Open Note in editor",
-				"command": "wt.workBible.editNote",
+				"command": "wt.notebook.editNote",
 				"icon": "$(edit)"
+			},
+			{
+				"command": "wt.notebook.saveToMarkdown",
+				"title": "Notebook: Save to Markdown"
+			},
+			{
+				"command": "wt.notebook.cell.moveDown",
+				"title": "Notebook: Move Cell Down",
+				"icon": "$(arrow-down)"
+			},
+			{
+				"command": "wt.notebook.cell.moveUp",
+				"title": "Notebook: Move Cell Up",
+				"icon": "$(arrow-up)"
+			},
+			{
+				"command": "wt.notebook.cell.editCell",
+				"title": "Notebook: Edit Cell",
+				"icon": "$(debug-step-over)"
+			},
+			{
+				"command": "wt.notebook.cell.convertToHeader",
+				"title": "Notebook: Convert Cell to Header",
+				"icon": "$(diff-editor-toggle-whitespace)"
+			},
+			{
+				"command": "wt.notebook.cell.editHeader",
+				"title": "Notebook: Edit header text",
+				"icon": "$(keyboard)"
+			},
+			{
+				"command": "wt.notebook.cell.editNoteTitle",
+				"title": "Notebook: Edit title",
+				"icon": "$(tag)"
 			},
 			{
 				"title": "Writing Tool: Open Introduction Walkthrough",
@@ -795,8 +852,8 @@
 				"title": "Writing Tool: Refresh colors"
 			},
 			{
-				"command": "wt.workBible.refresh",
-				"title": "Writing Tool: Refresh workBible"
+				"command": "wt.notebook.refresh",
+				"title": "Writing Tool: Refresh notebook"
 			},
 			{
 				"command": "wt.reloadWatcher.reloadWorkspace",
@@ -1254,19 +1311,23 @@
 					"when": "false"
 				},
 				{
-					"command": "wt.workBible.addNote",
+					"command": "wt.notebook.addNote",
 					"when": "false"
 				},
 				{
-					"command": "wt.workBible.removeNote",
+					"command": "wt.notebook.removeNote",
 					"when": "false"
 				},
 				{
-					"command": "wt.workBible.search",
+					"command": "wt.notebook.search",
 					"when": "false"
 				},
 				{
-					"command": "wt.workBible.editNote",
+					"command": "wt.notebook.editNote",
+					"when": "false"
+				},
+				{
+					"command": "wt.notebook.refresh",
 					"when": "false"
 				},
 				{
@@ -1315,10 +1376,6 @@
 				},
 				{
 					"command": "wt.colors.refresh",
-					"when": "false"
-				},
-				{
-					"command": "wt.workBible.refresh",
 					"when": "false"
 				}
 			],
@@ -1429,8 +1486,8 @@
 					"group": "navigation@3"
 				},
 				{
-					"command": "wt.workBible.addNote",
-					"when": "view == wt.workBible.tree",
+					"command": "wt.notebook.addNote",
+					"when": "view == wt.notebook.tree",
 					"group": "navigation"
 				}
 			],
@@ -1580,24 +1637,14 @@
 					"group": "inline"
 				},
 				{
-					"command": "wt.workBible.addNote",
-					"when": "view == wt.workBible.tree && viewItem == note",
-					"group": "inline@1"
-				},
-				{
-					"command": "wt.workBible.removeNote",
-					"when": "view == wt.workBible.tree && viewItem == note",
+					"command": "wt.notebook.removeNote",
+					"when": "view == wt.notebook.tree",
 					"group": "inline@2"
 				},
 				{
-					"command": "wt.workBible.search",
-					"when": "view == wt.workBible.tree && viewItem == note",
-					"group": "search@1"
-				},
-				{
-					"command": "wt.workBible.editNote",
-					"when": "view == wt.workBible.tree",
-					"group": "inline@3"
+					"command": "wt.notebook.editNote",
+					"when": "view == wt.notebook.tree",
+					"group": "inline@1"
 				},
 				{
 					"command": "wt.wtSearch.results.hideNode",
@@ -1611,7 +1658,7 @@
 			],
 			"editor/title": [
 				{
-					"command": "wt.editor.saveAll",
+					"command": "wt.editor.save",
 					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showSaveAll",
 					"group": "navigation@2"
 				},
@@ -1645,9 +1692,61 @@
 					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showRemove",
 					"group": "navigation@9"
 				}
+			],
+			"notebook/cell/title": [
+				{
+					"command": "wt.notebook.cell.convertToHeader",
+					"when": "notebookType == 'wt.notebook' && notebookCellType == 'code' && cellKindContextValue == 'input'",
+					"group": "inline@3"
+				},
+				{
+					"command": "wt.notebook.cell.editCell",
+					"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'input'",
+					"group": "inline@3"
+				},
+				{
+					"command": "wt.notebook.cell.editHeader",
+					"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header'",
+					"group": "inline@4"
+				},
+				{
+					"command": "wt.notebook.cell.editNoteTitle",
+					"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header-title'",
+					"group": "inline@4"
+				}
 			]
 		},
+		"notebooks": [
+			{
+				"id": "wt.notebook",
+				"type": "wt.notebook",
+				"displayName": "Writing Tool: Notebook",
+				"selector": [
+					{
+						"filenamePattern": "*.wtNote"
+					},
+					{
+						"filenamePattern": "*.wtnote"
+					}
+				]
+			}
+		],
 		"keybindings": [
+			{
+				"command": "wt.notebook.cell.editCell",
+				"key": "f2",
+				"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'input'"
+			},
+			{
+				"command": "wt.notebook.cell.editHeader",
+				"key": "f2",
+				"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header'"
+			},
+			{
+				"command": "wt.notebook.cell.editNoteTitle",
+				"key": "f2",
+				"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header-title'"
+			},
 			{
 				"command": "wt.tabStates.showStatusBarMenu",
 				"win": "ctrl+alt+shift+g",

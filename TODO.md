@@ -15,9 +15,9 @@ TODO:
     - [x] for aliases and note titles, no special characters besides dashes and spaces
 - [x] reload tabs and views makes it so the serializer never gets called again :(((
     - seems like this is fixed opening docs with `vscode.commands.executeCommand('vscode.openWith', uri, 'wt.notebook', options);` for whatever reason
-- [ ] keybindings 
-    - [ ] f2 to rename headers
-    - [ ] f2 to swap bullets with text boxes
+- [x] keybindings 
+    - [x] f2 to rename headers
+    - [x] f2 to swap bullets with text boxes
 - [x] integrate with search bar -- search bar will now be looking inside of jsons which we don't actually want
     - probably can just search in NotebookPanelNotes -- won't have unsaved data but who cares
 - [x] alter rename to not completely rewrite .config and .wtnote files

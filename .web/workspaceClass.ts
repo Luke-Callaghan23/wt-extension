@@ -63,7 +63,6 @@ export type DiskContextType = {
     'wt.wtSearch.search.matchTitles': SearchBarView['matchTitles'];
 }
 
-
 export class Workspace {
     // Basic configuration information about the workspace
     config: Config = {
@@ -84,6 +83,8 @@ export class Workspace {
     public notebookFolder: vscode.Uri;
     public scratchPadFolder: vscode.Uri;
 
+    // Old folders
+    public workBibleFolder: vscode.Uri;
 
     public synonymsCachePath: vscode.Uri;
 
@@ -191,6 +192,9 @@ export class Workspace {
         this.notebookFolder = vscode.Uri.joinPath(extension.rootPath, `data/notebook`);
         this.scratchPadFolder = vscode.Uri.joinPath(extension.rootPath, `data/scratchPad`);
         this.synonymsCachePath = vscode.Uri.joinPath(extension.rootPath, 'synonymsCache.json');
+
+        // Old folders
+        this.workBibleFolder = vscode.Uri.joinPath(extension.rootPath, `data/workBible`);
     }
 
     registerCommands(context: vscode.ExtensionContext): void {

@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 import { ConfigurationTarget, workspace } from 'vscode';
-import * as console from './../miscTools/vsconsole'
+import * as console from '../miscTools/vsconsole'
 import { OutlineView } from '../outline/outlineView';
 import * as extension from './../extension';
 import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
-import { Note, Notebook } from '../notebook/notebook';
+import { NotebookPanelNote, NotebookPanel } from '../notebook/notebookPanel';
 import { vagueNodeSearch } from '../miscTools/help';
 
 export class TabLabels {
@@ -15,7 +15,7 @@ export class TabLabels {
         constructor (private context: vscode.ExtensionContext) {
         this.registerCommands();
 
-        this.context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => {
+        context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => {
             const configuration = 'wt.tabLabels.maxSize';
             if (!e.affectsConfiguration(configuration)) return;
             TabLabels.assignNamesForOpenTabs();
@@ -25,14 +25,14 @@ export class TabLabels {
     private registerCommands() {
 
         const renameFromUri = async (uri: vscode.Uri) => {
-            type ViewSource = Renamable<OutlineNode | Note>;
-            let nodeResult: [ ViewSource, OutlineNode | Note ]
+            type ViewSource = Renamable<OutlineNode | NotebookPanelNote>;
+            let nodeResult: [ ViewSource, OutlineNode | NotebookPanelNote ]
             try {
                 nodeResult = await Promise.any([
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) => extension.ExtensionGlobals.outlineView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.outlineView, node ]) : reject())),
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.recyclingBinView, node ]) : reject())),
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.scratchPadView, node ]) : reject())),
-                    new Promise<[ ViewSource, Note ]>((resolve, reject) =>  {
+                    new Promise<[ ViewSource, NotebookPanelNote ]>((resolve, reject) =>  {
                         const note = extension.ExtensionGlobals.notebook.getNote(uri);
                         if (note) {
                             resolve([ extension.ExtensionGlobals.notebook, note ]);
@@ -72,7 +72,7 @@ export class TabLabels {
         const newPatterns: { [index: string]: string } = {};
         for (const group of vscode.window.tabGroups.all) {
             for (const tab of group.tabs) {
-                if (!(tab.input instanceof vscode.TabInputText)) continue;
+                if (!(tab.input instanceof vscode.TabInputText) && !(tab.input instanceof vscode.TabInputNotebook)) continue;
     
                 const uri = tab.input.uri;
                 if (!(uri.fsPath.endsWith('.wt') || uri.fsPath.endsWith('.wtnote'))) continue;
@@ -84,7 +84,7 @@ export class TabLabels {
                 if (!nodeOrNote || !source) continue;
 
                 const node: { data: { ids: { display: string } } } = nodeOrNote instanceof OutlineNode ?
-                    nodeOrNote : { data: { ids: { display: nodeOrNote.noun } } };
+                    nodeOrNote : { data: { ids: { display: nodeOrNote.title } } };
     
                 // Remove the extension root path from the pattern
                 let relativePath = uri.fsPath.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/')
