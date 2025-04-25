@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import { BulletPoint, NotebookPanelNote, NotebookPanel, NoteSection } from '../notebookPanel';
 import { Buff } from '../../Buffer/bufferSource';
-import { wtToMd } from '../../export/wtToMd';
+import { wtToMd } from '../../miscTools/wtToMd';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { capitalize } from '../../miscTools/help';
 import { _, formatFsPathForCompare, getRelativePath, statFile, vagueNodeSearch, } from '../../miscTools/help';

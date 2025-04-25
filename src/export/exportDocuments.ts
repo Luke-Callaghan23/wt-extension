@@ -17,7 +17,7 @@ import { Workspace } from '../workspace/workspaceClass';
 import { OutlineView } from '../outline/outlineView';
 import { wtToHtml } from './wtToHtml';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
-import { wtToMd } from './wtToMd';
+import { wtToMd } from '../miscTools/wtToMd';
 import { defaultProgress } from '../miscTools/help';
 
 // Data provided by the export form webview
