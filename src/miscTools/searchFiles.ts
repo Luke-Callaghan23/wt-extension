@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { OutlineView } from './../outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from './../outline/nodes_impl/outlineNode';
 import { ExtensionGlobals } from './../extension';
-import { compareFsPath } from './help';
+import { compareFsPath, showTextDocumentWithPreview } from './help';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import * as extension from '../extension';
 
@@ -297,7 +297,7 @@ const TAB_SIZE: number = 4;
 export async function searchFiles () {
     const fragment = await selectFragment();
     if (!fragment) return null;
-    await vscode.window.showTextDocument(fragment.data.ids.uri);
+    await showTextDocumentWithPreview(fragment.data.ids.uri);
 }
 
 export async function selectFragment (): Promise<OutlineNode | null> {

@@ -466,7 +466,7 @@ export async function showDocument (uri: vscode.Uri, options?: vscode.TextDocume
         return vscode.commands.executeCommand('vscode.openWith', uri, 'wt.notebook', options);
     }
     else {
-        return vscode.window.showTextDocument(uri, options);
+        return showTextDocumentWithPreview(uri, options);
     }
 }
 
@@ -560,4 +560,19 @@ export function transformToCapitalization(input: string, capitalization: Capital
         case 'titleCase': return capitalize(input.toLocaleLowerCase(), false);
         case 'noCapFrFrOnGod': return input.toLocaleLowerCase();
     }
+}
+
+
+export async function showTextDocumentWithPreview (docOrUri: vscode.Uri | vscode.TextDocument, options?: vscode.TextDocumentShowOptions) {
+    const uri = docOrUri instanceof vscode.Uri 
+        ? docOrUri
+        : docOrUri.uri;
+
+    let isActiveTextDocument = vscode.window.activeTextEditor && compareFsPath(uri, vscode.window.activeTextEditor.document.uri);
+    return vscode.window.showTextDocument(uri, {
+        ...options,
+        // If the chosen document is already open, then set preview to false (which will open it in normal mode (or whatever you call it))
+        // If the document is not active, then open it in preview mode
+        preview: !isActiveTextDocument,
+    })
 }

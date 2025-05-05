@@ -107,8 +107,7 @@ export async function editNote (this: NotebookPanel, resource: NotebookPanelNote
 
     const noteFileName = `${note.noteId}.wtnote`
     const notePath = vscode.Uri.joinPath(this.notebookFolderPath, noteFileName);
-    const col = await determineAuxViewColumn((uri) => this.getNote(uri));
     await vscode.commands.executeCommand('vscode.openWith', notePath, 'wt.notebook', {
-        viewColumn: col,
+        viewColumn: await determineAuxViewColumn((uri) => this.getNote(uri)),
     });
 }

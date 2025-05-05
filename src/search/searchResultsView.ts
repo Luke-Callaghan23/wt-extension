@@ -8,7 +8,7 @@ import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { cleanNodeTree, pairMatchedTitlesToNeighborNodes, recreateNodeTree } from './processGrepResults/createNodeTree';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import { compareFsPath, determineAuxViewColumn, vagueNodeSearch } from '../miscTools/help';
+import { compareFsPath, determineAuxViewColumn, showTextDocumentWithPreview, vagueNodeSearch } from '../miscTools/help';
 
 
 export type SearchNodeKind = 
@@ -84,7 +84,7 @@ export class SearchResultsView
 
             // Called when a file location node is clicked in the results tree, opens the location in the editor
             const doc = await vscode.workspace.openTextDocument(location.uri);
-            const editor = await vscode.window.showTextDocument(doc);
+            const editor = await showTextDocumentWithPreview(doc);
             editor.selections = [ new vscode.Selection(location.range.start, location.range.end) ];
             return editor.revealRange(location.range);
         }));
@@ -101,7 +101,7 @@ export class SearchResultsView
                 node.node.linkNode.node.data.ids.type === 'fragment'
             ) {
                 const doc = await vscode.workspace.openTextDocument(node.getUri());
-                return vscode.window.showTextDocument(doc);
+                return showTextDocumentWithPreview(doc);
             }
 
             // Outline or Recycling (when type is not fragment), then reveal the node 

@@ -235,6 +235,8 @@ export async function jumpNextInstanceOfWord (this: WordWatcher, word: string) {
         // Set the selection to the start/end position found above
         activeEditor.selection = new vscode.Selection(startPos, endPos);
         activeEditor.revealRange(new vscode.Range(startPos, endPos));
-        vscode.window.showTextDocument(activeEditor.document);
+        vscode.window.showTextDocument(activeEditor.document, {
+            preview: false
+        });
     }
 }

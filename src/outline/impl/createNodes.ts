@@ -153,7 +153,9 @@ export async function newChapter (
             
             // Open the text document in the editor as well
             if (!options?.preventRefresh) {
-                vscode.window.showTextDocument(fragmentUri);
+                vscode.window.showTextDocument(fragmentUri, {
+                preview: false,
+            });
             }
         }
         
@@ -398,7 +400,9 @@ export async function newSnip (
 
         // Open the text document in the editor as well
         if (!options?.preventRefresh) {
-            vscode.window.showTextDocument(fragmentUri);
+            vscode.window.showTextDocument(fragmentUri, {
+                preview: false,
+            });
         }
     }
 
@@ -534,7 +538,9 @@ export async function newFragment (
     await writeDotConfig(parentDotConfigUri, parentDotConfig);
 
     if (!options?.preventRefresh) {
-        vscode.window.showTextDocument(fragmentUri);
+        vscode.window.showTextDocument(fragmentUri, {
+            preview: false,
+        });
         this.refresh(false, [ parentNode ]);
         vscode.window.showInformationMessage('Successfully created new fragment');
     }

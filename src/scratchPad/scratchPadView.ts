@@ -5,7 +5,7 @@ import * as extension from '../extension';
 import { initializeSnip } from '../outlineProvider/initialize';
 // import { OutlineNode, ResourceType } from '../outline/node';
 import { NodeTypes, ResourceType } from '../outlineProvider/fsNodes';
-import { ConfigFileInfo, determineAuxViewColumn } from '../miscTools/help';
+import { ConfigFileInfo, determineAuxViewColumn, showTextDocumentWithPreview } from '../miscTools/help';
 import { v4 as uuidv4 } from 'uuid';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { deleteNodePermanently } from './deleteNodePermanently';
@@ -128,8 +128,7 @@ implements
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.scratchPad.openFile', async (resource: vscode.Uri) => {
-            vscode.window.showTextDocument(resource, { 
-                preserveFocus: true,
+            return showTextDocumentWithPreview(resource, { 
                 viewColumn: await determineAuxViewColumn((uri) => this.getTreeElementByUri(uri)),
             });
         }));

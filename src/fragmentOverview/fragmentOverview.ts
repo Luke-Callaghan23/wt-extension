@@ -57,6 +57,7 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
             return vscode.window.showTextDocument(line.uri, {
                 selection: selection,
                 preserveFocus: false,
+                preview: false,
             });
         }));
 

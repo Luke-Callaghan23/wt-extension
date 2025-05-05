@@ -3,7 +3,7 @@ import { OutlineView } from "../outlineView";
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../nodes_impl/outlineNode';
 import * as extension from '../../extension';
 import { CopiedSelection, genericPaste } from './copyPaste';
-import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey, vagueNodeSearch } from '../../miscTools/help';
+import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey, vagueNodeSearch, showTextDocumentWithPreview } from '../../miscTools/help';
 import { searchFiles, selectFile, selectFiles } from '../../miscTools/searchFiles';
 import { NodeMoveKind } from '../nodes_impl/handleMovement/generalMoveNode';
 import { DiskContextType } from '../../workspace/workspaceClass';
@@ -11,8 +11,8 @@ import { DiskContextType } from '../../workspace/workspaceClass';
 
 // Register all the commands needed for the outline view to work
 export function registerCommands (this: OutlineView) {
-    this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.openFile', (resource) => {
-        vscode.window.showTextDocument(resource, { preserveFocus: true });
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.openFile', async (resource) => {
+        return showTextDocumentWithPreview(resource, { preserveFocus: true });
     }));
     // Reload command has ambiguous changes and should include a full reload from disk
     this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.refresh', (resource: OutlineNode | DiskContextType['wt.outline.collapseState'] | undefined | null) => {
