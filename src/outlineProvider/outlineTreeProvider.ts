@@ -34,7 +34,7 @@ export abstract class TreeNode {
 
 export abstract class OutlineTreeProvider<T extends TreeNode> 
 extends UriBasedView<T>
-implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Packageable {
+implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Packageable<any> {
 
 
 	// To be implemented by concrete type
@@ -76,7 +76,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		this.initUriExpansion(this.viewName, view, this.context);
 	}
 
-	getPackageItems(): { [index: string]: any } {
+	getPackageItems() {
 		return {
 			[`${this.viewName}.collapseState`]: this.uriToVisibility
 		}

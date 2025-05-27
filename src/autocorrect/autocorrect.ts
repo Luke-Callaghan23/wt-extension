@@ -31,7 +31,7 @@ type HowMany = number;
 
 type CorrectionKind = 'correction' | 'specialCharacterSwap';
 
-export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvider<vscode.CodeAction> {
+export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclusions" | "wt.autocorrections.corrections" | "wt.autocorrections.dontCorrect">, vscode.CodeActionProvider<vscode.CodeAction> {
     private static BlueUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         overviewRulerLane: vscode.OverviewRulerLane.Right,
         overviewRulerColor: 'royalblue',
@@ -268,7 +268,7 @@ export class Autocorrect implements Timed, Packageable, vscode.CodeActionProvide
         return results;
     }
 
-    getPackageItems(): Partial<DiskContextType> {
+    getPackageItems() {
         return {
             "wt.autocorrections.exclusions": this.exclusions,
             "wt.autocorrections.corrections": this.corrections,

@@ -12,7 +12,7 @@ import { ScratchPadView } from './../scratchPad/scratchPadView';
 import { NotebookPanel } from '../notebook/notebookPanel';
 import { getFsPathKey, getRelativePath, setFsPathKey, vagueNodeSearch } from './../miscTools/help';
 
-export class FileAccessManager implements Packageable {
+export class FileAccessManager implements Packageable<"wt.fileAccesses.positions"> {
 
     static lastAccessedFragment: vscode.Uri | undefined;
     static lastAccessedChapter: vscode.Uri | undefined;
@@ -168,7 +168,7 @@ export class FileAccessManager implements Packageable {
     }
 
     
-    getPackageItems(): { [index: string]: any; } {
+    getPackageItems() {
         const positionPackage: { [index: string]: any } = {};
         try {
             Object.entries(FileAccessManager.positions).forEach(([ uri, select ]) => {

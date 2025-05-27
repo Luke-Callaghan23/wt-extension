@@ -13,12 +13,9 @@ export async function gitiniter () {
     }
 }
 
-export let lastCommit: number = Date.now();
-export const setLastCommit = () => lastCommit = Date.now();
 export async function gitCommit () {
     try {
         return defaultProgress("Commiting All Files", async () => {
-            lastCommit = Date.now();
             await vscode.commands.executeCommand('git.commitAll');
         });
     }
@@ -31,7 +28,6 @@ export async function gitCommit () {
 export async function gitCommitFile () {
     try {
         return defaultProgress("Commiting All Files", async () => {
-            lastCommit = Date.now();
             await vscode.commands.executeCommand('git.stage');
             await vscode.commands.executeCommand('git.commit');
         });

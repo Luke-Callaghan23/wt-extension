@@ -5,7 +5,7 @@ import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 
-export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
+export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable<'wt.wh.synonyms'> {
 
 	private _view?: vscode.WebviewView;
 	private synonyms: string[];
@@ -28,7 +28,7 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable {
 		this.registerCommands();
 	}
 
-	getPackageItems (): { [index: string]: any; } {
+	getPackageItems () {
 		return {
 			'wt.wh.synonyms': this.synonyms
 		}

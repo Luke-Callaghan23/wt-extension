@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { DiskContextType, Workspace } from "../workspace/workspaceClass";
 import { SavedTabState, TabPositions } from '../workspace/workspace';
-import { Packageable } from '../packageable';
+import { Packageable, Packager } from '../packageable';
 import { FileAccessManager } from './fileAccesses';
 import * as extension from './../extension';
 import { TabLabels } from '../tabLabels/tabLabels';
@@ -16,7 +16,7 @@ type TabStateCommand = 'wt.tabStates.saveCurrentState'
     | 'wt.tabStates.renameState' 
     | 'wt.tabStates.newEmptyGroup'
     | 'wt.tabStates.saveToCurrentTabGroup';
-export class TabStates implements Packageable {
+export class TabStates implements Packageable<'wt.tabStates.savedTabStates' | "wt.tabStates.latestTabState"> {
     private savedTabStates: SavedTabState;
     private statusBar: vscode.StatusBarItem;
     private latestTabState: string | null;
@@ -503,18 +503,11 @@ export class TabStates implements Packageable {
             this.update();
         }));
     }
-
-    getPackageItems(): Partial<DiskContextType> {
-        if (this.latestTabState) {
-            return {
-                'wt.tabStates.savedTabStates': this.savedTabStates,
-                "wt.tabStates.latestTabState": this.latestTabState,
-            }
-        }
-        else {
-            return { 
-                'wt.tabStates.savedTabStates': this.savedTabStates,
-            }
-        }
+    
+    getPackageItems(packager: Packager<'wt.tabStates.savedTabStates' | 'wt.tabStates.latestTabState'>) {
+        return packager({
+            'wt.tabStates.savedTabStates': this.savedTabStates,
+            "wt.tabStates.latestTabState": this.latestTabState || '',
+        })
     }
 }

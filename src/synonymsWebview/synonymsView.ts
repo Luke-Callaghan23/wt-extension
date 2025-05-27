@@ -4,7 +4,7 @@ import { getNonce } from '../miscTools/help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 
-export class SynonymViewProvider implements vscode.WebviewViewProvider, Packageable {
+export class SynonymViewProvider implements vscode.WebviewViewProvider, Packageable<'wt.synonyms.synonyms'> {
 
 	private _view?: vscode.WebviewView;
 	private synonyms: string[];
@@ -27,7 +27,7 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 		this.registerCommands();
 	}
 
-	getPackageItems (): { [index: string]: any; } {
+	getPackageItems () {
 		return {
 			'wt.synonyms.synonyms': this.synonyms
 		}

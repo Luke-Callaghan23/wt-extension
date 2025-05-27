@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Packageable } from './packageable';
+import { createPackageItems, Packageable } from './packageable';
 import * as console from './miscTools/vsconsole';
 
 export interface Timed {
@@ -8,7 +8,7 @@ export interface Timed {
     disable?(): Promise<void>;
 }
 
-export class TimedView implements Packageable {
+export class TimedView implements Packageable<any> {
     constructor (
         private context: vscode.ExtensionContext,
         private timedViews: [string, string, Timed ][]
@@ -155,7 +155,7 @@ export class TimedView implements Packageable {
             // If the timed view itself implements Packageable, then get those
             //      packaged items, and pack them as well
             if ('getPackageItems' in timed) {
-                const packagedItems = (timed as Packageable).getPackageItems();
+                const packagedItems = (timed as Packageable<any>).getPackageItems(createPackageItems);
                 Object.entries(packagedItems).forEach(([ contextKey, contextValue ]) => {
                     packaged[contextKey] = contextValue;
                 });

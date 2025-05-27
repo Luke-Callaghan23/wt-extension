@@ -1,8 +1,8 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { Workspace } from '../workspace/workspaceClass';
+import { DiskContextType, Workspace } from '../workspace/workspaceClass';
 import * as console from '../miscTools/vsconsole';
-import { Packageable } from '../packageable';
+import { Packageable, Packager } from '../packageable';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
 import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, changePattern, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString, defaultWatchedWordDecoration } from './timer';
@@ -17,7 +17,7 @@ export interface WordEnrty {
 	type: 'wordSearch' | 'wordContainer' | 'unwatchedWordContainer' | 'watchedWord' | 'unwatchedWord';
 }
 
-export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packageable, Timed {
+export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packageable<'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.disabledWatchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.rgbaColors'>, Timed {
     
     
     enabled: boolean;
@@ -268,12 +268,12 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         return word.word;
     }
 
-    getPackageItems(): { [index: string]: any; } {
-        return {
+    getPackageItems(packager: Packager<'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.disabledWatchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.rgbaColors'>): Pick<DiskContextType, 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.disabledWatchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.rgbaColors'> {
+        return packager({
             'wt.wordWatcher.watchedWords': this.watchedWords,
             'wt.wordWatcher.disabledWatchedWords': this.disabledWatchedWords,
             'wt.wordWatcher.unwatchedWords': this.unwatchedWords,
             'wt.wordWatcher.rgbaColors': convertWordColorsToContextItem(this.wordColors)
-        }
+        })
     }
 }

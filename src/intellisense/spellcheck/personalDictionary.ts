@@ -3,7 +3,7 @@ import { Packageable } from '../../packageable';
 import { Workspace } from '../../workspace/workspaceClass';
 import { Dict } from './dictionary';
 
-export class PersonalDictionary implements Packageable {
+export class PersonalDictionary implements Packageable<'wt.personalDictionary'> {
     private dict: Dict;
 
     getPackageItems() {

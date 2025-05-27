@@ -8,7 +8,7 @@ import { Paragraph, Word } from './wordStructures';
 import { Ranks } from './ranks';
 import { ProximityCodeActions } from './proximityCodeActionsProvider';
 
-export class Proximity implements Timed, Packageable {
+export class Proximity implements Timed, Packageable<any> {
 
     
     private filtered: RegExp[] = [ 
