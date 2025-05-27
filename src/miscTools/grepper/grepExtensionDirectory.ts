@@ -1,76 +1,8 @@
 import * as vscode from 'vscode';
-import * as childProcess from 'child_process';
-import * as extension from '../extension';
-import * as vscodeUri from 'vscode-uri';
-import * as pathModule from 'path';
-import { compareFsPath, isSubdirectory } from './help';
-import { Workspace } from '../workspace/workspaceClass';
-import * as readline from 'readline';
-
-export async function *grep (
-    regex: RegExp,
-): AsyncGenerator<string | null> {
-
-    
-    // For git grep to work on all files in a workspace, need to temporarily stage the untracked files in the 
-    //      repo folder
-    // First, search all unchecked
-    const uncheckedFiles = await new Promise<string[]>((resolve, reject) => {
-        childProcess.exec(`git ls-files --others --exclude-standard`, {
-            cwd: extension.rootPath.fsPath
-        }, (error, stdout, stderr) => {
-            if (error) {
-                reject(stderr);
-                return;
-            }
-            resolve(stdout.split('\n'));
-        });
-    });
-
-    // Function to remove all unchecked files from git once the grep operation finishes
-    let resetCalled = false;
-    const reset = async () => {
-        if (resetCalled) return;
-        resetCalled = true;
-        await new Promise<void>((resolve, reject) => {
-            childProcess.exec(`git reset ${uncheckedFiles.join(' ')}`, {
-                cwd: extension.rootPath.fsPath
-            }, (error, stdout, stderr) => resolve());
-        });
-    };
-
-    try {
-        // Stage unchecked files
-        await new Promise<void>((resolve, reject) => {
-            childProcess.exec(`git add ${uncheckedFiles.join(' ')}`, {
-                cwd: extension.rootPath.fsPath
-            }, (error, stdout, stderr) => resolve());
-        });
-
-        // Call git grep
-        const ps = childProcess.spawn(`git`, ['grep', '-i', '-r', '-H', '-n', '-E', regex.source], {
-            cwd: extension.rootPath.fsPath
-        })
-        // Any "finished" operation for the grep command should reset the git state back to its original
-        .addListener('close', reset)
-        .addListener('disconnect', reset)
-        .addListener('exit', reset);
-
-        // Iterate over lines from the stdout of the git grep command and yield each line provided to us
-        for await (const line of readline.createInterface({ input: ps.stdout })) {
-            yield line;  
-        }
-    }
-    catch (err: any) {
-        vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}' regex.  Error: ${err}`);
-        reset();
-        return null;
-    }
-    reset();
-}
-
-
-
+import * as extension from '../../extension';
+import { isSubdirectory } from '../help';
+import { gitGrep } from './gitGrep';
+import { grepper } from './findMyGrepper';
 
 export async function *grepExtensionDirectory (
     searchBarValue: string, 
@@ -125,13 +57,13 @@ export async function *grepExtensionDirectory (
 
     const parseOutput: RegExp = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
 
-    for await (const result of grep(regex)) {
+    for await (const result of grepper(regex)) {
         console.log(result)
     }
 
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
-    for await (const result of grep(regex)) {
+    for await (const result of grepper(regex)) {
         // If `grep` returns null, then something went wrong with the search, and the whole thing should be treated as null
         if (result === null) return null;
 
@@ -149,11 +81,6 @@ export async function *grepExtensionDirectory (
         //      run out
         while ((lineMatch = inlineSearchRegex.exec(lineContents)) !== null) {
             let characterStart = lineMatch.index;
-
-            // No clue what this does... I just know I found an off by one error somewhere
-            // if (characterStart !== 0) {
-            //     characterStart += 1;
-            // }
 
             // Using the captureGroupId we baked into the inlineSearchRegex, we can isolate just the current 
             //      matched text from the whole line

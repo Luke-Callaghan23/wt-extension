@@ -9,7 +9,7 @@ import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { _, compareFsPath, defaultProgress, formatFsPathForCompare, getFullJSONStringFromLocation, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
-import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
+import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
 import { ExtensionGlobals } from '../extension';

@@ -4,7 +4,7 @@ import { createFileSystemTree } from './processGrepResults/createFileSystemTree'
 import { Workspace } from '../workspace/workspaceClass';
 import * as extension from '../extension';
 import { v4 as uuid } from 'uuid';
-import { grepExtensionDirectory } from '../miscTools/grepExtensionDirectory';
+import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { cleanNodeTree, pairMatchedTitlesToNeighborNodes, recreateNodeTree } from './processGrepResults/createNodeTree';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
