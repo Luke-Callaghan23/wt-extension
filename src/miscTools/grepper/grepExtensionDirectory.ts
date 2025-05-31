@@ -48,14 +48,19 @@ export async function *grepExtensionDirectory (
         // Basically a git grep command requires a very specific formatting for the special characters in a regex
         // So, we cannot rely on existing word separators that have been declared elsewhere in this project
         // Have to recreate the regex using these special word separators
-        const shellWordSeparatorStart = '(^|\\s|-|[.?:;,()\\!\\&+n\\"\'^_*~])';
-        const shellWordSeparatorEnd = '(\\s|-|[.?:;,()\\!\\&+n\\"\'^_*~]|$)';
+        const shellWordSeparatorStart = '(^|\\s|-|[.?:;,()\\!\\&\\"\'^_*~])';
+        const shellWordSeparatorEnd = '(\\s|-|[.?:;,()\\!\\&\\"\'^_*~]|$)';
         searchBarValue = `${shellWordSeparatorStart}${searchBarValue}${shellWordSeparatorEnd}`;
     }
 
     const regex = new RegExp(searchBarValue, flags);
 
     const parseOutput: RegExp = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
+
+    const reses: (string | null)[] = [];
+    for await (const result of grepper(regex)) {
+        reses.push(result);
+    }
 
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed

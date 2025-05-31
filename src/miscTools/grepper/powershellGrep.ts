@@ -8,14 +8,16 @@ export async function *powershellGrep (
     regex: RegExp,
 ): AsyncGenerator<string | null> {
     try {
+        const source = regex.source.replaceAll('\\"', '`"')
+
         // Call git grep
-        const ps = childProcess.spawn('powershell.exe', [ 'get-childitem', '-Recurse', '-Include', '"*.wtnote",', '"*.wt",', '"*.config"', '|', 'select-string', '-Pattern', regex.source], {
+        const ps = childProcess.spawn('powershell.exe', [ 'get-childitem', '-Recurse', '-Include', '"*.wtnote",', '"*.wt",', '"*.config"', '|', 'select-string', '-Pattern', `"${source}"`, "|", "foreach", "{", '"$_"', "}"], {
             cwd: extension.rootPath.fsPath
         });
         // Any "finished" operation for the grep command should reset the git state back to its original
         // Iterate over lines from the stdout of the git grep command and yield each line provided to us
         for await (const line of readline.createInterface({ input: ps.stdout })) {
-            yield line;  
+            yield line.toLocaleLowerCase().replaceAll(extension.rootPath.fsPath.toLocaleLowerCase(), '');
         }
     }
     catch (err: any) {
