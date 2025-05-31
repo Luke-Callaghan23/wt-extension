@@ -157,13 +157,10 @@ export class Workspace {
         if (!contextFileStat || Workspace.lastWriteTimestamp === null || contextFileStat.mtime > Workspace.lastWriteTimestamp) {
             return;
         }
-
         const saveCache = SynonymsProvider.writeCacheToDisk(useDefaultFS);
         // Write context items to the file system before git save
         const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
-
-
         
         if (!useDefaultFS) {
             await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
@@ -172,6 +169,7 @@ export class Workspace {
             fs.writeFileSync(contextUri.fsPath, contextJSON);
         }
 
+        this.lastWriteTimestamp = Date.now();
         return saveCache;
     }
 

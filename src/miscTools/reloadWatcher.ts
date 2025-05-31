@@ -46,7 +46,7 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs">
         let reloadTabs = overrideCommitCheck;
         if (!overrideCommitCheck) {
             const time = Date.now();
-            if (Workspace.lastWriteTimestamp !== null && Workspace.lastWriteTimestamp + 3000 > time) {
+            if (Workspace.lastWriteTimestamp !== null && Workspace.lastWriteTimestamp + 500 > time) {
                 // If the last save of the context file from this extension is less than 3 seconds ago, ignore this
                 return;
             }
