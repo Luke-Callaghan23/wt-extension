@@ -404,7 +404,7 @@ const colorGroups: { [index: string]: Colors } = {
     }
 };
 
-export class ColorGroups implements Packageable {
+export class ColorGroups implements Packageable<'wt.colors.extraColors'> {
     
     getColorGroup (color: string): {
         leader: string,
@@ -457,7 +457,7 @@ export class ColorGroups implements Packageable {
         this.extraColors = extras;
     }
 
-    getPackageItems(): { [index: string]: any; } {
+    getPackageItems() {
         return {
             'wt.colors.extraColors': this.extraColors
         };

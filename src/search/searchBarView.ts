@@ -23,7 +23,7 @@ type WebviewMessage = {
 
 
 const SEARCH_TIMER = 2000;
-export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
+export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'wt.wtSearch.search.latestSearchBarValue' | 'wt.wtSearch.search.wholeWord' | 'wt.wtSearch.search.regex' | 'wt.wtSearch.search.caseInsensitive' | 'wt.wtSearch.search.matchTitles'> {
 
     private _view?: vscode.WebviewView;
     private readonly _extensionUri: vscode.Uri;
@@ -60,7 +60,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable {
         this.registerCommands();
     }
 
-    getPackageItems (): Partial<DiskContextType> {
+    getPackageItems () {
         return {
             'wt.wtSearch.search.latestSearchBarValue': this.latestSearchBarValue,
             'wt.wtSearch.search.wholeWord': this.wholeWord,

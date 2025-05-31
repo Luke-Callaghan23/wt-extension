@@ -294,5 +294,6 @@ export async function loadWorkspaceContext (
             context.workspaceState.update(contextKey, contextValue),
         ];
     }).flat());
+    Workspace.lastWriteTimestamp = Date.now();
     return contextValues;
 }

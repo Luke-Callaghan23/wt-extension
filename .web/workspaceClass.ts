@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
-import { prompt } from '../miscTools/help';
+import { prompt, statFile } from '../miscTools/help';
 import * as vsconsole from '../miscTools/vsconsole';
 import * as extension from '../extension';
 import { Config, loadWorkspaceContext, PositionInfo, SavedTabState, TabPositions } from './workspace';
@@ -10,7 +10,6 @@ import { ReloadWatcher } from '../miscTools/reloadWatcher';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 import { Autocorrect } from '../autocorrect/autocorrect';
 import { SearchBarView } from '../search/searchBarView';
-
 
 
 export type DiskContextType = {
@@ -31,7 +30,7 @@ export type DiskContextType = {
     "wt.wordWatcher.disabledWatchedWords": string[],
     "wt.wordWatcher.unwatchedWords": string[],
     "wt.wordWatcher.rgbaColors": {
-        [index: string]: boolean;
+        [index: string]: string;
     },
     "wt.spellcheck.enabled": boolean,
     "wt.very.enabled": boolean,
@@ -146,28 +145,19 @@ export class Workspace {
         '.'
     ];
 
-    private static interval: NodeJS.Timer | null = null;
-    private static allowReload: number = 0;
+    static lastWriteTimestamp: number | null = null;
     static async packageContextItems (useDefaultFS: boolean = false) {
-        ReloadWatcher.disableReloadWatch();
+        const contextUri = extension.ExtensionGlobals.workspace.contextValuesFilePath;
+
+        const contextFileStat = await statFile(contextUri);
+        if (!contextFileStat || Workspace.lastWriteTimestamp === null || contextFileStat.mtime > Workspace.lastWriteTimestamp) {
+            return;
+        }
         const saveCache = SynonymsProvider.writeCacheToDisk(false);
-        this.allowReload = 100;
         // Write context items to the file system before git save
         const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
-        const contextUri = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
-        if (!this.interval) {
-            this.interval = setInterval(() => {
-                this.allowReload--;
-                if (this.allowReload <= 0) {
-                    ReloadWatcher.enableReloadWatch();
-                    this.interval && clearInterval(this.interval);
-                    this.interval = null;
-                    this.allowReload = 0;
-                }
-            }, 10);
-        }
         return saveCache;
     }
 

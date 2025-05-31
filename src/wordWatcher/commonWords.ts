@@ -5,7 +5,6 @@ import { OutlineView } from '../outline/outlineView';
 import { WordCount } from '../wordCounts/wordCount';
 import { getFilesQPOptions, IFragmentPick } from '../miscTools/searchFiles';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
-import { lastCommit, setLastCommit } from '../gitTransactions';
 import { compareFsPath } from '../miscTools/help';
 
 export type InstanceCount = { [index: string]: number };
@@ -281,12 +280,10 @@ export async function commonWordsPrompt (this: WordWatcher) {
     const response = r as Response;
     if (response === 'Single Item (recommended)') {
         const reg = chosenWords.join("|");
-        setLastCommit();
         this.updateWords('add', reg, 'wt.wordWatcher.watchedWords', -1, true);
     }
     else if (response === 'Multiple') {
         chosenWords.forEach(cw => {
-            setLastCommit();
             this.updateWords('add', cw, 'wt.wordWatcher.watchedWords', -1, true);
         });
     }

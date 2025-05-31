@@ -1,14 +1,13 @@
 import * as vscode from 'vscode';
 import * as extension from './../extension';
-import { lastCommit as _lastCommit, setLastCommit } from './../gitTransactions';
-import { Packageable } from './../packageable';
+import { createPackageItems, Packageable, Packager } from './../packageable';
 import { FileAccessManager } from './fileAccesses';
 import { loadWorkspaceContext, PositionInfo, TabPositions } from './../workspace/workspace';
 import { DiskContextType, Workspace } from './../workspace/workspaceClass';
 import { TabLabels } from './../tabLabels/tabLabels';
 import { TabStates } from './tabStates';
 
-export class ReloadWatcher implements Packageable {
+export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs"> {
     private static watcher: vscode.FileSystemWatcher;
     private static contextValuesUri: vscode.Uri;
     private static context: vscode.ExtensionContext;
@@ -26,11 +25,6 @@ export class ReloadWatcher implements Packageable {
             return ReloadWatcher.changedContextValues(true, true);
         }));
         ReloadWatcher.enableReloadWatch();
-    }
-    
-    public static disableReloadWatch () {
-        ReloadWatcher.watcher?.dispose();
-        console.log('disabled reload watching');
     }
     
     public static enableReloadWatch () {
@@ -52,12 +46,10 @@ export class ReloadWatcher implements Packageable {
         let reloadTabs = overrideCommitCheck;
         if (!overrideCommitCheck) {
             const time = Date.now();
-            const lastCommit = _lastCommit;
-            if (time - lastCommit <= 7500) {
-                // If the last commit was less than 7.5 seconds ago, then this is a false alarm
+            if (Workspace.lastWriteTimestamp !== null && Workspace.lastWriteTimestamp + 500 > time) {
+                // If the last save of the context file from this extension is less than 3 seconds ago, ignore this
                 return;
             }
-            setLastCommit();
 
             const response = await vscode.window.showInformationMessage("Reload", {
                 modal: true,
@@ -116,7 +108,7 @@ export class ReloadWatcher implements Packageable {
     }
 
     async checkForRestoreTabs () {
-        const currentTabState = this.getPackageItems()['wt.reloadWatcher.openedTabs'];
+        const currentTabState = this.getPackageItems(createPackageItems)['wt.reloadWatcher.openedTabs'];
         const contextTabState: DiskContextType['wt.reloadWatcher.openedTabs'] | undefined = this.context.workspaceState.get('wt.reloadWatcher.openedTabs');
         if (!contextTabState) return;
         
@@ -140,10 +132,9 @@ export class ReloadWatcher implements Packageable {
         }
     }
 
-
-    getPackageItems(): { ['wt.reloadWatcher.openedTabs']: DiskContextType['wt.reloadWatcher.openedTabs'] } {
-        return {
+    getPackageItems(packager: Packager<'wt.reloadWatcher.openedTabs'>): Pick<DiskContextType, 'wt.reloadWatcher.openedTabs'> {
+        return packager({
             "wt.reloadWatcher.openedTabs": TabStates.packageCurrentTabState()
-        };
+        })
     }
 }
