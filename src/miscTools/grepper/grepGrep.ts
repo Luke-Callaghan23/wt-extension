@@ -9,7 +9,7 @@ export async function *grepGrep (
 ): AsyncGenerator<string | null> {
     try {
         // Call git grep
-        const ps = childProcess.spawn(`grep`, ['-r', '-n', '--include', '\\*.config', '--include', '\\*.wt', '--include', '\\*.wtnote', regex.source], {
+        const ps = childProcess.spawn(`grep`, ['-r', '-n', '--include', '*.config', '--include', '*.wt', '--include', '*.wtnote', regex.source, './'], {
             cwd: extension.rootPath.fsPath
         })
         // Any "finished" operation for the grep command should reset the git state back to its original

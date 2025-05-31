@@ -57,10 +57,6 @@ export async function *grepExtensionDirectory (
 
     const parseOutput: RegExp = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
 
-    for await (const result of grepper(regex)) {
-        console.log(result)
-    }
-
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
     for await (const result of grepper(regex)) {
