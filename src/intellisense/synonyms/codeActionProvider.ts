@@ -7,6 +7,7 @@ import { capitalize } from '../../miscTools/help';
 import { dictionary } from './../spellcheck/dictionary';
 import { PersonalDictionary } from './../spellcheck/personalDictionary';
 import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
+import {_} from './../../miscTools/help';
 
 export class CodeActionProvider implements vscode.CodeActionProvider {
     constructor (
@@ -68,8 +69,28 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
             kind: vscode.CodeActionKind.QuickFix
         };
 
+        const addToNotebook = _<vscode.CodeAction>({
+            title: `Create new notebook note for '${capitalize(hoverPosition.text)}'`,
+            command: <vscode.Command> {
+                command: 'wt.notebook.addNote',
+                arguments: [ capitalize(hoverPosition.text) ]
+            },
+            kind: vscode.CodeActionKind.QuickFix,
+        });
+
+        const addToNotebookNote = _<vscode.CodeAction>({
+            title: `Add '${capitalize(hoverPosition.text)}' as new alias for existing note`,
+            command: <vscode.Command> {
+                command: 'wt.notebook.addAliasToNote',
+                arguments: [ capitalize(hoverPosition.text) ]
+            },
+            kind: vscode.CodeActionKind.QuickFix,
+        });
+
         return [
             addToDict,
+            addToNotebook,
+            addToNotebookNote,
             ...suggestions
         ];
     }

@@ -218,7 +218,7 @@ export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat, cre
         'snips': mainLabelProvider(extension.ExtensionGlobals.outlineView),
         'scratchPad': mainLabelProvider(extension.ExtensionGlobals.scratchPadView),
         'recycle': mainLabelProvider(extension.ExtensionGlobals.recyclingBinView),
-        // For the notebook, since OutlineNodes are not used, we can just take the "noun" in the note as the label
+        // For the notebook, since OutlineNodes are not used, we can just take the "title" in the note as the label
         'notebook': async (uri: vscode.Uri) => {
             const note = extension.ExtensionGlobals.notebookPanel.getNote(uri);
             if (!note) return null;

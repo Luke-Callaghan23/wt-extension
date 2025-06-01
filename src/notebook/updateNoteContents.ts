@@ -6,18 +6,26 @@ import { Buff } from '../Buffer/bufferSource';
 import * as extension from './../extension';
 import { SerializedNote } from './notebookApi/notebookSerializer';
 
-export async function addNote (this: NotebookPanel, resource: NotebookPanelNote | undefined): Promise<string | null> {
-    const noun = await vscode.window.showInputBox({
-        ignoreFocusOut: false,
-        placeHolder: 'Tom Tomington',
-        prompt: `Enter the name for the new note: `,
-    });
-    if (noun === undefined || noun === null || noun.length === 0) return null;
+export async function addNote (this: NotebookPanel, resource: NotebookPanelNote | string | undefined): Promise<string | null> {
+    let title: string | undefined;
+    if (typeof resource === 'string') {
+        // When the parameter passed into `addNote` is a string, then we assume that string is the title of the notebook note being created
+        title = resource;
+    }
+    else {
+        title = await vscode.window.showInputBox({
+            ignoreFocusOut: false,
+            placeHolder: 'Tom Tomington',
+            prompt: `Enter the name for the new note: `,
+        });
+    }
+    if (title === undefined || title === null || title.length === 0) return null;
+
 
     const noteId = NotebookPanel.getNewNoteId();
     const notePath = vscode.Uri.joinPath(this.notebookFolderPath, `${noteId}.wtnote`);
     const insert: NotebookPanelNote = {
-        title: noun,
+        title: title,
         kind: 'note',
         noteId: noteId,
         uri: notePath,
@@ -38,7 +46,7 @@ export async function addNote (this: NotebookPanel, resource: NotebookPanelNote 
     };
 
     let idx: number; 
-    if (resource !== undefined) {
+    if (resource !== undefined && typeof resource !== 'string') {
         // Find the index of the note that was clicked on to add this new note, so that
         //      we can insert this note right after
         idx = this.notebook.findIndex(selected => selected.noteId === resource.noteId);

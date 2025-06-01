@@ -19,10 +19,10 @@ export type TextMatchForNote = {
 };
 
 export function *getNoteMatchesInText (this: NotebookPanel, text: string): Generator<TextMatchForNote> {
-    if (!this.nounsRegex) return;
+    if (!this.titlesAndAliasesRegex) return;
 
     let match: RegExpExecArray | null;
-    while ((match = this.nounsRegex.exec(text))) {
+    while ((match = this.titlesAndAliasesRegex.exec(text))) {
         const matchReal: RegExpExecArray = match;
 
         let matchedNote: NotebookPanelNote | undefined;
@@ -81,7 +81,7 @@ export function *getNoteMatchesInText (this: NotebookPanel, text: string): Gener
 }
 
 export async function update (this: NotebookPanel, editor: vscode.TextEditor): Promise<void> {
-    if (!this.nounsRegex) return;
+    if (!this.titlesAndAliasesRegex) return;
 
     const matches: NoteMatch[] = [];
     const decorationLocations: vscode.DecorationOptions[] = [];

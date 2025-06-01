@@ -64,7 +64,7 @@ implements
     disable = disable;
 
     public matchedNotebook: Record<string, NoteMatch[]>;
-    public nounsRegex: RegExp | undefined;
+    public titlesAndAliasesRegex: RegExp | undefined;
 
     public notebook: NotebookPanelNote[];
     protected notebookFolderPath: vscode.Uri;
@@ -111,7 +111,7 @@ implements
 
     async initialize () {
         this.notebook = await this.serializer.deserializeNotebookPanel(this.notebookFolderPath);
-        this.nounsRegex = this.getNounsRegex();
+        this.titlesAndAliasesRegex = this.getTitlesAndAliasesRegex();
         this.view = vscode.window.createTreeView(`wt.notebook.tree`, {
             treeDataProvider: this,
             canSelectMany: true,
@@ -169,12 +169,12 @@ implements
         if (reload) {
             this.notebook = await this.serializer.deserializeNotebookPanel(this.notebookFolderPath);
         }
-        // Also update the nouns regex
-        this.nounsRegex = this.getNounsRegex();
+        // Also update the titles and aliases regex
+        this.titlesAndAliasesRegex = this.getTitlesAndAliasesRegex();
 		this._onDidChangeTreeData.fire(undefined);
 	}
 
-    protected getNounPattern (note: NotebookPanelNote, withId: boolean = true) {
+    protected getTitleAndAliasPattern (note: NotebookPanelNote, withId: boolean = true) {
         const realAliases = note.aliases
             .map(a => a.trim())
             .filter(a => a.length > 0);
@@ -188,7 +188,7 @@ implements
         return `(${idAddition}${note.title}${aliasesAddition})`
     }
 
-    private getNounsRegex (
+    private getTitlesAndAliasesRegex (
         withId: boolean=true, 
         withSeparator: boolean=true, 
         subset?: NotebookPanelNote[],
@@ -196,12 +196,11 @@ implements
         if (this.notebook.length === 0) {
             return /^_^/
         }
-        const nounFragments = (subset || this.notebook).map(note => this.getNounPattern(note, withId))
+        const titleAndAliasFragments = (subset || this.notebook).map(note => this.getTitleAndAliasPattern(note, withId))
         const regexString = withSeparator 
-            ? '(^|[^a-zA-Z0-9])' + `(${nounFragments.join('|')})` + '([^a-zA-Z0-9]|$)'
-            : `(${nounFragments.join('|')})`;
-        const nounsRegex = new RegExp(regexString, 'gi');
-        return nounsRegex;
+            ? '(^|[^a-zA-Z0-9])' + `(${titleAndAliasFragments.join('|')})` + '([^a-zA-Z0-9]|$)'
+            : `(${titleAndAliasFragments.join('|')})`;
+        return new RegExp(regexString, 'gi');
     }
 
     private registerCommands () {
@@ -215,7 +214,7 @@ implements
             if (note === undefined) return;
             this.serializer.writeSingleNote(note);
         }
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", (resource: NotebookPanelNote | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", (resource: NotebookPanelNote | string | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) }));
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.removeNote", (resource: NotebookPanelNote) => { doTheThingAndWrite(() => this.removeNote(resource)) }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.search', (resource: NotebookPanelNote) => { this.searchInSearchPanel(resource) }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.editNote', (resource: NotebookPanelNote | NoteSection | BulletPoint) => { this.editNote(resource) }));
@@ -223,6 +222,24 @@ implements
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.refresh', () => {
             return this.refresh(true);
         }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.addAliasToNote', async (alias: string) => {
+            type NoteSelect = vscode.QuickPickItem & { note: NotebookPanelNote }
+
+            const noteSelect = await vscode.window.showQuickPick<NoteSelect>(this.notebook.map(notebookNote => _<NoteSelect>({
+                label: notebookNote.title,
+                description: `(${notebookNote.aliases.join(", ")})`,
+                alwaysShow: true,
+                note: notebookNote,
+            })));
+            if (!noteSelect) return;
+
+            const note = noteSelect.note;
+            return doTheThingAndWrite(async () => {
+                note.aliases.push(alias);
+                return note.noteId;
+            });
+        }))
     }
 
     getTreeItem(noteNode: NotebookPanelNote | NoteSection | BulletPoint): vscode.TreeItem {
@@ -292,7 +309,7 @@ implements
 
     async searchInSearchPanel (resource: NotebookPanelNote) {
         vscode.commands.executeCommand('workbench.action.findInFiles', {
-            query: this.getNounPattern(resource, false),
+            query: this.getTitleAndAliasPattern(resource, false),
             triggerSearch: true,
             filesToInclude: 'data/chapters/**, data/snips/**',
             isRegex: true,
@@ -399,15 +416,15 @@ implements
         if (!matchedNote) return null;
 
         return defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
-            const subsetNounsRegex = this.getNounsRegex(false, false, [ matchedNote.note ]);
+            const subsetTitlesAndAliasesRegex = this.getTitlesAndAliasesRegex(false, false, [ matchedNote.note ]);
             const grepLocations: vscode.Location[] = []; 
-            for await (const loc of grepExtensionDirectory(subsetNounsRegex.source, true, true, true)) {
+            for await (const loc of grepExtensionDirectory(subsetTitlesAndAliasesRegex.source, true, true, true)) {
                 if (loc === null) return null;
                 grepLocations.push(loc[0]);
             }
     
             // For some reason the reference provider needs the locations to be indexed one less than the results from the 
-            //      grep of the nouns
+            //      grep of the titles and aliases
             // Not sure why that is -- but subtracting one from each character index works here
             return grepLocations;
         });
@@ -445,7 +462,7 @@ implements
             }
     
             // For some reason the reference provider needs the locations to be indexed one less than the results from the 
-            //      grep of the nouns
+            //      grep of the title and aliases
             // Not sure why that is -- but subtracting one from each character index works here
             return grepLocations.map(([loc, match]) => [ 
                 loc, 

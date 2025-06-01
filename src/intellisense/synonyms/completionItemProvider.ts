@@ -525,12 +525,36 @@ const getMisspellCorrections = (res: SynonymError, hoverRange: vscode.Range, wor
         },
         insertText: wordText,
         
-        sortText: "!",
-        isPreferred: true,
+        sortText: "0000!",
+        preselect: true,
     };
+
+    const createNotebookNote = _<vscode.CompletionItem>({
+        label: `Create new notebook note for '${capitalize(wordText)}'`,
+        range: hoverRange,
+        command: <vscode.Command> {
+            command: 'wt.notebook.addNote',
+            arguments: [ capitalize(wordText) ]
+        },
+        insertText: wordText,
+        sortText: "0000!",
+    });
+
+    const addToNotebookNote = _<vscode.CompletionItem>({
+        label: `Add '${capitalize(wordText)}' as new alias for existing note`,
+        range: hoverRange,
+        command: <vscode.Command> {
+            command: 'wt.notebook.addAliasToNote',
+            arguments: [ capitalize(wordText) ]
+        },
+        insertText: wordText,
+        sortText: "0000!",
+    });
 
     return [
         addToDictionary,
+        createNotebookNote,
+        addToNotebookNote,
         ...corrections
     ];
 }
