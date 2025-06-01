@@ -26,11 +26,11 @@ There are two sections to the **WTANIWE** outline tree: Chapters and Work Snips.
 
 Here is an example of working with the **WTANIWE** outline:
 
-> ![Outline](media/README/Outline2.gif)
+> ![Outline](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/Outline2.gif)
 
 Some more advanced features, such as moving and ordering content:
 
-> ![Outline Advanced](media/README/OutlineAdvanced.gif)
+> ![Outline Advanced](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/OutlineAdvanced.gif)
 
 ### IntelliSense-based synonyms
 
@@ -40,7 +40,7 @@ Just hit `ctrl+space` while your cursor is in or highlighting a word you want to
 
 Here is an example:
 
-> ![Synonyms](media/README/synonyms.gif)
+> ![Synonyms](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/synonyms.gif)
 
 ### MarkDown-like styling tailored specifically to writing
 
@@ -52,7 +52,7 @@ Mark areas of text you want to come back to later by surrounding "TODO" text wit
 
 Only the brackets and text within brackets are shown in the TODO tree, so you are always able to return to things you've marked as TODO.
 
-> ![TODOs](media/README/TODO.gif)
+> ![TODOs](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/TODO.gif)
 
 ### Text-to-Speech
 
@@ -64,7 +64,7 @@ You can also use breakpoints to skip to certain points in the text.
 
 CLick the speech bubble:
 
-> [![TTS](media/README/TTS.jpeg)](media/README/TTS.mp4)
+> [![TTS](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/TTS.jpeg)](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/TTS.mp4)
 
 ### Exporting Workss
 
@@ -108,7 +108,7 @@ These are the style options:
 
 Example: 
   
-  > ![Text Styling example](media/walkthroughs/intro/style_text.png)
+  > ![Text Styling example](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/intro/style_text.png)
 
 ### Navigation
 
@@ -124,7 +124,7 @@ Features:
 
 Example:
 
-  >  ![Jumping](media/walkthroughs/intro/use_navigations.gif)
+  >  ![Jumping](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/intro/use_navigations.gif)
 
 #### Dictionary
 
@@ -136,7 +136,7 @@ If you know you have certain 'problem' words that you want to avoid, use word wa
 
 For example, the word 'very' and all words that end with 'ly' are automatically added to the word word watched on **WTANIWE** workspace creation.  And will be highlighted as shown.
 
-  > ![Word Watched](media/walkthroughs/intro/word_watcher.png)
+  > ![Word Watched](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/intro/word_watcher.png)
 
 In addition, you can assign certain colors to specific watched words.  To know which pattern is being matched on sight.
 
@@ -233,7 +233,7 @@ For reference, I use a huge **WTANIWE** workspace with hundreds of fragment file
     
     - Back up by using one of these buttons on the editor toolbar, then cancelling the git commit.
       
-    > ![Git Buttons](media/README/git_buttons.png)
+    > ![Git Buttons](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/git_buttons.png)
     
     - Then, create a new file somewhere else on your machine and copy the text of `data/contextValues.json` into there.
   
@@ -250,7 +250,7 @@ For reference, I use a huge **WTANIWE** workspace with hundreds of fragment file
   
   - You should see a button the lower right hand corner of the .code-workspace file itself to "Open Workspace", click that: 
       
-    > ![Open Workspace](media/README/open_workspace.png)
+    > ![Open Workspace](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/open_workspace.png)
   
   - VSCode will reload and you should now see `<project_name> (Workspace)` in the title bar of the window.
   
@@ -258,13 +258,13 @@ For reference, I use a huge **WTANIWE** workspace with hundreds of fragment file
   
   - Go through all installed extensions in your workspace and disable them **in the workspace** by hitting the drop down next to "Disable" and then "Disable (Workspace)"
       
-    > ![Disable Workspace](media/README/disable_extensions.png)
+    > ![Disable Workspace](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/disable_extensions.png)
     
     - This will disable the extension only in the **WTANIWE** workspace, but not elsewhere
   
   - Now, whenever you want to open your **WTANIWE** workspace, **make sure** you open the one with the pattern `<project_name> (Workspace)` and not just `<project_name>` (see below)
       
-    > ![choose workspace](media/README/chose_workspace.png)
+    > ![choose workspace](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/chose_workspace.png)
   
   - Now, you should notice a significant increase in speed once you start operating under this clean workspace.
 

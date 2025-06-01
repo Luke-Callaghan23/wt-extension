@@ -15,7 +15,7 @@ if
     test -f .web/tabLabels.ts && 
     test -f .web/provideSynonyms.ts && 
     test -f .web/workspaceClass.ts &&
-    test -f .web/grepExtensionDirectory.ts;
+    test -d .web/grepper;
 then
     mv src/Buffer/bufferSource.ts .local/bufferSource.ts
     mv src/Fetch/fetchSource.ts .local/fetchSource.ts
@@ -32,7 +32,7 @@ then
     mv src/ttsDebugger .local/ttsDebugger
     mv src/tabLabels/tabLabels.ts .local/tabLabels.ts
     mv src/intellisense/synonymsProvider/provideSynonyms.ts .local/provideSynonyms.ts
-    mv src/miscTools/grepExtensionDirectory.ts .local/grepExtensionDirectory.ts
+    mv src/miscTools/grepper .local/grepper
 
     mv .web/bufferSource.ts src/Buffer/bufferSource.ts
     mv .web/fetchSource.ts src/Fetch/fetchSource.ts
@@ -46,7 +46,7 @@ then
     mv .web/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .web/tabLabels.ts src/tabLabels/tabLabels.ts
     mv .web/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
-    mv .web/grepExtensionDirectory.ts src/miscTools/grepExtensionDirectory.ts
+    mv .web/grepper src/miscTools/grepper
 
     npm clean-install
 elif 
@@ -82,7 +82,7 @@ elif
     test -f .local/tabLabels.ts && 
     test -f .local/provideSynonyms.ts && 
     test -f .local/workspaceClass.ts &&
-    test -f .local/grepExtensionDirectory.ts;
+    test -d .local/grepper;
 then
     mv src/Buffer/bufferSource.ts .web/bufferSource.ts
     mv src/Fetch/fetchSource.ts .web/fetchSource.ts
@@ -96,7 +96,7 @@ then
     mv src/workspace/workspaceClass.ts .web/workspaceClass.ts 
     mv src/tabLabels/tabLabels.ts .web/tabLabels.ts
     mv src/intellisense/synonymsProvider/provideSynonyms.ts .web/provideSynonyms.ts
-    mv src/miscTools/grepExtensionDirectory.ts .web/grepExtensionDirectory.ts
+    mv src/miscTools/grepper .web/grepper
 
     mv .local/ttsDebugger src/ttsDebugger
     mv .local/bufferSource.ts src/Buffer/bufferSource.ts
@@ -113,7 +113,7 @@ then
     mv .local/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .local/tabLabels.ts src/tabLabels/tabLabels.ts
     mv .local/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
-    mv .local/grepExtensionDirectory.ts src/miscTools/grepExtensionDirectory.ts
+    mv .local/grepper src/miscTools/grepper
 
     npm clean-install
 else 

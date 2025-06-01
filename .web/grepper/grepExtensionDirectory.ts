@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as childProcess from 'child_process';
-import * as extension from '../extension';
-import { wordSeparator } from '../extension';
+import * as extension from '../../extension';
+import { wordSeparator } from '../../extension';
 import * as readline from 'readline';
 import { glob } from 'glob';
 import {promisify} from 'util'
