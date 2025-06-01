@@ -54,7 +54,7 @@ export class ExtensionGlobals {
     public static outlineView: OutlineView;
     public static recyclingBinView: RecyclingBinView;
     public static scratchPadView: ScratchPadView;
-    public static notebook: NotebookPanel;
+    public static notebookPanel: NotebookPanel;
     public static todoView: TODOsView;
     public static workspace: Workspace;
     public static context: vscode.ExtensionContext;
@@ -74,7 +74,7 @@ export class ExtensionGlobals {
         ExtensionGlobals.outlineView = outlineView;
         ExtensionGlobals.recyclingBinView = recyclingBinView;
         ExtensionGlobals.scratchPadView = scratchPadView;
-        ExtensionGlobals.notebook = notebook;
+        ExtensionGlobals.notebookPanel = notebook;
         ExtensionGlobals.todoView = todoView;
         ExtensionGlobals.workspace = workspace;
         ExtensionGlobals.context = context;

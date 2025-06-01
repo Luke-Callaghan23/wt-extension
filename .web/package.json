@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.135",
+	"version": "0.0.136",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
 	"private": false,
@@ -1735,402 +1735,402 @@
 			{
 				"command": "wt.notebook.cell.editCell",
 				"key": "f2",
-				"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'input'"
+				"when": "wt.valid && (notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'input')"
 			},
 			{
 				"command": "wt.notebook.cell.editHeader",
 				"key": "f2",
-				"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header'"
+				"when": "wt.valid && (notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header')"
 			},
 			{
 				"command": "wt.notebook.cell.editNoteTitle",
 				"key": "f2",
-				"when": "notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header-title'"
+				"when": "wt.valid && (notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'header-title')"
 			},
 			{
 				"command": "wt.tabStates.showStatusBarMenu",
 				"win": "ctrl+alt+shift+g",
 				"linux": "ctrl+alt+shift+g",
 				"mac": "cmd+alt+shift+g",
-				"when": "(editorLangId == wt || editorLangId == wtNote)"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
 			},
 			{
 				"command": "wt.autocorrections.acceptAutocorrect",
 				"win": "ctrl+shift+a",
 				"linux": "ctrl+shift+a",
 				"mac": "cmd+shift+a",
-				"when": "(editorLangId == wt || editorLangId == wtNote)"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
 			},
 			{
 				"command": "wt.autocorrections.rejectAutocorrect",
 				"win": "ctrl+shift+x",
 				"linux": "ctrl+shift+x",
 				"mac": "cmd+shift+x",
-				"when": "(editorLangId == wt || editorLangId == wtNote)"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
 			},
 			{
 				"command": "wt.tabLabels.renameActiveTab",
 				"win": "shift+f2",
 				"linux": "shift+f2",
 				"mac": "shift+f2",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.searchFiles",
 				"win": "ctrl+p",
 				"linux": "ctrl+p",
 				"mac": "cmd+p",
-				"when": "wt.valid"
+				"when": "wt.valid && (wt.valid)"
 			},
 			{
 				"command": "wt.editor.addQuotes",
 				"win": "shift+'",
 				"linux": "shift+'",
 				"mac": "shift+'",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.scratchPad.renameFile",
 				"win": "f2",
 				"linux": "f2",
 				"mac": "f2",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.scratchPad"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.scratchPad)"
 			},
 			{
 				"command": "wt.scratchPad.newFile",
 				"win": "ctrl+t",
 				"linux": "ctrl+t",
 				"mac": "ctrl+t",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "wt.valid && (editorLangId == wt || editorLangId == wtNote)"
 			},
 			{
 				"command": "wt.scratchPad.permanentlyDelete",
 				"win": "delete",
 				"linux": "delete",
 				"mac": "delete",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.scratchPad"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.scratchPad)"
 			},
 			{
 				"command": "wt.recyclingBin.renameFile",
 				"win": "f2",
 				"linux": "f2",
 				"mac": "f2",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.recyclingBin"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.recyclingBin)"
 			},
 			{
 				"command": "wt.recyclingBin.permanentlyDelete",
 				"win": "delete",
 				"linux": "delete",
 				"mac": "delete",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.recyclingBin"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.recyclingBin)"
 			},
 			{
 				"command": "wt.outline.renameFile",
 				"win": "f2",
 				"linux": "f2",
 				"mac": "f2",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.outline)"
 			},
 			{
 				"command": "wt.outline.copyItems",
 				"win": "ctrl+c",
 				"linux": "ctrl+c",
 				"mac": "cmd+c",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.outline)"
 			},
 			{
 				"command": "wt.outline.pasteItems",
 				"win": "ctrl+v",
 				"linux": "ctrl+v",
 				"mac": "cmd+v",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.outline)"
 			},
 			{
 				"command": "wt.outline.removeResource",
 				"win": "delete",
 				"linux": "delete",
 				"mac": "delete",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.outline"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.outline)"
 			},
 			{
 				"command": "wt.wordWatcher.deleteWord",
 				"win": "delete",
 				"linux": "delete",
 				"mac": "delete",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == watchedWord"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == watchedWord)"
 			},
 			{
 				"command": "wt.wordWatcher.deleteUnwatchedWord",
 				"win": "delete",
 				"linux": "delete",
 				"mac": "delete",
-				"when": "activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == unwatchedWord"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == unwatchedWord)"
 			},
 			{
 				"command": "wt.synonyms.searchWord",
 				"win": "ctrl+alt+f",
 				"linux": "ctrl+alt+f",
 				"mac": "cmd+alt+f",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.save",
 				"win": "ctrl+alt+s",
 				"linux": "ctrl+alt+s",
 				"mac": "cmd+alt+s",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.saveAll",
 				"win": "ctrl+alt+shift+s",
 				"linux": "ctrl+alt+shift+s",
 				"mac": "cmd+alt+shift+s",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.italisize",
 				"win": "ctrl+alt+i",
 				"linux": "ctrl+alt+i",
 				"mac": "cmd+alt+i",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.commasize",
 				"win": "ctrl+alt+,",
 				"linux": "ctrl+alt+,",
 				"mac": "cmd+alt+,",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.bold",
 				"win": "ctrl+alt+b",
 				"linux": "ctrl+alt+b",
 				"mac": "cmd+alt+b",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.strikethrough",
 				"win": "ctrl+alt+d",
 				"linux": "ctrl+alt+d",
 				"mac": "cmd+alt+d",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.underline",
 				"win": "ctrl+alt+u",
 				"linux": "ctrl+alt+u",
 				"mac": "cmd+alt+u",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.emdash",
 				"win": "ctrl+alt+-",
 				"linux": "ctrl+alt+-",
 				"mac": "cmd+alt+-",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.emdashes",
 				"win": "ctrl+alt+shift+-",
 				"linux": "ctrl+alt+shift+-",
 				"mac": "cmd+alt+shift+-",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.word.left",
 				"win": "ctrl+left",
 				"linux": "ctrl+left",
 				"mac": "cmd+left",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.word.right",
 				"win": "ctrl+right",
 				"linux": "ctrl+right",
 				"mac": "cmd+right",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.sentence.left",
 				"win": "alt+[",
 				"linux": "alt+[",
 				"mac": "alt+[",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.sentence.right",
 				"win": "alt+]",
 				"linux": "alt+]",
 				"mac": "alt+]",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.fragment.left",
 				"win": "ctrl+[",
 				"linux": "ctrl+[",
 				"mac": "cmd+[",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.fragment.right",
 				"win": "ctrl+]",
 				"linux": "ctrl+]",
 				"mac": "cmd+]",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.left",
 				"win": "ctrl+alt+[",
 				"linux": "ctrl+alt+[",
 				"mac": "cmd+alt+[",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.right",
 				"win": "ctrl+alt+]",
 				"linux": "ctrl+alt+]",
 				"mac": "cmd+alt+]",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.word.left.shift",
 				"win": "ctrl+shift+left",
 				"linux": "ctrl+shift+left",
 				"mac": "cmd+shift+left",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.word.right.shift",
 				"win": "ctrl+shift+right",
 				"linux": "ctrl+shift+right",
 				"mac": "cmd+shift+right",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.sentence.left.shift",
 				"win": "alt+shift+[",
 				"linux": "alt+shift+[",
 				"mac": "alt+shift+[",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.sentence.right.shift",
 				"win": "alt+shift+]",
 				"linux": "alt+shift+]",
 				"mac": "alt+shift+]",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.fragment.left.shift",
 				"win": "ctrl+shift+[",
 				"linux": "ctrl+shift+[",
 				"mac": "cmd+shift+[",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.fragment.right.shift",
 				"win": "ctrl+shift+]",
 				"linux": "ctrl+shift+]",
 				"mac": "cmd+shift+]",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.left.shift",
 				"win": "ctrl+alt+shift+[",
 				"linux": "ctrl+alt+shift+[",
 				"mac": "cmd+alt+shift+[",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.jump.paragraph.right.shift",
 				"win": "ctrl+alt+shift+]",
 				"linux": "ctrl+alt+shift+]",
 				"mac": "cmd+alt+shift+]",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.delete.left",
 				"win": "ctrl+backspace",
 				"linux": "ctrl+backspace",
 				"mac": "cmd+backspace",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.delete.right",
 				"win": "ctrl+delete",
 				"linux": "ctrl+delete",
 				"mac": "cmd+delete",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.intellisense.synonyms.prevDefinition",
 				"win": "ctrl+up",
 				"linux": "ctrl+up",
 				"mac": "cmd+up",
-				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && (editorLangId == wt || editorLangId == wtNote)"
+				"when": "wt.valid && ((suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && (editorLangId == wt || editorLangId == wtNote))"
 			},
 			{
 				"command": "wt.intellisense.synonyms.nextDefinition",
 				"win": "ctrl+down",
 				"linux": "ctrl+down",
 				"mac": "cmd+down",
-				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && (editorLangId == wt || editorLangId == wtNote)"
+				"when": "wt.valid && ((suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && (editorLangId == wt || editorLangId == wtNote))"
 			},
 			{
 				"command": "wt.intellisense.synonyms.prevSelection",
 				"win": "up",
 				"linux": "up",
 				"mac": "up",
-				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && (editorLangId == wt || editorLangId == wtNote)"
+				"when": "wt.valid && ((suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && (editorLangId == wt || editorLangId == wtNote))"
 			},
 			{
 				"command": "wt.intellisense.synonyms.nextSelection",
 				"win": "down",
 				"linux": "down",
 				"mac": "down",
-				"when": "(suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && (editorLangId == wt || editorLangId == wtNote)"
+				"when": "wt.valid && ((suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion) && (editorLangId == wt || editorLangId == wtNote))"
 			},
 			{
 				"command": "wt.editor.todo.commentSentence",
 				"win": "ctrl+shift+/",
 				"linux": "ctrl+shift+/",
 				"mac": "cmd+shift+/",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.todo.commentFragment",
 				"win": "alt+shift+/",
 				"linux": "alt+shift+/",
 				"mac": "alt+shift+/",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.todo.commentParagraph",
 				"win": "ctrl+alt+shift+/",
 				"linux": "ctrl+alt+shift+/",
 				"mac": "cmd+alt+shift+/",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.highlightExpand",
 				"win": "ctrl+alt+h",
 				"linux": "ctrl+alt+h",
 				"mac": "cmd+alt+h",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.editor.highlightCollapse",
 				"win": "ctrl+alt+shift+h",
 				"linux": "ctrl+alt+shift+h",
 				"mac": "cmd+alt+shift+h",
-				"when": "(editorLangId == wt || editorLangId == wtNote) && editorTextFocus"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.outline.commandPalette.moveCurrentNode",
 				"win": "shift+f1",
 				"linux": "shift+f1",
 				"mac": "shift+f1",
-				"when": "editorLangId == wt || editorLangId == wtNote"
+				"when": "wt.valid && (editorLangId == wt || editorLangId == wtNote)"
 			}
 		],
 		"languages": [
