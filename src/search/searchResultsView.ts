@@ -75,7 +75,7 @@ export class SearchResultsView
             if (location.uri.fsPath.toLowerCase().endsWith('.wtnote')) {
                 const options: vscode.NotebookDocumentShowOptions = {
                     preview: false,
-                    viewColumn: await determineAuxViewColumn(extension.ExtensionGlobals.notebook.getNote.bind(extension.ExtensionGlobals.notebook)),
+                    viewColumn: await determineAuxViewColumn(extension.ExtensionGlobals.notebookPanel.getNote.bind(extension.ExtensionGlobals.notebookPanel)),
                     preserveFocus: false,
                 };
                 vscode.commands.executeCommand('vscode.openWith', location.uri, 'wt.notebook', options)
@@ -120,7 +120,7 @@ export class SearchResultsView
             if (nodeResult.node === null || nodeResult.source === null) return;
 
             if (nodeResult.source === 'notebook') {
-                extension.ExtensionGlobals.notebook.view.reveal(nodeResult.node, {
+                extension.ExtensionGlobals.notebookPanel.view.reveal(nodeResult.node, {
                     expand: true,
                     focus: false,
                     select: true

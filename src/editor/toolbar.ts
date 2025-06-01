@@ -126,7 +126,7 @@ export class Toolbar {
                     expand: true,
                     select: true,
                 });
-                case 'notebook': return ExtensionGlobals.notebook.view.reveal(searchResult.node, {
+                case 'notebook': return ExtensionGlobals.notebookPanel.view.reveal(searchResult.node, {
                     expand: true,
                     select: true,
                 });

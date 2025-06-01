@@ -3,8 +3,8 @@ import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
 import { getHoverText, getHoveredWord } from '../common';
 import { capitalize } from '../../miscTools/help';
-import { NotebookPanel } from '../../notebook/notebookPanel';
 import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
+import { ExtensionGlobals } from '../../extension';
 
 export class HoverProvider implements vscode.HoverProvider {
     constructor (
@@ -16,11 +16,11 @@ export class HoverProvider implements vscode.HoverProvider {
         const hoverPosition = getHoveredWord(document, position);
         if (!hoverPosition) return new vscode.Hover('');
 
-        // Don't give hover on words that have a matched world notebook Note
-        const worldNotebook = NotebookPanel.singleton;
-        if (worldNotebook) {
-            if (worldNotebook.matchedNotebook) {
-                const matches = worldNotebook.matchedNotebook[formatFsPathForCompare(document.uri)];
+        // Don't give hover on words that have a matched notebook panel Note
+        const notebookPanel = ExtensionGlobals.notebookPanel;
+        if (notebookPanel) {
+            if (notebookPanel.matchedNotebook) {
+                const matches = notebookPanel.matchedNotebook[formatFsPathForCompare(document.uri)];
                 if (matches && matches.find(note => note.range.contains(position))) {
                     return new vscode.Hover('');
                 }

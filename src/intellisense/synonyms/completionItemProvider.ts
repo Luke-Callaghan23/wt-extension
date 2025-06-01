@@ -2,9 +2,12 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
 import { HoverPosition, getHoverText, getHoveredWord } from '../common';
-import { Capitalization, getTextCapitalization, transformToCapitalization } from '../../miscTools/help';
+import { Capitalization, formatFsPathForCompare, getTextCapitalization, transformToCapitalization } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
 import { SynonymError, SynonymSearchResult, Synonyms, SynonymsProvider } from '../synonymsProvider/provideSynonyms';
+import { ExtensionGlobals } from '../../extension';
+import { TextMatchForNote } from '../../notebook/timedViewUpdate';
+import { _ } from './../../miscTools/help';
 
 const NUMBER_COMPLETES = 20;
 
@@ -102,6 +105,34 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             }
         }
 
+        const notebookPanel = ExtensionGlobals.notebookPanel;
+        if (notebookPanel.matchedNotebook) {
+            const matches = notebookPanel.matchedNotebook[formatFsPathForCompare(document.uri)];
+            const noteMatch = matches.find(noteMatch => noteMatch.range.contains(hoverRange));
+            if (matches && noteMatch) {
+                const allOptions = [
+                    noteMatch.note.title,
+                    ...noteMatch.note.aliases
+                ];
+
+
+        
+                // Need to use the entire note's text as the `filterText` in completion items
+                //      not entirely sure why -- filterText is confusing when you're not using
+                //      it like it's meant to be used :(
+                const filt = document.getText(noteMatch.range);
+
+                const finalOptions = allOptions.filter(opt => opt.toLocaleLowerCase() !== wordText.toLocaleLowerCase());
+                return finalOptions.map(option => _<vscode.CompletionItem>({
+                    label: option,
+                    detail: `Alias of '${noteMatch.note.title}'`,
+                    documentation: new vscode.MarkdownString(ExtensionGlobals.notebookPanel.getMarkdownForNote(noteMatch.note)),
+                    range: noteMatch.range,
+                    filterText: filt,
+                }));
+            }
+        }
+        
         
         // Query the synonym api for the hovered word
         let response: Synonyms;
@@ -130,7 +161,6 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
         
         const defs = response.definitions;
-
 
         let activations: boolean[];
         let expansions: boolean[];

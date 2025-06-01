@@ -15,7 +15,7 @@ export type TextMatchForNote = {
     start: number,
     end: number,
     tag: string,
-    matchedNote: NotebookPanelNote | undefined
+    matchedNote: NotebookPanelNote
 };
 
 export function *getNoteMatchesInText (this: NotebookPanel, text: string): Generator<TextMatchForNote> {
@@ -48,27 +48,14 @@ export function *getNoteMatchesInText (this: NotebookPanel, text: string): Gener
 
                 // Create a markdown string for the match
                 const matchedMarkdown = matchedNotebook.map(note => {
-                    const aliasesString = note.aliases.join(', ');
-                    const title = `## ${note.title}`;
-                    const subtitle = aliasesString.length !== 0
-                        ? `#### (*${aliasesString}*)\n`
-                        : '';
-
-                    const descriptions = note.sections.map(
-                        section => `- ${capitalize(section.header)}\n` + (
-                            section.bullets.map(
-                                bullet => `  - ${bullet.text}`
-                            ).join('\n')
-                        )
-                    ).join('\n');
-
-                    return `${title}\n${subtitle}\n${descriptions}`;
+                    return this.getMarkdownForNote(note);
                 }).join('\n');
                 tag = matchedMarkdown;
             }
             catch (err: any) {}
         }
 
+        if (!matchedNote) return null;
 
         let start: number;
         let end: number;

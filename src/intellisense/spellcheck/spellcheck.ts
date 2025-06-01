@@ -8,6 +8,7 @@ import { NotebookPanel } from '../../notebook/notebookPanel';
 import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
 import { Autocorrect } from '../../autocorrect/autocorrect';
 import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
+import { ExtensionGlobals } from '../../extension';
 
 
 export class Spellcheck implements Timed {
@@ -93,11 +94,11 @@ export class Spellcheck implements Timed {
                 }
 
 
-                // Do not add red decorations to words that have been matched by world notebook
-                const worldNotebook = NotebookPanel.singleton;
-                if (worldNotebook) {
-                    if (worldNotebook.matchedNotebook) {
-                        const matches = worldNotebook.matchedNotebook[formatFsPathForCompare(document.uri)];
+                // Do not add red decorations to words that have been matched by notebook
+                const notebookPanel = ExtensionGlobals.notebookPanel;
+                if (notebookPanel) {
+                    if (notebookPanel.matchedNotebook) {
+                        const matches = notebookPanel.matchedNotebook[formatFsPathForCompare(document.uri)];
                         if (matches && matches.find(note => note.range.contains(range))) {
                             continue;
                         }

@@ -190,7 +190,7 @@ async function readNotebook (notebookPath: vscode.Uri): Promise<Note[]> {
         return notebook;
     }
     catch (err: any) {
-        vscode.window.showWarningMessage(`[WARNING] An error occurred while world notebook from disk: ${err.message}.  Creating a new world notebook file instead.`);
+        vscode.window.showWarningMessage(`[WARNING] An error occurred while reading notebook from disk: ${err.message}.  Creating a new notebook instead.`);
         console.log(err);
         return [];
     }

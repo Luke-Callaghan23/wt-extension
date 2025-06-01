@@ -48,7 +48,7 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
     }
     else {
         const note = nodeOrNote as NotebookPanelNote;
-        ExtensionGlobals.notebook.view.reveal(note, {
+        ExtensionGlobals.notebookPanel.view.reveal(note, {
             expand: true,
             focus: false,
             select: true

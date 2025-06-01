@@ -63,9 +63,7 @@ implements
     getNoteMatchesInText = getNoteMatchesInText;
     disable = disable;
 
-    static singleton: NotebookPanel;
-
-    public matchedNotebook: { [index: string]: NoteMatch[] };
+    public matchedNotebook: Record<string, NoteMatch[]>;
     public nounsRegex: RegExp | undefined;
 
     public notebook: NotebookPanelNote[];
@@ -87,7 +85,6 @@ implements
         this.notebook = []; 
         this.view = {} as vscode.TreeView<NotebookPanelNote | NoteSection | BulletPoint>
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
-        NotebookPanel.singleton = this;
 
         this.context.subscriptions.push(notebookDecorations);
     }
@@ -345,6 +342,25 @@ implements
         return null;
     }
     
+    getMarkdownForNote (note: NotebookPanelNote): string {
+        const aliasesString = note.aliases.join(', ');
+        const title = `## ${note.title}`;
+        const subtitle = aliasesString.length !== 0
+            ? `#### (*${aliasesString}*)\n`
+            : '';
+
+        const descriptions = note.sections
+            .filter(section => section.header.toLocaleLowerCase() !== 'aliases' && section.header.toLocaleLowerCase() !== 'alias')
+            .map(section => `- ${capitalize(section.header)}\n` + (
+                section.bullets.map(
+                    bullet => `  - ${bullet.text}`
+                ).join('\n')
+            ))
+            .join('\n');
+
+        return `${title}\n${subtitle}\n${descriptions}`;
+    }
+
     async provideDocumentLinks(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.DocumentLink[] | null> {
         const documentMatches = await this.getDocumentMatch(document);
         if (!documentMatches) return null;

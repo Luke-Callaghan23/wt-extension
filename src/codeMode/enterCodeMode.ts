@@ -42,7 +42,7 @@ export async function enter (this: CoderModer): Promise<void> {
 
     
     const outlineView: OutlineView = ExtensionGlobals.outlineView;
-    const notebookView: NotebookPanel = ExtensionGlobals.notebook;
+    const notebookView: NotebookPanel = ExtensionGlobals.notebookPanel;
     if (outlineView.view.visible) {
         vscode.commands.executeCommand('workbench.view.explorer');
         this.openedExplorer = true;

@@ -11,6 +11,7 @@ import { TabLabels } from '../tabLabels/tabLabels';
 import * as childProcess from 'child_process'
 import * as vscodeUri from 'vscode-uri';
 import { HasGetUri, UriBasedView } from '../outlineProvider/UriBasedView';
+import utils = require('markdown-it/lib/common/utils');
 
 export type PromptOptions = {
     placeholder: string,
@@ -165,7 +166,7 @@ export async function vagueNodeSearch (
         }
     }
     else if (relative.endsWith(".wtnote")) {
-        const note = extension.ExtensionGlobals.notebook.getNote(target);
+        const note = extension.ExtensionGlobals.notebookPanel.getNote(target);
         if (note) return {
             source: 'notebook',
             node: note
@@ -192,7 +193,7 @@ export async function vagueNodeSearch (
             source: 'scratch',
         }
         
-        const note = extension.ExtensionGlobals.notebook.getNote(target);
+        const note = extension.ExtensionGlobals.notebookPanel.getNote(target);
         if (note) return {
             source: 'notebook',
             node: note
@@ -466,6 +467,11 @@ export async function showDocument (uri: vscode.Uri, options?: vscode.TextDocume
         return vscode.commands.executeCommand('vscode.openWith', uri, 'wt.notebook', options);
     }
     else {
+        // If it is specifically noted by the caller to not preview then we do not want
+        //      `showTextDocumentWithPreview` to override that
+        if (options && options.preview === false) {
+            return vscode.window.showTextDocument(uri, options);
+        }
         return showTextDocumentWithPreview(uri, options);
     }
 }

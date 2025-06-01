@@ -34,9 +34,9 @@ export class TabLabels {
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.recyclingBinView, node ]) : reject())),
                     new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.scratchPadView, node ]) : reject())),
                     new Promise<[ ViewSource, NotebookPanelNote ]>((resolve, reject) =>  {
-                        const note = extension.ExtensionGlobals.notebook.getNote(uri);
+                        const note = extension.ExtensionGlobals.notebookPanel.getNote(uri);
                         if (note) {
-                            resolve([ extension.ExtensionGlobals.notebook, note ]);
+                            resolve([ extension.ExtensionGlobals.notebookPanel, note ]);
                         } 
                         else {
                             reject();

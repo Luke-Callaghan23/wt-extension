@@ -78,7 +78,7 @@ export class Workspace {
     public workSnipsFolder: vscode.Uri;
     public recyclingBin: vscode.Uri;
     public contextValuesFilePath: vscode.Uri;
-    public worldNotebookPath: vscode.Uri;
+    public notebookPath: vscode.Uri;
     public notebookFolder: vscode.Uri;
     public scratchPadFolder: vscode.Uri;
 
@@ -178,12 +178,12 @@ export class Workspace {
         this.workSnipsFolder = vscode.Uri.joinPath(extension.rootPath, `data/snips`);
         this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-        this.worldNotebookPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotebook.json');
         this.notebookFolder = vscode.Uri.joinPath(extension.rootPath, `data/notebook`);
         this.scratchPadFolder = vscode.Uri.joinPath(extension.rootPath, `data/scratchPad`);
         this.synonymsCachePath = vscode.Uri.joinPath(extension.rootPath, 'synonymsCache.json');
-
+        
         // Old folders
+        this.notebookPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotebook.json');
         this.workBibleFolder = vscode.Uri.joinPath(extension.rootPath, `data/workBible`);
     }
 
