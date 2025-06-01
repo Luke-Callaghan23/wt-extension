@@ -103,7 +103,7 @@ export class TabStates implements Packageable<'wt.tabStates.savedTabStates' | "w
                 for (const [ relativePath, positions ] of Object.entries(tabs)) {
                     const openUri = vscode.Uri.joinPath(extension.rootPath, relativePath);
                     
-                    await showDocument(openUri, {
+                    await vscode.window.showTextDocument(openUri, {
                         viewColumn: viewCol,
                         selection: new vscode.Range(
                             new vscode.Position(positions.activeLine, positions.activeChar),
