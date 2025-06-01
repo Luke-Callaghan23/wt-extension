@@ -498,7 +498,7 @@
 			{
 				"command": "wt.import.fileExplorer.importFiles",
 				"title": "Writing Tool: Import All Files",
-				"icon": "$(ports-forward-icon)"
+				"icon": "$(ports-left-icon)"
 			},
 			{
 				"command": "wt.import.fileExplorer.importFile",
@@ -662,76 +662,76 @@
 				"icon": "$(list-filter)"
 			},
 			{
-				"command": "wt.editor.word.forward",
-				"title": "Writing Tool: Jump to Word (forward)."
+				"command": "wt.editor.word.left",
+				"title": "Writing Tool: Jump to Word (left)."
 			},
 			{
-				"command": "wt.editor.word.backward",
-				"title": "Writing Tool: Jump to Word (backward)."
+				"command": "wt.editor.word.right",
+				"title": "Writing Tool: Jump to Word (right)."
 			},
 			{
-				"command": "wt.editor.jump.fragment.forward",
-				"title": "Writing Tool: Jump to Sentence Fragment (forward)."
+				"command": "wt.editor.jump.fragment.left",
+				"title": "Writing Tool: Jump to Sentence Fragment (left)."
 			},
 			{
-				"command": "wt.editor.jump.fragment.backward",
-				"title": "Writing Tool: Jump to Sentence Fragment (backward)."
+				"command": "wt.editor.jump.fragment.right",
+				"title": "Writing Tool: Jump to Sentence Fragment (right)."
 			},
 			{
-				"command": "wt.editor.jump.sentence.forward",
-				"title": "Writing Tool: Jump to Sentence (forward)."
+				"command": "wt.editor.jump.sentence.left",
+				"title": "Writing Tool: Jump to Sentence (left)."
 			},
 			{
-				"command": "wt.editor.jump.sentence.backward",
-				"title": "Writing Tool: Jump to Sentence (backward)."
+				"command": "wt.editor.jump.sentence.right",
+				"title": "Writing Tool: Jump to Sentence (right)."
 			},
 			{
-				"command": "wt.editor.jump.paragraph.forward",
-				"title": "Writing Tool: Jump to paragraph (forward)."
+				"command": "wt.editor.jump.paragraph.left",
+				"title": "Writing Tool: Jump to paragraph (left)."
 			},
 			{
-				"command": "wt.editor.jump.paragraph.backward",
-				"title": "Writing Tool: Jump to paragraph (backward)."
+				"command": "wt.editor.jump.paragraph.right",
+				"title": "Writing Tool: Jump to paragraph (right)."
 			},
 			{
-				"command": "wt.editor.word.forward.shift",
-				"title": "Writing Tool: Jump to Word (forward) (select)."
+				"command": "wt.editor.word.left.shift",
+				"title": "Writing Tool: Jump to Word (left) (select)."
 			},
 			{
-				"command": "wt.editor.word.backward.shift",
-				"title": "Writing Tool: Jump to Word (backward) (select)."
+				"command": "wt.editor.word.right.shift",
+				"title": "Writing Tool: Jump to Word (right) (select)."
 			},
 			{
-				"command": "wt.editor.jump.fragment.forward.shift",
-				"title": "Writing Tool: Jump to Sentence Framgent (forward) (select)."
+				"command": "wt.editor.jump.fragment.left.shift",
+				"title": "Writing Tool: Jump to Sentence Framgent (left) (select)."
 			},
 			{
-				"command": "wt.editor.jump.fragment.backward.shift",
-				"title": "Writing Tool: Jump to Sentence Framgent (backward) (select)."
+				"command": "wt.editor.jump.fragment.right.shift",
+				"title": "Writing Tool: Jump to Sentence Framgent (right) (select)."
 			},
 			{
-				"command": "wt.editor.jump.sentence.forward.shift",
-				"title": "Writing Tool: Jump to Sentence (forward) (select)."
+				"command": "wt.editor.jump.sentence.left.shift",
+				"title": "Writing Tool: Jump to Sentence (left) (select)."
 			},
 			{
-				"command": "wt.editor.jump.sentence.backward.shift",
-				"title": "Writing Tool: Jump to Sentence (backward) (select)."
+				"command": "wt.editor.jump.sentence.right.shift",
+				"title": "Writing Tool: Jump to Sentence (right) (select)."
 			},
 			{
-				"command": "wt.editor.jump.paragraph.forward.shift",
-				"title": "Writing Tool: Jump to paragraph (forward) (select)."
+				"command": "wt.editor.jump.paragraph.left.shift",
+				"title": "Writing Tool: Jump to paragraph (left) (select)."
 			},
 			{
-				"command": "wt.editor.jump.paragraph.backward.shift",
-				"title": "Writing Tool: Jump to paragraph (backward) (select)."
+				"command": "wt.editor.jump.paragraph.right.shift",
+				"title": "Writing Tool: Jump to paragraph (right) (select)."
 			},
 			{
-				"command": "wt.editor.delete.forward",
-				"title": "Writing Tool: Delete Word (forward)."
+				"command": "wt.editor.delete.left",
+				"title": "Writing Tool: Delete Word (left)."
 			},
 			{
-				"command": "wt.editor.delete.backward",
-				"title": "Writing Tool: Delete Word (backward)."
+				"command": "wt.editor.delete.right",
+				"title": "Writing Tool: Delete Word (right)."
 			},
 			{
 				"command": "wt.personalDictionary.add",
@@ -1298,75 +1298,75 @@
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.word.forward",
+					"command": "wt.editor.word.left",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.word.backward",
+					"command": "wt.editor.word.right",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.fragment.forward",
+					"command": "wt.editor.jump.fragment.left",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.fragment.backward",
+					"command": "wt.editor.jump.fragment.right",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.sentence.forward",
+					"command": "wt.editor.jump.sentence.left",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.sentence.backward",
+					"command": "wt.editor.jump.sentence.right",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.paragraph.forward",
+					"command": "wt.editor.jump.paragraph.left",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.paragraph.backward",
+					"command": "wt.editor.jump.paragraph.right",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.word.forward.shift",
+					"command": "wt.editor.word.left.shift",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.word.backward.shift",
+					"command": "wt.editor.word.right.shift",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.fragment.forward.shift",
+					"command": "wt.editor.jump.fragment.left.shift",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.fragment.backward.shift",
+					"command": "wt.editor.jump.fragment.right.shift",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.sentence.forward.shift",
+					"command": "wt.editor.jump.sentence.left.shift",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.sentence.backward.shift",
+					"command": "wt.editor.jump.sentence.right.shift",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.paragraph.forward.shift",
+					"command": "wt.editor.jump.paragraph.left.shift",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.jump.paragraph.backward.shift",
+					"command": "wt.editor.jump.paragraph.right.shift",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.delete.forward",
+					"command": "wt.editor.delete.left",
 					"when": "false"
 				},
 				{
-					"command": "wt.editor.delete.backward",
+					"command": "wt.editor.delete.right",
 					"when": "false"
 				},
 				{
@@ -1996,126 +1996,126 @@
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.word.forward",
+				"command": "wt.editor.jump.word.left",
 				"win": "ctrl+left",
 				"linux": "ctrl+left",
 				"mac": "cmd+left",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.word.backward",
+				"command": "wt.editor.jump.word.right",
 				"win": "ctrl+right",
 				"linux": "ctrl+right",
 				"mac": "cmd+right",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.sentence.forward",
+				"command": "wt.editor.jump.sentence.left",
 				"win": "ctrl+[",
 				"linux": "ctrl+[",
 				"mac": "cmd+[",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.sentence.backward",
+				"command": "wt.editor.jump.sentence.right",
 				"win": "ctrl+]",
 				"linux": "ctrl+]",
 				"mac": "cmd+]",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.fragment.forward",
+				"command": "wt.editor.jump.fragment.left",
 				"win": "alt+[",
 				"linux": "alt+[",
 				"mac": "alt+[",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.fragment.backward",
+				"command": "wt.editor.jump.fragment.right",
 				"win": "alt+]",
 				"linux": "alt+]",
 				"mac": "alt+]",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.paragraph.forward",
+				"command": "wt.editor.jump.paragraph.left",
 				"win": "ctrl+alt+[",
 				"linux": "ctrl+alt+[",
 				"mac": "cmd+alt+[",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.paragraph.backward",
+				"command": "wt.editor.jump.paragraph.right",
 				"win": "ctrl+alt+]",
 				"linux": "ctrl+alt+]",
 				"mac": "cmd+alt+]",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.word.forward.shift",
+				"command": "wt.editor.jump.word.left.shift",
 				"win": "ctrl+shift+left",
 				"linux": "ctrl+shift+left",
 				"mac": "cmd+shift+left",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.word.backward.shift",
+				"command": "wt.editor.jump.word.right.shift",
 				"win": "ctrl+shift+right",
 				"linux": "ctrl+shift+right",
 				"mac": "cmd+shift+right",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.sentence.forward.shift",
+				"command": "wt.editor.jump.sentence.left.shift",
 				"win": "ctrl+shift+[",
 				"linux": "ctrl+shift+[",
 				"mac": "cmd+shift+[",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.sentence.backward.shift",
+				"command": "wt.editor.jump.sentence.right.shift",
 				"win": "ctrl+shift+]",
 				"linux": "ctrl+shift+]",
 				"mac": "cmd+shift+]",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.fragment.forward.shift",
+				"command": "wt.editor.jump.fragment.left.shift",
 				"win": "alt+shift+[",
 				"linux": "alt+shift+[",
 				"mac": "alt+shift+[",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.fragment.backward.shift",
+				"command": "wt.editor.jump.fragment.right.shift",
 				"win": "alt+shift+]",
 				"linux": "alt+shift+]",
 				"mac": "alt+shift+]",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.paragraph.forward.shift",
+				"command": "wt.editor.jump.paragraph.left.shift",
 				"win": "ctrl+alt+shift+[",
 				"linux": "ctrl+alt+shift+[",
 				"mac": "cmd+alt+shift+[",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.jump.paragraph.backward.shift",
+				"command": "wt.editor.jump.paragraph.right.shift",
 				"win": "ctrl+alt+shift+]",
 				"linux": "ctrl+alt+shift+]",
 				"mac": "cmd+alt+shift+]",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.delete.forward",
+				"command": "wt.editor.delete.left",
 				"win": "ctrl+backspace",
 				"linux": "ctrl+backspace",
 				"mac": "cmd+backspace",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
-				"command": "wt.editor.delete.backward",
+				"command": "wt.editor.delete.right",
 				"win": "ctrl+delete",
 				"linux": "ctrl+delete",
 				"mac": "cmd+delete",
@@ -2310,7 +2310,7 @@
 					{
 						"id": "wt.introWalkthrough.navigate",
 						"title": "Quickly Navigate your Text",
-						"description": "- Use built in writing-focused keybindings to quickly navigate over sentences, sentence fragments, and paragraphs.\n- ctrl+[ / ctrl+] Jumps forward and backward through sentences.\n- alt+[ / alt+] Jumps forward and backward through sentence fragments.\n- ctrl+alt+[ / ctrl+alt+] Jumps forward and backward through paragraphs.",
+						"description": "- Use built in writing-focused keybindings to quickly navigate over sentences, sentence fragments, and paragraphs.\n- ctrl+[ / ctrl+] Jumps left and right through sentences.\n- alt+[ / alt+] Jumps left and right through sentence fragments.\n- ctrl+alt+[ / ctrl+alt+] Jumps left and right through paragraphs.",
 						"media": {
 							"image": "https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/intro/use_navigations.gif",
 							"altText": "Use navigation"

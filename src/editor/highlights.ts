@@ -2,30 +2,30 @@ import * as vscode from 'vscode';
 import { defaultJumpFragmentOptions, fragmentStopReg, jumpParagraph, jumpParagraphSingleSelection, jumpSentence, jumpSentenceSingleSelection, jumpWord, jumpWordSingleSelection, punctuationStopsReg } from './jumps';
 
 export async function highlightWord () {
-    await jumpWord('backward', false);                           // Jump backward
-    await jumpWord('forward', true);                           // Jump forward holding shift
+    await jumpWord('right', false);                           // Jump right
+    await jumpWord('left', true);                           // Jump left holding shift
 }
 
 export async function highlightSentence (sentenceJumpReg: RegExp = punctuationStopsReg) {
-    await jumpSentence('backward', false, {
+    await jumpSentence('right', false, {
         punctuationStops: sentenceJumpReg
-    });                      // Jump backward
-    await jumpSentence('forward', true, {
+    });                      // Jump right
+    await jumpSentence('left', true, {
         punctuationStops: sentenceJumpReg
-    });                      // Jump forward holding shift
+    });                      // Jump left holding shift
 }
 
 export async function highlightParagraph () {
-    await jumpParagraph('backward', false);                      // Jump backward
-    await jumpParagraph('forward', true);                      // Jump forward holding shift
+    await jumpParagraph('right', false);                      // Jump right
+    await jumpParagraph('left', true);                      // Jump left holding shift
 }
 
 export async function highlightFragment (fragmentJumpReg: RegExp = fragmentStopReg) {
-    await jumpSentence('backward', false, { 
+    await jumpSentence('right', false, { 
         punctuationStops: punctuationStopsReg,
         fragmentStops: fragmentJumpReg
     });                 
-    await jumpSentence('forward', true, { 
+    await jumpSentence('left', true, { 
         punctuationStops: punctuationStopsReg,
         fragmentStops: fragmentJumpReg
     });                 
@@ -38,8 +38,8 @@ export function highlightWordSingleSelection (
     document: vscode.TextDocument, 
     docText: string
 ): vscode.Selection {
-    const initial = jumpWordSingleSelection('backward', false, selection, document, docText);
-    return jumpWordSingleSelection('forward', true, initial, document, docText);
+    const initial = jumpWordSingleSelection('right', false, selection, document, docText);
+    return jumpWordSingleSelection('left', true, initial, document, docText);
 }
 
 export function highlightSentenceSingleSelection (
@@ -48,10 +48,10 @@ export function highlightSentenceSingleSelection (
     document: vscode.TextDocument, 
     docText: string
 ): vscode.Selection {
-    const initial = jumpSentenceSingleSelection('backward', false, {
+    const initial = jumpSentenceSingleSelection('right', false, {
         punctuationStops: sentenceJumpReg
     }, selection, document, docText);
-    return jumpSentenceSingleSelection('forward', true, {
+    return jumpSentenceSingleSelection('left', true, {
         punctuationStops: sentenceJumpReg
     }, initial, document, docText);
 }
@@ -61,8 +61,8 @@ export function highlightParagraphSingleSelection (
     document: vscode.TextDocument, 
     docText: string
 ): vscode.Selection {
-    const initial = jumpParagraphSingleSelection('backward', false, selection, document, docText);
-    return jumpParagraphSingleSelection('forward', true, initial, document, docText);
+    const initial = jumpParagraphSingleSelection('right', false, selection, document, docText);
+    return jumpParagraphSingleSelection('left', true, initial, document, docText);
 }
 
 export function highlightFragmentSingleSelection (
@@ -71,11 +71,11 @@ export function highlightFragmentSingleSelection (
     document: vscode.TextDocument, 
     docText: string
 ): vscode.Selection {
-    const initial = jumpSentenceSingleSelection('backward', false, { 
+    const initial = jumpSentenceSingleSelection('right', false, { 
         punctuationStops: punctuationStopsReg,
         fragmentStops: fragmentJumpReg
     }, selection, document, docText);
-    return jumpSentenceSingleSelection('forward', true, { 
+    return jumpSentenceSingleSelection('left', true, { 
         punctuationStops: punctuationStopsReg,
         fragmentStops: fragmentJumpReg
     }, initial, document, docText);
@@ -112,7 +112,7 @@ function expandSingleHighlight (
         return highlightWordSingleSelection(selection, document, docText);
     }
 
-    // Iterate forward and backward in the current paragraph to expand
+    // Iterate left and right in the current paragraph to expand
 
     const beginningOfParagraph = document.offsetAt(new vscode.Position(start.line, 0));
     let endOfParagraph = document.offsetAt(new vscode.Position(end.line + 1, 0));
@@ -121,58 +121,58 @@ function expandSingleHighlight (
     }
 
     if (beginningOfParagraph === startOff && endOfParagraph === endOff) {
-        // Skip over whitespace forwards and backwards to continue onto the next paragraph
+        // Skip over whitespace lefts and rights to continue onto the next paragraph
 
-        let forward = startOff - 1;
-        let backward = endOff + 1;
-        for (; /\s/.test(docText[forward]) && forward >= 0; forward--) {}
-        for (; /\s/.test(docText[backward]) && backward < docText.length; backward++) {}
+        let left = startOff - 1;
+        let right = endOff + 1;
+        for (; /\s/.test(docText[left]) && left >= 0; left--) {}
+        for (; /\s/.test(docText[right]) && right < docText.length; right++) {}
 
         return expandSingleHighlight(new vscode.Selection(
-            document.positionAt(forward),
-            document.positionAt(backward)
+            document.positionAt(left),
+            document.positionAt(right)
         ), editor, document, docText);
     }
 
-    let stopAtForward: number | null = null;
-    for (let iterateForward = startOff - 1; iterateForward >= beginningOfParagraph; iterateForward--) {
+    let stopAtLeft: number | null = null;
+    for (let iterateLeft = startOff - 1; iterateLeft >= beginningOfParagraph; iterateLeft--) {
         let found = false;
 
         // If we ever do hit a stopping character, then keep iterating over the stopping characters until we reach the end
-        let char = docText[iterateForward];
-        while ((punctuationStopsReg.test(char) || fragmentStopReg.test(char) || newlineReg.test(char)) && iterateForward >= 0) {
+        let char = docText[iterateLeft];
+        while ((punctuationStopsReg.test(char) || fragmentStopReg.test(char) || newlineReg.test(char)) && iterateLeft >= 0) {
             found = true;
-            iterateForward--;
-            char = docText[iterateForward];
+            iterateLeft--;
+            char = docText[iterateLeft];
         } 
 
         if (found) {
-            stopAtForward = iterateForward;
+            stopAtLeft = iterateLeft;
             break;
         }
     }
 
     // Same as above, but in the other direction
-    let stopAtBackward: number | null = null;
-    for (let iterateBackwards = endOff + 1; iterateBackwards <= endOfParagraph; iterateBackwards++) {
+    let stopAtRight: number | null = null;
+    for (let iterateRights = endOff + 1; iterateRights <= endOfParagraph; iterateRights++) {
         
         let found = false;
-        let char = docText[iterateBackwards];
-        while ((punctuationStopsReg.test(char) || fragmentStopReg.test(char) || newlineReg.test(char)) && iterateBackwards <= endOfParagraph) {
+        let char = docText[iterateRights];
+        while ((punctuationStopsReg.test(char) || fragmentStopReg.test(char) || newlineReg.test(char)) && iterateRights <= endOfParagraph) {
             found = true;
-            iterateBackwards++;
-            char = docText[iterateBackwards];
+            iterateRights++;
+            char = docText[iterateRights];
         }
 
         if (found) {
-            stopAtBackward = iterateBackwards;
+            stopAtRight = iterateRights;
             break;
         }
     }
 
     return new vscode.Selection(
-        document.positionAt(stopAtForward || beginningOfParagraph),
-        document.positionAt(stopAtBackward || endOfParagraph)
+        document.positionAt(stopAtLeft || beginningOfParagraph),
+        document.positionAt(stopAtRight || endOfParagraph)
     );
 }
 

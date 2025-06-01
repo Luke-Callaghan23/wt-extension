@@ -77,28 +77,28 @@ export class Toolbar {
         context.subscriptions.push(vscode.commands.registerCommand("wt.editor.todo.commentFragment", commentFragment));
         context.subscriptions.push(vscode.commands.registerCommand("wt.editor.todo.commentParagraph", commentParagraph));
 
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.delete.forward', () => deleteSelection('forward')));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.delete.backward', () => deleteSelection('backward')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.delete.left', () => deleteSelection('left')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.delete.right', () => deleteSelection('right')));
 
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.highlightExpand', highlightExpand));
 
         // Jump commands
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.forward', () => jumpWord('forward')));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.backward', () => jumpWord('backward')));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.forward', () => jumpSentence('forward', false)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.backward', () => jumpSentence('backward', false)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.forward', () => jumpSentence('forward', false, defaultJumpFragmentOptions)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.backward', () => jumpSentence('backward', false, defaultJumpFragmentOptions)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.forward', () => jumpParagraph('forward')));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.backward', () => jumpParagraph('backward')));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.forward.shift', () => jumpWord('forward', true)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.backward.shift', () => jumpWord('backward', true)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.forward.shift', () => jumpSentence('forward', true)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.backward.shift', () => jumpSentence('backward', true)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.forward.shift', () => jumpSentence('forward', true, defaultJumpFragmentOptions)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.backward.shift', () => jumpSentence('backward', true, defaultJumpFragmentOptions)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.forward.shift', () => jumpParagraph('forward', true)));
-        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.backward.shift', () => jumpParagraph('backward', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.left', () => jumpWord('left')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.right', () => jumpWord('right')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.left', () => jumpSentence('left', false)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.right', () => jumpSentence('right', false)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.left', () => jumpSentence('left', false, defaultJumpFragmentOptions)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.right', () => jumpSentence('right', false, defaultJumpFragmentOptions)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.left', () => jumpParagraph('left')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.right', () => jumpParagraph('right')));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.left.shift', () => jumpWord('left', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.word.right.shift', () => jumpWord('right', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.left.shift', () => jumpSentence('left', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.sentence.right.shift', () => jumpSentence('right', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.left.shift', () => jumpSentence('left', true, defaultJumpFragmentOptions)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.right.shift', () => jumpSentence('right', true, defaultJumpFragmentOptions)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.left.shift', () => jumpParagraph('left', true)));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.right.shift', () => jumpParagraph('right', true)));
 
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.addQuotes', () => addQuotes()));
 

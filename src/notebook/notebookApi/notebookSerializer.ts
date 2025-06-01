@@ -314,7 +314,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
 
     // Rarely used function -- only when some outside command edits the contents of a `Note` object
-    //      and those changes need to be forwarded into the serialized note on disk
+    //      and those changes need to be lefted into the serialized note on disk
     // Because of how rare this is used and because of the variety of use cases, we don't honor the 
     //      `editing` status of cells from disk
     // It is hard to match `Note` object `BulletPoint`s to `SerializedCell`s from the disk contents
@@ -461,7 +461,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             matches.push(match);
         }
         
-        // Iterate backwards over all the matched notes in this cell
+        // Iterate rights over all the matched notes in this cell
         const reversedMatches = matches.reverse();
         let finalString: string = asMarkdown;
         for (const { start, end, tag, matchedNote } of reversedMatches) {

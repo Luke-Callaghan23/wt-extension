@@ -116,11 +116,11 @@ Something no other writing editor I have tried does is custom keybindings for ne
 
 Features:
 
-- **Sentence jumping:** To jump around in sentences use `ctrl+[` to jump `forward` in the text and `ctrl+]` to jump `backward` in the text.  Add shift to highlight as well.
+- **Sentence jumping:** To jump around in sentences use `ctrl+[` to jump `left` in the text and `ctrl+]` to jump `right` in the text.  Add shift to highlight as well.
 
-- **Clause/Sentence fragment jumping:** To jump around not only in sentences (meaning stopping at puntuation like '.', '!', and '?') but in the clauses within those sentence use `alt+[` to jump `forward` in the text and `alt+]` to jump `backward` in the text.  Add shift to highlight.
+- **Clause/Sentence fragment jumping:** To jump around not only in sentences (meaning stopping at puntuation like '.', '!', and '?') but in the clauses within those sentence use `alt+[` to jump `left` in the text and `alt+]` to jump `right` in the text.  Add shift to highlight.
 
-- **Paragraph jumping:** To jump around entire sentence use `ctrl+alt+[` to jump `forward` in the text and `ctrl+alt+]` to jump `backward` in the text.  Add shift to highlight.
+- **Paragraph jumping:** To jump around entire sentence use `ctrl+alt+[` to jump `left` in the text and `ctrl+alt+]` to jump `right` in the text.  Add shift to highlight.
 
 Example:
 

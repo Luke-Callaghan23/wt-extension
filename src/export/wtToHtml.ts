@@ -105,7 +105,7 @@ export const wtToHtml = (wt: string, options: {
             headerOpened = true;
         }
 
-        // Iterate backwards over the stack to see whether:
+        // Iterate rights over the stack to see whether:
         //      (A) there exists an unclosed opening tag which this current tag will close
         //      (B) there are no still opened tag pair for this, and the current tag is an opening tag
         let foundIdx: number = -1;

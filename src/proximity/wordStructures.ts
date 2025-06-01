@@ -92,7 +92,7 @@ export class Sentence {
                 this.allWords.push(word);
             }
 
-            // Move the last end index forward to the end of the sentence separator
+            // Move the last end index left to the end of the sentence separator
             lastEnd = matched.index + matched[0].length;
         }
 
@@ -158,7 +158,7 @@ export class Paragraph {
             this.sentences.push(sentence);
             this.allWords.push(...sentence.allWords);
 
-            // Move the last end index forward to the end of the sentence separator
+            // Move the last end index left to the end of the sentence separator
             lastEnd = matched.index + matched[0].length;
         }
         this.ranks = new Ranks(this.allWords);

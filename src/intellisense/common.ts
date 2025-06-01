@@ -22,9 +22,9 @@ export function getHoveredWord (document: vscode.TextDocument, position: vscode.
     let start: number | undefined;
     let end: number | undefined;
     let goBack = true;
-    let goForward = true;
+    let goLeft = true;
 
-    // Test to see if we should go back or go forward
+    // Test to see if we should go back or go left
     if (stops.test(char)) {
 
         // Check to see of the character before the cursor is a stopping character
@@ -42,15 +42,15 @@ export function getHoveredWord (document: vscode.TextDocument, position: vscode.
         }
 
         if (!beforeStops) {
-            // If the before character is not stopping, then don't go forward
-            goForward = false;
+            // If the before character is not stopping, then don't go left
+            goLeft = false;
             end = off;
         }
-        // Going backwards is given precedence over going backwards
+        // Going rights is given precedence over going rights
         // Ex: 'word| other words'
         //      where '|' is the hover
         else if (!afterStops) {
-            // If the after character is not stopping, then don't go backward
+            // If the after character is not stopping, then don't go right
             goBack = false;
             start = off + 1;
         }
@@ -70,18 +70,18 @@ export function getHoveredWord (document: vscode.TextDocument, position: vscode.
         goBack = false;
     }
 
-    // If we should go forward, then loop forwards until we find a stopping character --
+    // If we should go left, then loop lefts until we find a stopping character --
     //      use that as the end of the hover string
-    if (goForward) {
+    if (goLeft) {
         let current = off + 1;
         while (text[current] && !stops.test(text[current])) {
             current += 1;
         }
         end = current;
-        goForward = false;
+        goLeft = false;
     }
 
-    if (goBack || goForward || !start || !end) return null;
+    if (goBack || goLeft || !start || !end) return null;
     return {
         start, end,
         text: text.substring(start, end)

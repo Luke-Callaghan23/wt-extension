@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 
-export type JumpType = 'forward' | 'backward'
+export type JumpType = 'left' | 'right'
 
 
 export const punctuationStopsReg = /[\.\?\!\n\r"]/;
@@ -73,7 +73,7 @@ export function jumpSentenceSingleSelection (
     document: vscode.TextDocument,
     docText: string,
 ): vscode.Selection {
-    const direction = jt === 'forward' ? -1 : 1;
+    const direction = jt === 'left' ? -1 : 1;
 
     const start = selection.isReversed ? selection.start : selection.end;
     const anchor = selection.anchor;
@@ -86,15 +86,15 @@ export function jumpSentenceSingleSelection (
     const startOffset = document.offsetAt(start);
 
 
-    // Initial iteration for forward jumps -- 
-    // When chaining together forward sentence jumps, we come across and issue:
+    // Initial iteration for left jumps -- 
+    // When chaining together left sentence jumps, we come across and issue:
     // Initial: 'First sentence.  Current |sentence.  Last sentence.'
     // After jump one: 'First sentence. |Current sentence.  Last sentence.'
     // After jump two: 'First sentence. |Current sentence.  Last sentence.'
     //      In this case, we can see the cursor getting "stuck" on the current
     //          sentence -- no matter how many times we run `jumpSentence`, the 
     //          cursor will not move past the first '.' which it gets stuck to
-    //      It's getting stuck because the main iteration (below) iterates forward
+    //      It's getting stuck because the main iteration (below) iterates left
     //          until it reaches punctuation.  In this case the punctuation
     //          is the first '.' at the end of 'First sentence.', causing the 
     //          result of the main iteration to be 'First sentence|.'.  This looks 
@@ -106,10 +106,10 @@ export function jumpSentenceSingleSelection (
     //          brought back to it's initial position.  Continue forever.
     // The desired result for jump two is:
     //      '|First sentence.  Current sentence.  Last sentence.'     
-    // To do this, if jumping forward, scoot past all leading whitespace and
+    // To do this, if jumping left, scoot past all leading whitespace and
     //      punctuation characters
     let initial = startOffset;
-    if (jt === 'forward' && initial !== 0) {
+    if (jt === 'left' && initial !== 0) {
         let current = initial - 1;
         while (
             (/\s/.test(docText[current]) || punctuationStops.test(docText[current]) || fragmentStop.test(docText[current]))
@@ -119,7 +119,7 @@ export function jumpSentenceSingleSelection (
         }
         initial = current;
     }
-    else if (jt === 'backward') {
+    else if (jt === 'right') {
 
         const isEol = docText[initial] === '\n';
         let current = initial;
@@ -131,9 +131,9 @@ export function jumpSentenceSingleSelection (
         initial = current;
     }
 
-    // Ditto the above comment, but for jt === 'backward' and the problem character
+    // Ditto the above comment, but for jt === 'right' and the problem character
     //      being '"' instead of punctuation
-    if (jt === 'backward' && fragmentStop.test(docText[initial])) {
+    if (jt === 'right' && fragmentStop.test(docText[initial])) {
         if (docText[initial] === '-' && docText[initial + 1] === '-') {
             initial++;
         }
@@ -145,24 +145,24 @@ export function jumpSentenceSingleSelection (
         char: string,
         dist: number,
     } => {
-        // Scan backward for next non-space, non-punctuation character
-        let backwardChar;
-        let backwardOff = offset + 1;
-        let backwardDist = 1;
+        // Scan right for next non-space, non-punctuation character
+        let rightChar;
+        let rightOff = offset + 1;
+        let rightDist = 1;
         do {
-            backwardChar = text[backwardOff];
+            rightChar = text[rightOff];
             if ((
-                !punctuationStops.test(backwardChar) 
-                && !/\s/.test(backwardChar)
-                && !/["\-,;\*#~_()\[\]\{\}]/.test(backwardChar)
-            ) || backwardChar === undefined) {
+                !punctuationStops.test(rightChar) 
+                && !/\s/.test(rightChar)
+                && !/["\-,;\*#~_()\[\]\{\}]/.test(rightChar)
+            ) || rightChar === undefined) {
                 break;
             }
-            backwardOff++;
-            backwardDist++;
+            rightOff++;
+            rightDist++;
         }
         while (true);
-        return { char: backwardChar, dist: backwardDist };
+        return { char: rightChar, dist: rightDist };
     };
 
     let skip = false;
@@ -174,7 +174,7 @@ export function jumpSentenceSingleSelection (
 
 
     // Main iteration:
-    // Traverse the document text -- forward or backward -- until we find punctuation or a special
+    // Traverse the document text -- left or right -- until we find punctuation or a special
     //      stopping character
     // And stop at that character
     // let finalColumn: number = -1;
@@ -182,8 +182,8 @@ export function jumpSentenceSingleSelection (
     let iterOffset = initial;
     while (
         !skip && (
-        (jt === 'forward' && iterOffset !== 0) || 
-        (jt === 'backward' && iterOffset !== docText.length))
+        (jt === 'left' && iterOffset !== 0) || 
+        (jt === 'right' && iterOffset !== docText.length))
     ) {
         const iterationCharacter = docText[iterOffset];
         
@@ -261,7 +261,7 @@ export function jumpSentenceSingleSelection (
             }
 
             if (stop) {
-                if (jt === 'forward') {
+                if (jt === 'left') {
                     iterOffset++;
                 }
                 break;
@@ -274,24 +274,24 @@ export function jumpSentenceSingleSelection (
     // Now, post jump, position will look like this:
     // Initial state: 
     //     'This is the previous sentence.  This is the current| sentence.  This is the next one.'
-    // Forward jump: 
+    // Left jump: 
     //     'This is the previous sentence|.  This is the current sentence.  This is the next one.'
-    // Backward jump:
+    // Right jump:
     //     'This is the previous sentence.  This is the current sentence|.  This is the next one.'
 
     // This, while passable, is slightly miss-aligned for my taste, so we're going to re-align
     //      the sentence jumps to what one might expect
-    // New forward jump:
+    // New left jump:
     //     'This is the previous sentence.  |This is the current sentence.  This is the next one.'
-    // New backward jump:
+    // New right jump:
     //     'This is the previous sentence.  This is the current sentence.|  This is the next one.'
 
     // Final position of the cursor
     let position: vscode.Position;
 
-    // CASE: forward jump -- skip backward in the document past all punctuation and whitespace until
+    // CASE: left jump -- skip right in the document past all punctuation and whitespace until
     //      we reach the beginning of the sentence where we started
-    if (jt === 'forward') {
+    if (jt === 'left') {
         let current = iterOffset;
         while (
             /\s/.test(docText[current]) || 
@@ -302,7 +302,7 @@ export function jumpSentenceSingleSelection (
         }
         position = document.positionAt(current);
     }
-    // CASE: backward jump -- skip backward in the document past all punctuation
+    // CASE: right jump -- skip right in the document past all punctuation
     else {
         let current = iterOffset;
         while (
@@ -400,12 +400,12 @@ export function jumpParagraphSingleSelection (
         eolPosition = docText.length;
     }
     
-    // Find the jump position, depending on whether we're jumping forward or backward
+    // Find the jump position, depending on whether we're jumping left or right
     let position: vscode.Position;
 
-    if (jt === 'forward') {
+    if (jt === 'left') {
         if (start.character === 0) {
-            // If we are already at the start of a line (paragraph) and we're jumping forward
+            // If we are already at the start of a line (paragraph) and we're jumping left
             //      then jump to the preceeding non-whitespace character
             // Character before the first character in a line is always a newline
             const preceedingNewline = startOffset - 1;
@@ -429,7 +429,7 @@ export function jumpParagraphSingleSelection (
     }
     else {
         if (startOffset === eolPosition) {
-            // Ditto for all the comments above, but going backwards
+            // Ditto for all the comments above, but going rights
             const nextNewline = startOffset + 1;
             // Character before newline is the last character in a line
             let nextParagraphOffset = nextNewline + 1;
@@ -495,13 +495,13 @@ export function jumpWordSingleSelection (
     document: vscode.TextDocument,
     docText: string
 ): vscode.Selection {
-    const direction = jt === 'forward' ? -1 : 1;
+    const direction = jt === 'left' ? -1 : 1;
 
     // Get initial offset of the cursor
     const start: vscode.Position = selection.active;
     let offset = document.offsetAt(start);
-    if (jt === 'forward') {
-        // If going forward, the character we're inspecting is actually the one behind the cursor
+    if (jt === 'left') {
+        // If going left, the character we're inspecting is actually the one behind the cursor
         offset -= 1;
     }
     
@@ -551,8 +551,8 @@ export function jumpWordSingleSelection (
         }
     }
     
-    if (jt === 'forward') {
-        // Since we reached the stop character, back off one step (if going forward)
+    if (jt === 'left') {
+        // Since we reached the stop character, back off one step (if going left)
         offset -= direction;
     }
     

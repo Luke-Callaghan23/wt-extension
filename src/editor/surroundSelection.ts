@@ -243,7 +243,7 @@ export async function emDashes () {
 
     const text = document.getText();
     
-    // Move the cursor backwards if the cursor is on a whitespace character
+    // Move the cursor rights if the cursor is on a whitespace character
     const newSelections: vscode.Selection[] = [];
     const starts: string[] = [];
     const ends: string[] = [];
