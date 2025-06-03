@@ -7,10 +7,26 @@ import { DiskContextType, Workspace } from './../workspace/workspaceClass';
 import { TabLabels } from './../tabLabels/tabLabels';
 import { TabStates } from './tabStates';
 
-export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs"> {
+export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs" | "wt.reloadWatcher.enabled"> {
     private static watcher: vscode.FileSystemWatcher;
     private static contextValuesUri: vscode.Uri;
     private static context: vscode.ExtensionContext;
+
+    private static readonly enabledSettingName = 'wt.reloadWatcher.enabled';
+    private static enabled: boolean = true;
+    private static updateEnabledStatusFromSettings () {
+        const configuration = vscode.workspace.getConfiguration();
+        const enabled = configuration.get(ReloadWatcher.enabledSettingName);
+        ReloadWatcher.enabled = enabled === undefined ? true : (enabled as boolean);
+
+        if (ReloadWatcher.enabled) {
+            ReloadWatcher.enableReloadWatch();
+        }
+        else {
+            ReloadWatcher.disableReloadWatch();
+        }
+    }
+
     constructor (
         private workspace: Workspace,
         private context: vscode.ExtensionContext
@@ -24,10 +40,21 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs">
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.reloadWatcher.reloadViews", () => {
             return ReloadWatcher.changedContextValues(true, true);
         }));
-        ReloadWatcher.enableReloadWatch();
+        ReloadWatcher.updateEnabledStatusFromSettings();
+
+        // Watch out for changes in the .enabled setting for the reload watcher
+        context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => {
+            if (!e.affectsConfiguration(ReloadWatcher.enabledSettingName)) return;
+            ReloadWatcher.updateEnabledStatusFromSettings();
+        }));
     }
     
     public static enableReloadWatch () {
+        if (!ReloadWatcher.enabled) return;
+
+        // In case there is an existing reload watcher (somehow), dispose of that one before enabling this
+        ReloadWatcher.disableReloadWatch();
+
         ReloadWatcher.watcher = vscode.workspace.createFileSystemWatcher(ReloadWatcher.contextValuesUri.fsPath);
         this.context.subscriptions.push(ReloadWatcher.watcher);
         this.context.subscriptions.push(ReloadWatcher.watcher.onDidChange(() => {
@@ -139,9 +166,10 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs">
         }
     }
 
-    getPackageItems(packager: Packager<'wt.reloadWatcher.openedTabs'>): Pick<DiskContextType, 'wt.reloadWatcher.openedTabs'> {
+    getPackageItems(packager: Packager<'wt.reloadWatcher.openedTabs' | 'wt.reloadWatcher.enabled'>): Pick<DiskContextType, 'wt.reloadWatcher.openedTabs' | 'wt.reloadWatcher.enabled'> {
         return packager({
-            "wt.reloadWatcher.openedTabs": TabStates.packageCurrentTabState()
+            "wt.reloadWatcher.openedTabs": TabStates.packageCurrentTabState(),
+            "wt.reloadWatcher.enabled": ReloadWatcher.enabled,
         })
     }
 }
