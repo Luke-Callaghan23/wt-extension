@@ -28,13 +28,20 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs">
     }
     
     public static enableReloadWatch () {
-        this.context.subscriptions.push(
-            ReloadWatcher.watcher = vscode.workspace.createFileSystemWatcher(ReloadWatcher.contextValuesUri.fsPath)
-        );
+        ReloadWatcher.watcher = vscode.workspace.createFileSystemWatcher(ReloadWatcher.contextValuesUri.fsPath);
+        this.context.subscriptions.push(ReloadWatcher.watcher);
         this.context.subscriptions.push(ReloadWatcher.watcher.onDidChange(() => {
             ReloadWatcher.changedContextValues();
         }));
         console.log('enabled reload watching');
+    }
+
+    public static disableReloadWatch () {
+        try {
+            ReloadWatcher.watcher.dispose();
+            console.log('disabled reload watching');
+        }
+        catch (err: any) {}
     }
 
 

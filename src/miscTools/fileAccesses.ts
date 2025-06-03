@@ -98,7 +98,7 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
                     FileAccessManager.documentOpened(editor.document.uri);
                 }
                 FileAccessManager.savePosition(editor);
-                if (Date.now() - FileAccessManager.lastContextUpdate > 1000) {
+                if (Date.now() - FileAccessManager.lastContextUpdate > 10 * 1000) {
                     Workspace.packageContextItems();
                     FileAccessManager.lastContextUpdate = Date.now();
                 }

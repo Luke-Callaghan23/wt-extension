@@ -153,15 +153,24 @@ export class Workspace {
     static async packageContextItems (useDefaultFS: boolean = false) {
         const contextUri = extension.ExtensionGlobals.workspace.contextValuesFilePath;
 
+        // 
         const contextFileStat = await statFile(contextUri);
         if (!contextFileStat || Workspace.lastWriteTimestamp === null || contextFileStat.mtime > Workspace.lastWriteTimestamp) {
             return;
         }
+
+        // If the last write was less than 20 seconds ago, don't bother writing again
+        const twentySecondsAgo = Date.now() - (20 * 1000);
+        if (this.lastWriteTimestamp && this.lastWriteTimestamp >= twentySecondsAgo) {
+            return;
+        }
+
         const saveCache = SynonymsProvider.writeCacheToDisk(useDefaultFS);
         // Write context items to the file system before git save
         const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
-        
+
+        ReloadWatcher.disableReloadWatch();
         if (!useDefaultFS) {
             await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
         }
@@ -169,7 +178,11 @@ export class Workspace {
             fs.writeFileSync(contextUri.fsPath, contextJSON);
         }
 
-        this.lastWriteTimestamp = Date.now();
+        setTimeout(() => {
+            ReloadWatcher.enableReloadWatch();
+            this.lastWriteTimestamp = Date.now();
+        }, 1000);
+
         return saveCache;
     }
 
