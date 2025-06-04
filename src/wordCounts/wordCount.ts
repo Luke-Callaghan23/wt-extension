@@ -13,37 +13,38 @@ export class WordCount {
         this.wordCountStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 10000);
         this.wordCountStatus.command = 'wt.wordCount.showWordCountRules';
 
-        this.context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc: vscode.TextDocument) => this.updateWordCountStatusBar(vscode.window.activeTextEditor!, doc)));
+        const updateWordCountHook = (document: vscode.TextDocument) => {
+            const editor = vscode.window.activeTextEditor;
+            if (editor && editor.document.uri.fsPath !== document.uri.fsPath) {
+                return;
+            }
+            this.updateWordCountStatusBar(document);
+        }
+
+        this.context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(updateWordCountHook));
+        this.context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(updateWordCountHook));
+        this.context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection(e => updateWordCountHook(e.textEditor.document)));
         this.context.subscriptions.push(this.wordCountStatus);
         
         // Set the initial value for the word count
         const currentDoc = vscode.window.activeTextEditor?.document;
         if (currentDoc) {
-            this.updateWordCountStatusBar(vscode.window.activeTextEditor!, currentDoc);
+            this.updateWordCountStatusBar(currentDoc);
         }
         this.registerCommands();
     }
 
     public static nonAlphanumeric = /[^a-zA-Z0-9]+/g;
-    private updateWordCountStatusBar (editor: vscode.TextEditor, document: vscode.TextDocument) {
-        // Only update if the saved document was the same document in the active editor
-        // I *think* this is always true, but who cares -- this extension is already inefficient as
-        //      hell anyways
-        const activeDoc = vscode.window.activeTextEditor?.document;
-        if (!activeDoc || activeDoc.uri.toString() !== document.uri.toString()) {
-            return;
-        }
-
+    private updateWordCountStatusBar (document: vscode.TextDocument) {
         const fullText = document.getText();
+
+        const editor = vscode.window.activeTextEditor;
 
         // Condition for selected text -- do the same word split as below, exclusively on the 
         //      selected text area
         let selectedCount: number | undefined = undefined;
-        if (!editor.selection.isEmpty) {
-            const selectedWords = fullText.substring(
-                document.offsetAt(editor.selection.start), 
-                document.offsetAt(editor.selection.end)
-            );
+        if (editor && !editor.selection.isEmpty) {
+            const selectedWords = document.getText(editor.selection)
             selectedCount = this.countWordsInText(selectedWords);
         }
 
