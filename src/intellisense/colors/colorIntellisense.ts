@@ -87,6 +87,10 @@ export class ColorIntellisense implements Timed {
         editor.setDecorations(ColorIntellisense.ColorMarker, decorations);
     }
 
+    getUpdatesAreVisible(): boolean {
+        return true;
+    }
+
     // 
     async disable? (): Promise<void> {
         for (const editor of vscode.window.visibleTextEditors) {

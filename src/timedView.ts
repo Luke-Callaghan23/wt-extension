@@ -4,6 +4,7 @@ import * as console from './miscTools/vsconsole';
 
 export interface Timed {
     enabled: boolean;
+    getUpdatesAreVisible(): boolean;
     update(editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void>;
     disable?(): Promise<void>;
 }
@@ -103,6 +104,7 @@ export class TimedView implements Packageable<any> {
             console.log(`UPDATE: ${id} (${timed.enabled ? 'enabled' : 'disabled'})`);
             // If the view's timer function is not enabled, then skip
             if (!timed.enabled) return;
+            if (!timed.getUpdatesAreVisible()) return;
             timed.update(editor, uncommentedRanges);
         })
     }

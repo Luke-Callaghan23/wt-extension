@@ -317,6 +317,10 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
         this.context.subscriptions.push(this.diagnosticCollection);
     }
 
+    getUpdatesAreVisible(): boolean {
+        return true;
+    }
+
     // recieve 
 
     provideCodeActions(

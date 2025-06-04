@@ -559,5 +559,9 @@ Or to always use '${newName}' exactly as you entered it?
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
         return matchedNote.range;
-    }    
+    }
+
+    getUpdatesAreVisible(): boolean {
+        return this.view.visible;
+    }
 }

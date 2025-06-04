@@ -37,9 +37,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
     public unwatchedWords: string[];
 
     public wordColors: { [index: string]: ColorEntry };
-
-
     public allDecorationTypes: vscode.TextEditorDecorationType[];
+
+    private view: vscode.TreeView<WordEnrty>;
 
     
     // Refresh the word tree
@@ -115,10 +115,15 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             this.allDecorationTypes.push(decoratorType);
         });
 
-		context.subscriptions.push(vscode.window.createTreeView('wt.wordWatcher', { treeDataProvider: this }));
+        this.view = vscode.window.createTreeView('wt.wordWatcher', { treeDataProvider: this });
+		context.subscriptions.push(this.view);
         context.subscriptions.push(defaultWatchedWordDecoration);
         this.registerCommands();
 	}
+
+    getUpdatesAreVisible(): boolean {
+        return this.view.visible;
+    }
 
     registerCommands () {
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.addWord({ watched: true })));

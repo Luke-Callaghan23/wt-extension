@@ -97,6 +97,10 @@ export class VeryIntellisense implements Timed {
         editor.setDecorations(VeryIntellisense.VeryMarker, decorations);
     }
 
+    getUpdatesAreVisible(): boolean {
+        return true;
+    }
+
     // 
     async disable? (): Promise<void> {
         for (const editor of vscode.window.visibleTextEditors) {

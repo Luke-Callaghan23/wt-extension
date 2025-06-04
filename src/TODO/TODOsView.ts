@@ -161,6 +161,10 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 		this.context.subscriptions.push(this._onDidChangeFile);
 		ExtensionGlobals.todoView = this;
 	}
+	
+	getUpdatesAreVisible(): boolean {
+		return this.view.visible;
+	}
 
 	async init (): Promise<void> {
 		await this._init();

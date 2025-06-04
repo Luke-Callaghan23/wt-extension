@@ -25,6 +25,11 @@ export class TextStyles implements Timed {
         this.context.subscriptions.push(underlineDecoration);
         this.context.subscriptions.push(strikethroughDecoration);
 	}
+
+    getUpdatesAreVisible(): boolean {
+        return true;
+    }
+
     registerCommands () {
 
 	}

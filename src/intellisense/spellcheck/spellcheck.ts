@@ -116,6 +116,11 @@ export class Spellcheck implements Timed {
         editor.setDecorations(Spellcheck.RedUnderline, decorations);
     }
 
+    getUpdatesAreVisible(): boolean {
+        return true;
+    }
+
+
     // 
     async disable? (): Promise<void> {
         // Simply clear all four of the proximity decorators

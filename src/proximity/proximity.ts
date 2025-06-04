@@ -335,6 +335,9 @@ export class Proximity implements Timed, Packageable<any> {
 
         this.registerCommands();
     }
+    getUpdatesAreVisible(): boolean {
+        return true;
+    }
 
     registerCommands() {
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.proximity.addFilteredWord', () => this.addPattern()));

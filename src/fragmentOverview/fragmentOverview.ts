@@ -123,6 +123,10 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
         });
     }
 
+    getUpdatesAreVisible(): boolean {
+        return this.view.visible;
+    }
+
     private _onDidChangeTreeData: vscode.EventEmitter<FragmentOverviewNode[] | undefined> = new vscode.EventEmitter<FragmentOverviewNode[] | undefined>();
     readonly onDidChangeTreeData: vscode.Event<FragmentOverviewNode[] | undefined> = this._onDidChangeTreeData.event;
     async refresh(): Promise<void> {
