@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
-import { defaultProgress, prompt, statFile } from '../miscTools/help';
+import { statFile } from '../miscTools/help';
 import * as vsconsole from '../miscTools/vsconsole';
 import * as extension from '../extension';
 import { Config, loadWorkspaceContext, PositionInfo, SavedTabState, TabPositions } from './workspace';
@@ -10,7 +10,6 @@ import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynony
 import * as fs from 'fs';
 import { Autocorrect } from '../autocorrect/autocorrect';
 import { SearchBarView } from '../search/searchBarView';
-import { FragmentLinker } from '../miscTools/fragmentLinker';
 
 export type DiskContextType = {
     "wt.outline.collapseState": {

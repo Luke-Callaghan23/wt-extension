@@ -1,16 +1,14 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
-import { prompt, statFile } from '../miscTools/help';
+import { statFile } from '../miscTools/help';
 import * as vsconsole from '../miscTools/vsconsole';
 import * as extension from '../extension';
 import { Config, loadWorkspaceContext, PositionInfo, SavedTabState, TabPositions } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
-import { setLastCommit } from '../gitTransactions';
 import { ReloadWatcher } from '../miscTools/reloadWatcher';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 import { Autocorrect } from '../autocorrect/autocorrect';
 import { SearchBarView } from '../search/searchBarView';
-
 
 export type DiskContextType = {
     "wt.outline.collapseState": {
@@ -48,6 +46,7 @@ export type DiskContextType = {
         }
     },
     "wt.wh.synonyms": string[],
+    "wt.reloadWatcher.enabled": boolean,
     "wt.reloadWatcher.openedTabs": TabPositions,
     "wt.tabStates.savedTabStates": SavedTabState,
     "wt.tabStates.latestTabState": string,
@@ -149,15 +148,31 @@ export class Workspace {
     static async packageContextItems (useDefaultFS: boolean = false) {
         const contextUri = extension.ExtensionGlobals.workspace.contextValuesFilePath;
 
+        // 
         const contextFileStat = await statFile(contextUri);
         if (!contextFileStat || Workspace.lastWriteTimestamp === null || contextFileStat.mtime > Workspace.lastWriteTimestamp) {
             return;
         }
+
+        // If the last write was less than 20 seconds ago, don't bother writing again
+        const twentySecondsAgo = Date.now() - (20 * 1000);
+        if (this.lastWriteTimestamp && this.lastWriteTimestamp >= twentySecondsAgo) {
+            return;
+        }
+
         const saveCache = SynonymsProvider.writeCacheToDisk(false);
         // Write context items to the file system before git save
         const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
+
+        ReloadWatcher.disableReloadWatch();
         await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+
+        setTimeout(() => {
+            ReloadWatcher.enableReloadWatch();
+            this.lastWriteTimestamp = Date.now();
+        }, 1000);
+
         return saveCache;
     }
 
