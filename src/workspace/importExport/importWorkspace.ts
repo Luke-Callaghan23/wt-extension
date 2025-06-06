@@ -8,6 +8,7 @@ import { getUsableFileName } from '../../outline/impl/createNodes';
 import { ConfigFileInfo } from '../../miscTools/help';
 import * as extension from './../../extension';
 import { Buff } from '../../Buffer/bufferSource'
+import { SerializedNote } from '../../notebook/notebookApi/notebookSerializer';
 
 async function initializeFragments (
     fragments: FragmentRecord, 
@@ -138,6 +139,16 @@ async function initializeContextItems (context: vscode.ExtensionContext, package
 }
 
 
+function initializeNotebook(notebook: SerializedNote[], notebookContainer: vscode.Uri) {
+    return Promise.all(notebook.map(note => {
+        const uri = vscode.Uri.joinPath(notebookContainer, `${note.noteId}.wtnote`);
+        return vscode.workspace.fs.writeFile(
+            uri,
+            Buff.from(JSON.stringify(note)),
+        );
+    }))
+}
+
 
 // Function for importing a workspace from an .iwe file
 export async function importWorkspace (
@@ -175,21 +186,33 @@ export async function importWorkspace (
     const dotConfigUri = workspace.dotWtconfigPath;
     await vscode.workspace.fs.writeFile(dotConfigUri, Buff.from(dotWtconfigJSON, 'utf-8'));
 
-    progress.report({ message: "Created workspace configuration files", increment: 25 * workDivision });
+    const inc = 100 / 6;
+
+    progress.report({ message: "Created workspace configuration files", increment: inc * workDivision });
 
     // Create all chapters
     const chapterContainer = workspace.chaptersFolder;
     await initializeChapters(iweRecord.chapters, chapterContainer);
-    progress.report({ message: "Wrote chapter files", increment: 25 * workDivision });
+    progress.report({ message: "Wrote chapter files", increment: inc * workDivision });
 
     // Create all work snips
     const workSnipsContainer = workspace.workSnipsFolder;
     await initializeSnips(iweRecord.snips, workSnipsContainer);
-    progress.report({ message: "Wrote snip files", increment: 25 * workDivision });
+    progress.report({ message: "Wrote snip files", increment: inc * workDivision });
+
+    // Create all scratch pad files
+    const scratchPadContainer = workspace.scratchPadFolder;
+    await initializeFragments(iweRecord.scratchPad, scratchPadContainer);
+    progress.report({ message: "Wrote scratch pad", increment: inc * workDivision });
+
+    // Create all notebook documents
+    const notebookContainer = workspace.notebookFolder;
+    await initializeNotebook(iweRecord.notebook, notebookContainer);
+    progress.report({ message: "Wrote notebook", increment: inc * workDivision });
 
     // Insert packageable workspace items into the current workspace context
     await initializeContextItems(context, iweRecord.packageableItems);
-    progress.report({ message: "Copied extension configuration values", increment: 25 * workDivision });
+    progress.report({ message: "Copied extension configuration values", increment: inc * workDivision });
 
     context.workspaceState.update('wt.todo.enabled', iweRecord.packageableItems['wt.todo.enabled']);
     context.workspaceState.update('wt.wordWatcher.enabled', iweRecord.packageableItems['wt.wordWatcher.enabled']);

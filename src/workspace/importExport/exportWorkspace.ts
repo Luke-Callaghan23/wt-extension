@@ -16,8 +16,6 @@ type FragmentsExportPromise = {
 async function recordSnipData (node: SnipNode): Promise<SnipsExport> {
     const sortedContent = node.contents.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
 
-
-
     const outputPromises: (FragmentsExportPromise | Thenable<SnipsExport>)[] = [];
     for (const content of sortedContent) {
         if (content.data.ids.type === 'snip') {
@@ -33,7 +31,6 @@ async function recordSnipData (node: SnipNode): Promise<SnipsExport> {
             outputPromises.push(out);
         }
     }
-
 
     // Await all of the promises created above
     const output: (FragmentsExport | SnipsExport)[] = await Promise.all<FragmentsExport | SnipsExport>(outputPromises.map(op => {
@@ -62,9 +59,8 @@ async function recordSnipData (node: SnipNode): Promise<SnipsExport> {
     }
 }
 
-async function recordChapterFragmentContainer (node: ChapterNode): Promise<FragmentRecord> {
+async function recordFragmentContainer (fragments: OutlineNode[]): Promise<FragmentRecord> {
     // Read and sort fragment data from container
-    const fragments = node.textData;
     fragments.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
 
     // Read all the fragments from dist
@@ -102,7 +98,7 @@ async function recordChaptersContainer (container: ContainerNode): Promise<Chapt
     const chaptersRecord: ChaptersRecord = [];
     for (const content of container.contents) {
         const chapterNode = content.data as ChapterNode;
-        const fragementsRecord = await recordChapterFragmentContainer(chapterNode);
+        const fragementsRecord = await recordFragmentContainer(chapterNode.textData);
         const snipsRecord = await recordSnipsContainer(chapterNode.snips.data as ContainerNode);
         chaptersRecord.push({
             title: chapterNode.ids.display,
@@ -168,6 +164,9 @@ export async function handleWorkspaceExport (
     // Record the chapters and snips containers
     const chaptersRecord: ChaptersRecord = await recordChaptersContainer(chaptersContainer);
     const snipsRecord: SnipsRecord = await recordSnipsContainer(snipsContainer);
+    const scratchPadRecord: FragmentRecord = await recordFragmentContainer(extension.ExtensionGlobals.scratchPadView.rootNodes);
+    const serializedNotebook = await extension.ExtensionGlobals.notebookSerializer.readSerializedNotebookPanel(workspace.notebookFolder);
+    
 
     // Get the packageable items to be transported in the workspace
     const packageableItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
@@ -177,6 +176,8 @@ export async function handleWorkspaceExport (
         config: workspace.config,
         chapters: chaptersRecord,
         snips: snipsRecord,
+        scratchPad: scratchPadRecord,
+        notebook: serializedNotebook,
         packageableItems: packageableItems
     };
 

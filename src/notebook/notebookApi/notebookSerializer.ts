@@ -281,7 +281,13 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
     // Read notebook folder from disk and return an array of Notes that can be used by NotebookPanel
     async deserializeNotebookPanel (notebookFolder: vscode.Uri): Promise<NotebookPanelNote[]> {
-        const readPromises: PromiseLike<NotebookPanelNote>[] = [];
+        return this.readSerializedNotebookPanel(notebookFolder).then(serialized => {
+            return Promise.all(serialized.map(ser => this.deserializeNote(ser)))
+        });
+    }
+
+    async readSerializedNotebookPanel (notebookFolder: vscode.Uri): Promise<SerializedNote[]> {
+        const readPromises: PromiseLike<SerializedNote>[] = [];
         for (const [ fileName, type ] of await vscode.workspace.fs.readDirectory(notebookFolder)) {
             if (type !== vscode.FileType.File) {
                 continue;
@@ -292,7 +298,6 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             readPromises.push(
                 vscode.workspace.fs.readFile(uri)               // read content
                 .then(this.readSerializedNote.bind(this))       // JSON parse to SerializedNote
-                .then(this.deserializeNote.bind(this))          // convert SerializedNote to NotebookPanelNote
             );
         }
         return Promise.all(readPromises);

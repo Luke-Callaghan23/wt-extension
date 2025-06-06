@@ -1,9 +1,12 @@
+import { SerializedNote } from "../../notebook/notebookApi/notebookSerializer";
 import { Config } from "../workspace";
 
 export type WorkspaceExport = {
     config: Config,
     chapters: ChaptersRecord,
     snips: SnipsRecord,
+    scratchPad: FragmentRecord
+    notebook: SerializedNote[],
     packageableItems: { [index: string]: any }
 };
 
