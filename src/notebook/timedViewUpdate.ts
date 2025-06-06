@@ -62,6 +62,14 @@ export function *getNoteMatchesInText (this: NotebookPanel, text: string): Gener
         if (match.groups && matchedNote) {
             start = match.index + match[0].indexOf(match.groups[matchedNote.noteId]);
             end = start + match.groups[matchedNote.noteId].length;
+
+            // Since all the aliases and titles are bookended with word separators, two consecutive notebook
+            //      terms will be unable to match as `lastIndex` will now be pointing at the index of the 
+            //      word separator character of the first matched term
+            // We need to make it so the second word separator of the first term can also behave as the first
+            //      word separator of the second term
+            // Move the `lastIndex` back one so we are now pointing at the last character of the first match
+            this.titlesAndAliasesRegex.lastIndex -= 1;
         }
         else {
             start = match.index;
@@ -69,6 +77,7 @@ export function *getNoteMatchesInText (this: NotebookPanel, text: string): Gener
             end = match.index + len;
     
             if (match.index + len !== text.length && text[match.index + len] !== '\n' && text[match.index + len] !== '\r') {
+                this.titlesAndAliasesRegex.lastIndex -= 1;
                 end -= 1;
             }
             else {
