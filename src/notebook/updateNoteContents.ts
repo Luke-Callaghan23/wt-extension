@@ -30,6 +30,7 @@ export async function addNote (this: NotebookPanel, resource: NotebookPanelNote 
         noteId: noteId,
         uri: notePath,
         aliases: [],
+        deletedInstructions: false,
         sections: [{
             kind: 'section',
             noteId: noteId,

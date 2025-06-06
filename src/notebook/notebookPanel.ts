@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
-import { Timed } from '../timedView';
+import { Timed, TimedView } from '../timedView';
 import { disable, update, notebookDecorations, getNoteMatchesInText } from './timedViewUpdate';
 import { v4 as uuidv4 } from 'uuid';
 import { editNote,  addNote, removeNote } from './updateNoteContents';
@@ -21,6 +21,7 @@ export interface NotebookPanelNote {
     title: string;
     aliases: string[];
     sections: NoteSection[];
+    deletedInstructions: boolean;
     uri: vscode.Uri;
 }
 
@@ -212,7 +213,9 @@ implements
 
             const note = this.notebook.find(note => note.noteId === noteId);
             if (note === undefined) return;
-            this.serializer.writeSingleNote(note);
+            await this.serializer.writeSingleNote(note);
+            await this.refresh(true);
+            return vscode.commands.executeCommand('wt.timedViews.update');
         }
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", (resource: NotebookPanelNote | string | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) }));
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.removeNote", (resource: NotebookPanelNote) => { doTheThingAndWrite(() => this.removeNote(resource)) }));

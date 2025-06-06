@@ -258,6 +258,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             kind: "note",
             noteId: serializedNote.noteId,
             title: serializedNote.title.text,
+            deletedInstructions: serializedNote.deletedInstructions,
             aliases: serializedAliasHeader?.cells 
                 ? serializedAliasHeader.cells.map(cell => {
                     return cell.text
@@ -335,7 +336,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 text: note.title,
                 editing: false
             },
-            deletedInstructions: false,
+            deletedInstructions: note.deletedInstructions,
             headers: [
                 // Alias is being set to 0th section in the serialized cell... might not be true
                 //      for what is on disk right now
@@ -354,6 +355,9 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 // Insert the remaining headers in the order they are on disk.
                 // Should be more or less accurate to disk contents
                 ...note.sections.map((section, sectionIndex) => {
+                    if (section.header.toLocaleLowerCase() === 'alias' || section.header.toLocaleLowerCase() === 'aliases') {
+                        return [];
+                    }
                     return {
                         cells: section.bullets.map(b => {
                             return {
@@ -364,7 +368,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                         headerOrder: sectionIndex + 1,
                         headerText: section.header
                     }
-                })
+                }).flat()
             ]
         }
     }
