@@ -6,7 +6,7 @@ import { Buff } from '../../Buffer/bufferSource';
 import { wtToMd } from '../../miscTools/wtToMd';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { capitalize } from '../../miscTools/help';
-import { _, formatFsPathForCompare, getRelativePath, statFile, vagueNodeSearch, } from '../../miscTools/help';
+import { __, formatFsPathForCompare, getRelativePath, statFile, vagueNodeSearch, } from '../../miscTools/help';
 import { TextMatchForNote } from '../timedViewUpdate';
 import { WTNotebookController } from './notebookController';
 import { markdownFormattedFragmentLinkRegex } from '../../miscTools/fragmentLinker';
@@ -495,7 +495,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 kind: vscode.NotebookCellKind.Code,
                 languageId: 'wtnote',
                 value: serializedCell.text,
-                metadata: _<NotebookCellMetadata>({
+                metadata: __<NotebookCellMetadata>({
                     kind: 'input',
                     markdown: false,
                     originalText: serializedCell.text
@@ -509,7 +509,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 kind: vscode.NotebookCellKind.Markup,
                 languageId: 'markdown',
                 value: await this.createMarkdownStringFromCellText(serializedCell.text, noteId),
-                metadata: _<NotebookCellMetadata>({
+                metadata: __<NotebookCellMetadata>({
                     kind: 'input',
                     markdown: true,
                     originalText: serializedCell.text,
@@ -528,7 +528,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 kind: vscode.NotebookCellKind.Code,
                 value: "",
                 languageId: 'wtnote',
-                metadata: _<NotebookCellMetadata>({
+                metadata: __<NotebookCellMetadata>({
                     kind: 'input',
                     markdown: false,
                     originalText: "",
@@ -558,7 +558,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             kind: vscode.NotebookCellKind.Markup,
             languageId: 'markdown',
             value: `# ${wtToMd(serializedNote.title.text)}:`,
-            metadata: _<NotebookCellMetadata>({ 
+            metadata: __<NotebookCellMetadata>({ 
                 kind: 'header-title',
                 originalText: serializedNote.title.text
             })
@@ -566,11 +566,11 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
         const notebookData = new vscode.NotebookData([
 
-            !serializedNote.deletedInstructions ? _<vscode.NotebookCellData>({
+            !serializedNote.deletedInstructions ? __<vscode.NotebookCellData>({
                 kind: vscode.NotebookCellKind.Code,
                 value: ``,
                 languageId: 'html',
-                metadata: _<NotebookCellMetadata>({ kind: 'instructions' }),
+                metadata: __<NotebookCellMetadata>({ kind: 'instructions' }),
                 outputs: [ new vscode.NotebookCellOutput([
                     vscode.NotebookCellOutputItem.text(`
                     <body>
@@ -617,7 +617,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 kind: vscode.NotebookCellKind.Markup,
                 languageId: 'markdown',
                 value: `### ${capitalize(header.headerText)}:`,
-                metadata: _<NotebookCellMetadata>({
+                metadata: __<NotebookCellMetadata>({
                     kind: 'header',
                     originalText: header.headerText,
                 }),
@@ -630,7 +630,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         }
 
         // Only metadata needed for the main notebook is the id
-        notebookData.metadata = _<NotebookMetadata>({
+        notebookData.metadata = __<NotebookMetadata>({
             noteId: serializedNote.noteId,
         });
         // Whenever a notebook is opened, set the tab name

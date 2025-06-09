@@ -2333,7 +2333,7 @@
 		"webpack-cli": "^5.0.0"
 	},
 	"dependencies": {
-		"@bendera/vscode-webview-elements": "^0.8.1",
+		"@vscode-elements/elements": "^1.16.1",
 		"@types/markdown-it": "^12.2.3",
 		"@vscode/codicons": "^0.0.32",
 		"buffer": "^6.0.3",

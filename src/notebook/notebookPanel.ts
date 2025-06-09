@@ -8,7 +8,7 @@ import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { _, compareFsPath, defaultProgress, formatFsPathForCompare, getFullJSONStringFromLocation, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
+import { __, compareFsPath, defaultProgress, formatFsPathForCompare, getFullJSONStringFromLocation, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
@@ -229,7 +229,7 @@ implements
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.addAliasToNote', async (alias: string) => {
             type NoteSelect = vscode.QuickPickItem & { note: NotebookPanelNote }
 
-            const noteSelect = await vscode.window.showQuickPick<NoteSelect>(this.notebook.map(notebookNote => _<NoteSelect>({
+            const noteSelect = await vscode.window.showQuickPick<NoteSelect>(this.notebook.map(notebookNote => __<NoteSelect>({
                 label: notebookNote.title,
                 description: `(${notebookNote.aliases.join(", ")})`,
                 alwaysShow: true,

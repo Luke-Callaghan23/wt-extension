@@ -7,7 +7,7 @@ import { capitalize } from '../../miscTools/help';
 import { SynonymError, SynonymSearchResult, Synonyms, SynonymsProvider } from '../synonymsProvider/provideSynonyms';
 import { ExtensionGlobals } from '../../extension';
 import { TextMatchForNote } from '../../notebook/timedViewUpdate';
-import { _ } from './../../miscTools/help';
+import { __ } from './../../miscTools/help';
 
 const NUMBER_COMPLETES = 20;
 
@@ -123,7 +123,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 const filt = document.getText(noteMatch.range);
 
                 const finalOptions = allOptions.filter(opt => opt.toLocaleLowerCase() !== wordText.toLocaleLowerCase());
-                return finalOptions.map(option => _<vscode.CompletionItem>({
+                return finalOptions.map(option => __<vscode.CompletionItem>({
                     label: option,
                     detail: `Alias of '${noteMatch.note.title}'`,
                     documentation: new vscode.MarkdownString(ExtensionGlobals.notebookPanel.getMarkdownForNote(noteMatch.note)),
@@ -529,7 +529,7 @@ const getMisspellCorrections = (res: SynonymError, hoverRange: vscode.Range, wor
         preselect: true,
     };
 
-    const createNotebookNote = _<vscode.CompletionItem>({
+    const createNotebookNote = __<vscode.CompletionItem>({
         label: `Create new notebook note for '${capitalize(wordText)}'`,
         range: hoverRange,
         command: <vscode.Command> {
@@ -540,7 +540,7 @@ const getMisspellCorrections = (res: SynonymError, hoverRange: vscode.Range, wor
         sortText: "0000!",
     });
 
-    const addToNotebookNote = _<vscode.CompletionItem>({
+    const addToNotebookNote = __<vscode.CompletionItem>({
         label: `Add '${capitalize(wordText)}' as new alias for existing note`,
         range: hoverRange,
         command: <vscode.Command> {

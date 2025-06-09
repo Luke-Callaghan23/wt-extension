@@ -1,16 +1,15 @@
 /* eslint-disable curly */
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
-import { ConfigFileInfo, getSectionedProgressReporter } from '../miscTools/help';
+import { __, compareFsPath, ConfigFileInfo, getSectionedProgressReporter } from '../miscTools/help';
 import { getUsableFileName, newSnip } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
-import { ImportForm } from './importFormView';
-import { OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
+import { ImportForm, Li } from './importFormView';
+import { ChapterNode, OutlineNode, RootNode, ContainerNode } from '../outline/nodes_impl/outlineNode';
 import * as mammoth from 'mammoth';
 import { v4 as uuid } from 'uuid';
 import * as TurndownService from 'turndown';
-import {  } from 'turndown';
 
 const libreofficeConvert = require('libreoffice-convert');
 const util = require('util');
@@ -653,10 +652,15 @@ function postProcessSplits (splits: DocSplit): DocSplit {
     return splits;
 }
 
-async function importDoc (doc: DocInfo, fileRelativePath: string, workSnipAdditionalPath: string) {
+
+async function createDocumentSplits (
+    doc: DocInfo, 
+    fileRelativePath: string, 
+    workSnipAdditionalPath: string
+): Promise<[ DocSplit, WriteInfo ] | null> {
     if (doc.skip) {
         vscode.window.showWarningMessage(`Skipping '${fileRelativePath}' . . . `);
-        return;
+        return null;
     }
 
     // Get the information needed for splitting this document
@@ -674,7 +678,7 @@ async function importDoc (doc: DocInfo, fileRelativePath: string, workSnipAdditi
     }
     // Read and split the document
     const docSplit = await splitFunc(splitInfo, fileRelativePath);
-    if (!docSplit) return;
+    if (!docSplit) return null;
 
     const splits: DocSplit = postProcessSplits(docSplit);
 
@@ -684,11 +688,20 @@ async function importDoc (doc: DocInfo, fileRelativePath: string, workSnipAdditi
         writeInfo.output.outputSnipPath += workSnipAdditionalPath;
     }
 
+    return [ splits, writeInfo ]
+}
+
+async function importDoc (doc: DocInfo, fileRelativePath: string, workSnipAdditionalPath: string) {
+    const splitResult = await createDocumentSplits(doc, fileRelativePath, workSnipAdditionalPath);
+    if (splitResult === null) return;
+    
+    const [ splits, writeInfo ] = splitResult;
+
     // Finally, write the document to the file system
     await writeDocumentSplits(splits, writeInfo);
 }
 
-export async function handleImport (this: ImportForm, docInfo: ImportDocumentInfo) {
+export async function handleImport (docInfo: ImportDocumentInfo) {
     
     const docNames = Object.getOwnPropertyNames(docInfo);
     const docLastModified: { 
@@ -759,5 +772,193 @@ export async function handleImport (this: ImportForm, docInfo: ImportDocumentInf
     
         // Do the expensive full refresh
         vscode.commands.executeCommand('wt.outline.refresh');
+    });
+}
+
+
+export async function handlePreview (docName: string, singleDoc: DocInfo): Promise<Li | null> {
+    return vscode.window.withProgress<Li | null>({
+        location: vscode.ProgressLocation.Notification,
+        title: ""
+    }, async (progress: vscode.Progress<{ message?: string; increment?: number }>): Promise<Li | null> => {
+
+        progress.report({ message: "Preparing import" });
+    
+        const workSnipsParentName =  `Imported ${getSnipDateString()}`;
+        const workSnipAdditionalPathName = getUsableFileName('snip');
+    
+        let splits: DocSplit;
+        let writeInfo: WriteInfo;
+
+        // Process imports for each imported file
+        const doc = singleDoc;
+        progress.report({ message: `Processing '${docName}'` });
+        try {
+            let workSnipAdditionalPath = '';
+            if (doc.outputType === 'snip' && !doc.outputIntoChapter) {
+                workSnipAdditionalPath += workSnipAdditionalPathName;
+            }
+            const docSplits = await createDocumentSplits(doc, docName, workSnipAdditionalPath);
+            if (docSplits === null) return null;
+
+            splits = docSplits[0];
+            writeInfo = docSplits[1];
+        }
+        catch (e) {
+            vscode.window.showErrorMessage(`Error occurred when importing '${docName}': ${e}`);
+            return null;
+        }
+
+
+        const liFragment = (title: string, text: string): Li => ({
+            name: `(fragment) ${title}`,
+            children: [{
+                name: text,
+                children: []
+            }]
+        });
+
+        const docSplits = splits;
+        if (writeInfo.type === 'chapter') {
+            const chapterInfo = writeInfo;
+
+
+            const transcribeChapter = (singleOrNoneSplit: NoSplit | SingleSplit): Li[] => {
+                if (singleOrNoneSplit.type === 'none') {
+                    return [ liFragment(`Imported Fragment`, singleOrNoneSplit.data) ];
+                }
+                else if (singleOrNoneSplit.type === 'single') {
+                    // Create all snips and store their config data inside of the dotConfig created above
+                    return singleOrNoneSplit.data.map((split, index) => {
+                        const { title, data: content } = split;
+                        return liFragment(title || `Imported Fragment (${index+1})`, content);
+                    });
+                }
+                else throw 'Unreachable';
+            };
+
+            let chapters: Li[];
+            if (docSplits.type === 'multi') {
+                chapters = docSplits.data.map(({ title: chapterName, data }, index) => {
+                    const chapterNameFinal = chapterName && chapterName.length !== 0
+                        ? chapterName
+                        : `${chapterInfo.outputChapterName} ${index}`;
+
+                    const chapterContent = transcribeChapter({
+                        type: 'single',
+                        data: data,
+                    });
+
+                    return {
+                        name: `(chapter) ${chapterNameFinal}`,
+                        children: chapterContent
+                    };
+                });
+            }
+            else {
+                const chapterNumber = ((extension.ExtensionGlobals.outlineView.rootNodes[0].data as RootNode).chapters.data as ContainerNode).contents.length;
+                const chapterName = `(chapter) New Chapter (${chapterNumber})`;
+                chapters = [{
+                    name: chapterName,
+                    children: transcribeChapter(docSplits)
+                }]
+            }
+
+            return __<Li>({ 
+                name: `${extension.ExtensionGlobals.workspace.config.title}/Chapters`,
+                children: chapters
+            });
+        }
+        else {
+            const snipInfo = writeInfo;
+            const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+
+            const findParentName = async (parentNode: OutlineNode): Promise<string> => {
+                if (compareFsPath(parentNode.data.ids.uri, outlineView.rootNodes[0].data.ids.uri)) {
+                    return extension.ExtensionGlobals.workspace.config.title;
+                }
+                return (await findParentName(await outlineView.getTreeElementByUri(parentNode.data.ids.parentUri) || outlineView.rootNodes[0])) + "/" + parentNode.data.ids.display;
+            }
+    
+            // Get the parent node where the new snip(s) should be inserted
+            let parentNodeDisplayName: string = `${extension.ExtensionGlobals.workspace.config.title}/Work Snips/Imported Snips`;
+            const output = snipInfo.output;
+            if (output.dest === 'snip') {
+                if (output.outputSnipPath.endsWith(workSnipAdditionalPathName)) {
+                    const snipUri = vscode.Uri.joinPath(extension.rootPath, output.outputSnipPath.replace(`/${workSnipAdditionalPathName}`, ''));
+                    const snipNode: OutlineNode = await outlineView.getTreeElementByUri(snipUri) || outlineView.rootNodes[0];
+                    parentNodeDisplayName = await findParentName(snipNode) + '/' + workSnipsParentName;
+                }
+                else {
+                    const snipUri = vscode.Uri.joinPath(extension.rootPath, output.outputSnipPath);
+                    const parent: OutlineNode = await outlineView.getTreeElementByUri(snipUri) || outlineView.rootNodes[0];
+                    parentNodeDisplayName = await findParentName(parent);
+                }
+            }
+            else if (output.dest === 'chapter') {
+                // dest = 'chapter' -> inserted snips are inserted into the specified chapter
+                // Find the chapter by its uri and use that as the parent node
+                const chapterUri = vscode.Uri.joinPath(extension.rootPath, output.outputChapter);
+                let parent: OutlineNode = await outlineView.getTreeElementByUri(chapterUri) || outlineView.rootNodes[0];
+                if (parent.data.ids.type === 'chapter') {
+                    const chapter = parent.data as ChapterNode
+                    parent = chapter.snips;
+                }
+                parentNodeDisplayName = await findParentName(parent);
+            }
+
+            // Make a date string for the new snip aggregate
+            const dateStr = getSnipDateString();
+
+            // If this is a multi split, then we want to store all splits in a newly created snip container in the `parentNode` calculated above
+            if (docSplits.type === 'multi') {
+                parentNodeDisplayName += `/${snipInfo.outputSnipName} ${dateStr}`;
+            }
+
+            // Uploads fragments in a content array into specified path
+            const fragmentUpload = (splits: NamedSingleSplit[]): Li[] => {
+                return splits.map((split, ordering) => {
+                    const { title, data: content } = split;
+                    return liFragment(title && title.length !== 0 ? title : `Imported Fragment (${ordering})`, content);
+                });
+            };
+            
+            
+            let snips: Li[];
+
+            if (docSplits.type === 'multi') {
+                // Create multiple snips, and load fragment data inside of each
+                snips = docSplits.data.map(({ title: snipTitle, data: fragmentContent }, snipOrdering) => {
+                    const snipName = snipTitle && snipTitle.length !== 0 ? snipTitle : `${snipInfo.outputSnipName} (${snipOrdering})`;
+                    return {
+                        name: `(snip) ${snipName}`,
+                        children: fragmentUpload(fragmentContent)
+                    }
+                });
+            }
+            else {
+                let contents: NamedSingleSplit[];
+                if (docSplits.type === 'none') {
+                    // If there are no splits, put the single content item in an array
+                    contents = [ {
+                        title: null,
+                        data: docSplits.data
+                    } ];
+                }
+                else {
+                    // Otherwise, use the data array from single split
+                    contents = docSplits.data;
+                }
+                snips = [ {
+                    name: `(snip) ${snipInfo.outputSnipName}`,
+                    children: fragmentUpload(contents)
+                } ]
+            }
+
+            return __<Li>({
+                name: parentNodeDisplayName,
+                children: snips,
+            })
+        }
     });
 }

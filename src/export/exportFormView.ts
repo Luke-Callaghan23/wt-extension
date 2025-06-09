@@ -88,7 +88,7 @@ export class ExportForm {
 		const styleMainUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/export/main.css`));
 
 		const codiconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode/codicons/dist/codicon.css`));
-		const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@bendera/vscode-webview-elements/dist/bundled.js`));
+		const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode-elements/elements/dist/bundled.js`));
 
 		// Use a nonce to only allow a specific script to be run.
 		const nonce = getNonce();
@@ -130,11 +130,11 @@ export class ExportForm {
 						<vscode-form-helper>
 							<p>Name of the exported file created.</p>
 						</vscode-form-helper>
-						<vscode-inputbox  
+						<vscode-textfield  
 							id="input-export-file-name" 
 							name="export-file-name" 
 							class="input input-tail error"
-						></vscode-inputbox>
+						></vscode-textfield>
 						<vscode-label id="error-label" class="label error-label">
 							Exported files cannot have any of the following characters in their names: 
 							'#', '%', '&', '{', '}', '\\', '<', '>', '*', '?', '/', ' ', '$', '!', '\'', '"', ':', '@', '+', '\`', '|', '=', '.'.
@@ -165,11 +165,11 @@ export class ExportForm {
 						<vscode-form-helper>
 							<p>Specifies the string that you would like to join that fragments of each chapter with.  This is the string that will be inserted between each fragment of each chapter when the fragments are stitched together.  Default is a newline.</p>
 						</vscode-form-helper>
-						<vscode-inputbox
+						<vscode-textfield
 							id="input-combine-fragments-on" 
 							name="combine-fragments-on" 
 							class="input input-tail"
-						></vscode-inputbox>
+						></vscode-textfield>
 						<vscode-label for="checkbox-separate-chapter" class="label">Separate Chapters?</vscode-label>
 						<vscode-checkbox 
 							label="Indicates that you want to separate the export of this work into separate files, one chapter per file"

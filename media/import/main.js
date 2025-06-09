@@ -23,7 +23,6 @@
 
         const allDocInfo = {};
         
-        
         const docs = [];
         documents.forEach(({ name, fullPath, ext }) => {
             allDocInfo[fullPath] = {
@@ -65,10 +64,15 @@
                 </vscode-single-select>
                 <div class="spacer"></div>
                 <div id="target"></div>
+                <div id="preview" style="display: none;">
+                    <div class="loader"></div>
+                </div>
                 <div class="spacer"></div>
                 <vscode-label class="label">Import:</vscode-label>
                 <div class="log-settings-row">
                     <vscode-button id="prev-button">Previous Import</vscode-button>
+                    &nbsp;&nbsp;&nbsp;
+                    <vscode-button id="preview-button">Preview</vscode-button>
                     &nbsp;&nbsp;&nbsp;
                     <vscode-button id="import-button">Import All Files</vscode-button>
                     &nbsp;&nbsp;&nbsp;
@@ -124,6 +128,7 @@
             }
         }
 
+        const previewContainer = document.getElementById('preview')
         const docInfoContainer = document.getElementById('target');
         function displayDocumentInfo (selectedDocPath) {
             
@@ -251,24 +256,24 @@
                                             <vscode-form-helper>
                                                 <p>Name of the new chapter to be created.</p>
                                             </vscode-form-helper>
-                                            <vscode-inputbox 
+                                            <vscode-textfield 
                                                 value="${docInfo.outputChapterName}" 
                                                 id="input-output-chapter-name" 
                                                 name="tail" 
                                                 class="input input-tail"
-                                            ></vscode-inputbox>
+                                            ></vscode-textfield>
                                         `
                                         :  `
                                             <vscode-label for="output-name" class="label">New Snip Name:</vscode-label>
                                             <vscode-form-helper>
                                                 <p>Name of the new imported snip.  If you choose to separate the imported document into multiple snips, then the new snip names will follow the pattern of '[name] (0)', '[name] (1)', etc.  For example 'Imported Snip (0)', 'Imported Snip (1)'.</p>
                                             </vscode-form-helper>
-                                            <vscode-inputbox 
+                                            <vscode-textfield 
                                                 value="${docInfo.outputSnipName}" 
                                                 id="input-output-snip-name" 
                                                 name="tail" 
                                                 class="input input-tail"
-                                            ></vscode-inputbox>
+                                            ></vscode-textfield>
                                         `
                         }
                         
@@ -291,12 +296,12 @@
                                     <vscode-form-helper>
                                     <p>Regex used to split the text in this document into separate snips. By default, I use the pattern '~{3,}' which is three or more tildes '~' in a row.  <a href="https://regex101.com/r/YJp24E/1">Learn more about fragment separator regexes (and how to title your fragments!)</a></p>
                                     </vscode-form-helper>
-                                    <vscode-inputbox 
+                                    <vscode-textfield 
                                         value="${docInfo.fragmentSplitRegex}" 
                                         id="input-fragment-split" 
                                         name="tail" 
                                         class="input input-tail"
-                                    ></vscode-inputbox>
+                                    ></vscode-textfield>
                                     <div class="spacer"></div>
                                     <vscode-label for="checkbox-split-snips" class="label">Split on ${docInfo.outputType}s?</vscode-label>
                                     <vscode-checkbox 
@@ -319,26 +324,25 @@
                                         <vscode-form-helper>
                                             <p>Regex used to split the text in this document into separate snips. By default, I use the pattern '\\[{3,}([^\\]]*)\\]{3,}' which separates the text document on lines where there are three or more opening brackets '[', followed by three or more closing brackets ']'.  It also includes an capture group '([\\]]]*)' which allows to match any text within the bracket pairs where the user can specify a title for the snip.  <a href="https://regex101.com/r/JWiBei/1">Learn more about snip separator regexes (and how to title your snips!)</a></p>
                                         </vscode-form-helper>
-                                        <vscode-inputbox 
+                                        <vscode-textfield 
                                             value="${docInfo.outerSplitRegex}" 
                                             id="input-outer-split" 
                                             name="tail" 
                                             class="input input-tail"
-                                        ></vscode-inputbox>`
+                                        ></vscode-textfield>`
                                     : `
                                         <div class="spacer"></div>
                                         <vscode-label for="input-outer-split" class="label">Chapter Separator:</vscode-label>
                                         <vscode-form-helper>
                                             <p>Regex used to split the text in this document into separate chapters. By default, I use the pattern '\\[{3,}\\]{3,}' which separates the text document on lines where there are three or more opening brackets '[', followed by three or more closing brackets ']'.  <a href="https://regex101.com/r/JWiBei/1">Learn more about chapter separator regexes (and how to title your chapters!)</a></p>
                                         </vscode-form-helper>
-                                        <vscode-inputbox 
+                                        <vscode-textfield 
                                             value="${docInfo.outerSplitRegex}" 
                                             id="input-outer-split" 
                                             name="tail" 
                                             class="input input-tail"
-                                        ></vscode-inputbox>`
+                                        ></vscode-textfield>`
                                 : ''
-                            
                         }`
                     : ''
                 }
@@ -352,7 +356,6 @@
             outputSnipNameElement = document.getElementById("input-output-snip-name");
             fragmentSplitRegexElement = document.getElementById("input-fragment-split");
             outerSplitRegexElement = document.getElementById("input-outer-split");
-
 
             skipElement = document.getElementById("checkbox-skip");
             useNonGenericFragmentNamesElement = document.getElementById("checkbox-non-generic-fragment-names");
@@ -379,6 +382,24 @@
                 catch (e) {}
             });
 
+            [
+                extElement,
+                outputTypeElement,
+                outputChapterElement,
+                outputChapterNameElement,
+                outputSnipNameElement,
+                fragmentSplitRegexElement,
+                outerSplitRegexElement,
+            ].forEach(element => {
+                try {
+                    element.addEventListener('change', () => {
+                        saveDocumentInfoState(currentDoc);
+                        displayDocumentInfo(currentDoc);
+                    });
+                }
+                catch (e) {}
+            });
+
             // Attach event handler to other fields that need to redraw the screen whenever
             //      their value is updated
             [ [outputTypeElement, 'outputType'] ].forEach(([ element, field ]) => {
@@ -392,7 +413,10 @@
                 }
                 catch (e) {}
             });
-
+            
+            setTimeout(() => {
+                preview.click();
+            }, 100);
         }
         let currentDoc = documents[0].fullPath;
         displayDocumentInfo(currentDoc);
@@ -442,6 +466,62 @@
         });
 
 
+        const preview = document.getElementById('preview-button');
+        preview.addEventListener('click', async (event) => {
+            event.preventDefault;
+
+            previewContainer.style.display = '';
+
+            saveDocumentInfoState(currentDoc);
+            vscode.postMessage({ 
+                type: 'preview', 
+                docName: currentDoc,
+                singleDoc: allDocInfo[currentDoc]
+            });
+
+            const preview = await new Promise((resolve) => {
+                const listener = event => {
+                    const message = event.data; // The json data that the extension sent
+                    if (message.type === 'preview') {
+                        window.removeEventListener('message', listener);
+                        resolve(message.preview);
+                        return;
+                    }
+                }
+
+                window.addEventListener('message', listener);
+            });
+
+            const processSummaryText = (text) => {
+                const cutoff = 400;
+                if (text.length > cutoff) {
+                    const prepend = text.substring(0, cutoff / 2);
+                    const append = text.substring(text.length - cutoff / 2, text.length);
+                    text = `${prepend}...${append}`
+                }
+                return text;
+            }
+
+            const liToString = (li) => {
+                return `<details ${li.children.length === 0 ? 'class="collapsible"' : 'open'}>
+                    <summary ${li.children.length === 0 ? 'class="collapsible"' : ''}>${processSummaryText(li.name)}</summary>
+                    <ul style="list-style-type: none;">
+                    ${(li.children.map(child => {
+                        return `<li>${liToString(child)}</li>`
+                    })).join('')}
+                    </ul>
+                </details>`;
+            };
+
+            previewContainer.innerHTML = `
+                <div style="margin-top: 30px"></div>
+                <hr />
+                <h2>Preview:</h2>
+                    ${liToString(preview)}
+                <hr />
+                <div class="spacer"></div>
+            `;
+        })
 
         const submit = document.getElementById('import-button');
         submit.addEventListener('click', (event) => {
@@ -457,7 +537,6 @@
                 docInfo: allDocInfo
             });
         });
-
     }
 
 

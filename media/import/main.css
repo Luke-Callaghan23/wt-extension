@@ -58,3 +58,22 @@
 	font-weight: bold;
 	color: red
 }
+
+summary {
+  font-size: 20px; /* Example using pixels */
+}
+
+
+details.collapsible summary {
+	display: list-item;
+	width: 100%; /* Adjust as needed */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+details.collapsible[open] summary {
+	white-space: normal;
+	overflow: visible;
+	text-overflow: unset;
+}

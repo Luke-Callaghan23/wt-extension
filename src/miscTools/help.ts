@@ -458,7 +458,7 @@ export function progressOnViews_impl <T> (
 // Passing a type and an object through this function
 //      will do a thorough check on the passed object
 //      against the parameter type
-export function _ <T> (obj: T): T {
+export function __ <T> (obj: T): T {
     return obj;
 }
 

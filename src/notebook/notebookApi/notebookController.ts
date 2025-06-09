@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import { NotebookPanel } from '../notebookPanel';
-import { _, compareFsPath } from '../../miscTools/help';
+import { __, compareFsPath } from '../../miscTools/help';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { invalidAliasCharactersRegex, NotebookCellMetadata, NotebookCellOutputMetadata, NotebookMetadata, WTNotebookSerializer } from './notebookSerializer';
 import { ExtensionGlobals,  } from '../../extension';
@@ -82,7 +82,7 @@ export class WTNotebookController {
         // If there is content on just one line, then add output with metadata indicating that
         //      this cell needs to be converted to a header, and reopen the notebook
         execution.replaceOutput([
-            new vscode.NotebookCellOutput([], _<NotebookCellOutputMetadata>({
+            new vscode.NotebookCellOutput([], __<NotebookCellOutputMetadata>({
                 convert: 'header'
             }))
         ]);
@@ -147,7 +147,7 @@ export class WTNotebookController {
 
         // And store that updated value in output metadata for the NotebookSerilizer to pick up
         execution.replaceOutput([
-            new vscode.NotebookCellOutput([], _<NotebookCellOutputMetadata>({
+            new vscode.NotebookCellOutput([], __<NotebookCellOutputMetadata>({
                 updateValue: newName
             }))
         ]);
@@ -230,7 +230,7 @@ export class WTNotebookController {
             
             // Add output with flag to convert this to an input box and reopen the document
             execution.appendOutput([
-                new vscode.NotebookCellOutput([], _<NotebookCellOutputMetadata>({
+                new vscode.NotebookCellOutput([], __<NotebookCellOutputMetadata>({
                     convert: 'input'
                 }))
             ]);
@@ -285,7 +285,7 @@ export class WTNotebookController {
         // The NotebookSerializer will see this flag and will update the 
         //      cell accordingly on disk
         execution.replaceOutput([
-            new vscode.NotebookCellOutput([], _<NotebookCellOutputMetadata>({
+            new vscode.NotebookCellOutput([], __<NotebookCellOutputMetadata>({
                 convert: 'markdown'
             }))
         ]);

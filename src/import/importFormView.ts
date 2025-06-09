@@ -3,7 +3,7 @@ import * as vscodeUris from 'vscode-uri';
 import * as console from '../miscTools/vsconsole';
 import  * as extension from '../extension';
 import { getNonce } from '../miscTools/help';
-import { handleImport, ImportDocumentInfo } from './importFiles';
+import { DocInfo, handleImport, handlePreview, ImportDocumentInfo } from './importFiles';
 
 type RequestDocuments = {
 	type: 'requestDocuments'
@@ -14,13 +14,25 @@ type Submit = {
 	docInfo: ImportDocumentInfo
 };
 
-type Message = RequestDocuments | Submit;
+type Preview = {
+	type: 'preview',
+	docName: string,
+	singleDoc: DocInfo,
+}
+
+type Message = RequestDocuments | Submit | Preview;
 
 type SentDocument = {
 	fullPath: string,
 	name: string,
 	ext: string,
 };
+
+
+export type Li = {
+	name: string;
+	children: Li[];
+}
 
 export class ImportForm {
 
@@ -75,23 +87,24 @@ export class ImportForm {
 			...sentDocuments
 		});
 	}
-
 	
-	
-	handleImport = handleImport;
 	async handleMessage (data: Message) {
 		switch (data.type) {
 			case 'requestDocuments':
 				await this.handleDocumentRequest();
 				break;
 			case 'submit':
-				await this.handleImport(data.docInfo);
+				await handleImport(data.docInfo);
 				this.panel.dispose();
 				break;
+			case 'preview':
+				const li = await handlePreview(data.docName, data.singleDoc);
+				this.panel.webview.postMessage({
+					type: 'preview',
+					preview: li,
+				});
 		}
 	}
-
-
 
 	private _getHtmlForWebview (webview: vscode.Webview, _extensionUri: string) {
 		// Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
@@ -104,7 +117,7 @@ export class ImportForm {
 		const styleMainUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/import/main.css`));
 
 		const codiconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode/codicons/dist/codicon.css`));
-		const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@bendera/vscode-webview-elements/dist/bundled.js`));
+		const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode-elements/elements/dist/bundled.js`));
 
 		// Use a nonce to only allow a specific script to be run.
 		const nonce = getNonce();
