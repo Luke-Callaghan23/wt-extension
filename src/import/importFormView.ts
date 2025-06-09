@@ -4,6 +4,7 @@ import * as console from '../miscTools/vsconsole';
 import  * as extension from '../extension';
 import { getNonce } from '../miscTools/help';
 import { DocInfo, handleImport, handlePreview, ImportDocumentInfo } from './importFiles';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 
 type RequestDocuments = {
 	type: 'requestDocuments'
@@ -34,6 +35,12 @@ export type Li = {
 	children: Li[];
 }
 
+export type DroppedSourceInfo = {
+	node: OutlineNode,
+	namePath: string,
+	destination: 'chapter' | 'snip',
+};
+
 export class ImportForm {
 
 	private panel: vscode.WebviewPanel;
@@ -41,16 +48,15 @@ export class ImportForm {
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
         private context: vscode.ExtensionContext,
-		private documents: vscode.Uri[]
+		private documents: vscode.Uri[],
+		private droppedSource?: DroppedSourceInfo
 	) { 
 
 		const panel = vscode.window.createWebviewPanel (
 			'wt.import.importForm',
 			'Import Form',
 			vscode.ViewColumn.Active,
-			{
-				enableScripts: true
-			}
+			{ enableScripts: true }
 		);
 
 		this.context.subscriptions.push(panel.webview.onDidReceiveMessage((e) => this.handleMessage(e)));
@@ -74,13 +80,18 @@ export class ImportForm {
 		});
 		return this.sendDocuments({
 			chapterUris: chapterUris,
-			documents: sentDocs
+			documents: sentDocs,
+			droppedSource: this.droppedSource ? {
+				namePath: this.droppedSource.namePath,
+				destination: this.droppedSource.destination
+			} : null
 		});
 	}
 	
 	async sendDocuments (sentDocuments: {
 		chapterUris: [ string, string ][],
-		documents: SentDocument[]
+		documents: SentDocument[],
+		droppedSource: Omit<DroppedSourceInfo, 'node'> | null,
 	}) {
 		this.panel.webview.postMessage({
 			type: 'sentDocuments',
@@ -94,11 +105,11 @@ export class ImportForm {
 				await this.handleDocumentRequest();
 				break;
 			case 'submit':
-				await handleImport(data.docInfo);
+				await handleImport(data.docInfo, this.droppedSource || null);
 				this.panel.dispose();
 				break;
 			case 'preview':
-				const li = await handlePreview(data.docName, data.singleDoc);
+				const li = await handlePreview(data.docName, data.singleDoc, this.droppedSource || null);
 				this.panel.webview.postMessage({
 					type: 'preview',
 					preview: li,
@@ -121,17 +132,6 @@ export class ImportForm {
 
 		// Use a nonce to only allow a specific script to be run.
 		const nonce = getNonce();
-
-		const fileUri = (fp: string) => {
-			const fragments = fp.split('/');
-	
-			const uri = vscode.Uri.file(_extensionUri)
-			return vscode.Uri.joinPath(uri, ...fragments);
-		};
-
-		const assetUri = (fp: string) => {
-			return webview.asWebviewUri(fileUri(fp));
-		};
 
 		return `<!DOCTYPE html>
 			<html lang="en">
@@ -159,7 +159,6 @@ export class ImportForm {
 					<link href="${styleVSCodeUri}" rel="stylesheet">
 					<link href="${styleMainUri}" rel="stylesheet">
 					<link href="${codiconsUri}" rel="stylesheet">
-					<title>Cat Colors</title>
 				</head>
                 <body class="doc-body">
 					<div id="form-container" class="form-container"></div>

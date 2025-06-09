@@ -582,3 +582,11 @@ export async function showTextDocumentWithPreview (docOrUri: vscode.Uri | vscode
         preview: !isActiveTextDocument,
     })
 }
+
+
+export const getNodeNamePath = async (parentNode: OutlineNode): Promise<string> => {
+    if (compareFsPath(parentNode.data.ids.uri, extension.ExtensionGlobals.outlineView.rootNodes[0].data.ids.uri)) {
+        return extension.ExtensionGlobals.workspace.config.title;
+    }
+    return (await getNodeNamePath(await extension.ExtensionGlobals.outlineView.getTreeElementByUri(parentNode.data.ids.parentUri) || extension.ExtensionGlobals.outlineView.rootNodes[0])) + "/" + parentNode.data.ids.display;
+}

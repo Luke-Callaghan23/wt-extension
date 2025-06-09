@@ -7,14 +7,14 @@ import { ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
 import * as extension from './../extension';
 import {sep} from 'path';
-import { compareFsPath } from '../miscTools/help';
+import { compareFsPath, getNodeNamePath } from '../miscTools/help';
 
 export interface Entry {
 	uri: vscode.Uri;
 	type: vscode.FileType;
 }
 
-export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
+export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, vscode.TreeDragAndDropController<Entry> {
 	excludedFiles: string[];
 
 	// tree data provider
@@ -170,6 +170,15 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.openFileExplorer', () => {
 			vscode.commands.executeCommand('revealFileInOS', this.workspace.importFolder);
 		}));
+
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.revealFileExplorer', (tabUri: vscode.Uri | undefined) => {
+			try {
+				return vscode.commands.executeCommand('remote-wsl.revealInExplorer', tabUri || this.importFolder);
+			}
+			catch (err: any) {
+				return vscode.commands.executeCommand('revealFileInOS', tabUri || this.importFolder);
+			}
+		}));
 	}
 
     private importFolder: vscode.Uri;
@@ -189,6 +198,72 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 			dragAndDropController: documentDropProvider,
 			showCollapseAll: true, 
 		}));
+
+
+		const filterWt = workspace.importFileTypes
+			.filter(importExt => importExt.toLocaleLowerCase() !== 'wt')
+			.join(',');
+		const importWatcher = vscode.workspace.createFileSystemWatcher(
+			new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{${filterWt}}`),
+			// `data/{chapters,snips}/**/*.{${filterWt}}`,
+			false, 			// do not ignore create events
+			true,			// ignore change events
+			true, 			// ignore delete events
+		);
+		
+		importWatcher.onDidCreate(async (newDoc) => {
+			const dirname = vscodeUris.Utils.dirname(newDoc);
+			const filename = vscodeUris.Utils.basename(newDoc);
+			const ext = vscodeUris.Utils.extname(newDoc);
+
+			const insertedNode = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(dirname);
+			if (!insertedNode) return;
+			const nodeNamePath = await getNodeNamePath(insertedNode);
+
+			// Only import the incoming document as a chapter if it was dropped directly into the '/data/chapters' folder
+			const destinationKind: 'snip' | 'chapter' = compareFsPath(insertedNode.data.ids.uri, extension.ExtensionGlobals.workspace.chaptersFolder)
+				? 'chapter'
+				: 'snip';
+
+			const response = await vscode.window.showInformationMessage(`Import '${filename}' into workspace?`, {
+				modal: true,
+				detail: `We detected a new '${ext}' file added to your project at path (${nodeNamePath}).  Would you like to import this document into your project as .wt file(s) in the same location?  (This action will move the original document into /data/imports, and open an imports form to complete the rest of the importing)`
+			}, 'Import');
+			if (response !== 'Import') return;
+
+			// If the user does want to import the file, then first move the document from its original location and into the imports folder
+			const movedLocation = vscode.Uri.joinPath(this.importFolder, filename);
+			await vscode.workspace.fs.rename(
+				newDoc,
+				movedLocation
+			);
+			new ImportForm(this.context.extensionUri, this.context, [ movedLocation ], {
+				node: insertedNode,
+				namePath: nodeNamePath,
+				destination: destinationKind
+			});
+		});
+
+		context.subscriptions.push(importWatcher);
         this.registerCommands();
+	}
+
+
+	dropMimeTypes = ['text/uri-list'];
+	dragMimeTypes = ['application/vnd.code.tree.import.fileexplorer'];
+
+	handleDrag (source: readonly Entry[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Thenable<void> | void {
+		treeDataTransfer.set('application/vnd.code.tree.import.fileexplorer', new vscode.DataTransferItem(source));
+		
+		const uris: vscode.Uri[] = source.map(src => src.uri).flat();
+		const uriStrings = uris.map(uri => uri.toString());
+		
+		// Combine all collected uris into a single string
+		const sourceUriList = uriStrings.join('\r\n');
+		treeDataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
+	}
+
+	handleDrop (target: Entry | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Thenable<void> | void {
+		throw new Error('Method not implemented.');
 	}
 }

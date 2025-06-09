@@ -19,7 +19,7 @@
     const formContainer = document.getElementById('form-container');
     formContainer.innerHTML = `<div class="loader"></div>`;
 
-    function loadDocuments (documents, chapterUris) {
+    function loadDocuments (documents, chapterUris, droppedSource) {
 
         const allDocInfo = {};
         
@@ -31,7 +31,9 @@
                 ext: ext.replace('.', ''),
                 
                 // By default the imported data will be a new work snip with the name 'Imported Snip'
-                outputType: 'snip',
+                // If a dropped source was provided (as in the source of this import was a user dropping an importable file into the 'chapters' or 'snips' folder)
+                //      then we use that destination as default instead
+                outputType: droppedSource ? droppedSource.destination : 'snip',
                 
                 outputIntoChapter: false,
                 outputSnipPath: '/data/snips/',
@@ -39,6 +41,8 @@
 
                 outputChapterName: `${name} (Imported)`,
                 useNonGenericFragmentNames: true,
+
+                outputIntoDroppedSource: !!droppedSource,
                 
                 shouldSplitFragments: false,
                 outerSplitRegex: '\\[{3,}?([^\\]]*)\\]{3,}?',
@@ -84,6 +88,7 @@
         let skipElement = document.getElementById("checkbox-skip");
         let extElement = document.getElementById("select-ext-type");
         let outputTypeElement = document.getElementById("select-output-type");
+        let useDroppedSourceElement = document.getElementById("checkbox-use-dropped-location");
         let useNonGenericFragmentNamesElement = document.getElementById("checkbox-non-generic-fragment-names");
         let outputIntoChapterElement = document.getElementById("checkbox-output-into-chapter");
         let outputChapterElement = document.getElementById("select-chapter");
@@ -113,6 +118,9 @@
             // Checkboxes need a little more probing
             if (skipElement?.ariaChecked !== undefined && skipElement?.ariaChecked !== null) {
                 docInfo.skip = skipElement?.ariaChecked === 'true';
+            }
+            if (useDroppedSourceElement?.ariaChecked !== undefined && useDroppedSourceElement?.ariaChecked !== null) {
+                docInfo.outputIntoDroppedSource = useDroppedSourceElement?.ariaChecked === 'true';
             }
             if (outputIntoChapterElement?.ariaChecked !== undefined && outputIntoChapterElement?.ariaChecked !== null) {
                 docInfo.outputIntoChapter = outputIntoChapterElement?.ariaChecked === 'true';
@@ -193,89 +201,107 @@
 								Also, ODT files take vastly more time to import than any other kind of document.  You might want to convert the ODT to MS Word and then import that.
 							</vscode-label>
 						</div>
-                        
-                        <vscode-label for="select-output-type" class="label">Output Type:</vscode-label>
-                        <vscode-form-helper>
-                            <p>The main resource type that this import will create</p>
-                        </vscode-form-helper>
-                        <vscode-single-select 
-                            id="select-output-type" 
-                            name="filter" 
-                            class="select select-output-type"
-                        >
-                            ${outputTypeOptions}
-                        </vscode-single-select>
-                        
-                        <div class="spacer"></div>
 
-                        <vscode-label for="checkbox-non-generic-fragment-names" class="label">Use Non-Generic Fragment Names?</vscode-label>
-                        <vscode-checkbox 
-                            label="Indicates that you want any generic fragment names to inherit any non-generic snip names in this document."
-                            id="checkbox-non-generic-fragment-names" 
-                            name="non-generic-fragment-names" 
-                            class="checkbox"
-                            ${docInfo.useNonGenericFragmentNames && 'checked'}
-                        ></vscode-checkbox>
-
-                        <div class="spacer"></div>
-        
                         ${
-                            docInfo.outputType !== 'chapter' && chapterUris.length > 0
-                                ? `
-                                    <vscode-label for="checkbox-output-into-chapter" class="label">Output into Chapter?</vscode-label>
+                            droppedSource 
+                                ? `<vscode-label for="checkbox-use-dropped-location" class="label">Import into same folder?</vscode-label>
                                     <vscode-checkbox 
-                                        label="Indicates that you want to export the contents of this file into an existing chapter."
-                                        id="checkbox-output-into-chapter" 
-                                        name="output-into-chapter" 
+                                        label="Indicates you want the contents of the imported document to go into the same location you dropped your ${docInfo.ext} file (${droppedSource.namePath} (hint: you probably want this))"
+                                        id="checkbox-use-dropped-location" 
+                                        name="into-dropped-location" 
                                         class="checkbox"
-                                        ${docInfo.outputIntoChapter && 'checked'}
+                                        ${docInfo.outputIntoDroppedSource && 'checked'}
                                     ></vscode-checkbox>`
                                 : ''
                         }
-        
+                        
                         ${
-                            docInfo.outputIntoChapter 
-                                ? `
-                                    <vscode-label for="select-chapter" class="label">Output Chapter:</vscode-label>
+                            !droppedSource || !docInfo.outputIntoDroppedSource 
+                                ? `<vscode-label for="select-output-type" class="label">Output Type:</vscode-label>
                                     <vscode-form-helper>
-                                        <p>Chapter that the importer will insert the new snip(s) into.</p>
+                                        <p>The main resource type that this import will create</p>
                                     </vscode-form-helper>
                                     <vscode-single-select 
-                                        id="select-chapter" 
+                                        id="select-output-type" 
                                         name="filter" 
-                                        class="select select-chapter"
+                                        class="select select-output-type"
                                     >
-                                        ${chapterSelectString}
+                                        ${outputTypeOptions}
                                     </vscode-single-select>
+                                    
                                     <div class="spacer"></div>
-                                `
-                                : 
-                                    docInfo.outputType === 'chapter' 
-                                        ? `
-                                            <vscode-label for="output-name" class="label">New Chapter Name:</vscode-label>
-                                            <vscode-form-helper>
-                                                <p>Name of the new chapter to be created.</p>
-                                            </vscode-form-helper>
-                                            <vscode-textfield 
-                                                value="${docInfo.outputChapterName}" 
-                                                id="input-output-chapter-name" 
-                                                name="tail" 
-                                                class="input input-tail"
-                                            ></vscode-textfield>
-                                        `
-                                        :  `
-                                            <vscode-label for="output-name" class="label">New Snip Name:</vscode-label>
-                                            <vscode-form-helper>
-                                                <p>Name of the new imported snip.  If you choose to separate the imported document into multiple snips, then the new snip names will follow the pattern of '[name] (0)', '[name] (1)', etc.  For example 'Imported Snip (0)', 'Imported Snip (1)'.</p>
-                                            </vscode-form-helper>
-                                            <vscode-textfield 
-                                                value="${docInfo.outputSnipName}" 
-                                                id="input-output-snip-name" 
-                                                name="tail" 
-                                                class="input input-tail"
-                                            ></vscode-textfield>
-                                        `
+
+                                    <vscode-label for="checkbox-non-generic-fragment-names" class="label">Use Non-Generic Fragment Names?</vscode-label>
+                                    <vscode-checkbox 
+                                        label="Indicates that you want any generic fragment names to inherit any non-generic snip names in this document."
+                                        id="checkbox-non-generic-fragment-names" 
+                                        name="non-generic-fragment-names" 
+                                        class="checkbox"
+                                        ${docInfo.useNonGenericFragmentNames && 'checked'}
+                                    ></vscode-checkbox>
+
+                                    <div class="spacer"></div>
+                    
+                                    ${
+                                        docInfo.outputType !== 'chapter' && chapterUris.length > 0
+                                            ? `
+                                                <vscode-label for="checkbox-output-into-chapter" class="label">Output into Chapter?</vscode-label>
+                                                <vscode-checkbox 
+                                                    label="Indicates that you want to export the contents of this file into an existing chapter."
+                                                    id="checkbox-output-into-chapter" 
+                                                    name="output-into-chapter" 
+                                                    class="checkbox"
+                                                    ${docInfo.outputIntoChapter && 'checked'}
+                                                ></vscode-checkbox>`
+                                            : ''
+                                    }
+                    
+                                    ${
+                                        docInfo.outputIntoChapter 
+                                            ? `
+                                                <vscode-label for="select-chapter" class="label">Output Chapter:</vscode-label>
+                                                <vscode-form-helper>
+                                                    <p>Chapter that the importer will insert the new snip(s) into.</p>
+                                                </vscode-form-helper>
+                                                <vscode-single-select 
+                                                    id="select-chapter" 
+                                                    name="filter" 
+                                                    class="select select-chapter"
+                                                >
+                                                    ${chapterSelectString}
+                                                </vscode-single-select>
+                                                <div class="spacer"></div>
+                                            `
+                                            : 
+                                                docInfo.outputType === 'chapter' 
+                                                    ? `
+                                                        <vscode-label for="output-name" class="label">New Chapter Name:</vscode-label>
+                                                        <vscode-form-helper>
+                                                            <p>Name of the new chapter to be created.</p>
+                                                        </vscode-form-helper>
+                                                        <vscode-textfield 
+                                                            value="${docInfo.outputChapterName}" 
+                                                            id="input-output-chapter-name" 
+                                                            name="tail" 
+                                                            class="input input-tail"
+                                                        ></vscode-textfield>
+                                                    `
+                                                    :  `
+                                                        <vscode-label for="output-name" class="label">New Snip Name:</vscode-label>
+                                                        <vscode-form-helper>
+                                                            <p>Name of the new imported snip.  If you choose to separate the imported document into multiple snips, then the new snip names will follow the pattern of '[name] (0)', '[name] (1)', etc.  For example 'Imported Snip (0)', 'Imported Snip (1)'.</p>
+                                                        </vscode-form-helper>
+                                                        <vscode-textfield 
+                                                            value="${docInfo.outputSnipName}" 
+                                                            id="input-output-snip-name" 
+                                                            name="tail" 
+                                                            class="input input-tail"
+                                                        ></vscode-textfield>
+                                                    `
+                                    }`
+                                : ''
                         }
+                        
                         
                         <div class="spacer"></div>
         
@@ -350,6 +376,7 @@
 
             // Reset all the data source elements
             extElement = document.getElementById("select-ext-type");
+            useDroppedSourceElement = document.getElementById("checkbox-use-dropped-location");
             outputTypeElement = document.getElementById("select-output-type");
             outputChapterElement = document.getElementById("select-chapter");
             outputChapterNameElement = document.getElementById("input-output-chapter-name");
@@ -371,7 +398,8 @@
                 useNonGenericFragmentNamesElement,
                 outputIntoChapterElement, 
                 shouldSplitFragmentsElement, 
-                shouldSplitSnipsElement 
+                shouldSplitSnipsElement,
+                useDroppedSourceElement
             ].forEach(element => {
                 try {
                     element.addEventListener('click', () => {
@@ -546,7 +574,7 @@
         const message = event.data; // The json data that the extension sent
         switch (message.type) {
             case 'sentDocuments':
-                loadDocuments(message.documents, message.chapterUris);
+                loadDocuments(message.documents, message.chapterUris, message.droppedSource);
                 break;
         }
     });

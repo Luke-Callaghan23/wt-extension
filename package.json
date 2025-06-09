@@ -1080,6 +1080,10 @@
 			{
 				"title": "Writing Tool: Insert link to fragment",
 				"command": "wt.fragmentLinker.insertLink"
+			},
+			{
+				"title": "Writing Tool: Reveal in file explorer",
+				"command": "wt.import.fileExplorer.revealFileExplorer"
 			}
 		],
 		"menus": {
@@ -1102,6 +1106,10 @@
 				},
 				{
 					"command": "wt.editor.revealFileExplorer",
+					"when": "false"
+				},
+				{
+					"command": "wt.import.fileExplorer.revealFileExplorer",
 					"when": "false"
 				},
 				{
@@ -1691,8 +1699,12 @@
 					"when": "view == wt.import.fileExplorer"
 				},
 				{
+					"command": "wt.import.fileExplorer.revealFileExplorer",
+					"when": "view == wt.import.fileExplorer"
+				},
+				{
 					"command": "wt.import.fileExplorer.filter",
-					"when": "view == wt.import.fileExplorer && viewItem == unfiltered",
+					"when": "view == wt.import.fileExplorer && (viewItem == unfiltered || !viewItem)",
 					"group": "inline"
 				},
 				{
