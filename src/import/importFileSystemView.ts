@@ -14,7 +14,7 @@ export interface Entry {
 	type: vscode.FileType;
 }
 
-export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, vscode.TreeDragAndDropController<Entry> {
+export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 	excludedFiles: string[];
 
 	// tree data provider
@@ -171,12 +171,12 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, vsc
 			vscode.commands.executeCommand('revealFileInOS', this.workspace.importFolder);
 		}));
 
-		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.revealFileExplorer', (tabUri: vscode.Uri | undefined) => {
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.revealFileExplorer', (tabUri: Entry | undefined) => {
 			try {
-				return vscode.commands.executeCommand('remote-wsl.revealInExplorer', tabUri || this.importFolder);
+				return vscode.commands.executeCommand('revealFileInOS', tabUri?.uri || this.importFolder);
 			}
 			catch (err: any) {
-				return vscode.commands.executeCommand('revealFileInOS', tabUri || this.importFolder);
+				return vscode.commands.executeCommand('remote-wsl.revealInExplorer', tabUri?.uri || this.importFolder);
 			}
 		}));
 	}
@@ -246,24 +246,5 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry>, vsc
 
 		context.subscriptions.push(importWatcher);
         this.registerCommands();
-	}
-
-
-	dropMimeTypes = ['text/uri-list'];
-	dragMimeTypes = ['application/vnd.code.tree.import.fileexplorer'];
-
-	handleDrag (source: readonly Entry[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Thenable<void> | void {
-		treeDataTransfer.set('application/vnd.code.tree.import.fileexplorer', new vscode.DataTransferItem(source));
-		
-		const uris: vscode.Uri[] = source.map(src => src.uri).flat();
-		const uriStrings = uris.map(uri => uri.toString());
-		
-		// Combine all collected uris into a single string
-		const sourceUriList = uriStrings.join('\r\n');
-		treeDataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
-	}
-
-	handleDrop (target: Entry | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Thenable<void> | void {
-		throw new Error('Method not implemented.');
 	}
 }

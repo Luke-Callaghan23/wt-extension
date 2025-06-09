@@ -16,7 +16,7 @@ export class ImportDocumentProvider implements vscode.DocumentDropEditProvider, 
     }
 
     dropMimeTypes = ['text/uri-list'];
-    dragMimeTypes = [];
+	dragMimeTypes = ['application/vnd.code.tree.import.fileexplorer'];
 
     
     public async handleDrop(target: Entry | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
@@ -57,14 +57,29 @@ export class ImportDocumentProvider implements vscode.DocumentDropEditProvider, 
 
         
             const finalDest = vscode.Uri.joinPath(dest, basename);
-            await vscode.workspace.fs.copy(uri, finalDest);
+
+            vscode.workspace.fs.readFile(uri);
+
+            try {
+                await vscode.workspace.fs.copy(uri, finalDest);
+            }
+            catch (err: any) {
+                console.log(err);
+            }
         }
         this.fsView.refresh();
 
     }
 
     public async handleDrag (source: Entry[], treeDataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-        throw new Error('Not implemented');
+        treeDataTransfer.set('application/vnd.code.tree.import.fileexplorer', new vscode.DataTransferItem(source));
+                
+        const uris: vscode.Uri[] = source.map(src => src.uri).flat();
+        const uriStrings = uris.map(uri => uri.toString());
+        
+        // Combine all collected uris into a single string
+        const sourceUriList = uriStrings.join('\r\n');
+        treeDataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
 	}
 
 
