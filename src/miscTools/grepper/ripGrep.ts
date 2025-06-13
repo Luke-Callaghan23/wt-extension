@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as extension from '../../extension';
 import * as readline from 'readline';
 import * as childProcess from 'child_process';
-import {rgPath} from '@vscode/ripgrep'
+import * as console from './../../miscTools/vsconsole';
 
 const runningGreps: Record<number, childProcess.ChildProcessWithoutNullStreams> = [];
 
@@ -58,12 +58,16 @@ export async function *ripGrep (
 
     try {
         // Call git grep
-        const ps = childProcess.spawn(rgPath, ['--no-heading', flags, regex.source, './'], {
+        const ps = childProcess.spawn(`rg`, ['--no-heading', flags, regex.source, './'], {
             cwd: extension.rootPath.fsPath
         });
 
+
         if (ps.pid) {
             runningGreps[ps.pid] = ps;
+        }
+
+        for await (const line of readline.createInterface({ input: ps.stderr })) {
         }
 
         cancellationToken.onCancellationRequested(() => {

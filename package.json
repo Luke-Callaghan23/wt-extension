@@ -2,7 +2,7 @@
 	"name": "wtaniwe",
 	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
 	"description": "Writing Tool, An Integrated Writing Environment",
-	"version": "0.0.138",
+	"version": "0.0.6666",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
 	"private": false,
@@ -2481,7 +2481,8 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
-		"lint": "eslint \"src/**/*.ts\""
+		"lint": "eslint \"src/**/*.ts\"",
+		"postinstall": "node ./node_modules/@vscode/ripgrep/lib/postinstall.js --force"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.2.0",
@@ -2502,7 +2503,6 @@
 		"@vscode-elements/elements": "^1.16.1",
 		"@vscode/codicons": "^0.0.32",
 		"@vscode/debugadapter": "^1.65.0",
-		"@vscode/ripgrep": "^1.15.13",
 		"await-notify": "^1.0.1",
 		"base64-js": "^1.5.1",
 		"he": "^1.2.0",
