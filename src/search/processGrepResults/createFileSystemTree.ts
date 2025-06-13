@@ -33,7 +33,7 @@ export type ResultFolder = {
 };
 
 
-export async function createFileSystemTree (locations: vscode.Location[]): Promise<FileSystemFormat> {
+export function createFileSystemTree (locations: vscode.Location[], entries: [ string, vscode.TextDocument ][]): FileSystemFormat {
     const root: FileSystemFormat = {
         results: locations.length,
         folders: {
@@ -41,13 +41,6 @@ export async function createFileSystemTree (locations: vscode.Location[]): Promi
             contents: {}
         }
     };
-
-    const entries: [string, vscode.TextDocument][] = await Promise.all(locations.map(loc => {
-        const res: Thenable<[string, vscode.TextDocument]> = vscode.workspace.openTextDocument(loc.uri).then(doc => {
-            return [ formatFsPathForCompare(doc.uri), doc ] ;
-        });
-        return res;
-    }));
 
     const docMap: Record<string, vscode.TextDocument> = {};
     for (const [ uriFsPath, doc ] of entries) {

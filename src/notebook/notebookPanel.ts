@@ -421,7 +421,7 @@ implements
         return defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
             const subsetTitlesAndAliasesRegex = this.getTitlesAndAliasesRegex(false, false, [ matchedNote.note ]);
             const grepLocations: vscode.Location[] = []; 
-            for await (const loc of grepExtensionDirectory(subsetTitlesAndAliasesRegex.source, true, true, true)) {
+            for await (const loc of grepExtensionDirectory(subsetTitlesAndAliasesRegex.source, true, true, true, token)) {
                 if (loc === null) return null;
                 grepLocations.push(loc[0]);
             }
@@ -442,7 +442,7 @@ implements
         if (!matchedNote) return null;
 
         const aliasText = document.getText(matchedNote.range);
-        const edits = this.getRenameEditsForNote(matchedNote.note, aliasText, newName);
+        const edits = this.getRenameEditsForNote(matchedNote.note, aliasText, newName, token);
         
         // `onDidRenameFiles` will be called after the edits are applied.  When that happens, we want to reload
         setTimeout(() => {
@@ -453,13 +453,13 @@ implements
         return edits;
     }
 
-    async getRenameEditsForNote (notePanelNote: NotebookPanelNote, aliasText: string, newName: string): Promise<vscode.WorkspaceEdit | null> {
+    async getRenameEditsForNote (notePanelNote: NotebookPanelNote, aliasText: string, newName: string, cancellationToken: vscode.CancellationToken): Promise<vscode.WorkspaceEdit | null> {
         const aliasRegexString = `(${aliasText})`;
         const aliasRegex = new RegExp(aliasRegexString, 'gi');
         
         const locations: [ vscode.Location, string ][] | null= await defaultProgress(`Collecting references for '${notePanelNote.title}'`, async () => {
             const grepLocations: [ vscode.Location, string ][] = []; 
-            for await (const loc of grepExtensionDirectory(aliasRegexString, true, true, true)) {
+            for await (const loc of grepExtensionDirectory(aliasRegexString, true, true, true, cancellationToken)) {
                 if (loc === null) return null;
                 grepLocations.push(loc);
             }

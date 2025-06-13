@@ -37,28 +37,37 @@ async function convertFolderToSearchNode (
     folder: ResultFolder, 
     labelProvider: LabelProvider,
     createTitleNodes: boolean,
+    cancellationToken: vscode.CancellationToken
 ) {
     for (const [ fileName, folderOrFile ] of Object.entries(folder.contents)) {
+        if (cancellationToken.isCancellationRequested) return;
+
         const uri = vscode.Uri.joinPath(parentUri, fileName);
         const label = await labelProvider(uri);
+        if (cancellationToken.isCancellationRequested) return;
+        
         if (!label) {
             if (!createTitleNodes || fileName !== '.config') continue;
 
             // If the label is null but the file a .config file and we are creating title nodes, then try to create a title
             //      node for this entry in config file
             const dotConfig = await readDotConfig(uri);
-            if (!dotConfig) continue;
+            if (!dotConfig || cancellationToken.isCancellationRequested) continue;
             const configFileNode = folderOrFile as ResultFile;
 
             const configDoc = await vscode.workspace.openTextDocument(uri);
+            if (cancellationToken.isCancellationRequested) return;
+            
             const configFullText = configDoc.getText();
-
             const createdEntriesFileNames: string[] = [];
             for (const location of configFileNode.locations) {
+                if (cancellationToken.isCancellationRequested) return;
+
                 const {jsonString: fullTitleString} = getFullJSONStringFromLocation(configDoc, configFullText, location.location);
                 for (const [ entryFileName, configEntry ] of Object.entries(dotConfig)) {
                     // If the entry title is not the same as the full title string we retrieved above, then skip over it
                     if (configEntry.title !== fullTitleString) continue;
+                    if (cancellationToken.isCancellationRequested) return;
 
                     const highlightedText = configDoc.getText(location.location.range);
                     const highlights: [number, number][] = [];
@@ -66,6 +75,7 @@ async function convertFolderToSearchNode (
                     let startOff: number;
                     let lastSliceIndex: number = 0;
                     while ((startOff = textSubset.indexOf(highlightedText)) !== -1) {
+                        if (cancellationToken.isCancellationRequested) return;
                         const nextSliceIndex = startOff + highlightedText.length + lastSliceIndex;
                         highlights.push([ startOff + lastSliceIndex, nextSliceIndex ]);
                         textSubset = fullTitleString.substring(nextSliceIndex);
@@ -74,10 +84,12 @@ async function convertFolderToSearchNode (
 
                     // If an entry was already made for this file name, then skip over it
                     if (createdEntriesFileNames.find(cefn => cefn === entryFileName)) continue;
+                    if (cancellationToken.isCancellationRequested) return;
 
                     const entryUri = vscode.Uri.joinPath(parentUri, entryFileName);
                     const node = await vagueNodeSearch(entryUri);
                     if (node.source === null || node.node === null) continue;
+                    if (cancellationToken.isCancellationRequested) return;
 
                     const linkNode: Exclude<VagueNodeSearchResult, { node: null, source: null }> = node;
                     const [ prefix, title ] = linkNode.source === 'notebook' 
@@ -130,7 +142,8 @@ async function convertFolderToSearchNode (
         else if (folderOrFile.kind === 'folder') {
             // For folder nodes, recurse into all child items and create `SearchNode`s for them
             const childContents: SearchNode<SearchContainerNode | FileResultNode>[] = [];
-            await convertFolderToSearchNode(childContents, [...parentLabels, createLabelFromTitleAndPrefix(title, prefix)], uri, folderOrFile, labelProvider, createTitleNodes);
+            await convertFolderToSearchNode(childContents, [...parentLabels, createLabelFromTitleAndPrefix(title, prefix)], uri, folderOrFile, labelProvider, createTitleNodes, cancellationToken);
+            if (cancellationToken.isCancellationRequested) return;
             
             const results = getResultsCount(childContents);
             parent.push(new SearchNode<SearchContainerNode>({
@@ -148,8 +161,11 @@ async function convertFolderToSearchNode (
 }
 
 type Categories = 'chapters' | 'snips' | 'scratchPad' | 'recycle' | 'notebook';
-export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat, createTitleNodes: boolean): Promise<Record<Categories, SearchNode<SearchContainerNode>> | null> {
-
+export async function recreateNodeTree (
+    fileSystemGitGrep: FileSystemFormat, 
+    createTitleNodes: boolean,
+    cancellationToken: vscode.CancellationToken
+): Promise<Record<Categories, SearchNode<SearchContainerNode>> | null> {
     const rootCategoryNodes: Record<Categories, SearchNode<SearchContainerNode>> = {
         'chapters': new SearchNode<SearchContainerNode>({
             kind: 'searchContainer',
@@ -206,12 +222,14 @@ export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat, cre
     // All search locations besides 'notebook' use a UriBasedView with an OutlineNode as the Node
     //      so for all three of these we can use the same function to extract labels
     const mainLabelProvider = (view: UriBasedView<OutlineNode>) => async (uri: vscode.Uri): Promise<[ string, string ] | null> => {
+        if (cancellationToken.isCancellationRequested) return null;
         const node = await view.getTreeElementByUri(uri);
         if (!node) return null;
+        if (cancellationToken.isCancellationRequested) return null;
         return node.data.ids.type !== 'container'
             ? [ capitalize(node.data.ids.type), `${node.data.ids.display}` ]
             : [ '', "Chapter Snips Container" ];
-    }
+    };
 
     const labelProviders: Record<Categories, LabelProvider> = {
         'chapters': mainLabelProvider(extension.ExtensionGlobals.outlineView),
@@ -220,8 +238,10 @@ export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat, cre
         'recycle': mainLabelProvider(extension.ExtensionGlobals.recyclingBinView),
         // For the notebook, since OutlineNodes are not used, we can just take the "title" in the note as the label
         'notebook': async (uri: vscode.Uri) => {
+            if (cancellationToken.isCancellationRequested) return null;
             const note = extension.ExtensionGlobals.notebookPanel.getNote(uri);
             if (!note) return null;
+            if (cancellationToken.isCancellationRequested) return null;
             return [ 'Note', note.title ];
         }
     };
@@ -234,13 +254,14 @@ export async function recreateNodeTree (fileSystemGitGrep: FileSystemFormat, cre
     const dataFolder = (fileSystemGitGrep.folders.contents[''] as ResultFolder).contents['data'] as ResultFolder;
     for (const c of Object.keys(rootCategoryNodes)) {
         const category: Categories = c as Categories;
+        if (cancellationToken.isCancellationRequested) return null;
 
         const categoryRootFolder = (dataFolder.contents[category] as ResultFolder);
         if (!categoryRootFolder) continue;
 
         const rootContainer = rootCategoryNodes[category];
         const labelProvider = labelProviders[category];
-        await convertFolderToSearchNode(rootContainer.node.contents, [ rootContainer.node.title ], rootContainer.node.uri, categoryRootFolder, labelProvider, createTitleNodes);
+        await convertFolderToSearchNode(rootContainer.node.contents, [ rootContainer.node.title ], rootContainer.node.uri, categoryRootFolder, labelProvider, createTitleNodes, cancellationToken);
 
         rootContainer.node.results = getResultsCount(rootContainer.node.contents);
     }

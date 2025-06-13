@@ -3,7 +3,6 @@ import { enter } from './enterCodeMode';
 import { exit } from './exitCodeMode';
 import * as console from '../miscTools/vsconsole';
 import { isText } from 'istextorbinary';
-// import { fileTypeFromBuffer, fileTypeFromStream } from 'file-type';
 import { Buff } from '../Buffer/bufferSource';
 
 export type CodeModeState = 'codeMode' | 'noCodeMode';

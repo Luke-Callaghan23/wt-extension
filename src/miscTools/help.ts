@@ -1,17 +1,8 @@
 import * as vscode from 'vscode';
 import * as extension from '../extension';
 import { Buff } from '../Buffer/bufferSource';
-import { TreeNode } from '../outlineProvider/outlineTreeProvider';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
-import { OutlineView } from '../outline/outlineView';
-import { ScratchPadView } from '../scratchPad/scratchPadView';
 import { NotebookPanelNote, NotebookPanel } from '../notebook/notebookPanel';
-import { TabLabels } from '../tabLabels/tabLabels';
-import * as childProcess from 'child_process'
-import * as vscodeUri from 'vscode-uri';
-import { HasGetUri, UriBasedView } from '../outlineProvider/UriBasedView';
-import utils = require('markdown-it/lib/common/utils');
 
 export type PromptOptions = {
     placeholder: string,
@@ -581,4 +572,12 @@ export async function showTextDocumentWithPreview (docOrUri: vscode.Uri | vscode
         // If the document is not active, then open it in preview mode
         preview: !isActiveTextDocument,
     })
+}
+
+export function chunkArray<T>(arr: T[], chunkSize: number): T[][] {
+    const result = [];
+    for (let i = 0; i < arr.length; i += chunkSize) {
+        result.push(arr.slice(i, i + chunkSize));
+    }
+    return result;
 }

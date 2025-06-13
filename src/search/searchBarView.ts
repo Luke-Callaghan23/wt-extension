@@ -4,9 +4,6 @@ import { getNonce } from '../miscTools/help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 import { SearchResultsView } from './searchResultsView';
-import { DiskContextType } from '../workspace/workspaceClass';
-import { wordSeparator } from '../extension';
-
 
 
 type WebviewMessage = {
@@ -86,8 +83,27 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
         });
     }
 
-    private async triggerUpdates (searchBarValue: string) {
-        return this.searchResults.searchBarValueWasUpdated(searchBarValue, this.regex, this.caseInsensitive, this.matchTitles, this.wholeWord);
+    private tokens: vscode.CancellationTokenSource[] = [];
+    private cancelTokens () {
+        for (const tok of this.tokens) {
+            try {
+                tok.cancel();
+                tok.dispose();
+            }
+            catch (err: any) {}
+        }
+    }
+
+    private debounce: NodeJS.Timeout | null = null;
+    private async triggerUpdates (searchBarValue: string): Promise<any> {
+        this.cancelTokens();
+
+        this.debounce && clearTimeout(this.debounce);
+        this.debounce = setTimeout(() => {
+            const customCancellationToken: vscode.CancellationTokenSource | null = new vscode.CancellationTokenSource();
+            this.tokens.push(customCancellationToken);
+            return this.searchResults.searchBarValueWasUpdated(searchBarValue, this.regex, this.caseInsensitive, this.matchTitles, this.wholeWord, customCancellationToken.token);
+        }, 20);
     }
 
     private lastRequest: number = 0;
@@ -129,13 +145,19 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
                     break;
                 case 'textBoxChange': 
                     const textbox = message.value;
-                    this.latestSearchBarValue = textbox;
-                    Workspace.updateContext(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
-                    if (textbox.length === 0) {
-                        this.searchResults.searchCleared();
+                    if (this.latestSearchBarValue === textbox) {
                         return;
                     }
-                    this.triggerUpdates(textbox);
+                    this.latestSearchBarValue = textbox;
+                    Workspace.updateContext(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
+                    if (textbox.length > 0) {
+                        this.triggerUpdates(textbox);
+                    }
+                    else {
+                        this.cancelTokens();
+                        this.searchResults.searchCleared();
+                    }
+                    
                     break;
                 case 'ready':
                     this.setSlowModeValue();
