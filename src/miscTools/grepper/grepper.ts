@@ -65,7 +65,8 @@ export abstract class Grepper {
     
         try {
             // Call git grep
-            const ps = childProcess.spawn(this.name, this.getCommand(regex.source, caseInsensitive), {
+            const command = this.getCommand(regex.source, caseInsensitive);
+            const ps = childProcess.spawn(this.name, command, {
                 cwd: extension.rootPath.fsPath
             });
     
