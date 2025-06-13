@@ -3,6 +3,7 @@ import * as extension from '../../extension';
 import * as readline from 'readline';
 import * as childProcess from 'child_process';
 import * as console from './../../miscTools/vsconsole';
+import { Grepper, GrepperGetter } from './findMyGrepper';
 
 const runningGreps: Record<number, childProcess.ChildProcessWithoutNullStreams> = [];
 
@@ -91,6 +92,18 @@ export async function *ripGrep (
     }
     catch (err: any) {
         vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}' regex.  Error: ${err}`);
+        return null;
+    }
+}
+
+
+export function findRipGrep (grepperGetter: GrepperGetter): Grepper | null {
+    try {
+        childProcess.execSync(`${grepperGetter} grep`);
+        console.log('Using grepper [rg]');
+        return ripGrep;
+    }
+    catch (err: any) {
         return null;
     }
 }

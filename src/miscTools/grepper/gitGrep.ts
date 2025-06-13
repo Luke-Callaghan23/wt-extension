@@ -4,9 +4,43 @@ import * as readline from 'readline';
 import * as childProcess from 'child_process';
 import { Grepper, GrepperGetter } from './findMyGrepper';
 
+const runningGreps: Record<number, childProcess.ChildProcessWithoutNullStreams> = [];
+
 export async function *gitGrep (
-    regex: RegExp,
+    searchBarValue: string, 
+    useRegex: boolean, 
+    caseInsensitive: boolean, 
+    wholeWord: boolean,
+    cancellationToken: vscode.CancellationToken
 ): AsyncGenerator<string | null> {
+
+    
+    let cancelled = false;
+    for (const [pid, pastProcess] of Object.entries(runningGreps)) {
+        if (pastProcess.kill()) {
+            delete runningGreps[parseInt(pid)];
+        }
+    }
+
+
+    if (!useRegex) {
+        searchBarValue = searchBarValue.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    if (wholeWord) {
+        // Basically a git grep command requires a very specific formatting for the special characters in a regex
+        // So, we cannot rely on existing word separators that have been declared elsewhere in this project
+        // Have to recreate the regex using these special word separators
+        const shellWordSeparatorStart = '(^|\\s|-|[.?:;,()\\!\\&\\"\'^_*~])';
+        const shellWordSeparatorEnd = '(\\s|-|[.?:;,()\\!\\&\\"\'^_*~]|$)';
+        searchBarValue = `${shellWordSeparatorStart}${searchBarValue}${shellWordSeparatorEnd}`;
+    }
+
+    const regex = new RegExp(searchBarValue);
+    let flags: string = '-r';
+    if (caseInsensitive) {
+        flags += 'i';
+    }
 
     
     // For git grep to work on all files in a workspace, need to temporarily stage the untracked files in the 
@@ -45,7 +79,7 @@ export async function *gitGrep (
         });
 
         // Call git grep
-        const ps = childProcess.spawn(`git`, ['grep', '-i', '-r', '-H', '-n', '-E', regex.source], {
+        const ps = childProcess.spawn(`git`, ['grep', flags, '-H', '-n', '-E', regex.source], {
             cwd: extension.rootPath.fsPath
         })
         // Any "finished" operation for the grep command should reset the git state back to its original
@@ -53,9 +87,28 @@ export async function *gitGrep (
         .addListener('disconnect', reset)
         .addListener('exit', reset);
 
+        if (ps.pid) {
+            runningGreps[ps.pid] = ps;
+        }
+
+        for await (const line of readline.createInterface({ input: ps.stderr })) {
+        }
+
+        cancellationToken.onCancellationRequested(() => {
+            if (ps.pid && ps.pid in runningGreps) {
+                delete runningGreps[ps.pid];
+            }
+            ps.kill();
+            cancelled = true;
+        })
+
         // Iterate over lines from the stdout of the git grep command and yield each line provided to us
         for await (const line of readline.createInterface({ input: ps.stdout })) {
             yield line;  
+        }
+
+        if (ps.pid && ps.pid in runningGreps) {
+            delete runningGreps[ps.pid];
         }
     }
     catch (err: any) {

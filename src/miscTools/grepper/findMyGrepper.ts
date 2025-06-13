@@ -1,14 +1,21 @@
 import * as vscode from 'vscode';
 import * as childProcess from 'child_process';
 import { findGitGrep, gitGrep } from './gitGrep';
-import { findRipGrep, ripGrep } from './ripGrep';
-import { findGrepGrep, grepGrep } from './grepGrep';
+import { findRipGrep  } from './ripGrep';
+import { findGrepGrep  } from './grepGrep';
 import { findPowershellGrep } from './powershellGrep';
 
 
 // A GREPPER MUST RECIEVE A REGEX AND RETURN A GENERATOR THAT YIELDS LINES FORMATTED LIKE:
 //      path_to_file:1-indexed_line_of_result:contents_of_the_line
-export type Grepper = (regex: RegExp) => AsyncGenerator<string | null>;
+export type Grepper = (
+    searchBarValue: string, 
+    useRegex: boolean, 
+    caseInsensitive: boolean, 
+    wholeWord: boolean,
+    cancellationToken: vscode.CancellationToken
+) => AsyncGenerator<string | null>;
+
 export type FindMyGrepper = (grepperGetter: GrepperGetter) => Grepper | null;
 export type GrepperGetter = 'get-command' | 'where' | 'which';
 
