@@ -1,7 +1,10 @@
 import * as vscode from 'vscode';
 import * as extension from '../../extension';
 import { isSubdirectory } from '../help';
-import { grepper } from './findMyGrepper';
+import { Grepper } from './grepper';
+import { showMeUrGreppers } from './findGreppers';
+
+const grepper = showMeUrGreppers();
 
 export async function *grepExtensionDirectory (
     searchBarValue: string, 
@@ -23,7 +26,7 @@ export async function *grepExtensionDirectory (
 
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
-    for await (const result of grepper(searchBarValue, useRegex, caseInsensitive, wholeWord,cancellationToken)) {
+    for await (const result of grepper.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken)) {
         // If `grep` returns null, then something went wrong with the search, and the whole thing should be treated as null
         if (result === null) return null;
         if (cancellationToken.isCancellationRequested) return null;
