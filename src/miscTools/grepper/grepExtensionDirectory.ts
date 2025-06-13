@@ -2,7 +2,10 @@ import * as vscode from 'vscode';
 import * as extension from '../../extension';
 import { isSubdirectory } from '../help';
 import { gitGrep } from './gitGrep';
-import { grepper } from './findMyGrepper';
+import { ripGrep } from './ripGrep';
+// import { grepper } from './findMyGrepper';
+
+const grepper = ripGrep;
 
 export async function *grepExtensionDirectory (
     searchBarValue: string, 

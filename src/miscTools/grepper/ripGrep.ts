@@ -3,13 +3,14 @@ import * as extension from '../../extension';
 import * as readline from 'readline';
 import * as childProcess from 'child_process';
 import { Grepper, GrepperGetter } from './findMyGrepper';
+import {rgPath} from '@vscode/ripgrep'
 
 export async function *ripGrep (
     regex: RegExp,
 ): AsyncGenerator<string | null> {
     try {
         // Call git grep
-        const ps = childProcess.spawn(`rg`, ['--no-heading', '-n', regex.source, './'], {
+        const ps = childProcess.spawn(rgPath, ['--no-heading', '-n', regex.source, './'], {
             cwd: extension.rootPath.fsPath
         });
         
@@ -29,7 +30,7 @@ export function findRipGrep (grepperGetter: GrepperGetter): Grepper | null {
     try {
         childProcess.execSync(`${grepperGetter} rg`);
         console.log('Using grepper [rg]');
-        return ripGrep;
+        return ripGrep;``
     }
     catch (err: any) {
         return null;

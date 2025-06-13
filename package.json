@@ -2507,6 +2507,7 @@
 		"@vscode-elements/elements": "^1.16.1",
 		"@vscode/codicons": "^0.0.32",
 		"@vscode/debugadapter": "^1.65.0",
+		"@vscode/ripgrep": "^1.15.13",
 		"await-notify": "^1.0.1",
 		"base64-js": "^1.5.1",
 		"file-type": "^18.5.0",
