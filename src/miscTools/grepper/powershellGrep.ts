@@ -1,3 +1,4 @@
+import * as extension from './../../extension'
 import { Grepper } from './grepper';
 
 export class PowershellGrep extends Grepper {
@@ -13,5 +14,9 @@ export class PowershellGrep extends Grepper {
 
         const source = regexSource.replaceAll('\\"', '`"');
         return [ 'get-childitem', '-Recurse', '-Include', '"*.wtnote",', '"*.wt",', '"*.config"', '|', 'select-string', '-Pattern', `"${source}"`, caseSensitive, "|", "foreach", "{", '"$_"', "}"].flat();;
+    }
+
+    protected transformLine(line: string): string {
+        return line.toLocaleLowerCase().replaceAll(extension.rootPath.fsPath.toLocaleLowerCase(), '');
     }
 }

@@ -34,6 +34,10 @@ export abstract class Grepper {
         return new RegExp(regexSource);
     }
 
+    protected transformLine (line: string): string {
+        return line;
+    }
+
     static runningGreps: Record<number, childProcess.ChildProcessWithoutNullStreams> = [];
     public async *query (
         searchBarValue: string, 
@@ -85,7 +89,7 @@ export abstract class Grepper {
             // Iterate over lines from the stdout of the git grep command and yield each line provided to us
             for await (const line of readline.createInterface({ input: ps.stdout })) {
                 if (cancelled) return null;
-                yield line;  
+                yield this.transformLine(line);
             }
     
             if (ps.pid && ps.pid in Grepper.runningGreps) {
