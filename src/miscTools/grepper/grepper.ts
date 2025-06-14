@@ -39,21 +39,13 @@ export abstract class Grepper {
     }
 
     static runningGreps: Record<number, childProcess.ChildProcessWithoutNullStreams> = [];
-    public async *query (
+    public async query (
         searchBarValue: string, 
         useRegex: boolean, 
         caseInsensitive: boolean, 
         wholeWord: boolean, 
         cancellationToken: vscode.CancellationToken
-    ): AsyncGenerator<string | null> {
-    
-        let cancelled = false;
-        for (const [pid, pastProcess] of Object.entries(Grepper.runningGreps)) {
-            if (pastProcess.kill()) {
-                delete Grepper.runningGreps[parseInt(pid)];
-            }
-        }
-    
+    ): Promise<string[] | null> {
         // Output of a git grep command is of this format:
         // URI:ONE_INDEXED_LINE:CONTENTS_OF_LINE
         // This is not particularly helpful to us because if we want to generate vscode.Location objects
@@ -62,39 +54,16 @@ export abstract class Grepper {
         //      transform it into vscode.Location so it can be used elsewhere in the writing environment
     
         const regex = this.createRegex(searchBarValue, useRegex, wholeWord);
-    
         try {
             // Call git grep
-            const ps = childProcess.spawn(this.name, this.getCommand(regex.source, caseInsensitive), {
+            const command = this.getCommand(regex.source, caseInsensitive);
+            const ps = childProcess.spawnSync(this.name, command, {
                 cwd: extension.rootPath.fsPath
             });
-    
-    
-            if (ps.pid) {
-                Grepper.runningGreps[ps.pid] = ps;
-            }
-    
-            for await (const line of readline.createInterface({ input: ps.stderr })) {
-            }
-    
-            cancellationToken.onCancellationRequested(() => {
-                if (ps.pid && ps.pid in Grepper.runningGreps) {
-                    delete Grepper.runningGreps[ps.pid];
-                }
-                ps.kill();
-                cancelled = true;
-            })
-            
-            // Any "finished" operation for the grep command should reset the git state back to its original
-            // Iterate over lines from the stdout of the git grep command and yield each line provided to us
-            for await (const line of readline.createInterface({ input: ps.stdout })) {
-                if (cancelled) return null;
-                yield this.transformLine(line);
-            }
-    
-            if (ps.pid && ps.pid in Grepper.runningGreps) {
-                delete Grepper.runningGreps[ps.pid];
-            }
+            return !ps.output ? null : ps.output
+                .toString()
+                .split('\n')
+                .map(line => this.transformLine(line))
         }
         catch (err: any) {
             vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}' regex.  Error: ${err}`);

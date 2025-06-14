@@ -12,7 +12,11 @@ export class RipGrep extends Grepper {
             flags += 'i';
         }
 
-        return ['--no-heading', flags, regexSource, './']
+        return ['--no-heading', '-.', flags, regexSource, './']
+    }
+
+    protected transformLine(line: string): string {
+        return line.replaceAll(/^,+/g, '');
     }
 
     protected getWordSeparators (): [string, string] {

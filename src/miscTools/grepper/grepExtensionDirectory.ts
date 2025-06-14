@@ -6,13 +6,13 @@ import { showMeUrGreppers } from './findGreppers';
 
 const grepper = showMeUrGreppers();
 
-export async function *grepExtensionDirectory (
+export async function grepExtensionDirectory (
     searchBarValue: string, 
     useRegex: boolean, 
     caseInsensitive: boolean, 
     wholeWord: boolean,
     cancellationToken: vscode.CancellationToken
-): AsyncGenerator<[vscode.Location, string] | null>  {
+): Promise<[vscode.Location, string][] | null>  {
     const captureGroupId = 'searchResult';
 
     // inline search regex is a secondary regex which makes use of NodeJS's regex capture groups
@@ -26,9 +26,12 @@ export async function *grepExtensionDirectory (
 
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
-    for await (const result of grepper.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken)) {
+    const lines = await grepper.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+    if (lines === null) return null;
+
+    const output: [vscode.Location, string][] = [];
+    for (const result of lines) {
         // If `grep` returns null, then something went wrong with the search, and the whole thing should be treated as null
-        if (result === null) return null;
         if (cancellationToken.isCancellationRequested) return null;
 
         const match = parseOutput.exec(result);
@@ -81,8 +84,9 @@ export async function *grepExtensionDirectory (
                 )
             ) {
                 // Finally, finally, finally yield the result
-                yield [ new vscode.Location(uri, foundRange), lineMatch[0] ];
+                output.push([ new vscode.Location(uri, foundRange), lineMatch[0] ]);
             }
         }
     }
+    return output;
 }

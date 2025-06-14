@@ -21,13 +21,13 @@ export class GitGrep extends Grepper {
     }
 
 
-    public async *query (
+    public async query (
         searchBarValue: string, 
         useRegex: boolean, 
         caseInsensitive: boolean, 
         wholeWord: boolean, 
         cancellationToken: vscode.CancellationToken
-    ): AsyncGenerator<string | null> {
+    ): Promise<string[] | null> {
         
         let cancelled = false;
         for (const [pid, pastProcess] of Object.entries(Grepper.runningGreps)) {
@@ -96,14 +96,17 @@ export class GitGrep extends Grepper {
                 cancelled = true;
             })
 
+            const response = [];
+
             // Iterate over lines from the stdout of the git grep command and yield each line provided to us
             for await (const line of readline.createInterface({ input: ps.stdout })) {
-                yield line;  
+                response.push(line);  
             }
 
             if (ps.pid && ps.pid in Grepper.runningGreps) {
                 delete Grepper.runningGreps[ps.pid];
             }
+            return response;
         }
         catch (err: any) {
             vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}' regex.  Error: ${err}`);

@@ -218,7 +218,8 @@ export async function determineAuxViewColumn <T>(getter: ((uri: vscode.Uri)=>Pro
     return vscode.ViewColumn.Beside;
 }
 
-export const formatFsPathForCompare = (path: vscode.Uri): string => {
+export type UriFsPathFormatted = string;
+export const formatFsPathForCompare = (path: vscode.Uri): UriFsPathFormatted => {
     let fsPath = path.fsPath;
     if (fsPath.endsWith("\\") || fsPath.endsWith("/")) {
         fsPath = fsPath.substring(0, fsPath.length-1);

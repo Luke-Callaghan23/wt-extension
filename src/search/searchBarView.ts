@@ -50,9 +50,9 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
             console.log(`${e}`);
         }
 
-        if (this.latestSearchBarValue.length > 0) {
-            this.triggerUpdates(this.latestSearchBarValue);
-        }
+        // if (this.latestSearchBarValue.length > 0) {
+        //     this.triggerUpdates(this.latestSearchBarValue);
+        // }
 
         this.registerCommands();
     }

@@ -357,7 +357,7 @@ implements
             this.view.reveal(matchedNote.note, {
                 select: true,
                 expand: true,
-            });
+            }).then(()=>{}, error => {});
         }
         return null;
     }
@@ -393,7 +393,7 @@ implements
                 this.view.reveal(matchedNote, {
                     select: true,
                     expand: true,
-                });
+                }).then(()=>{}, error => {});
             }
         
             const fileName = `${matchedNote.noteId}.wtnote`;
@@ -420,16 +420,8 @@ implements
 
         return defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
             const subsetTitlesAndAliasesRegex = this.getTitlesAndAliasesRegex(false, false, [ matchedNote.note ]);
-            const grepLocations: vscode.Location[] = []; 
-            for await (const loc of grepExtensionDirectory(subsetTitlesAndAliasesRegex.source, true, true, true, token)) {
-                if (loc === null) return null;
-                grepLocations.push(loc[0]);
-            }
-    
-            // For some reason the reference provider needs the locations to be indexed one less than the results from the 
-            //      grep of the titles and aliases
-            // Not sure why that is -- but subtracting one from each character index works here
-            return grepLocations;
+            const results = await grepExtensionDirectory(subsetTitlesAndAliasesRegex.source, true, true, true, token);
+            return !results ? null : results.map(([ loc, _ ]) => loc);
         });
     }
 
@@ -458,19 +450,7 @@ implements
         const aliasRegex = new RegExp(aliasRegexString, 'gi');
         
         const locations: [ vscode.Location, string ][] | null= await defaultProgress(`Collecting references for '${notePanelNote.title}'`, async () => {
-            const grepLocations: [ vscode.Location, string ][] = []; 
-            for await (const loc of grepExtensionDirectory(aliasRegexString, true, true, true, cancellationToken)) {
-                if (loc === null) return null;
-                grepLocations.push(loc);
-            }
-    
-            // For some reason the reference provider needs the locations to be indexed one less than the results from the 
-            //      grep of the title and aliases
-            // Not sure why that is -- but subtracting one from each character index works here
-            return grepLocations.map(([loc, match]) => [ 
-                loc, 
-                match 
-            ]);
+            return grepExtensionDirectory(aliasRegexString, true, true, true, cancellationToken); 
         });
         if (!locations) return null;
 
