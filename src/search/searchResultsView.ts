@@ -1,14 +1,13 @@
 import * as vscode from 'vscode';
 import { HasGetUri, UriBasedView } from '../outlineProvider/UriBasedView';
-import { createFileSystemTree } from './processGrepResults/createFileSystemTree';
 import { Workspace } from '../workspace/workspaceClass';
 import * as extension from '../extension';
 import { v4 as uuid } from 'uuid';
 import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
-import { cleanNodeTree, pairMatchedTitlesToNeighborNodes, recreateNodeTree } from './processGrepResults/createNodeTree';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import { compareFsPath, determineAuxViewColumn, showTextDocumentWithPreview, vagueNodeSearch } from '../miscTools/help';
+import { __, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, showTextDocumentWithPreview, vagueNodeSearch } from '../miscTools/help';
+import { CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
 
 
 export type SearchNodeKind = 
@@ -68,7 +67,7 @@ export class SearchResultsView
                 title: 'Search Term',
             });
             if (!response) return;
-            return this.searchBarValueWasUpdated(response, true, true, true, true);
+            return this.searchBarValueWasUpdated(response, true, true, true, true, new vscode.CancellationTokenSource().token);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {
@@ -148,35 +147,42 @@ export class SearchResultsView
         useRegex: boolean, 
         caseInsensitive: boolean, 
         matchTitles: boolean, 
-        wholeWord: boolean
+        wholeWord: boolean,
+        cancellationToken: vscode.CancellationToken
     ) {
+
         // Use `withProgress` pointing at this viewId to show the user that there is 
         //      something going on with the search
         return vscode.window.withProgress<void>({
             location: { viewId: SearchResultsView.viewId },
         }, async () => {
             // Grep results
-            const grepResults: vscode.Location[] = [];
-            for await (const result of grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord)) {
-                if (result === null) return this.searchCleared();
-                grepResults.push(result[0]);
-        
-                // Create file system-esque tree from the grep results
-                const fsTree = await createFileSystemTree(grepResults);
-        
-                // Create a node tree based off the file system tree
-                const searchResults = await recreateNodeTree(fsTree, matchTitles);
-                if (!searchResults) return this.searchCleared();
-        
-                // Filter empty nodes and nodes with single results
-                const filteredTree = cleanNodeTree(searchResults);
-        
-                // Pair up all MatchedTitleNodes with their paired SearchFileNode or SearchContainerNode, if one exists
-                const finalPairedTree = pairMatchedTitlesToNeighborNodes(filteredTree);
-                this.refresh(finalPairedTree);
-        
-            } 
-            if (grepResults.length === 0) return this.searchCleared();
+            const results = await grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+            if (results === null || results.length === 0) return this.searchCleared();
+            if (cancellationToken.isCancellationRequested) return;
+
+            const searchNodeGenerator = new SearchNodeGenerator();
+            let currentTree: SearchNode<SearchContainerNode>[] | null = null;
+
+
+            const chunkedResults = chunkArray(results, 25);
+            for (const chunk of chunkedResults) {
+                if (cancellationToken.isCancellationRequested) return;
+
+                for (const result of chunk) {
+                    if (cancellationToken.isCancellationRequested) return;
+
+                    // Iteratively insert every result in this chunk into the search result generator
+                    currentTree = await searchNodeGenerator.insertResult(result[0], matchTitles, cancellationToken);
+                }
+                // At the end of every chunk, refresh the tree
+                currentTree && this.refresh(currentTree);
+            }
+
+            // Once the entire tree for this search is completed, start creating 'title' nodes
+            //      to display any matches within the title of snips/chapters/fragments
+            currentTree = await searchNodeGenerator.createTitleNodes(cancellationToken);
+            currentTree && this.refresh(currentTree);
         });
     }
 

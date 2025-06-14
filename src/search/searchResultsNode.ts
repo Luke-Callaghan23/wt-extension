@@ -3,7 +3,7 @@ import { HasGetUri } from '../outlineProvider/UriBasedView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { VagueNodeSearchResult } from '../miscTools/help';
 import { start } from 'repl';
-import { createLabelFromTitleAndPrefix } from './processGrepResults/createNodeTree';
+import { createLabelFromTitleAndPrefix } from './searchNodeGenerator';
 
 export type FileResultNode = {
     kind: 'file';
@@ -37,10 +37,9 @@ export type SearchContainerNode = {
     title: string;
     prefix: string;
     results: number;
-    contents: SearchNode<SearchContainerNode | FileResultNode | MatchedTitleNode>[];
+    contents: Record<string, SearchNode<SearchContainerNode | FileResultNode | MatchedTitleNode>>;
     pairedMatchedTitleNode?: SearchNode<MatchedTitleNode>;
 };
-
 
 export type MatchedTitleNode = {
     kind: 'matchedTitle',
@@ -52,6 +51,7 @@ export type MatchedTitleNode = {
     labelHighlights: [number, number][];
     linkNode: Exclude<VagueNodeSearchResult, { node: null, source: null}>,
 };
+
 export type SearchNodeTemporaryText = {
     kind: 'searchTemp',
     uri: vscode.Uri;
@@ -170,7 +170,7 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
             return this.node.locations;
         }
         else if (this.node.kind === 'searchContainer') {
-            return this.node.contents;
+            return Object.values(this.node.contents);
         }
         else return [];
     }

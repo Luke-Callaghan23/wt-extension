@@ -38,7 +38,6 @@ TurndownService.prototype.escape = function (string: string) {
 
 
 
-import { JSDOM } from 'jsdom';
 import { Buff } from '../Buffer/bufferSource';
 import { commonReplacements } from '../autocorrect/autocorrect';
 

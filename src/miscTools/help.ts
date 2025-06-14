@@ -1,17 +1,8 @@
 import * as vscode from 'vscode';
 import * as extension from '../extension';
 import { Buff } from '../Buffer/bufferSource';
-import { TreeNode } from '../outlineProvider/outlineTreeProvider';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
-import { OutlineView } from '../outline/outlineView';
-import { ScratchPadView } from '../scratchPad/scratchPadView';
 import { NotebookPanelNote, NotebookPanel } from '../notebook/notebookPanel';
-import { TabLabels } from '../tabLabels/tabLabels';
-import * as childProcess from 'child_process'
-import * as vscodeUri from 'vscode-uri';
-import { HasGetUri, UriBasedView } from '../outlineProvider/UriBasedView';
-import utils = require('markdown-it/lib/common/utils');
 
 export type PromptOptions = {
     placeholder: string,
@@ -227,7 +218,8 @@ export async function determineAuxViewColumn <T>(getter: ((uri: vscode.Uri)=>Pro
     return vscode.ViewColumn.Beside;
 }
 
-export const formatFsPathForCompare = (path: vscode.Uri): string => {
+export type UriFsPathFormatted = string;
+export const formatFsPathForCompare = (path: vscode.Uri): UriFsPathFormatted => {
     let fsPath = path.fsPath;
     if (fsPath.endsWith("\\") || fsPath.endsWith("/")) {
         fsPath = fsPath.substring(0, fsPath.length-1);
@@ -262,14 +254,14 @@ export const setFsPathKey = <T>(path: vscode.Uri, value: T, obj: { [index: strin
 
 export const isSubdirectory = (sub: vscode.Uri, full: vscode.Uri): boolean => {
 
-    const normalizedRoot = extension.rootPath.fsPath.toLowerCase().replaceAll("\\", "/");
+    const normalizedRoot = extension.rootPath.fsPath.toLowerCase().replaceAll("\\", "/").replaceAll(/\/+/g, '/');
 
     const subPath = sub.fsPath;
     const fullPath = full.fsPath;
 
     // Normalize paths to handle different OS conventions (e.g., slashes vs. backslashes)
-    const normalizedSub = subPath.toLowerCase().replaceAll("\\", "/").replaceAll(normalizedRoot, "");
-    const normalizedFull = fullPath.toLowerCase().replaceAll("\\", "/").replaceAll(normalizedRoot, "");
+    const normalizedSub = subPath.toLowerCase().replaceAll("\\", "/").replaceAll(normalizedRoot, "").replaceAll(/\/+/g, '/');
+    const normalizedFull = fullPath.toLowerCase().replaceAll("\\", "/").replaceAll(normalizedRoot, "").replaceAll(/\/+/g, '/');
 
     // Check if path2 starts with path1
     return normalizedFull.startsWith(normalizedSub);
@@ -589,4 +581,11 @@ export const getNodeNamePath = async (parentNode: OutlineNode): Promise<string> 
         return extension.ExtensionGlobals.workspace.config.title;
     }
     return (await getNodeNamePath(await extension.ExtensionGlobals.outlineView.getTreeElementByUri(parentNode.data.ids.parentUri) || extension.ExtensionGlobals.outlineView.rootNodes[0])) + "/" + parentNode.data.ids.display;
+}
+export function chunkArray<T>(arr: T[], chunkSize: number): T[][] {
+    const result = [];
+    for (let i = 0; i < arr.length; i += chunkSize) {
+        result.push(arr.slice(i, i + chunkSize));
+    }
+    return result;
 }

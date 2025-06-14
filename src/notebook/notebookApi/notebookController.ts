@@ -194,7 +194,7 @@ export class WTNotebookController {
         const notebookPanelNote = this.notebook.notebook.find(note => note.noteId === noteId);
         if (!notebookPanelNote) throw 'not possible';
 
-        const edits = await this.notebook.getRenameEditsForNote(notebookPanelNote, notebookPanelNote.title, newName);
+        const edits = await this.notebook.getRenameEditsForNote(notebookPanelNote, notebookPanelNote.title, newName, new vscode.CancellationTokenSource().token);
         if (!edits) return;
         await vscode.workspace.applyEdit(edits, {
             isRefactoring: true

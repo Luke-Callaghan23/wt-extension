@@ -1,72 +1,38 @@
 import * as vscode from 'vscode';
 import * as extension from '../../extension';
 import { isSubdirectory } from '../help';
-import { gitGrep } from './gitGrep';
-import { grepper } from './findMyGrepper';
+import { Grepper } from './grepper';
+import { showMeUrGreppers } from './findGreppers';
 
-export async function *grepExtensionDirectory (
+const grepper = showMeUrGreppers();
+
+export async function grepExtensionDirectory (
     searchBarValue: string, 
     useRegex: boolean, 
     caseInsensitive: boolean, 
     wholeWord: boolean,
-): AsyncGenerator<[vscode.Location, string] | null>  {
-
+    cancellationToken: vscode.CancellationToken
+): Promise<[vscode.Location, string][] | null>  {
     const captureGroupId = 'searchResult';
 
-    // Output of a git grep command is of this format:
-    // URI:ONE_INDEXED_LINE:CONTENTS_OF_LINE
-    // This is not particularly helpful to us because if we want to generate vscode.Location objects
-    //      we are missing the start and end range of the matched text
-    // This function mainly exists to process the raw output of a git grep command output and 
-    //      transform it into vscode.Location so it can be used elsewhere in the writing environment
-
-    
     // inline search regex is a secondary regex which makes use of NodeJS's regex capture groups
     //      to do additional searches inside of CONTENTS_OF_LINE for the actual matched text
     let inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${searchBarValue})`, 'gi');
-
-    let flags: string = 'g';
-    
-    if (caseInsensitive) {
-        flags += 'i';
-    }
-
-    if (!useRegex) {
-        // If the searchBarValue is not a regex, then we have to comment out all the regex characters
-        //      inside of the text, as git grep and the rest of this function will assume searchBarValue
-        //      is the text of a regex
-        // This essentially "turns off" all the potential regex characters in the text and lets the 
-        //      rest of the code pretend that searchBarValue is a regex
-        searchBarValue = searchBarValue.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
     if (wholeWord) {
-        
-        // Also must recreate the inline search
         inlineSearchRegex = new RegExp(`${extension.wordSeparator}(?<${captureGroupId}>${searchBarValue})${extension.wordSeparator}`, 'gi');
-
-        // Basically a git grep command requires a very specific formatting for the special characters in a regex
-        // So, we cannot rely on existing word separators that have been declared elsewhere in this project
-        // Have to recreate the regex using these special word separators
-        const shellWordSeparatorStart = '(^|\\s|-|[.?:;,()\\!\\&\\"\'^_*~])';
-        const shellWordSeparatorEnd = '(\\s|-|[.?:;,()\\!\\&\\"\'^_*~]|$)';
-        searchBarValue = `${shellWordSeparatorStart}${searchBarValue}${shellWordSeparatorEnd}`;
     }
-
-    const regex = new RegExp(searchBarValue, flags);
 
     const parseOutput: RegExp = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
 
-    const reses: (string | null)[] = [];
-    for await (const result of grepper(regex)) {
-        reses.push(result);
-    }
-
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
-    for await (const result of grepper(regex)) {
+    const lines = await grepper.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+    if (lines === null) return null;
+
+    const output: [vscode.Location, string][] = [];
+    for (const result of lines) {
         // If `grep` returns null, then something went wrong with the search, and the whole thing should be treated as null
-        if (result === null) return null;
+        if (cancellationToken.isCancellationRequested) return null;
 
         const match = parseOutput.exec(result);
         if (!match || match.length === 0 || !match.groups) continue;
@@ -118,8 +84,9 @@ export async function *grepExtensionDirectory (
                 )
             ) {
                 // Finally, finally, finally yield the result
-                yield [ new vscode.Location(uri, foundRange), lineMatch[0] ];
+                output.push([ new vscode.Location(uri, foundRange), lineMatch[0] ]);
             }
         }
     }
+    return output;
 }
