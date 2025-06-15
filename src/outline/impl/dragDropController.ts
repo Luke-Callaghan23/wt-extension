@@ -6,7 +6,7 @@ import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { MoveNodeResult } from '../nodes_impl/handleMovement/common';
 import { ScratchPadView } from '../../scratchPad/scratchPadView';
 import { ExtensionGlobals } from '../../extension';
-import { defaultProgress, getSectionedProgressReporter, progressOnViews, setFsPathKey } from '../../miscTools/help';
+import { defaultProgress, getNodeNamePath, getSectionedProgressReporter, progressOnViews, setFsPathKey } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
 
 export type DataTransferType = 
@@ -14,11 +14,42 @@ export type DataTransferType =
     | 'application/vnd.code.tree.recycling'
     | 'application/vnd.code.tree.scratch'
     | 'application/vnd.code.copied'
+    | 'application/vnd.code.tree.import.fileexplorer'
     ;
 
 export async function handleDropController (this: OutlineView, target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
     const targ = target || this.rootNodes[0];
     if (!targ) throw 'unreachable';
+
+    // Handle drops from the import file system view
+    // These are handled specially because they do not involve messing with outline trees or internal nodes
+    //      it just opens the import form and goes through the normal importing process
+    // INFO: this entire block isn't using Entry or DroppedSourceInfo types from import views because if I imported them
+    //      in the main extension I'd have to do a lot of annoying stuff to avoid importing them in the
+    //      web extension
+    const importData = dataTransfer.get('application/vnd.code.tree.import.fileexplorer');
+    if (importData) {
+
+        // Parse the entries from the data transfer item
+        let entries: { uri: vscode.Uri }[];
+        if (typeof importData.value === 'string') {
+            entries = JSON.parse(importData.value);
+        }
+        else {
+            entries = importData.value as { uri: vscode.Uri } [];
+        }
+
+        // Open the import form with all the dropped entry uris
+        const uris = entries.map(({ uri }) => uri);
+        vscode.commands.executeCommand('wt.import.fileExplorer.importFolder', uris, {
+            node: targ,
+            namePath: await getNodeNamePath(targ),
+            destination: targ.data.ids.type === 'chapter'
+                ? 'chapter'
+                : 'snip'
+        });
+    }
+
 
     let overrideDestination: OutlineNode | null = null;
 
@@ -31,7 +62,7 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
 
     const moveOperations: { 
         dataTransferType: DataTransferType, 
-        operation: 'move' | 'recover' | 'scratch' | 'paste',
+        operation: 'move' | 'recover' | 'scratch' | 'paste' | 'import',
         sourceProvider: UriBasedView<OutlineNode>
     }[] = [{
         dataTransferType: 'application/vnd.code.tree.outline',
@@ -52,7 +83,6 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
     }];
 
     for (const{ dataTransferType, operation, sourceProvider } of moveOperations) {
-        
         const transferItems = dataTransfer.get(dataTransferType);
         if (!transferItems) continue;
         

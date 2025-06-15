@@ -250,8 +250,22 @@ export async function newSnip (
                 }
             case 'fragment':
                 {
-                    const chapterOrRoot = (await resource.getContainerParent(this)).data as ChapterNode | RootNode;
-                    parentNode = chapterOrRoot.snips as OutlineNode;
+                    // Resource is a fragment --
+                    const directParent = await this.getTreeElementByUri(resource.data.ids.parentUri)
+                    if (directParent) {
+                        // If the parent of the fragment is a chapter, then create the new snip as a child of the fragment
+                        if (resource.data.ids.parentTypeId === 'chapter') {
+                            parentNode = (directParent.data as ChapterNode).snips;
+                        }
+                        // If the parent is a snip, then add the snip as a child of that snip
+                        else {
+                            parentNode = directParent;
+                        }
+                    }
+                    else {
+                        // Default just toss it into the work snips container
+                        parentNode = (this.rootNodes[0].data as RootNode).snips;
+                    }
                     break;
                 }
             case 'container':

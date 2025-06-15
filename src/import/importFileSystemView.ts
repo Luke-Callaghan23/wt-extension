@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri'
 import { Workspace } from '../workspace/workspaceClass';
 import * as console from '../miscTools/vsconsole';
-import { ImportForm } from './importFormView';
+import { DroppedSourceInfo, ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
 import * as extension from './../extension';
 import {sep} from 'path';
@@ -141,9 +141,16 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 			new ImportForm(this.context.extensionUri, this.context, [ uri ]);
 		}));
 
-		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importFolder', (folderUri: vscode.Uri) => {
-			const subFolder = this.allDocs.filter(file => file.fsPath.includes(folderUri.fsPath + sep) && file.fsPath !== folderUri.fsPath);
-			new ImportForm(this.context.extensionUri, this.context, subFolder);
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importFolder', (folderUris: vscode.Uri | vscode.Uri[], droppedSourceInfo?: DroppedSourceInfo) => {
+			const targets: vscode.Uri[] = [];
+			if (!Array.isArray(folderUris)) {
+				folderUris = [ folderUris ];
+			}
+			for (const uri of folderUris) {
+				targets.push(...this.allDocs.filter(file => file.fsPath.includes(uri.fsPath + sep) && file.fsPath !== uri.fsPath));	
+			}
+			if (targets.length === 0) return;
+			new ImportForm(this.context.extensionUri, this.context, targets, droppedSourceInfo);
 		}));
 
 		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.refresh', () => this.refresh()));
