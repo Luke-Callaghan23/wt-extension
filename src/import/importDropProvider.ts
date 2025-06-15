@@ -58,7 +58,8 @@ export class ImportDocumentProvider implements vscode.DocumentDropEditProvider, 
         
             const finalDest = vscode.Uri.joinPath(dest, basename);
 
-            vscode.workspace.fs.readFile(uri);
+            const buff = await vscode.workspace.fs.readFile(uri);
+            console.log(buff.toString());
 
             try {
                 await vscode.workspace.fs.copy(uri, finalDest);
