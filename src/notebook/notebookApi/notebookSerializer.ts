@@ -287,9 +287,9 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     }
 
     async readSerializedNotebookPanel (notebookFolder: vscode.Uri): Promise<SerializedNote[]> {
-        const readPromises: PromiseLike<SerializedNote>[] = [];
+        const readPromises: PromiseLike<SerializedNote | null>[] = [];
         for (const [ fileName, type ] of await vscode.workspace.fs.readDirectory(notebookFolder)) {
-            if (type !== vscode.FileType.File) {
+            if (type !== vscode.FileType.File || fileName.toLocaleLowerCase().endsWith(".wtnote")) {
                 continue;
             }
 
@@ -300,14 +300,21 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 .then(this.readSerializedNote.bind(this))       // JSON parse to SerializedNote
             );
         }
-        return Promise.all(readPromises);
+        return Promise.all(readPromises).then(notes => {
+            return notes.filter(note => note) as SerializedNote[];
+        });
     }
 
 
-    async readSerializedNote (buffer: ArrayBufferLike): Promise<SerializedNote> {
-        const text = extension.decoder.decode(buffer);
-        const serializedNote: SerializedNote = JSON.parse(text);
-        return serializedNote;
+    async readSerializedNote (buffer: ArrayBufferLike): Promise<SerializedNote | null> {
+        try {
+            const text = extension.decoder.decode(buffer);
+            const serializedNote: SerializedNote = JSON.parse(text);
+            return serializedNote;
+        }
+        catch (err: any) {
+            return null;
+        }
     };
 
     async writeSingleNote (note: NotebookPanelNote): Promise<vscode.Uri> {
@@ -551,6 +558,11 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
         // Read and sort the contents of the note from disk
         const serializedNote = await this.readSerializedNote(content);
+        if (!serializedNote) {
+            return {
+                cells: [],
+            }
+        }
         serializedNote.headers.sort((a, b) => a.headerOrder - b.headerOrder);
         
         // Create the title cell at the top of the document
