@@ -7,7 +7,8 @@ import { DroppedSourceInfo, ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
 import * as extension from './../extension';
 import {sep} from 'path';
-import { compareFsPath, getNodeNamePath } from '../miscTools/help';
+import { compareFsPath, getNodeNamePath, getDateString, statFile } from '../miscTools/help';
+import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 
 export interface Entry {
 	uri: vscode.Uri;
@@ -130,6 +131,64 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		this.refresh();
 	}
 
+	private async importDroppedDocument (docs: vscode.Uri[], dropped: OutlineNode, copy: boolean = true) {
+		const fileNames: string[] = [];
+		const exts = new Set<string>();
+		const moves: [ vscode.Uri, vscode.Uri ][] = [];
+
+
+		let destinationFolder: vscode.Uri;
+		if (docs.length > 1) {
+			destinationFolder = vscode.Uri.joinPath(this.importFolder, `Imported ${getDateString()}`);
+			if (!(await statFile(destinationFolder))) {
+				await vscode.workspace.fs.createDirectory(destinationFolder);
+			}
+		}
+		else {
+			destinationFolder = this.importFolder;
+		}
+		
+		// Only import the incoming document as a chapter if it was dropped directly into the '/data/chapters' folder
+		const destinationKind: 'snip' | 'chapter' = compareFsPath(dropped.data.ids.uri, extension.ExtensionGlobals.workspace.chaptersFolder)
+			? 'chapter'
+			: 'snip'
+		const nodeNamePath = await getNodeNamePath(dropped);
+		
+		for (let index = 0; index < docs.length; index++) {
+			const doc = docs[index];
+			const filename = vscodeUris.Utils.basename(doc);
+			fileNames.push(filename);
+			exts.add(vscodeUris.Utils.extname(doc));
+
+			const finalLocation = vscode.Uri.joinPath(destinationFolder, filename);
+			moves.push([ doc, finalLocation ]);
+		}
+
+		const response = await vscode.window.showInformationMessage(`Import '${fileNames.join("', '")}' into workspace?`, {
+			modal: true,
+			detail: `We detected ${docs.length} new '${[...exts].join("', '")}' file(s) added to your project at path (${nodeNamePath}).  Would you like to import them into your project as .wt file(s) in the same location?  (This action will move the original document(s) into /data/imports, and open an imports form to complete the rest of the importing)`
+		}, 'Import');
+		if (response !== 'Import') return;
+
+		// If the user does want to import the file, then first move the document from its original location and into the imports folder
+		const fsUpdateFunction = copy
+			? vscode.workspace.fs.copy
+			: vscode.workspace.fs.rename;
+
+		const movedFiles = await Promise.all(moves.map(([ src, dest ]) => {
+			return fsUpdateFunction(src, dest, { overwrite: true }).then(() => {
+				return dest;
+			})
+		}));
+		
+		new ImportForm(this.context.extensionUri, this.context, movedFiles, {
+			node: dropped,
+			namePath: nodeNamePath,
+			destination: destinationKind
+		});
+
+	}
+
 	registerCommands() {
 		
 		// Open import form
@@ -186,6 +245,8 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 				return vscode.commands.executeCommand('remote-wsl.revealInExplorer', tabUri?.uri || this.importFolder);
 			}
 		}));
+
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importDroppedDocuments', this.importDroppedDocument.bind(this)));
 	}
 
     private importFolder: vscode.Uri;
@@ -218,37 +279,11 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 			true, 			// ignore delete events
 		);
 		
-		importWatcher.onDidCreate(async (newDoc) => {
+		importWatcher.onDidCreate(async (newDoc: vscode.Uri) => {
 			const dirname = vscodeUris.Utils.dirname(newDoc);
-			const filename = vscodeUris.Utils.basename(newDoc);
-			const ext = vscodeUris.Utils.extname(newDoc);
-
 			const insertedNode = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(dirname);
 			if (!insertedNode) return;
-			const nodeNamePath = await getNodeNamePath(insertedNode);
-
-			// Only import the incoming document as a chapter if it was dropped directly into the '/data/chapters' folder
-			const destinationKind: 'snip' | 'chapter' = compareFsPath(insertedNode.data.ids.uri, extension.ExtensionGlobals.workspace.chaptersFolder)
-				? 'chapter'
-				: 'snip';
-
-			const response = await vscode.window.showInformationMessage(`Import '${filename}' into workspace?`, {
-				modal: true,
-				detail: `We detected a new '${ext}' file added to your project at path (${nodeNamePath}).  Would you like to import this document into your project as .wt file(s) in the same location?  (This action will move the original document into /data/imports, and open an imports form to complete the rest of the importing)`
-			}, 'Import');
-			if (response !== 'Import') return;
-
-			// If the user does want to import the file, then first move the document from its original location and into the imports folder
-			const movedLocation = vscode.Uri.joinPath(this.importFolder, filename);
-			await vscode.workspace.fs.rename(
-				newDoc,
-				movedLocation
-			);
-			new ImportForm(this.context.extensionUri, this.context, [ movedLocation ], {
-				node: insertedNode,
-				namePath: nodeNamePath,
-				destination: destinationKind
-			});
+			this.importDroppedDocument([ newDoc ], insertedNode, false);
 		});
 
 		context.subscriptions.push(importWatcher);

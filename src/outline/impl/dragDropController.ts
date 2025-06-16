@@ -15,6 +15,7 @@ export type DataTransferType =
     | 'application/vnd.code.tree.scratch'
     | 'application/vnd.code.copied'
     | 'application/vnd.code.tree.import.fileexplorer'
+    | 'text/uri-list'
     ;
 
 export async function handleDropController (this: OutlineView, target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
@@ -27,16 +28,16 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
     // INFO: this entire block isn't using Entry or DroppedSourceInfo types from import views because if I imported them
     //      in the main extension I'd have to do a lot of annoying stuff to avoid importing them in the
     //      web extension
-    const importData = dataTransfer.get('application/vnd.code.tree.import.fileexplorer');
-    if (importData) {
+    const importTreeData = dataTransfer.get('application/vnd.code.tree.import.fileexplorer');
+    if (importTreeData) {
 
         // Parse the entries from the data transfer item
         let entries: { uri: vscode.Uri }[];
-        if (typeof importData.value === 'string') {
-            entries = JSON.parse(importData.value);
+        if (typeof importTreeData.value === 'string') {
+            entries = JSON.parse(importTreeData.value);
         }
         else {
-            entries = importData.value as { uri: vscode.Uri } [];
+            entries = importTreeData.value as { uri: vscode.Uri } [];
         }
 
         // Open the import form with all the dropped entry uris
@@ -48,6 +49,14 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
                 ? 'chapter'
                 : 'snip'
         });
+    }
+
+    // Handle drops from outside file system into Outline Tree
+    // See above comments
+    const importUriData = dataTransfer.get('text/uri-list');
+    if (importUriData) {
+        const uris: vscode.Uri[] = importUriData.value.split('\n').map((uriString: string) => vscode.Uri.parse(uriString.trim()));
+        await vscode.commands.executeCommand('wt.import.fileExplorer.importDroppedDocuments', uris, target);
     }
 
 

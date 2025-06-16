@@ -283,7 +283,8 @@ export function getAllIndices (str: string, subStr: string): number[] {
 
 export async function statFile (uri: vscode.Uri): Promise<vscode.FileStat | null> {
     try {
-        return vscode.workspace.fs.stat(uri);
+        const stat = await vscode.workspace.fs.stat(uri);
+        return stat;
     }
     catch (err) {
         return null;
@@ -582,10 +583,22 @@ export const getNodeNamePath = async (parentNode: OutlineNode): Promise<string> 
     }
     return (await getNodeNamePath(await extension.ExtensionGlobals.outlineView.getTreeElementByUri(parentNode.data.ids.parentUri) || extension.ExtensionGlobals.outlineView.rootNodes[0])) + "/" + parentNode.data.ids.display;
 }
+
+
 export function chunkArray<T>(arr: T[], chunkSize: number): T[][] {
     const result = [];
     for (let i = 0; i < arr.length; i += chunkSize) {
         result.push(arr.slice(i, i + chunkSize));
     }
     return result;
+}
+
+export function getDateString (): string {
+    // Make a date string for the new snip aggregate
+    const date = new Date();
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based
+    const year = date.getFullYear();
+    const dateStr = `${month}-${day}-${year}`;
+    return dateStr;
 }

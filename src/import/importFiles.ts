@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
-import { __, compareFsPath, ConfigFileInfo, getNodeNamePath, getSectionedProgressReporter } from '../miscTools/help';
+import { __, compareFsPath, ConfigFileInfo, getNodeNamePath, getSectionedProgressReporter, getDateString } from '../miscTools/help';
 import { getUsableFileName, newSnip } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
@@ -94,16 +94,6 @@ type SplitInfo = {
     fragmentSplitRegex: RegExp | undefined,
     outerSplitRegex: RegExp | undefined
 };
-
-const getSnipDateString = () => {
-    // Make a date string for the new snip aggregate
-    const date = new Date();
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based
-    const year = date.getFullYear();
-    const dateStr = `${month}-${day}-${year}`;
-    return dateStr;
-}
 
 function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
 
@@ -529,7 +519,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
     }
 
     // Make a date string for the new snip aggregate
-    const dateStr = getSnipDateString();
+    const dateStr = getDateString();
 
     // If this is a multi split, then we want to store all splits in a newly created snip container in the `parentNode` calculated above
     if (docSplits.type === 'multi') {
@@ -725,7 +715,7 @@ export async function handleImport (docInfo: ImportDocumentInfo, droppedSource: 
             const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
             const workSnipsContainer = (outlineView.rootNodes[0].data as RootNode).snips;
             const snipUri = await outlineView.newSnip(workSnipsContainer, {
-                defaultName: `Imported ${getSnipDateString()}`,
+                defaultName: `Imported ${getDateString()}`,
                 preventRefresh: true,
                 skipFragment: true,
             });
@@ -784,7 +774,7 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
 
         progress.report({ message: "Preparing import" });
     
-        const workSnipsParentName =  `Imported ${getSnipDateString()}`;
+        const workSnipsParentName =  `Imported ${getDateString()}`;
         const workSnipAdditionalPathName = getUsableFileName('snip');
     
         let splits: DocSplit;
@@ -904,7 +894,7 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
             }
 
             // Make a date string for the new snip aggregate
-            const dateStr = getSnipDateString();
+            const dateStr = getDateString();
 
             // If this is a multi split, then we want to store all splits in a newly created snip container in the `parentNode` calculated above
             if (docSplits.type === 'multi') {
