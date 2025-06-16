@@ -7,7 +7,7 @@ import { DroppedSourceInfo, ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
 import * as extension from './../extension';
 import {sep} from 'path';
-import { compareFsPath, getNodeNamePath, getDateString, statFile } from '../miscTools/help';
+import { compareFsPath, getNodeNamePath, getDateString, statFile, __ } from '../miscTools/help';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 
 export interface Entry {
@@ -267,10 +267,18 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 			showCollapseAll: true, 
 		}));
 
+		// TODO: if you ever want to write code to intercept dropped documents and paste the content into the current file
+		// TODO: IMO, this is unnecessary and confusing, but may come back to it anyways
+		// const wtSelector: readonly vscode.DocumentFilter[] = this.workspace.importFileTypes.map(fileType => __<vscode.DocumentFilter>({
+		// 	language: fileType
+		// }));
+		// context.subscriptions.push(vscode.languages.registerDocumentDropEditProvider(wtSelector, documentDropProvider));
+
 
 		const filterWt = workspace.importFileTypes
 			.filter(importExt => importExt.toLocaleLowerCase() !== 'wt')
 			.join(',');
+
 		const importWatcher = vscode.workspace.createFileSystemWatcher(
 			new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{${filterWt}}`),
 			// `data/{chapters,snips}/**/*.{${filterWt}}`,
@@ -285,6 +293,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 			if (!insertedNode) return;
 			this.importDroppedDocument([ newDoc ], insertedNode, false);
 		});
+
 
 		context.subscriptions.push(importWatcher);
         this.registerCommands();
