@@ -453,7 +453,7 @@ async function select (
                         });
                     });
                 })).then(view => {
-                    view.view.reveal(selected.node, {
+                    view.expandAndRevealOutlineNode(selected.node, {
                         expand: true,
                         select: true,
                     });

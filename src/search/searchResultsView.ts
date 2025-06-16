@@ -110,7 +110,7 @@ export class SearchResultsView
                 case 'outline': provider = extension.ExtensionGlobals.outlineView; break;
                 case 'recycle': provider = extension.ExtensionGlobals.recyclingBinView; break;
             }
-            provider.view.reveal(node.node.linkNode.node);
+            provider.expandAndRevealOutlineNode(node.node.linkNode.node);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.wtSearch.results.revealNodeInOutline", async (node: SearchNode<SearchNodeKind>) => {
@@ -133,7 +133,7 @@ export class SearchResultsView
                 case 'recycle': provider = extension.ExtensionGlobals.recyclingBinView; break;
                 case 'scratch': provider = extension.ExtensionGlobals.scratchPadView; break;
             }
-            provider.view.reveal(nodeResult.node);
+            return provider.expandAndRevealOutlineNode(nodeResult.node);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.wtSearch.results.hideNode", (node: SearchNode<SearchNodeKind>) => {

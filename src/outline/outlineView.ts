@@ -22,7 +22,7 @@ import { handleDragController, handleDropController } from './impl/dragDropContr
 import { TODOsView } from '../TODO/TODOsView';
 import * as search from '../miscTools/searchFiles';
 import { NodeMoveKind } from './nodes_impl/handleMovement/generalMoveNode';
-import { defaultProgress } from '../miscTools/help';
+import { defaultProgress, getRelativePath, RevealOptions } from '../miscTools/help';
 
 export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Renamable<OutlineNode> {
     // Deleting nodes

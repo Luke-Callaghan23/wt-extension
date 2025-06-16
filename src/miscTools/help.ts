@@ -3,6 +3,7 @@ import * as extension from '../extension';
 import { Buff } from '../Buffer/bufferSource';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { NotebookPanelNote, NotebookPanel } from '../notebook/notebookPanel';
+import { OutlineView } from '../outline/outlineView';
 
 export type PromptOptions = {
     placeholder: string,
@@ -602,3 +603,10 @@ export function getDateString (): string {
     const dateStr = `${month}-${day}-${year}`;
     return dateStr;
 }
+
+export type RevealOptions = {
+    readonly select?: boolean;
+    readonly focus?: boolean;
+    readonly expand?: boolean | number;
+}
+

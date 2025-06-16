@@ -40,7 +40,7 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
         }
 
         // Reveal and focus the node
-        view.reveal(node as OutlineNode, {
+        this.expandAndRevealOutlineNode(node as OutlineNode, {
             expand: true,
             focus: false,
             select: true

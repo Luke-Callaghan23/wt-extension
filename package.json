@@ -2493,8 +2493,7 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
-		"lint": "eslint \"src/**/*.ts\"",
-		"postinstall": "node ./node_modules/@vscode/ripgrep/lib/postinstall.js --force"
+		"lint": "eslint \"src/**/*.ts\""
 	},
 	"devDependencies": {
 		"@types/glob": "^7.2.0",

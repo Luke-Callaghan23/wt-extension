@@ -114,15 +114,15 @@ export class Toolbar {
                 return vscode.window.showErrorMessage(`[ERROR] Unable to find Outline fragment for uri '${tabUri.fsPath}'`);
             }
             switch (searchResult.source) {
-                case 'outline': return ExtensionGlobals.outlineView.view.reveal(searchResult.node, {
+                case 'outline': return ExtensionGlobals.outlineView.expandAndRevealOutlineNode(searchResult.node, {
                     expand: true,
                     select: true,
                 });
-                case 'recycle': return ExtensionGlobals.recyclingBinView.view.reveal(searchResult.node, {
+                case 'recycle': return ExtensionGlobals.recyclingBinView.expandAndRevealOutlineNode(searchResult.node, {
                     expand: true,
                     select: true,
                 });
-                case 'scratch': return ExtensionGlobals.scratchPadView.view.reveal(searchResult.node, {
+                case 'scratch': return ExtensionGlobals.scratchPadView.expandAndRevealOutlineNode(searchResult.node, {
                     expand: true,
                     select: true,
                 });
