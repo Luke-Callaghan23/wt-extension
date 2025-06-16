@@ -72,7 +72,13 @@ export class OutlineNode extends TreeNode {
     getDroppableUris(): vscode.Uri[] {
         switch (this.data.ids.type) {
             // Root and containers cannot drop any uris
-            case 'root': case 'container': return [];
+            case 'root': return [];
+            case 'container': 
+                return (this.data as ContainerNode).contents
+                    .sort((a, b) => a.data.ids.ordering - b.data.ids.ordering)
+                    .map(content => {
+                        return content.getDroppableUris();
+                    }).flat();
             // Chapters and snips drop just the immediate fragment node children
             case 'chapter':
                 const data = this.data as ChapterNode;
@@ -88,6 +94,9 @@ export class OutlineNode extends TreeNode {
                     .map(content => {
                         if (content.data.ids.type === 'fragment') {
                             return content.getUri();
+                        }
+                        else if (content.data.ids.type === 'snip') {
+                            return content.getDroppableUris();
                         }
                         return [];
                     })
