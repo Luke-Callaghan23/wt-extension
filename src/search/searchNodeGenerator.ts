@@ -45,7 +45,12 @@ export function createLabelFromTitleAndPrefix (title: string, prefix: string): s
 
 
 type Categories = 'chapters' | 'snips' | 'scratchPad' | 'recycle' | 'notebook';
-type LabelProvider = (uri: vscode.Uri) => Promise<[ string, string ] | null>;
+type LabelDetails = {
+    title: string,
+    prefix: string,
+    ordering: number
+};
+type LabelProvider = (uri: vscode.Uri) => Promise<LabelDetails | null>;
 
 export class CreateSearchResults {
     
@@ -70,6 +75,7 @@ export class CreateSearchResults {
                 parentUri: vscode.Uri.joinPath(extension.rootPath, 'data'),
                 title: 'Chapters',
                 prefix: '',
+                ordering: 0,
             }),
             'snips': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
@@ -80,6 +86,7 @@ export class CreateSearchResults {
                 parentUri: vscode.Uri.joinPath(extension.rootPath, 'data'),
                 title: 'Work Snips',
                 prefix: '',
+                ordering: 0,
             }),
             'scratchPad': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
@@ -90,6 +97,7 @@ export class CreateSearchResults {
                 parentUri: vscode.Uri.joinPath(extension.rootPath, 'data'),
                 title: 'Scratch Pad',
                 prefix: '',
+                ordering: 0,
             }),
             'recycle': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
@@ -100,6 +108,7 @@ export class CreateSearchResults {
                 parentUri: vscode.Uri.joinPath(extension.rootPath, 'data'),
                 title: 'Recycling Bin',
                 prefix: '',
+                ordering: 0,
             }),
             'notebook': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
@@ -110,6 +119,7 @@ export class CreateSearchResults {
                 parentUri: vscode.Uri.joinPath(extension.rootPath, 'data'),
                 title: 'Work Notebook',
                 prefix: '',
+                ordering: 0,
             }),
         };
         this.docMap = {};
@@ -118,16 +128,24 @@ export class CreateSearchResults {
     private getLabelProviders (): Record<Categories, LabelProvider> {
 
         const mainLabelProvider = (view: UriBasedView<OutlineNode>) => {
-            return async (uri: vscode.Uri): Promise<[ string, string ] | null> => {
+            return async (uri: vscode.Uri): Promise<LabelDetails | null> => {
                 const node = await view.getTreeElementByUri(uri);
                 if (!node) return null;
 
                 
                 if (node.data.ids.type !== 'container') {
-                    return [ capitalize(node.data.ids.type), `${node.data.ids.display}` ]
+                    return {
+                        prefix: capitalize(node.data.ids.type), 
+                        title: node.data.ids.display,
+                        ordering: node.data.ids.ordering
+                    }
                 }
                 else {
-                    return [ '', "Chapter Snips Container" ];
+                    return {
+                        prefix: '', 
+                        title: "Chapter Snips Container",
+                        ordering: node.data.ids.ordering
+                    };
                 }
             };
         };
@@ -141,7 +159,11 @@ export class CreateSearchResults {
             'notebook': async (uri: vscode.Uri) => {
                 const note = extension.ExtensionGlobals.notebookPanel.getNote(uri);
                 if (!note) return null;
-                return [ 'Note', note.title ];
+                return {
+                    prefix: 'Note', 
+                    title: note.title,
+                    ordering: 0
+                };
             }
         }
     }
@@ -213,6 +235,11 @@ export class CreateSearchResults {
                         ? [ `Note`, linkNode.node.title ]
                         : [ `${capitalize(linkNode.node.data.ids.type)}`, linkNode.node.data.ids.display ];
     
+                    let ordering: number = 0;
+                    if (node.node instanceof OutlineNode) {
+                        ordering = node.node.data.ids.ordering;
+                    }
+
                     const matchedTitleNode = new SearchNode<MatchedTitleNode>({
                         kind: 'matchedTitle',
                         prefix: prefix,
@@ -222,6 +249,7 @@ export class CreateSearchResults {
                         parentUri: parent.node.uri,
                         labelHighlights: highlights,
                         uri: entryUri,
+                        ordering: ordering
                     });
 
                     if (parent.node.contents[entryFileName] && (parent.node.contents[entryFileName].node.kind === 'file' || parent.node.contents[entryFileName].node.kind === 'searchContainer')) {
@@ -411,7 +439,7 @@ export class CreateSearchResults {
                 continue;
             }
 
-            const [ prefix, title ] = label;
+            const { prefix, title, ordering } = label;
 
             // If we have encountered this path segment before and added it to the node tree:
             if (parentNode.node.contents[segment]) {
@@ -448,6 +476,7 @@ export class CreateSearchResults {
                         locations: [await this.createLocationNode(uri, location, parentLabels, title, prefix)],
                         uri: uri,
                         parentUri: parentUri,
+                        ordering: ordering
                     });
                 }
                 else {
@@ -462,6 +491,7 @@ export class CreateSearchResults {
                         uri: uri,
                         parentUri: parentUri,
                         results: 0,
+                        ordering: ordering
                     });
                     parentLabels.push(createLabelFromTitleAndPrefix(title, prefix));
 

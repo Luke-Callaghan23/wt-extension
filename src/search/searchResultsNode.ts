@@ -15,6 +15,7 @@ export type FileResultNode = {
     prefix: string;
     locations: SearchNode<FileResultLocationNode>[];
     pairedMatchedTitleNode?: SearchNode<MatchedTitleNode>;
+    ordering: number;
 }
 
 export type FileResultLocationNode = {
@@ -39,6 +40,7 @@ export type SearchContainerNode = {
     results: number;
     contents: Record<string, SearchNode<SearchContainerNode | FileResultNode | MatchedTitleNode>>;
     pairedMatchedTitleNode?: SearchNode<MatchedTitleNode>;
+    ordering: number;
 };
 
 export type MatchedTitleNode = {
@@ -49,7 +51,8 @@ export type MatchedTitleNode = {
     title: string;
     prefix: string;
     labelHighlights: [number, number][];
-    linkNode: Exclude<VagueNodeSearchResult, { node: null, source: null}>,
+    linkNode: Exclude<VagueNodeSearchResult, { node: null, source: null}>;
+    ordering: number;
 };
 
 export type SearchNodeTemporaryText = {
@@ -167,10 +170,10 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
         insertIntoNodeMap: (node: HasGetUri, uri: vscode.Uri) => void
     ): Promise<SearchNode<FileResultNode | SearchContainerNode | MatchedTitleNode | FileResultLocationNode>[]> {
         if (this.node.kind === 'file') {
-            return this.node.locations;
+            return this.node.locations.sort((a, b) => a.node.location.range.start.compareTo(b.node.location.range.start));
         }
         else if (this.node.kind === 'searchContainer') {
-            return Object.values(this.node.contents);
+            return Object.values(this.node.contents).sort((a, b) => a.node.ordering - b.node.ordering);
         }
         else return [];
     }
