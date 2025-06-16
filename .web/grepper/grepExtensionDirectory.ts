@@ -31,12 +31,13 @@ async function getDataDirectoryPaths(): Promise<vscode.Uri[]> {
 }
 
 
-export async function *grepExtensionDirectory (
+export async function grepExtensionDirectory (
     searchBarValue: string, 
     useRegex: boolean, 
     caseInsensitive: boolean, 
     wholeWord: boolean,
-): AsyncGenerator<[vscode.Location, string] | null>  {
+    cancellationToken: vscode.CancellationToken
+): Promise<[ vscode.Location, string ][] | null>  {
 
     const captureGroupId = 'searchTerm';
 
@@ -58,8 +59,8 @@ export async function *grepExtensionDirectory (
         }
     }
 
+    const results: [ vscode.Location, string ][] = [];
     const regex = new RegExp(searchBarValue, flags);
-
     try {
         const applicableUris = await getDataDirectoryPaths();
 
@@ -103,7 +104,7 @@ export async function *grepExtensionDirectory (
                     const endPosition = new vscode.Position(lineIndex, characterEnd);
                     const foundRange = new vscode.Selection(startPosition, endPosition);
             
-                    yield [new vscode.Location(openedDoc.uri, foundRange), searchedText];
+                    results.push([new vscode.Location(openedDoc.uri, foundRange), searchedText]);
                     lastLineMatch = lineMatch;
                 }
             }
@@ -112,7 +113,7 @@ export async function *grepExtensionDirectory (
             documentPromises.splice(index, 1);
             documents.push(openedDoc);
         }
-        return locations;
+        return results;
     }
     catch (err: any) {
         console.log(err);

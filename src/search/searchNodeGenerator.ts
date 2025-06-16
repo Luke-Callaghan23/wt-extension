@@ -253,7 +253,7 @@ export class CreateSearchResults {
                     });
 
                     if (parent.node.contents[entryFileName] && (parent.node.contents[entryFileName].node.kind === 'file' || parent.node.contents[entryFileName].node.kind === 'searchContainer')) {
-                        parent.node.contents[entryFileName].node.pairedMatchedTitleNode = matchedTitleNode;
+                        (parent.node.contents[entryFileName].node as SearchContainerNode | FileResultNode).pairedMatchedTitleNode = matchedTitleNode;
                     }
                     else {
                         parent.node.contents[Math.random() + ""] = matchedTitleNode;

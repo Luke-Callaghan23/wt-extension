@@ -6,8 +6,9 @@ import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { MoveNodeResult } from '../nodes_impl/handleMovement/common';
 import { ScratchPadView } from '../../scratchPad/scratchPadView';
 import { ExtensionGlobals } from '../../extension';
-import { defaultProgress, getNodeNamePath, getSectionedProgressReporter, progressOnViews, setFsPathKey } from '../../miscTools/help';
+import { defaultProgress, getNodeNamePath, getSectionedProgressReporter, isSubdirectory, progressOnViews, setFsPathKey } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
+import * as vscodeUri from 'vscode-uri';
 
 export type DataTransferType = 
     'application/vnd.code.tree.outline'
@@ -55,8 +56,19 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
     // See above comments
     const importUriData = dataTransfer.get('text/uri-list');
     if (importUriData) {
-        const uris: vscode.Uri[] = importUriData.value.split('\n').map((uriString: string) => vscode.Uri.parse(uriString.trim()));
-        await vscode.commands.executeCommand('wt.import.fileExplorer.importDroppedDocuments', uris, target);
+        const uris: vscode.Uri[] = importUriData.value.split('\n')
+            .map((uriString: string) => vscode.Uri.parse(uriString.trim()))
+            .filter((uri: vscode.Uri) => {
+                const ext = vscodeUri.Utils.extname(uri).replace(".", "");
+
+                // Only try to import valid file types that come from outside WTANIWE
+                return !(isSubdirectory(this.workspace.chaptersFolder, uri) || isSubdirectory(this.workspace.workSnipsFolder, uri) || isSubdirectory(this.workspace.scratchPadFolder, uri) || isSubdirectory(this.workspace.recyclingBin, uri))
+                    && this.workspace.importFileTypes.includes(ext)
+            });
+
+        if (uris.length > 0) {
+            await vscode.commands.executeCommand('wt.import.fileExplorer.importDroppedDocuments', uris, target);
+        }
     }
 
 

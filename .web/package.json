@@ -84,7 +84,7 @@
 				"wt.showPanels.notebook": {
 					"type": "boolean",
 					"default": true,
-					"description": "Determines whether you want to show the 'Work Bible' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+					"description": "Determines whether you want to show the 'Notes' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
 				},
 				"wt.timedSearches.overview": {
 					"description": "Enable automatic querying for the 'Text Overview' panel",

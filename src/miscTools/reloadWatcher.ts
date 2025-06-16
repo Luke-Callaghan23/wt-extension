@@ -149,6 +149,13 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs" 
 
         const currentTabGroupsKeys = Object.keys(currentTabState);
         const contextTabGroupsKeys = Object.keys(contextTabState);
+
+        if (contextTabGroupsKeys.length === 0) {
+            // If there are 0 tabs in the context file, then don't bother asking to restore
+            // Probably means this is their first install.  Don't want to confuse them.
+            return;
+        }
+
         if (currentTabGroupsKeys.length !== contextTabGroupsKeys.length || !currentTabGroupsKeys.every(curr => contextTabGroupsKeys.includes(curr))) {
             return this.askForRestoreTabs(contextTabState);
         }
