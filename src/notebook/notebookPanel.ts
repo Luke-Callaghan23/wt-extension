@@ -111,7 +111,7 @@ implements
     }
 
     async initialize () {
-        this.notebook = await this.serializer.deserializeNotebookPanel(this.notebookFolderPath);
+        this.notebook = [];//await this.serializer.deserializeNotebookPanel(this.notebookFolderPath);
         this.titlesAndAliasesRegex = this.getTitlesAndAliasesRegex();
         this.view = vscode.window.createTreeView(`wt.notebook.tree`, {
             treeDataProvider: this,

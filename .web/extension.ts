@@ -239,8 +239,10 @@ export function activate (context: vscode.ExtensionContext) {
 async function loadExtensionWithProgress (context: vscode.ExtensionContext, title: "Starting Integrated Writing Environment" | "Reloading Integrated Writing Environment"): Promise<boolean> {
     // Exit early with no errors if there is no data folder
     // Probably means the user just downloaded the extension and don't want to confuse them with the 'Missing file' error
-    return false;
     if (!(await statFile(vscode.Uri.joinPath(rootPath, 'data')))) {
+        await vscode.commands.executeCommand('setContext', 'wt.valid', false);
+        await vscode.commands.executeCommand('setContext', 'wt.loaded', true);
+        return false;
     }
 
     return defaultProgress(title, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {

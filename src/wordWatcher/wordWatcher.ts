@@ -122,7 +122,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
 	}
 
     getUpdatesAreVisible(): boolean {
-        return this.view.visible;
+        // Even though this is a distinct view panel view, and most other view panels do not get updated when
+        //      they are not visible, the word watcher is intended to still highlight when the panel is not visible
+        return true;
     }
 
     registerCommands () {

@@ -289,7 +289,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     async readSerializedNotebookPanel (notebookFolder: vscode.Uri): Promise<SerializedNote[]> {
         const readPromises: PromiseLike<SerializedNote | null>[] = [];
         for (const [ fileName, type ] of await vscode.workspace.fs.readDirectory(notebookFolder)) {
-            if (type !== vscode.FileType.File || fileName.toLocaleLowerCase().endsWith(".wtnote")) {
+            if (type !== vscode.FileType.File || !fileName.toLocaleLowerCase().endsWith(".wtnote")) {
                 continue;
             }
 

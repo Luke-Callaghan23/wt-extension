@@ -105,17 +105,16 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             }
         }
 
+        const uri = formatFsPathForCompare(document.uri);
         const notebookPanel = ExtensionGlobals.notebookPanel;
-        if (notebookPanel.matchedNotebook) {
-            const matches = notebookPanel.matchedNotebook[formatFsPathForCompare(document.uri)];
+        if (notebookPanel.matchedNotebook && uri in notebookPanel.matchedNotebook) {
+            const matches = notebookPanel.matchedNotebook[uri];
             const noteMatch = matches.find(noteMatch => noteMatch.range.contains(hoverRange));
             if (matches && noteMatch) {
                 const allOptions = [
                     noteMatch.note.title,
                     ...noteMatch.note.aliases
                 ];
-
-
         
                 // Need to use the entire note's text as the `filterText` in completion items
                 //      not entirely sure why -- filterText is confusing when you're not using

@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.138",
+	"version": "0.0.139",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
 	"private": false,
@@ -2199,7 +2199,7 @@
 						"title": "Organize Notes/Text Snippets for Each Chapter",
 						"description": "- Another major motivation for WTANIWE was the ability to organize notebook and snippets of text for each chapter in an easily organizable way.\n- Instead of opening twenty different word documents at a time while scouring for that one piece of dialogue I wrote two months ago, and killing my computer in the process, I can place all notebook for a project in one place.\n- Just as with chapters, each text note (called snip by WTANIWE) can have multiple text fragments associated with it.",
 						"media": {
-							"image": "https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/intro/organize_chapter_notebook.png",
+							"image": "https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/intro/organize_chapter_notes.png",
 							"altText": "Organize By Chapters"
 						}
 					},
@@ -2208,7 +2208,7 @@
 						"title": "Organize Snips for Project",
 						"description": "- If you're like me, you have about a hundred tiny fragments of text laying around which have a loose place in your story but no solid chapter commitement yet.  Work Snips is a section of the Outline Tree where you can store all misc. text snippets with no solid home yet.\n- Like Chapters and Chapter Snips, Work Snips can be separated into multiple text fragments.",
 						"media": {
-							"image": "https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/intro/organize_work_notebook.png",
+							"image": "https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/intro/organize_work_notes.png",
 							"altText": "Organize By Chapters"
 						}
 					},
