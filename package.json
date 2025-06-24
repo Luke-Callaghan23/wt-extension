@@ -27,7 +27,9 @@
 		"onView:wt.export",
 		"onView:wt.scratchPad",
 		"onView:wt.recyclingBin",
-		"onView:wt.notebook.tree"
+		"onView:wt.notebook.tree",
+		"onView:wt",
+		"onView:wtSearch"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
