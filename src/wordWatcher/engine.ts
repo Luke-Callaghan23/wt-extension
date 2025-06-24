@@ -100,16 +100,18 @@ export async function addWordToWatchedWords (this: WordWatcher, options?: {
 
         // Regex for filtering out responses that do not follow the regex subset for specifying watched words
         // Subset onyl includes: groupings '()', sets '[]', one or more '+', zero or more '*', and alphabetical characters
-        const allowCharacters = /^[a-zA-Z\(\)\[\]\*\+\?-\s|]+$/;
+        const allowCharacters = /^[a-zA-Z\(\)\[\]\*\+\?-\s|,:&$!@#%_=;'"/><.^ `]+$/;
         // Regex for matching any escaped non-alphabetical character
         const escapedNonAlphabetics = /\\\(|\\\[|\\\]|\\\)|\\\*|\\\+|\\\?|\\\-/;
 
         // Test to make sure there aren't any invalid characters in the user's response or if there are any escaped characters that
         //      should not be escaped
+
+        
         if (!allowCharacters.test(response) || escapedNonAlphabetics.test(response)) {
             const proceed = await vscode.window.showInformationMessage(`Could not parse specified word/pattern!`, {
                 modal: true,
-                detail: "List of allowed characters in watched word/pattern is: a-z, A-Z, '*', '+', '?', '(', ')', '[', ']', and '-', where all non alphabetic characters must not be escaped."
+                detail: `List of allowed characters in watched word/pattern is: a-z, A-Z, '*', '+', '?', '(', ')', '[', ']', ',', ':', '\`', '&', '$', '!', '@', '#', '%', '_', '=', ' ', ';', "'", '"', '/', '>', '<', '.', '^', and '-', where all non alphabetic characters must not be escaped.`
             }, 'Okay', 'Cancel');
             if (proceed === 'Cancel') return null;
             continue;
