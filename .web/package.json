@@ -24,7 +24,9 @@
 		"onView:wt.synonyms",
 		"onView:wt.scratchPad",
 		"onView:wt.recyclingBin",
-		"onView:wt.notebook.tree"
+		"onView:wt.notebook.tree",
+		"onView:wt",
+		"onView:wtSearch"
 	],
 	"browser": "./dist/web/extension.js",
 	"contributes": {
