@@ -179,6 +179,7 @@ export async function importWorkspace (
 
     // Create the workspace
     const workspace = await createWorkspace(context, iweRecord.config);
+    if (!workspace) return null;
     workspace.config = iweRecord.config;
 
     // Save the .wtconfig of the workspace
