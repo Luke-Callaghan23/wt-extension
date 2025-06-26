@@ -15,7 +15,17 @@
 		"vscode": "^1.74.0"
 	},
 	"categories": [
+		"Programming Languages", 
+		"Debuggers", 
+		"Notebooks", 
 		"Other"
+	],
+	"keywords": [
+		"writing",
+		"novels",
+		"creative-writing",
+		"creative",
+		"spellcheck"
 	],
 	"activationEvents": [
 		"onView:wt.outline",

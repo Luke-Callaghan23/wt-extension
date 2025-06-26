@@ -545,6 +545,6 @@ Or to always use '${newName}' exactly as you entered it?
     }
 
     getUpdatesAreVisible(): boolean {
-        return this.view.visible;
+        return true;
     }
 }

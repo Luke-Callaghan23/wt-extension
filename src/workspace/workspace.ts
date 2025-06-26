@@ -20,7 +20,7 @@ export type Config = {
 export async function createWorkspace (
     context: vscode.ExtensionContext,
     defaultConfig?: Config
-): Promise<Workspace> {
+): Promise<Workspace | null> {
 
     const workspace = new Workspace(context);
 
@@ -58,7 +58,14 @@ export async function createWorkspace (
         const configJSON = JSON.stringify(workspace.config);
 
         const wtConfigUri = workspace.dotWtconfigPath;
-        await vscode.workspace.fs.writeFile(wtConfigUri, Buff.from(configJSON, 'utf-8'));
+
+        try {
+            await vscode.workspace.fs.writeFile(wtConfigUri, Buff.from(configJSON, 'utf-8'));
+        }
+        catch (err: any) {
+            vscode.window.showErrorMessage(`[ERROR] Error creating the workspace.  Please make sure VSCode has permissions to write files to your file system.  If you are using the web extension (wtaniwe-web), then please make sure you've opened a folder (either on disk or a remote location), before running "Create Workspace"`)
+            return null;
+        }
 
         // Create the data container
         const dataUri = vscode.Uri.joinPath(extension.rootPath, `data`);

@@ -325,9 +325,14 @@ async function activateImpl (context: vscode.ExtensionContext) {
             location: vscode.ProgressLocation.Notification,
             title: "Creating Workspace"
         }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+
+            rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
+                ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
+
             try {
                 const workDivision = 0.5;
                 const ws = await createWorkspace(context);
+                if (!ws) return;
                 await loadExtensionWorkspace(context, ws, progress, workDivision);
             }
             catch(err: any) {

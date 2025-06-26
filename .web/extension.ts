@@ -40,6 +40,7 @@ import { FragmentLinker } from './miscTools/fragmentLinker';
 import { defaultProgress, getSectionedProgressReporter, progressOnViews, statFile } from './miscTools/help';
 import { WTNotebookSerializer } from './notebook/notebookApi/notebookSerializer';
 import { WTNotebookController } from './notebook/notebookApi/notebookController';
+import * as console from './miscTools/vsconsole';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -237,6 +238,7 @@ export function activate (context: vscode.ExtensionContext) {
 
 
 async function loadExtensionWithProgress (context: vscode.ExtensionContext, title: "Starting Integrated Writing Environment" | "Reloading Integrated Writing Environment"): Promise<boolean> {
+    
     // Exit early with no errors if there is no data folder
     // Probably means the user just downloaded the extension and don't want to confuse them with the 'Missing file' error
     if (!(await statFile(vscode.Uri.joinPath(rootPath, 'data')))) {
@@ -261,7 +263,6 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	ExtensionGlobals.notebookSerializer = new WTNotebookSerializer();
     ExtensionGlobals.notebookSerializerDispose = vscode.workspace.registerNotebookSerializer('wt.notebook', ExtensionGlobals.notebookSerializer)
     
-
     // Load the root path of file system where the extension was loaded
     rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
         ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
@@ -281,6 +282,28 @@ async function activateImpl (context: vscode.ExtensionContext) {
 
 	const loadWorkspaceSuccess = await loadExtensionWithProgress(context, "Starting Integrated Writing Environment");
     if (loadWorkspaceSuccess) return;
+
+    context.subscriptions.push(vscode.commands.registerCommand('wt.createWorkspace', async () => {
+        return vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Creating Workspace"
+        }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+
+            rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
+                ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
+
+            try {
+                const workDivision = 0.5;
+                const ws = await createWorkspace(context);
+                if (!ws) return;
+                await loadExtensionWorkspace(context, ws, progress, workDivision);
+            }
+            catch(err: any) {
+                handleLoadFailure(err);
+                throw err;
+            }
+        });
+    }));
 
 }
 
