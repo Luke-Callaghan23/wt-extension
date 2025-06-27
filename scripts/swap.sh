@@ -26,7 +26,6 @@ then
     mv tsconfig.json .local/tsconfig.json
     mv src/export .local/export
     mv src/import .local/import
-    mv src/workspace/importExport .local/importExport
     mv src/gitTransactions.ts .local/gitTransactions.ts
     mv src/workspace/workspaceClass.ts .local/workspaceClass.ts
     mv src/ttsDebugger .local/ttsDebugger
@@ -66,9 +65,6 @@ elif
     test -f .local/import/importFiles.ts &&
     test -f .local/import/importFileSystemView.ts &&
     test -f .local/import/importFormView.ts &&
-    test -f .local/importExport/types.ts &&
-    test -f .local/importExport/exportWorkspace.ts &&
-    test -f .local/importExport/importWorkspace.ts &&
     test -f .local/gitTransactions.ts &&
     test -f .local/ttsDebugger/debugger/activateTTSDebug.ts && 
     test -f .local/ttsDebugger/debugger/debugAdapter.ts  &&
@@ -108,7 +104,6 @@ then
     mv .local/tsconfig.json tsconfig.json
     mv .local/export src/export
     mv .local/import src/import
-    mv .local/importExport src/workspace/importExport
     mv .local/gitTransactions.ts src/gitTransactions.ts
     mv .local/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .local/tabLabels.ts src/tabLabels/tabLabels.ts

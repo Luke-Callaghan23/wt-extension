@@ -20,7 +20,6 @@
 		"src/import/*",
 		"src/export/*",
 		"src/codeMode/*",
-		"src/workspace/importExport/*",
 		".local/**"
 	]
 }

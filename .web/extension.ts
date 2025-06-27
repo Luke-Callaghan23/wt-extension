@@ -2,6 +2,8 @@
 
 import * as vscode from 'vscode';
 // import * as console from './vsconsole';
+import { importWorkspace as importWorkspaceFromIWEFile } from './workspace/importExport/importWorkspace';
+
 import { OutlineView } from './outline/outlineView';
 import { TODOsView } from './TODO/TODOsView';
 import { WordWatcher } from './wordWatcher/wordWatcher';
@@ -283,6 +285,27 @@ async function activateImpl (context: vscode.ExtensionContext) {
 	const loadWorkspaceSuccess = await loadExtensionWithProgress(context, "Starting Integrated Writing Environment");
     if (loadWorkspaceSuccess) return;
 
+    // If the attempt to load the workspace failed, then register commands both for loading 
+    //        a workspace from a .iwe environment file or for creating a new iwe environment
+    //        at the current location
+    context.subscriptions.push(vscode.commands.registerCommand('wt.importWorkspace', () => {
+        vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Importing Workspace"
+        }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+            try {
+                const workDivision = 0.5;
+                const ws = await importWorkspaceFromIWEFile(context, progress, workDivision);
+                if (!ws) return handleLoadFailure(`Could not import .iwe workspace: Make sure the .iwe file you provided is the exact same as the one created by this extension.`);
+
+                await loadExtensionWorkspace(context, ws, progress, workDivision);
+                return;
+            }
+            catch (err: any) {
+                return handleLoadFailure(err);
+            }
+        });
+    }));
     context.subscriptions.push(vscode.commands.registerCommand('wt.createWorkspace', async () => {
         return vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
