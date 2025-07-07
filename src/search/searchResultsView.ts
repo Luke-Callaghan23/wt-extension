@@ -157,9 +157,17 @@ export class SearchResultsView
             location: { viewId: SearchResultsView.viewId },
         }, async () => {
             // Grep results
-            const results = await grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
-            if (results === null || results.length === 0) return this.searchCleared();
-            if (cancellationToken.isCancellationRequested) return;
+            let results;
+
+            try {
+                results = await grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+                if (results === null || results.length === 0) return this.searchCleared();
+                if (cancellationToken.isCancellationRequested) return;
+            }
+            catch (err: any) {
+                vscode.commands.executeCommand('wt.wtSearch.searchError', searchBarValue, `${err}`);
+                return;
+            }
 
             const searchNodeGenerator = new SearchNodeGenerator();
             let currentTree: SearchNode<SearchContainerNode>[] | null = null;

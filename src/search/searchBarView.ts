@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
-import { getNonce } from '../miscTools/help';
+import { __, getNonce } from '../miscTools/help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 import { SearchResultsView } from './searchResultsView';
@@ -17,6 +17,14 @@ type WebviewMessage = {
 } | {
     kind: 'ready',
 };
+
+type PostMessage = {
+    kind: 'slowModeValueUpdated',
+    slowMode: boolean
+} | {
+    kind: 'searchError',
+    message: string
+}
 
 
 const SEARCH_TIMER = 2000;
@@ -73,6 +81,9 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
             if (!e.affectsConfiguration(configuration)) return;
             this.setSlowModeValue();
         }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.searchError', (errorBarValue: string, errorMessage) => {
+            return this.searchBarError(errorBarValue, errorMessage);
+        }))
     }
 
     private setSlowModeValue () {
@@ -81,6 +92,14 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
             kind: 'slowModeValueUpdated',
             slowMode: slowModeValue
         });
+    }
+
+    public searchBarError (errorBarValue: string, errorMessage: string) {
+        if (this.latestSearchBarValue !== errorBarValue) return;
+        this._view?.webview.postMessage(__<PostMessage>({ 
+            kind: 'searchError',
+            message: errorMessage
+        }));
     }
 
     private tokens: vscode.CancellationTokenSource[] = [];
@@ -204,7 +223,10 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
                             <div class="float" id="scroll-header">
                                 <div class="bar"></div>
                                 <div class="color-entry">
-                                    <input class="color-input" type="text" placeholder="Search . . ." id="search-bar" value="${this.latestSearchBarValue}">
+                                    <div class="tooltip">
+                                        <input class="color-input" type="text" placeholder="Search . . ." id="search-bar" value="${this.latestSearchBarValue}">
+                                        <span id="error-tooltip" class="tooltiptext"></span>
+                                    </div>
                                     <div class="icon" id="search-icon"><i class="codicon codicon-search"></i></div>
                                 </div>
                             </div>

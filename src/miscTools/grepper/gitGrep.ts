@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as childProcess from 'child_process';
 import * as extension from './../../extension';
 import * as readline from 'readline';
-import { Grepper } from './grepper';
+import { Grepper, GrepResult } from './grepper';
 
 export class GitGrep extends Grepper {
 
@@ -27,7 +27,7 @@ export class GitGrep extends Grepper {
         caseInsensitive: boolean, 
         wholeWord: boolean, 
         cancellationToken: vscode.CancellationToken
-    ): Promise<string[] | null> {
+    ): Promise<GrepResult> {
         
         let cancelled = false;
         for (const [pid, pastProcess] of Object.entries(Grepper.runningGreps)) {
@@ -106,12 +106,18 @@ export class GitGrep extends Grepper {
             if (ps.pid && ps.pid in Grepper.runningGreps) {
                 delete Grepper.runningGreps[ps.pid];
             }
-            return response;
+            return  {
+                status: 'success',
+                lines: response
+            };
         }
         catch (err: any) {
             vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}' regex.  Error: ${err}`);
             reset();
-            return null;
+            return {
+                status: 'error',
+                message: `Unable to search because an error occured while running '${this.name}': ${err}`
+            };
         }
         reset();
     }

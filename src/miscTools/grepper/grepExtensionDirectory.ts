@@ -17,17 +17,27 @@ export async function grepExtensionDirectory (
 
     // inline search regex is a secondary regex which makes use of NodeJS's regex capture groups
     //      to do additional searches inside of CONTENTS_OF_LINE for the actual matched text
-    let inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${searchBarValue})`, 'gi');
+    let inlineSource = searchBarValue;
+    if (!useRegex) {
+        inlineSource = inlineSource.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    let inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${inlineSource})`, 'gi');
     if (wholeWord) {
-        inlineSearchRegex = new RegExp(`${extension.wordSeparator}(?<${captureGroupId}>${searchBarValue})${extension.wordSeparator}`, 'gi');
+        inlineSearchRegex = new RegExp(`${extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${extension.wordSeparator}`, 'gi');
     }
 
     const parseOutput: RegExp = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
 
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
-    const lines = await grepper.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
-    if (lines === null) return null;
+    const grepResult = await grepper.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+    if (grepResult.status === 'error') {
+        vscode.commands.executeCommand('wt.wtSearch.searchError', searchBarValue, grepResult.message);
+        return null;
+    }
+
+    const lines = grepResult.lines;
 
     const output: [vscode.Location, string][] = [];
     for (const result of lines) {

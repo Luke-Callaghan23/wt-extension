@@ -75,6 +75,7 @@ export class Workspace {
     // Path to all the necessary folders for a workspace to function
     public chaptersFolder: vscode.Uri;
     public workSnipsFolder: vscode.Uri;
+    public exportFolder: vscode.Uri;
     public recyclingBin: vscode.Uri;
     public contextValuesFilePath: vscode.Uri;
     public notebookPath: vscode.Uri;
@@ -91,6 +92,7 @@ export class Workspace {
         return [
             this.chaptersFolder, 
             this.workSnipsFolder, 
+            this.exportFolder,
             this.recyclingBin,
             this.notebookFolder,
             this.scratchPadFolder
@@ -191,6 +193,7 @@ export class Workspace {
         this.dotWtconfigPath = vscode.Uri.joinPath(extension.rootPath, `.wtconfig`);
         this.chaptersFolder = vscode.Uri.joinPath(extension.rootPath, `data/chapters`);
         this.workSnipsFolder = vscode.Uri.joinPath(extension.rootPath, `data/snips`);
+        this.exportFolder = vscode.Uri.joinPath(extension.rootPath, `data/export`);
         this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
         this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
         this.notebookFolder = vscode.Uri.joinPath(extension.rootPath, `data/notebook`);

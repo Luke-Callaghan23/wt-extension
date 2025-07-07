@@ -151,3 +151,34 @@ body {
 	top: 0;
 	z-index: 1000000000;
 }
+
+.search-error {
+	border: red solid !important;
+	border-width: 2px !important;
+	background-color: rgb(255, 0, 0, 0.2) !important;
+}
+
+
+.tooltip {
+	position: relative;
+	display: inline-block;
+	border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltiptext {
+	visibility: hidden;
+	width: 150%;
+	background-color: rgb(130, 0, 0);
+	color: white;
+	text-align: center;
+	border-radius: 6px;
+	padding: 10px;
+
+	/* Position the tooltip */
+	position: absolute;
+	z-index: 1;
+}
+
+.tooltip:hover .tooltiptext:not(:empty) {
+	visibility: visible;
+}

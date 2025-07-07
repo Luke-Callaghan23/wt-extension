@@ -420,8 +420,15 @@ implements
 
         return defaultProgress(`Collecting references for '${matchedNote.note.title}'`, async () => {
             const subsetTitlesAndAliasesRegex = this.getTitlesAndAliasesRegex(false, false, [ matchedNote.note ]);
-            const results = await grepExtensionDirectory(subsetTitlesAndAliasesRegex.source, true, true, true, token);
-            return !results ? null : results.map(([ loc, _ ]) => loc);
+
+            try {
+                const results = await grepExtensionDirectory(subsetTitlesAndAliasesRegex.source, true, true, true, token);
+                return !results ? null : results.map(([ loc, _ ]) => loc);
+            }
+            catch (err: any) {
+                vscode.window.showErrorMessage(`[ERR] An error occurred while searching for references: ${err}`);
+                return null;
+            }
         });
     }
 

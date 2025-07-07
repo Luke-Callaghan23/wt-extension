@@ -117,6 +117,7 @@ export async function grepExtensionDirectory (
     }
     catch (err: any) {
         console.log(err);
+        vscode.commands.executeCommand('wt.wtSearch.searchError', searchBarValue, `${err}`);
         return [];
     }
 

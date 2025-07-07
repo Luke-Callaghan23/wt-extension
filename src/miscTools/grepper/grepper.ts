@@ -9,6 +9,13 @@ import * as readline from 'readline';
 
 export type CmdLineSearch = 'get-command' | 'where' | 'which';
 
+export type GrepResult = {
+    status: 'success',
+    lines: string[]
+} | {
+    status: 'error',
+    message: string
+};
 
 export abstract class Grepper {
     protected abstract get name (): string;
@@ -45,7 +52,7 @@ export abstract class Grepper {
         caseInsensitive: boolean, 
         wholeWord: boolean, 
         cancellationToken: vscode.CancellationToken
-    ): Promise<string[] | null> {
+    ): Promise<GrepResult> {
         // Output of a git grep command is of this format:
         // URI:ONE_INDEXED_LINE:CONTENTS_OF_LINE
         // This is not particularly helpful to us because if we want to generate vscode.Location objects
@@ -60,14 +67,45 @@ export abstract class Grepper {
             const ps = childProcess.spawnSync(this.name, command, {
                 cwd: extension.rootPath.fsPath
             });
-            return !ps.output ? null : ps.output
-                .toString()
-                .split('\n')
-                .map(line => this.transformLine(line))
+
+            if (!ps.output || ps.error) {
+                const stderr = ps.stderr.toString();
+                const error = ps.error?.message;
+
+                let message;
+                if (stderr && error) {
+                    message = `${error} -- ${stderr}`
+                }
+                else if (stderr) {
+                    message = stderr;
+                }
+                else if (error) {
+                    message = error;
+                }
+                else {
+                    message = 'Unknown error';
+                }
+
+                return {
+                    status: 'error',
+                    message: `Unable to search because an error occured while running '${this.name}': ${message}`
+                }
+            }
+
+            return {
+                status: 'success',
+                lines: ps.output
+                    .toString()
+                    .split('\n')
+                    .map(line => this.transformLine(line))
+            }
         }
         catch (err: any) {
-            vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}' regex.  Error: ${err}`);
-            return null;
+            vscode.window.showErrorMessage(`Failed to search local directories for '${regex.source}'.  Error: ${err}`);
+            return {
+                status: 'error',
+                message: `Unable to search because an error occured while running '${this.name}': ${err}`
+            };
         }
     }
 
