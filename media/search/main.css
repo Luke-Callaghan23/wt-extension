@@ -1,5 +1,6 @@
 body {
 	background-color: inherit;
+	overflow-x: hidden !important;
 }
 
 .color-list {
@@ -27,7 +28,7 @@ body {
 .color-input {
 	display: block;
 	flex: 1;
-	width: 100%;
+	width: 75vw !important;
 	/* color: var(--vscode-input-foreground);
 	background-color: var(--vscode-input-background); */
 	border: none;
@@ -167,7 +168,7 @@ body {
 
 .tooltip .tooltiptext {
 	visibility: hidden;
-	width: 150%;
+	width: 100%;
 	background-color: rgb(130, 0, 0);
 	color: white;
 	text-align: center;

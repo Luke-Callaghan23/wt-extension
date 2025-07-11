@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid';
 import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import { __, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, showTextDocumentWithPreview, vagueNodeSearch } from '../miscTools/help';
+import { __, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, isSubdirectory, showTextDocumentWithPreview, vagueNodeSearch } from '../miscTools/help';
 import { CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
 
 
@@ -23,6 +23,7 @@ export class SearchResultsView
 {
     private static viewId = 'wt.wtSearch.results';
     private filteredUris: vscode.Uri[];
+    private results: [vscode.Location, string][];
     constructor (
         protected workspace: Workspace,
         protected context: vscode.ExtensionContext
@@ -30,6 +31,7 @@ export class SearchResultsView
         super("Search Results");
         this.rootNodes = [];
         this.filteredUris = [];
+        this.results = [];
     }
 
     
@@ -157,8 +159,8 @@ export class SearchResultsView
             location: { viewId: SearchResultsView.viewId },
         }, async () => {
             // Grep results
-            let results;
-
+            
+            let results: [vscode.Location, string][] | null;
             try {
                 results = await grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
                 if (results === null || results.length === 0) return this.searchCleared();
@@ -168,10 +170,10 @@ export class SearchResultsView
                 vscode.commands.executeCommand('wt.wtSearch.searchError', searchBarValue, `${err}`);
                 return;
             }
+            this.results = results;
 
             const searchNodeGenerator = new SearchNodeGenerator();
             let currentTree: SearchNode<SearchContainerNode>[] | null = null;
-
 
             const chunkedResults = chunkArray(results, 25);
             for (const chunk of chunkedResults) {
@@ -192,6 +194,29 @@ export class SearchResultsView
             currentTree = await searchNodeGenerator.createTitleNodes(cancellationToken);
             currentTree && this.refresh(currentTree);
         });
+    }
+
+    public async getWorkspaceEditsForReplace (replacedTerm: string): Promise<[vscode.WorkspaceEdit, Set<string>]> {
+        const edits = new vscode.WorkspaceEdit();
+        const urisUpdated = new Set<string>();
+        for (const [location, _] of this.results) {
+            let okay = true;
+            for (const filtered of this.filteredUris) {
+                if (compareFsPath(filtered, location.uri) || isSubdirectory(filtered, location.uri)) {
+                    okay = false;
+                    break;
+                }
+            }
+            if (!okay) continue;
+            edits.replace(location.uri, location.range, replacedTerm);
+            urisUpdated.add(location.uri.fsPath);
+        }
+        return [edits, urisUpdated];
+    }
+
+    public async replace (replacedTerm: string): Promise<void> {
+        const [ edits, urisUpdated ] = await this.getWorkspaceEditsForReplace(replacedTerm);
+        
     }
 
     public async searchCleared () {

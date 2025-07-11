@@ -1,15 +1,19 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
 import { __, getNonce } from '../miscTools/help';
+import * as extension from './../extension';
 import { Packageable } from '../packageable';
-import { Workspace } from '../workspace/workspaceClass';
+import { DiskContextType, Workspace } from '../workspace/workspaceClass';
 import { SearchResultsView } from './searchResultsView';
+import { ReloadWatcher } from '../miscTools/reloadWatcher';
+import { Buff } from '../Buffer/bufferSource';
 
 
 type WebviewMessage = {
     kind: 'textBoxChange',
     input: 'search' | 'replace',
     value: string,
+    push: boolean
 } | {
     kind: 'checkbox',
     field: 'wholeWord' | 'regex' | 'caseInsensitive' | 'matchTitles',
@@ -34,6 +38,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
     private readonly _extensionUri: vscode.Uri;
 
     private latestSearchBarValue: string;
+    private latestReplaceBarValue: string;
     private wholeWord: boolean;
     private regex: boolean;
     private caseInsensitive: boolean;
@@ -45,6 +50,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
         private searchResults: SearchResultsView,
     ) { 
         this.latestSearchBarValue = this.context.workspaceState.get<string>('wt.wtSearch.search.latestSearchBarValue') || '';
+        this.latestReplaceBarValue = this.context.workspaceState.get<string>('wt.wtSearch.search.latestReplaceBarValue') || '';
         this.wholeWord = this.context.workspaceState.get<boolean>('wt.wtSearch.search.wholeWord') || false;
         this.regex = this.context.workspaceState.get<boolean>('wt.wtSearch.search.regex') || false;
         this.caseInsensitive = this.context.workspaceState.get<boolean>('wt.wtSearch.search.caseInsensitive') || false;
@@ -118,9 +124,10 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
         this.cancelTokens();
 
         this.debounce && clearTimeout(this.debounce);
-        this.debounce = setTimeout(() => {
+        this.debounce = setTimeout(async () => {
             const customCancellationToken: vscode.CancellationTokenSource | null = new vscode.CancellationTokenSource();
             this.tokens.push(customCancellationToken);
+            Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
             return this.searchResults.searchBarValueWasUpdated(searchBarValue, this.regex, this.caseInsensitive, this.matchTitles, this.wholeWord, customCancellationToken.token);
         }, 20);
     }
@@ -163,18 +170,27 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
                     }
                     break;
                 case 'textBoxChange': 
-                    const textbox = message.value;
-                    if (this.latestSearchBarValue === textbox) {
-                        return;
-                    }
-                    this.latestSearchBarValue = textbox;
-                    Workspace.updateContext(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
-                    if (textbox.length > 0) {
-                        this.triggerUpdates(textbox);
+                    if (message.input === 'replace') {
+                        this.latestReplaceBarValue = message.value;
+                        Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestReplaceBarValue', this.latestReplaceBarValue);
+
+                        if (message.push) {
+                            this.searchResults.replace(this.latestReplaceBarValue);
+                        }
                     }
                     else {
-                        this.cancelTokens();
-                        this.searchResults.searchCleared();
+                        this.latestSearchBarValue = message.value;
+                        
+                        if (message.push) {
+                            if (message.value.length > 0) {
+                                this.triggerUpdates(message.value);
+                            }
+                            else {
+                                this.cancelTokens();
+                                Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
+                                this.searchResults.searchCleared();
+                            }
+                        }
                     }
                     
                     break;
@@ -234,7 +250,11 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
                             <div class="float" id="scroll-header">
                                 <div class="bar"></div>
                                 <div class="color-entry">
-                                    <input class="color-input" type="text" placeholder="Replace" id="replace-bar">
+                                    <div class="tooltip">
+                                        <input class="color-input" type="text" placeholder="Replace" id="replace-bar">
+                                        <span id="error-tooltip" class="tooltiptext"></span>
+                                    </div>
+                                    <div class="icon" id="replace-icon"><i class="codicon codicon-replace-all"></i></div>
                                 </div>
                             </div>
                             <div id="checks">

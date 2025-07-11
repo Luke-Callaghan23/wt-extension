@@ -351,11 +351,24 @@ export function getSurroundingTextInRange(
 }
 
 
-export const getFullJSONStringFromLocation = (document: vscode.TextDocument, fullText: string, location: vscode.Location): {
+export type JSONStringInfo = {
     jsonString: string,
     startOff: number,
     endOff: number
-} => {
+};
+
+export type JSONContext = {
+    kind: 'key'
+} | {
+    kind: 'arrayMember'
+} | {
+    kind: 'keyValue',
+    keyName: string,
+}
+
+// Recieves a JSON document and a location within the document that is inside of a JSON-formatted string
+// Returns information about the start and end of the json string where the json location points
+export const getFullJSONStringFromLocation = (document: vscode.TextDocument, fullText: string, location: vscode.Location): JSONStringInfo => {
     const startOff = document.offsetAt(location.range.start);
     const endOff = document.offsetAt(location.range.end);
 
@@ -381,6 +394,52 @@ export const getFullJSONStringFromLocation = (document: vscode.TextDocument, ful
     };
 }
 
+
+// Same as getFullJSONStringFromLocation, except it first confirms that the JSON string that it is returning is NOT inside of a JSON member key name
+// Return null if inside of a key
+export const getJSONStringContext = (document: vscode.TextDocument, fullText: string, location: vscode.Location): [JSONStringInfo, JSONContext] | null => {
+    const surroundingString = getFullJSONStringFromLocation(document, fullText, location);
+    if (fullText[surroundingString.endOff] !== '"') throw 'bad';
+
+    // Search for the next non-whitespace character in the JSON document, following the target string
+    let nextNonWhitespaceOff = surroundingString.endOff + 1;
+    while (/\s/.test(fullText[nextNonWhitespaceOff])) {
+        nextNonWhitespaceOff++;
+    }
+    
+    // If that character is a colon ':', then we know the target string is a key in some object in the 
+    //      JSON document
+    if (fullText[nextNonWhitespaceOff] === ':') {
+        return [ surroundingString, { kind: 'key' } ];
+    }
+
+    // Now, search for previous non-whitespace character in the JSON document, preceeding the target string
+    let prevNonWhitespaceOff = surroundingString.startOff - 1;
+    while (/\s/.test(fullText[prevNonWhitespaceOff])) {
+        prevNonWhitespaceOff--;
+    }
+
+    // If that character is an opening square bracket or a comma, then we know the target string is the member of an array
+    if (fullText[prevNonWhitespaceOff] === '[' || fullText[prevNonWhitespaceOff] === ',') { 
+        return [ surroundingString, { kind: 'arrayMember' } ];
+    }
+
+    // If the PRECEDING character is a colon, then we know the target string is the value of a key value pair in
+    //      some JSON object
+    // Retrieve the name of the key
+    if (fullText[prevNonWhitespaceOff] === ':') {
+        // Get the last position within the key string -- then call getfullJSONStringFromLocation again to retrieve the key string
+        const keyStringPosition = document.positionAt(prevNonWhitespaceOff - 2)
+        const keyStringLocation = new vscode.Location(location.uri, keyStringPosition);
+        const keyStringSurrounding = getFullJSONStringFromLocation(document, fullText, keyStringLocation);
+        return [ surroundingString, { 
+            kind: 'keyValue',
+            keyName: keyStringSurrounding.jsonString
+        } ];
+    }
+
+    return null;
+};
 
 
 export function defaultProgress <T>(title: string, worker: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Promise<T>): Thenable<T> {

@@ -8,7 +8,7 @@ import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { __, compareFsPath, defaultProgress, formatFsPathForCompare, getFullJSONStringFromLocation, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
+import { __, compareFsPath, defaultProgress, formatFsPathForCompare, getFullJSONStringFromLocation, getJSONStringContext, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
@@ -471,7 +471,7 @@ WARNING: this is kinda dangerous.
     • After the undo is finished, MAKE SURE to run "Writing Tool: Refresh Workspace" (wt.reloadWatcher.reloadWorkspace) from your comand palette for those changes to be reflected in your workspace
     • For best results, just don't ctrl+z undo.  You can either undo this rename by running the rename again with the original word -- which will probably avoid all the issue listed above.
     • Or, even better, make a git commit before doing this, then revert to that commit if you mess something up
-• Also I'll try my best to match all the capitalizations for all replacements but, really, really, no promises.
+• Also the replaced to match all the capitalizations for all replacements but no promises.
 • Also, this will only replace exact matches to the original text '${aliasText}'.  No near matches or misspellings.  (Threat Level Midnight, The Office, etc., etc.)
 • Basically, I don't really recommend you doing this unless you're planning on reading through your whole project again and manually fixing anything this might break.
                 `,
@@ -522,18 +522,19 @@ Or to always use '${newName}' exactly as you entered it?
                     const wtnoteDoc = await vscode.workspace.openTextDocument(location.uri);
 
                     const text = wtnoteDoc.getText();
-                    const surroundingString = getFullJSONStringFromLocation(wtnoteDoc, text, location);
-                    if (text[surroundingString.endOff] !== '"') throw 'bad';
-
-                    let nextNonWhitespaceOff = surroundingString.endOff + 1;
-                    while (/\s/.test(text[nextNonWhitespaceOff])) {
-                        nextNonWhitespaceOff++;
-                    }
-
-                    if (text[nextNonWhitespaceOff] === ':') {
-                        // Skip the replacement if it is the name of a field
+                    const jsonContext = getJSONStringContext(wtnoteDoc, text, location);
+                    if (jsonContext === null) {
                         continue;
                     }
+
+                    // If the searched string is not the value of a key-value pair in a JSON object, or if
+                    //      the key is not 'text', then this result can be ignored
+                    // (Only want to handle name replacements if the replacement is the text value of a cell)
+                    const [ _, context ] = jsonContext;
+                    if (context.kind !== 'keyValue' || context.keyName !== 'text') {
+                        continue;
+                    }
+
                     edits.replace(location.uri, location.range, replacementString);
                 }
                 else continue;

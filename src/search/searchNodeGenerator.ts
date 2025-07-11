@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { capitalize, formatFsPathForCompare, getFullJSONStringFromLocation, getRelativePath, getSurroundingTextInRange, readDotConfig, UriFsPathFormatted, vagueNodeSearch, VagueNodeSearchResult, VagueSearchSource } from '../miscTools/help';
+import { capitalize, formatFsPathForCompare, getFullJSONStringFromLocation, getJSONStringContext, getRelativePath, getSurroundingTextInRange, JSONStringInfo, readDotConfig, UriFsPathFormatted, vagueNodeSearch, VagueNodeSearchResult, VagueSearchSource } from '../miscTools/help';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import * as extension from '../extension';
 import * as vscodeUri from 'vscode-uri';
@@ -60,7 +60,8 @@ export class CreateSearchResults {
         uri: vscode.Uri,
         parent: SearchNode<SearchContainerNode>,
         parentLabels: string[],
-        locations: vscode.Location[],
+        doc: vscode.TextDocument,
+        locationStringInfo: [JSONStringInfo, vscode.Location][],
     }>;
 
     constructor () {
@@ -186,27 +187,36 @@ export class CreateSearchResults {
     public async createTitleNodes (
         cancellationToken: vscode.CancellationToken
     ): Promise<SearchNode<SearchContainerNode>[] | null> {
-        for (const [ _, { uri, parent, locations, parentLabels } ] of Object.entries(this.configNodes)) {
+
+        // For each .config file that was hit by the grepper
+        for (const [ _, { uri, parent, parentLabels, doc: configDoc, locationStringInfo } ] of Object.entries(this.configNodes)) {
             
             // If the label is null but the file a .config file and we are creating title nodes, then try to create a title
             //      node for this entry in config file
             const dotConfig = await readDotConfig(uri);
             if (!dotConfig || cancellationToken.isCancellationRequested) return null;
-    
-            const configDoc = await vscode.workspace.openTextDocument(uri);
-            if (cancellationToken.isCancellationRequested) return null;
             
-            const configFullText = configDoc.getText();
-            const createdEntriesFileNames: Set<string> = new Set<string>();
-            for (const location of locations) {
-                if (cancellationToken.isCancellationRequested) return null;
-    
-                const {jsonString: fullTitleString} = getFullJSONStringFromLocation(configDoc, configFullText, location);
+            // Iterate over all locations that were hit by the grepper in the .config
+            for (const [ { jsonString: fullTitleString }, location ] of locationStringInfo) {
+
+                // Iterate over all entries of tracked by this .config file
+                const createdEntriesFileNames: Set<string> = new Set<string>();
                 for (const [ entryFileName, configEntry ] of Object.entries(dotConfig)) {
-                    // If the entry title is not the same as the full title string we retrieved above, then skip over it
+
+                    if (cancellationToken.isCancellationRequested) return null;
+
+                    // If the title of the current entry we're looking at is not the same as the title that the grepper matched,
+                    //      then we skip over it
                     if (configEntry.title !== fullTitleString) continue;
                     if (cancellationToken.isCancellationRequested) return null;
+                    
+                    // If an entry was already made for this file name, then skip over it
+                    if (createdEntriesFileNames.has(entryFileName)) continue;
+                    if (cancellationToken.isCancellationRequested) return null;
     
+                    // Now, we know that the current entry in .config corresponds with the locatuion that the grepper found:
+
+                    // Calculate the the highlights inside the title text -- accounts for multiple instances of the searched term in the title
                     const highlightedText = configDoc.getText(location.range);
                     const highlights: [number, number][] = [];
                     let textSubset = fullTitleString;
@@ -220,16 +230,13 @@ export class CreateSearchResults {
                         lastSliceIndex = nextSliceIndex;
                     }
     
-                    // If an entry was already made for this file name, then skip over it
-                    if (createdEntriesFileNames.has(entryFileName)) continue;
-                    if (cancellationToken.isCancellationRequested) return null;
-    
-                    // 
+                    // Get the node that the entry in the .config file refers to
                     const entryUri = vscode.Uri.joinPath(parent.node.uri, entryFileName);
                     const node = await vagueNodeSearch(entryUri);
                     if (node.source === null || node.node === null) continue;
                     if (cancellationToken.isCancellationRequested) return null;
     
+                    // Format the title for the node
                     const linkNode: Exclude<VagueNodeSearchResult, { node: null, source: null }> = node;
                     const [ prefix, title ] = linkNode.source === 'notebook' 
                         ? [ `Note`, linkNode.node.title ]
@@ -240,6 +247,7 @@ export class CreateSearchResults {
                         ordering = node.node.data.ids.ordering;
                     }
 
+                    // Create a matched title node search node to represent this title match
                     const matchedTitleNode = new SearchNode<MatchedTitleNode>({
                         kind: 'matchedTitle',
                         prefix: prefix,
@@ -252,9 +260,16 @@ export class CreateSearchResults {
                         ordering: ordering
                     });
 
+                    // If the node that the .config entry refers to already exists in the node tree for the search results,
+                    //      then we add this node as the `pairedMatchedTitleNode`
+                    // This is to let the original container / leaf node exist in the tree where it originally was, while allowing 
+                    //      the matched text to be highlighted in that tree -- otherwise there would be one tree node for the 
+                    //      original match (either because the child has a match inside of it, or because it is a fragment that also
+                    //      contains the searched text) and one node for the title match
                     if (parent.node.contents[entryFileName] && (parent.node.contents[entryFileName].node.kind === 'file' || parent.node.contents[entryFileName].node.kind === 'searchContainer')) {
                         (parent.node.contents[entryFileName].node as SearchContainerNode | FileResultNode).pairedMatchedTitleNode = matchedTitleNode;
                     }
+                    // Otherwise, just create a new entry under the parent container with this matched title
                     else {
                         parent.node.contents[Math.random() + ""] = matchedTitleNode;
                     }
@@ -368,17 +383,37 @@ export class CreateSearchResults {
     private cleanNodeTree (): SearchNode<SearchContainerNode>[] {
         const cleanedTrees: SearchNode<SearchContainerNode>[] = [];
         for (const searchTree of Object.values(this.rootCategoryNodes)) {
-            // If the root node does not have any children, we do not want to keep that category in the 
-            //      search results view, so entirely skip over it
-            this.getResultsCount(searchTree);
-            if (searchTree.node.results === 0) continue;
-
-            // We know that the root level result will always be a search container node, so it is okay to cast it as such
-            cleanedTrees.push(searchTree);
+            const updatedTree = this.cleanContainerNode(searchTree);
+            if (updatedTree !== null) {
+                cleanedTrees.push(updatedTree);
+            }
         }
         return cleanedTrees;
     }
 
+    private cleanContainerNode (containerNode: SearchNode<SearchContainerNode>): SearchNode<SearchContainerNode> | null {
+        // If the root node does not have any children, we do not want to keep that category in the 
+        //      search results view, so entirely skip over it
+        const results = this.getResultsCount(containerNode);
+        if (results === 0) {
+            return null;
+        }
+
+        for (const [ fileName, content ] of Object.entries(containerNode.node.contents)) {
+            if (content.node.kind === 'searchContainer') {
+                const updated = this.cleanContainerNode(content as SearchNode<SearchContainerNode>);
+                if (updated === null) {
+                    delete containerNode.node.contents[fileName];
+                }
+                else {
+                    containerNode.node.contents[fileName] = updated;
+                }
+            }
+        }
+        return containerNode;
+    }
+
+    // Incrementally create and add new search results to an existing tree of search results
     async insertResult (
         location: vscode.Location,
         createTitleNodes: boolean,
@@ -413,7 +448,79 @@ export class CreateSearchResults {
         let parentNode: SearchNode<SearchContainerNode> = this.rootCategoryNodes[category];
         let parentUri: vscode.Uri = parentNode.node.uri;
 
+        const isDotConfig = location.uri.fsPath.endsWith('.config');
+        const isNotebook = location.uri.fsPath.toLowerCase().endsWith('.wtnote');
+        if (isDotConfig || isNotebook) {
+            if (!createTitleNodes) {
+                return this.cleanNodeTree();
+            }
+            
+            const configDoc = await vscode.workspace.openTextDocument(location.uri);
+            if (cancellationToken.isCancellationRequested) return null;
+
+            const jsonContext = getJSONStringContext(configDoc, configDoc.getText(), location);
+            if (jsonContext === null) {
+                return this.cleanNodeTree();
+            }
+
+            // Depending on the context of the search result within the JSON, determine if this is a valid search result
+            const [ surroundingInfo, context ] = jsonContext;
+            if (context.kind !== 'keyValue') {
+                // If the searched string is not the 'value' of a JSON object member, then ignore it
+                return this.cleanNodeTree();
+            }
+            else {
+                // All .wtnote files store Cell values inside an string with key 'text'
+                // Since we are only searching on the values of cells within a notebook, then we can ignore
+                //      all other key-value pairs
+                if (isNotebook) {
+                    if (context.keyName !== 'text') {
+                        return this.cleanNodeTree();
+                    }
+                }
+                // The only thing of value for search results inside of a .config file is the title of the 
+                //      .config entry, we can ignore everything else
+                else if (isDotConfig) {
+                    if (context.keyName !== 'title') {
+                        return this.cleanNodeTree();
+                    }
+                }
+            }
+
+            // For .config search results, we don't need to add a node to the tree just yet
+            // All title matches are resolve later, once the full search on .wt and .wtnote has
+            //      completed
+            // So, for now, we just store a record of the .config files and their location that
+            //      we encounter, to be used later when createTitleNodes is called 
+            if (isDotConfig) {
+                const formattedUri = formatFsPathForCompare(location.uri);
+
+                // Existing entry for this .config --> means there are more than one titles matched
+                //      in this config file (or more than one match in a single title)
+                if (formattedUri in this.configNodes) {
+                    // Add data to the existing match
+                    this.configNodes[formattedUri].locationStringInfo.push([ surroundingInfo, location ]);
+                }
+                // Otherwise create new 
+                else {
+                    this.configNodes[formattedUri] = {
+                        uri: location.uri,
+                        locationStringInfo: [[ surroundingInfo, location ]],
+                        doc: configDoc,
+
+                        // Temporary data -- to be updated later
+                        // Since .config files still have enclosing folders and parents, we need to calculate data for all
+                        //      parents of the .config, and then reset these fields once we arrive at the leaf
+                        parent: parentNode,
+                        parentLabels: parentLabels,
+                    };
+                }
+            }
+        }
+
+        // Iterate each segment of the path of the added location
         for (let index = 0; index < pathSegments.length; index++) {
+
             const segment = pathSegments[index];
             relativePath.push(segment);
 
@@ -422,19 +529,14 @@ export class CreateSearchResults {
 
             const label = await labelProviders[category](uri);
             if (!label) {
-                if (segment === '.config' && createTitleNodes) {
-                    const formattedUri = formatFsPathForCompare(uri);
-                    if (formattedUri in this.configNodes) {
-                        this.configNodes[formattedUri].locations.push(location);
-                    }
-                    else {
-                        this.configNodes[formattedUri] = {
-                            uri: uri,
-                            parent: parentNode,
-                            parentLabels: parentLabels,
-                            locations: [ location ]
-                        };
-                    }
+                // After traversing a bunch of parent nodes to get to the leaf .config file,
+                //      only then are `parentNode` and `parentLabels` valid (as in, only then)
+                //      do they point to the correct parent data
+                // Need to reset current data inside of configNodes[formattedFsPath]
+                if (isLeaf && isDotConfig && createTitleNodes) {
+                    const formattedPath = formatFsPathForCompare(uri);
+                    this.configNodes[formattedPath].parent = parentNode;
+                    this.configNodes[formattedPath].parentLabels = parentLabels;
                 }
                 continue;
             }

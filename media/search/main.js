@@ -5,7 +5,7 @@
     const vscode = acquireVsCodeApi();
 
     // Search bar
-    const searchBarValueUpdated = (field, value) => {
+    const sendInputBoxUpdate = (field, value, push) => {
         /* {
             kind: 'textBoxChange',
             input: 'search' | 'replace',
@@ -16,24 +16,50 @@
             vscode.postMessage({
                 kind: 'textBoxChange',
                 input: field,
-                value: value
+                value: value,
+                push: push
             });
         }
     };
     
+
+    
     const searchBar = document.getElementById('search-bar');
     const searchIcon = document.getElementById("search-icon");
-    searchBar?.addEventListener('keyup', (e) => {
-        if (slowMode) {
-            if (e.key === 'Enter' || searchBar.value === '') {
-                searchBarValueUpdated('search', e.target.value);
+
+    const replaceBar = document.getElementById('replace-bar');
+    const replaceIcon = document.getElementById("replace-icon");
+
+    const updateBar = (searchBarKind) => (e) => {
+        let pushUpdate = false;
+
+        if (searchBarKind === 'search') {
+            // If slowmode is on, only push the update (execute the search) only if the 
+            //      search bar is empty (clear the results), or if the 'Enter' key is hit
+            if (slowMode) {
+                if (e.key === 'Enter' || searchBar.value === '') {
+                    pushUpdate = true;
+                }
+            }
+            // If slowmode is off, always send the update
+            else {
+                pushUpdate = true;
             }
         }
-        else { 
-            searchBarValueUpdated('search', e.target.value);
+        // For replace bar, only send the update if Enter is hit
+        else {
+            if (e.key === 'Enter') {
+                pushUpdate = true;
+            }
         }
-    });
-    searchIcon?.addEventListener('click', (e) => searchBarValueUpdated('search', searchBar.value));
+        sendInputBoxUpdate(searchBarKind, e.target.value, pushUpdate);
+    };
+
+    searchBar?.addEventListener('keyup', updateBar('search'));
+    searchIcon?.addEventListener('click', (e) => sendInputBoxUpdate('search', searchBar.value, true));
+
+    replaceBar?.addEventListener('keyup', updateBar('replace'));
+    replaceIcon?.addEventListener('click', (e) => sendInputBoxUpdate('replace', replaceBar.value, true));
 
     const wholeWordCheckbox = document.getElementById("checkbox-whole-word");
     const regexCheckbox = document.getElementById("checkbox-regex");
