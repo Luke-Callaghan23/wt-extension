@@ -414,7 +414,7 @@ export const getJSONStringContext = (document: vscode.TextDocument, fullText: st
     }
 
     // Now, search for previous non-whitespace character in the JSON document, preceeding the target string
-    let prevNonWhitespaceOff = surroundingString.startOff - 1;
+    let prevNonWhitespaceOff = surroundingString.startOff - 2;
     while (/\s/.test(fullText[prevNonWhitespaceOff])) {
         prevNonWhitespaceOff--;
     }
@@ -669,3 +669,28 @@ export type RevealOptions = {
     readonly expand?: boolean | number;
 }
 
+
+export async function addSingleWorkspaceEdit (edits: vscode.WorkspaceEdit, location: vscode.Location, replaceString: string): Promise<void> {
+    if (location.uri.fsPath.endsWith('.wt')) {
+        edits.replace(location.uri, location.range, replaceString);
+    }
+    else if (location.uri.fsPath.endsWith('.wtnote') || location.uri.fsPath.endsWith('.config')) {
+        const wtnoteDoc = await vscode.workspace.openTextDocument(location.uri);
+
+        const text = wtnoteDoc.getText();
+        const jsonContext = getJSONStringContext(wtnoteDoc, text, location);
+        if (jsonContext === null) {
+            return;
+        }
+
+        // If the searched string is not the value of a key-value pair in a JSON object, or if
+        //      the key is not 'text', then this result can be ignored
+        // (Only want to handle name replacements if the replacement is the text value of a cell)
+        const [ _, context ] = jsonContext;
+        if (context.kind !== 'keyValue' || context.keyName !== 'text') {
+            return;
+        }
+
+        edits.replace(location.uri, location.range, replaceString);
+    }
+}

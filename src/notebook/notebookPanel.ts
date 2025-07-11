@@ -8,7 +8,7 @@ import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { __, compareFsPath, defaultProgress, formatFsPathForCompare, getFullJSONStringFromLocation, getJSONStringContext, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
+import { __, addSingleWorkspaceEdit, compareFsPath, defaultProgress, formatFsPathForCompare, getFullJSONStringFromLocation, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
@@ -514,30 +514,7 @@ Or to always use '${newName}' exactly as you entered it?
                 else {
                     replacementString = newName;
                 }
-
-                if (location.uri.fsPath.endsWith('.wt')) {
-                    edits.replace(location.uri, location.range, replacementString);
-                }
-                else if (location.uri.fsPath.endsWith('.wtnote') || location.uri.fsPath.endsWith('.config')) {
-                    const wtnoteDoc = await vscode.workspace.openTextDocument(location.uri);
-
-                    const text = wtnoteDoc.getText();
-                    const jsonContext = getJSONStringContext(wtnoteDoc, text, location);
-                    if (jsonContext === null) {
-                        continue;
-                    }
-
-                    // If the searched string is not the value of a key-value pair in a JSON object, or if
-                    //      the key is not 'text', then this result can be ignored
-                    // (Only want to handle name replacements if the replacement is the text value of a cell)
-                    const [ _, context ] = jsonContext;
-                    if (context.kind !== 'keyValue' || context.keyName !== 'text') {
-                        continue;
-                    }
-
-                    edits.replace(location.uri, location.range, replacementString);
-                }
-                else continue;
+                await addSingleWorkspaceEdit(edits, location, replacementString);
             }
             return edits;
         });

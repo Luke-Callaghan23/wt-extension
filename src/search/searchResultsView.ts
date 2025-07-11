@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid';
 import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import { __, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, isSubdirectory, showTextDocumentWithPreview, vagueNodeSearch } from '../miscTools/help';
+import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, isSubdirectory, showTextDocumentWithPreview, vagueNodeSearch } from '../miscTools/help';
 import { CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
 
 
@@ -196,10 +196,15 @@ export class SearchResultsView
         });
     }
 
-    public async getWorkspaceEditsForReplace (replacedTerm: string): Promise<[vscode.WorkspaceEdit, Set<string>]> {
+    public async replace (originalText: string, replacedTerm: string): Promise<boolean> {
+
+
+        // For all locations that are not children of filtered uris, create and add the 
+        //      workspace edit to a vscode.WorkspaceEdit object
         const edits = new vscode.WorkspaceEdit();
         const urisUpdated = new Set<string>();
         for (const [location, _] of this.results) {
+            // Check if filtered or not
             let okay = true;
             for (const filtered of this.filteredUris) {
                 if (compareFsPath(filtered, location.uri) || isSubdirectory(filtered, location.uri)) {
@@ -208,15 +213,24 @@ export class SearchResultsView
                 }
             }
             if (!okay) continue;
-            edits.replace(location.uri, location.range, replacedTerm);
+
+            await addSingleWorkspaceEdit(edits, location, replacedTerm);
             urisUpdated.add(location.uri.fsPath);
         }
-        return [edits, urisUpdated];
-    }
 
-    public async replace (replacedTerm: string): Promise<void> {
-        const [ edits, urisUpdated ] = await this.getWorkspaceEditsForReplace(replacedTerm);
-        
+        // Confirm with user
+        const resp = await vscode.window.showInformationMessage(`Are you sure you want to replace ${edits.size} instances of '${originalText}' to '${replacedTerm}' in ${urisUpdated.size} files?`, {
+            detail: `
+WARNING: For best results.  Save ALL open .wtnote notebook files before doing this.  If the edit is large enough, I'd also recommend doing a git commit before doing this as well.
+            `,
+            modal: true,
+        }, "Yes");
+        if (resp !== 'Yes') return false;
+
+        // And apply
+        return vscode.workspace.applyEdit(edits, {
+            isRefactoring: true,
+        });
     }
 
     public async searchCleared () {

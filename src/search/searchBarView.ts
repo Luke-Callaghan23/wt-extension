@@ -173,9 +173,12 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
                     if (message.input === 'replace') {
                         this.latestReplaceBarValue = message.value;
                         Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestReplaceBarValue', this.latestReplaceBarValue);
-
                         if (message.push) {
-                            this.searchResults.replace(this.latestReplaceBarValue);
+                            this.searchResults.replace(this.latestSearchBarValue, this.latestReplaceBarValue).then((success) => {
+                                if (success) {
+                                    this.triggerUpdates(this.latestSearchBarValue);
+                                }
+                            });
                         }
                     }
                     else {
