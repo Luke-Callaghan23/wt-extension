@@ -55,6 +55,7 @@ export type DiskContextType = {
     "wt.autocorrections.dontCorrect": Autocorrect['dontCorrect'];
     "wt.autocorrections.exclusions": Autocorrect['exclusions'];
     'wt.wtSearch.search.latestSearchBarValue': SearchBarView['latestSearchBarValue'];
+    'wt.wtSearch.search.latestReplaceBarValue': SearchBarView['latestReplaceBarValue'];
     'wt.wtSearch.search.wholeWord': SearchBarView['wholeWord'];
     'wt.wtSearch.search.regex': SearchBarView['regex'];
     'wt.wtSearch.search.caseInsensitive': SearchBarView['caseInsensitive'];
@@ -178,6 +179,20 @@ export class Workspace {
         return saveCache;
     }
 
+    static async forcePackaging (): Promise<void>;
+    static async forcePackaging <K extends keyof DiskContextType> (context: vscode.ExtensionContext, key: K, value: DiskContextType[K]): Promise<void>;
+
+    static async forcePackaging <K extends keyof DiskContextType> (context?: vscode.ExtensionContext, key?: K, value?: DiskContextType[K]) {
+        if (context && key && value) {
+            await context.globalState.update(key, value);
+        }
+        const contextUri = extension.ExtensionGlobals.workspace.contextValuesFilePath;
+        const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
+        const contextJSON = JSON.stringify(contextItems, undefined, 2);
+        ReloadWatcher.disableReloadWatch();
+        return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+    }
+
     static async updateContext <K extends keyof DiskContextType> (context: vscode.ExtensionContext, key: K, value: DiskContextType[K], options?: { isSetting: boolean }) {
         await context.globalState.update(key, value);
         if (options?.isSetting) {
@@ -186,6 +201,7 @@ export class Workspace {
         }
         return Workspace.packageContextItems();
     }
+    
 
     
     // Simply initializes all the paths of necessary 
