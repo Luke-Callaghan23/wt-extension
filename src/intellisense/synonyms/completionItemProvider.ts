@@ -44,7 +44,22 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         this.isWordHippo = useWordHippo;
     }
 
+    private debounce: NodeJS.Timeout | null = null;
     async provideCompletionItems(
+        document: vscode.TextDocument, 
+        position: vscode.Position, 
+        token: vscode.CancellationToken, 
+        context: vscode.CompletionContext
+    ): Promise<vscode.CompletionList<vscode.CompletionItem> | vscode.CompletionItem[]> {
+        return new Promise(resolve => {
+            this.debounce && clearTimeout(this.debounce);
+            this.debounce = setTimeout(async () => {
+                resolve(this.provideCompletionItems__impl(document, position, token, context));
+            }, 20);
+        })
+    }
+
+    private async provideCompletionItems__impl(
         document: vscode.TextDocument, 
         position: vscode.Position, 
         token: vscode.CancellationToken, 
@@ -135,30 +150,24 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         
         // Query the synonym api for the hovered word
         let response: Synonyms;
-        // if (this.cache[wordText]) {
-        //     const result = this.cache[wordText];
-        //     if (result.type === 'error') {
-        //         return getMisspellCorrections(result, hoverRange, wordText);
-        //     }
-        //     response = result;
-        // }
-        // else {
-
 
         // Query the dictionary api for the selected word
         const res = await SynonymsProvider.provideSynonyms(hoverPosition.text, this.isWordHippo ? 'wh' : 'synonymsApi');
         if (res.type === 'error') {
-            // this.cache[wordText] = res;
-            return getMisspellCorrections(res, hoverRange, wordText);
+            const corrections = getMisspellCorrections(res, hoverRange, wordText);
+
+            const currentHover = vscode.window.activeTextEditor && getHoveredWord(vscode.window.activeTextEditor.document, vscode.window.activeTextEditor.selection.start);
+            if (currentHover && currentHover.text === wordText)  {
+                return corrections;
+            }
+            else {
+                return [];
+            }
         }
 
         // If there was no error querying for synonyms of the selected word, then store the response from
         //      the dictionary api and cache it for later
         response = res;
-        //     this.cache[wordText] = response;
-        // }
-
-        
         const defs = response.definitions;
 
         let activations: boolean[];
