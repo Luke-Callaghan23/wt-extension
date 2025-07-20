@@ -2190,7 +2190,7 @@
 				"win": "ctrl+shift+alt+m",
 				"linux": "ctrl+shift+alt+m",
 				"mac": "cmd+shift+alt+m",
-				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+				"when": "wt.valid && editorTextFocus"
 			},
 			{
 				"command": "wt.editor.todo.commentSentence",
