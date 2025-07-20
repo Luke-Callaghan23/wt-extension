@@ -146,16 +146,12 @@ export class UriBasedView<T extends HasGetUri> {
 			return;
 		}
 
-		let skipOwnReveal = false;
-
 		// VSCode will only expand up to 3 child-depth nodes at once
 		// So if the opened node has more than three segments (minus one for the "data/" path separator)
 		//		then recursively call this function on the parent of the selected node until we find one 
 		//		that can be expanded
 		if (segments.length - 1 > 3) {
 			const parentUri = node.getParentUri();
-
-			skipOwnReveal = !!(parentUri && this.uriToVisibility[formatFsPathForCompare(parentUri)]);
 
 			if (parentUri) {
 				await this.getTreeElementByUri(parentUri).then((node) => {
@@ -169,9 +165,7 @@ export class UriBasedView<T extends HasGetUri> {
 			}
 		}
 		
-		if (!skipOwnReveal) {
-			return this.view.reveal(node, options)
-		}
+		return this.view.reveal(node, options)
 	}
 
 	selectFile = search.selectFile;
