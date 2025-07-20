@@ -73,7 +73,7 @@ export class TabLabels {
         const configuration = workspace.getConfiguration();
         configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
     
-        const newPatterns: { [index: string]: string } = {};
+        const newPatterns: { [index: string]: [ string, boolean ] } = {};
         for (const group of vscode.window.tabGroups.all) {
             for (const tab of group.tabs) {
                 if (!(tab.input instanceof vscode.TabInputText) && !(tab.input instanceof vscode.TabInputNotebook)) continue;
@@ -95,7 +95,7 @@ export class TabLabels {
                 if (relativePath.startsWith('/')) {
                     relativePath = relativePath.substring(1);
                 }
-    
+
                 // If the node was found in the recycling bin, mark it as deleted in the label so the user knows
                 let label: string;
                 if (source === 'outline') {
@@ -117,7 +117,7 @@ export class TabLabels {
                 }
                 else throw 'unreachable';
                 console.log(`Tab labels for ${uri.fsPath}: label='${label}'`);
-                newPatterns['*/' + relativePath] = label;
+                newPatterns['*/' + relativePath] = [label, tab.isActive];
             }
         }
         
@@ -125,7 +125,7 @@ export class TabLabels {
 
         const finalPatterns: { [index: string]: string } = {};
         const set = new Set<string>();
-        Object.entries(newPatterns).forEach(([ pattern, label ]) => {
+        Object.entries(newPatterns).forEach(([ pattern, [ label, isActive ] ]) => {
             let finalLabel = label;
             let index = 0;
             while (set.has(finalLabel)) {
@@ -137,9 +137,10 @@ export class TabLabels {
             const finalPattern = pattern.startsWith('*/')
                 ? pattern
                 : `*/${pattern}`;
-                finalPatterns[finalPattern] = maxTabLabel && maxTabLabel > 3 && finalLabel.length > maxTabLabel
-                    ? finalLabel.substring(0, maxTabLabel) + "..."
-                    : finalLabel;
+
+            finalPatterns[finalPattern] = maxTabLabel && maxTabLabel > 3 && finalLabel.length > maxTabLabel && !isActive
+                ? finalLabel.substring(0, maxTabLabel) + "..."
+                : finalLabel;
         });
 
         // Patterns for the color picker
