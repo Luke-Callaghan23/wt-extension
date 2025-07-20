@@ -1328,10 +1328,6 @@
 					"when": "false"
 				},
 				{
-					"command": "wt.notebook.addNote",
-					"when": "false"
-				},
-				{
 					"command": "wt.notebook.removeNote",
 					"when": "false"
 				},
