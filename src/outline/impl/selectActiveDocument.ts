@@ -5,6 +5,7 @@ import { vagueNodeSearch } from '../../miscTools/help';
 import { ExtensionGlobals } from '../../extension';
 import { NotebookPanelNote } from '../../notebook/notebookPanel';
 import { TabLabels } from '../../tabLabels/tabLabels';
+import { UriBasedView } from '../../outlineProvider/UriBasedView';
 
 
 // Is called whenever there is a change in the active document in vscode
@@ -25,22 +26,22 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
     if (!nodeOrNote || !source) return;
 
     if (source !== 'notebook' && nodeOrNote instanceof OutlineNode) {
-        let view: vscode.TreeView<OutlineNode>;
+        let view: UriBasedView<OutlineNode>;
         let node: OutlineNode = nodeOrNote;
         switch (source) {
             case 'outline': {
-                view = this.view;
+                view = this;
             } break;
             case 'recycle': {
-                view = ExtensionGlobals.recyclingBinView.view;
+                view = ExtensionGlobals.recyclingBinView;
             } break;
             case 'scratch': {
-                view = ExtensionGlobals.scratchPadView.view;
+                view = ExtensionGlobals.scratchPadView;
             } break;
         }
 
         // Reveal and focus the node
-        this.expandAndRevealOutlineNode(node as OutlineNode, {
+        view.expandAndRevealOutlineNode(node as OutlineNode, {
             expand: true,
             focus: false,
             select: true

@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
 import * as extension from '../extension';
 import * as vsconsole from '../miscTools/vsconsole';
-import { compareFsPath, getFsPathKey, getRelativePath, isSubdirectory, RevealOptions, setFsPathKey } from '../miscTools/help';
+import { compareFsPath, formatFsPathForCompare, getFsPathKey, getRelativePath, isSubdirectory, RevealOptions, setFsPathKey } from '../miscTools/help';
 import * as search from './../miscTools/searchFiles';
 import * as vscodeUri from 'vscode-uri';
+import { throws } from 'assert';
 
 export interface HasGetUri {
     getUri(): vscode.Uri;
@@ -139,6 +140,11 @@ export class UriBasedView<T extends HasGetUri> {
 		const nodeUri = node.getUri();
 		const relativePath = getRelativePath(nodeUri);
 		const segments = relativePath.split('/');
+
+		const nodeUriString = formatFsPathForCompare(node.getUri());
+		if (this.view.selection.map(f => formatFsPathForCompare(f.getUri())).find(f => f === nodeUriString)) {
+			return;
+		}
 
 		// VSCode will only expand up to 3 child-depth nodes at once
 		// So if the opened node has more than three segments (minus one for the "data/" path separator)

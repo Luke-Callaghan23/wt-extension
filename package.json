@@ -15,9 +15,9 @@
 		"vscode": "^1.74.0"
 	},
 	"categories": [
-		"Programming Languages", 
-		"Debuggers", 
-		"Notebooks", 
+		"Programming Languages",
+		"Debuggers",
+		"Notebooks",
 		"Other"
 	],
 	"keywords": [
@@ -2511,7 +2511,7 @@
 		"@types/glob": "^7.2.0",
 		"@types/he": "^1.2.3",
 		"@types/jsdom": "^21.1.0",
-		"@types/node": "^16.11.7",
+		"@types/node": "^20.19.9",
 		"@types/path-browserify": "^1.0.2",
 		"@types/rwlock": "^5.0.6",
 		"@types/turndown": "^5.0.5",

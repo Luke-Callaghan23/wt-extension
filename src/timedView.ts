@@ -118,6 +118,7 @@ export class TimedView implements Packageable<any> {
         //      clear that timer (preventing the call), and use the timer generated 
         //      in this call instead
         if (this.timeout) {
+            //@ts-ignore
             clearTimeout(this.timeout);
             this.timeout = undefined;
         }
