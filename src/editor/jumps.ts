@@ -465,20 +465,13 @@ export async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vsco
 
     const editor = vscode.window.activeTextEditor;
     if (!editor) return null;
-
     
     const document = editor.document;
     if (!document) return null;
 
-    const docText = document.getText();
-    
+    const newSelections = await getJumpWordSelection(jt, shiftHeld);
+    if (!newSelections) return null;
 
-    const newSelections: vscode.Selection[] = editor.selections.map(selection => {
-        return jumpWordSingleSelection(
-            jt, shiftHeld || false, selection,
-            document, docText
-        );
-    })
     editor.selections = newSelections;
     
     // For some reason, VSCode does not reveal the "active" part of the selection passed into here, so we need to remake
@@ -486,6 +479,24 @@ export async function jumpWord (jt: JumpType, shiftHeld?: boolean): Promise<vsco
     //      after a jump
     vscode.window.activeTextEditor?.revealRange(new vscode.Selection(newSelections[0].active, newSelections[0].active));
     return newSelections[0];
+}
+
+export async function getJumpWordSelection (jt: JumpType, shiftHeld?: boolean): Promise<vscode.Selection[] | null> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return null;
+
+    
+    const document = editor.document;
+    if (!document) return null;
+
+    const docText = document.getText();
+    
+    return editor.selections.map(selection => {
+        return jumpWordSingleSelection(
+            jt, shiftHeld || false, selection,
+            document, docText
+        );
+    });
 }
 
 export function jumpWordSingleSelection (

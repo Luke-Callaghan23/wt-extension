@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import { gitCommit, gitiniter } from '../gitTransactions';
 import { Workspace } from '../workspace/workspaceClass';
-import { JumpType, defaultJumpFragmentOptions, jumpParagraph, jumpSentence, jumpWord } from './jumps';
+import { JumpType, defaultJumpFragmentOptions, getJumpWordSelection, jumpParagraph, jumpSentence, jumpWord } from './jumps';
 import { bold, commasize, emDash, emDashes, italisize, strikethrough, underline } from './surroundSelection';
 import { commentFragment, commentParagraph, commentSentence } from './comment';
 import { highlightExpand } from './highlights';
@@ -43,18 +43,21 @@ async function deleteSelection (jt: JumpType): Promise<boolean> {
     if (!editor) return false;
 
     // Perform the delete on a specified selection
-    const doDelete = async (selection: vscode.Selection): Promise<boolean> => {
-        return editor.edit((editBuilder: vscode.TextEditorEdit) => editBuilder.replace(selection, ''));
+    const doDelete = async (selections: vscode.Selection[]): Promise<boolean> => {
+        const edits = selections.map(selection => {
+            return editor.edit((editBuilder: vscode.TextEditorEdit) => editBuilder.replace(selection, ''));
+        });
+        return edits.every(elt => elt);
     }
 
     // If selection is not empty, just delete the already selected area 
     const selection = editor.selection;
     if (!selection.isEmpty) {
-        return doDelete(selection);
+        return doDelete([selection]);
     }
 
     // If there is no selection, then use jumpWord to get select the area to delete
-    const deleteSelection: vscode.Selection | null = await jumpWord(jt, true);
+    const deleteSelection: vscode.Selection[] | null = await getJumpWordSelection(jt, true);
     if (deleteSelection === null) return false;
     return doDelete(deleteSelection);
 }
