@@ -4,6 +4,7 @@ import { exit } from './exitCodeMode';
 import * as console from '../miscTools/vsconsole';
 import { isText } from 'istextorbinary';
 import { Buff } from '../Buffer/bufferSource';
+import { defaultProgress } from '../miscTools/help';
 
 export type CodeModeState = 'codeMode' | 'noCodeMode';
 export class CoderModer {
@@ -143,7 +144,9 @@ export class CoderModer {
         // Can select many above is turned to false, so there should only be one uri
         const repo = response[0];
 
-        const leaves = await this.getRepoLeaves(repo);
+        const leaves = await defaultProgress("Please wait... setting up code mode", (progress) => {
+            return this.getRepoLeaves(repo);
+        });
         if (leaves.length === 0) {
             // If the directory was empty, report the error and recurse
             vscode.window.showErrorMessage('[ERR] Code repo for code mode cannot be empty!');
