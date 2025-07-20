@@ -176,17 +176,18 @@ implements
 	}
 
     protected getTitleAndAliasPattern (note: NotebookPanelNote, withId: boolean = true) {
-        const realAliases = note.aliases
+        const realAliases = [...note.aliases, note.title]
             .map(a => a.trim())
-            .filter(a => a.length > 0);
+            .filter(a => a.length > 0)
+            .sort((a, b) => b.length - a.length);
 
         const aliasesAddition = realAliases.length > 0 
-            ? `|${realAliases.join('|')}`
+            ? `${realAliases.join('|')}`
             : ``;
         const idAddition = withId
             ? `?<${note.noteId}>`
             : ``;
-        return `(${idAddition}${note.title}${aliasesAddition})`
+        return `(${idAddition}${aliasesAddition})`
     }
 
     private getTitlesAndAliasesRegex (

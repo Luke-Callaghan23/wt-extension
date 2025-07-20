@@ -11,7 +11,7 @@ import { TextMatchForNote } from '../timedViewUpdate';
 import { WTNotebookController } from './notebookController';
 import { markdownFormattedFragmentLinkRegex } from '../../miscTools/fragmentLinker';
 
-export const invalidAliasCharactersRegex = /([^a-zA-Z0-9\s-])/;
+export const invalidAliasCharactersRegex = /([^a-zA-Z0-9\s-.?])/;
 
 /*
 NOTES on NotebookSerializer and NotebookController and how wtnote files are handled
@@ -306,7 +306,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     }
 
 
-    async readSerializedNote (buffer: ArrayBufferLike): Promise<SerializedNote | null> {
+    async readSerializedNote (buffer: Uint8Array): Promise<SerializedNote | null> {
         try {
             const text = extension.decoder.decode(buffer);
             const serializedNote: SerializedNote = JSON.parse(text);
