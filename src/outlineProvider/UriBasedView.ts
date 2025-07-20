@@ -136,7 +136,7 @@ export class UriBasedView<T extends HasGetUri> {
 		return null;
 	}
 
-	async expandAndRevealOutlineNode (node: T, options?: RevealOptions) {
+	async expandAndRevealOutlineNode (node: T, options?: RevealOptions, recursion?: boolean) {
 		const nodeUri = node.getUri();
 		const relativePath = getRelativePath(nodeUri);
 		const segments = relativePath.split('/');
@@ -146,12 +146,17 @@ export class UriBasedView<T extends HasGetUri> {
 			return;
 		}
 
+		let skipOwnReveal = false;
+
 		// VSCode will only expand up to 3 child-depth nodes at once
 		// So if the opened node has more than three segments (minus one for the "data/" path separator)
 		//		then recursively call this function on the parent of the selected node until we find one 
 		//		that can be expanded
 		if (segments.length - 1 > 3) {
 			const parentUri = node.getParentUri();
+
+			skipOwnReveal = !!(parentUri && this.uriToVisibility[formatFsPathForCompare(parentUri)]);
+
 			if (parentUri) {
 				await this.getTreeElementByUri(parentUri).then((node) => {
 					if (!node) return;
@@ -159,11 +164,14 @@ export class UriBasedView<T extends HasGetUri> {
 					// Copy the options of the main call, but override and set `select` to false
 					// (If `select` is true, then we get a strange visual effect where all the parent nodes get highlighted
 					//		one by one before settling on the final node -- it's a little distracting)
-					return this.expandAndRevealOutlineNode(node, {...options, select: false});
+					return this.expandAndRevealOutlineNode(node, {...options, select: false}, true);
 				});
 			}
 		}
-		return this.view.reveal(node, options)
+		
+		if (!skipOwnReveal) {
+			return this.view.reveal(node, options)
+		}
 	}
 
 	selectFile = search.selectFile;
