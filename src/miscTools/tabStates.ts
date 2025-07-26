@@ -103,14 +103,19 @@ export class TabStates implements Packageable<'wt.tabStates.savedTabStates' | "w
                 for (const [ relativePath, positions ] of Object.entries(tabs)) {
                     const openUri = vscode.Uri.joinPath(extension.rootPath, relativePath);
                     
-                    await showDocument(openUri, {
-                        viewColumn: viewCol,
-                        selection: new vscode.Range(
-                            new vscode.Position(positions.activeLine, positions.activeChar),
-                            new vscode.Position(positions.anchorLine, positions.activeChar)
-                        ),
-                        preview: false,
-                    });
+                    try {
+                        await showDocument(openUri, {
+                            viewColumn: viewCol,
+                            selection: new vscode.Range(
+                                new vscode.Position(positions.activeLine, positions.activeChar),
+                                new vscode.Position(positions.anchorLine, positions.activeChar)
+                            ),
+                            preview: false,
+                        });
+                    }
+                    catch (err: any) {
+                        vscode.window.showWarningMessage(`[WARN] Could not open file '${openUri}' from tab state: ${err}`);
+                    }
 
                     // Save the active tab for later
                     if (!activeUri && positions.active) {

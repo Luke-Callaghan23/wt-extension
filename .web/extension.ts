@@ -240,15 +240,14 @@ export function activate (context: vscode.ExtensionContext) {
 
 
 async function loadExtensionWithProgress (context: vscode.ExtensionContext, title: "Starting Integrated Writing Environment" | "Reloading Integrated Writing Environment"): Promise<boolean> {
-    
     // Exit early with no errors if there is no data folder
     // Probably means the user just downloaded the extension and don't want to confuse them with the 'Missing file' error
     if (!(await statFile(vscode.Uri.joinPath(rootPath, 'data')))) {
         await vscode.commands.executeCommand('setContext', 'wt.valid', false);
         await vscode.commands.executeCommand('setContext', 'wt.loaded', true);
+        vscode.window.showInformationMessage(`[INFO] Could not load WTANIWE workspace: no data folder at '${vscode.Uri.joinPath(rootPath, 'data')}'`);
         return false;
     }
-
     return defaultProgress(title, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
         const workspace = await loadWorkspace(context);
         progress.report({ message: "Loaded workspace" });
@@ -266,6 +265,7 @@ async function activateImpl (context: vscode.ExtensionContext) {
     ExtensionGlobals.notebookSerializerDispose = vscode.workspace.registerNotebookSerializer('wt.notebook', ExtensionGlobals.notebookSerializer)
     
     // Load the root path of file system where the extension was loaded
+    console.log("Resetting root path");
     rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
         ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
@@ -279,6 +279,9 @@ async function activateImpl (context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand('wt.convert', () => convertFileNames()));
 
     context.subscriptions.push(vscode.commands.registerCommand('wt.reload', async () => {
+        console.log("Resetting root path");
+        rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
+            ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
         return loadExtensionWithProgress(context, "Reloading Integrated Writing Environment");
     }));
 
@@ -312,6 +315,7 @@ async function activateImpl (context: vscode.ExtensionContext) {
             title: "Creating Workspace"
         }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
 
+            console.log("Resetting root path");
             rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
                 ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 

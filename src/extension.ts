@@ -259,9 +259,9 @@ async function loadExtensionWithProgress (context: vscode.ExtensionContext, titl
     if (!(await statFile(vscode.Uri.joinPath(rootPath, 'data')))) {
         await vscode.commands.executeCommand('setContext', 'wt.valid', false);
         await vscode.commands.executeCommand('setContext', 'wt.loaded', true);
+        vscode.window.showInformationMessage(`[INFO] Could not load WTANIWE workspace: no data folder at '${vscode.Uri.joinPath(rootPath, 'data')}'`);
         return false;
     }
-
     return defaultProgress(title, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
         const workspace = await loadWorkspace(context);
         progress.report({ message: "Loaded workspace" });
@@ -277,22 +277,25 @@ async function loadExtensionWithProgress (context: vscode.ExtensionContext, titl
 async function activateImpl (context: vscode.ExtensionContext) {
     ExtensionGlobals.notebookSerializer = new WTNotebookSerializer();
     ExtensionGlobals.notebookSerializerDispose = vscode.workspace.registerNotebookSerializer('wt.notebook', ExtensionGlobals.notebookSerializer)
-    
 
     // Load the root path of file system where the extension was loaded
+    console.log("Resetting root path");
     rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
         ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
     context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openIntro", async () => {
-        return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, true);
+        return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
     }));
     context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openImports", async () => {
-        return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.importsWalkthrough`, true);
+        return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.importsWalkthrough`, false);
     }));
     context.subscriptions.push(vscode.commands.registerCommand("wt.searchFiles", searchFiles));    
     context.subscriptions.push(vscode.commands.registerCommand('wt.convert', () => convertFileNames()));
 
     context.subscriptions.push(vscode.commands.registerCommand('wt.reload', async () => {
+        console.log("Resetting root path");
+        rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
+            ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
         return loadExtensionWithProgress(context, "Reloading Integrated Writing Environment");
     }));
 
@@ -326,6 +329,7 @@ async function activateImpl (context: vscode.ExtensionContext) {
             title: "Creating Workspace"
         }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
 
+            console.log("Resetting root path");
             rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
                 ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
@@ -341,6 +345,7 @@ async function activateImpl (context: vscode.ExtensionContext) {
             }
         });
     }));
+
 }
 
 export function deactivate (): Promise<void> {

@@ -5,6 +5,7 @@ import { wordSeparator } from '../../extension';
 import * as readline from 'readline';
 import { glob } from 'glob';
 import {promisify} from 'util'
+import { isSubdirectory } from '../help';
 
 async function getDataDirectoryPaths(): Promise<vscode.Uri[]> {
     const found: vscode.Uri[] = [];
@@ -39,28 +40,26 @@ export async function grepExtensionDirectory (
     cancellationToken: vscode.CancellationToken
 ): Promise<[ vscode.Location, string ][] | null>  {
 
-    const captureGroupId = 'searchTerm';
+    const captureGroupId = 'searchResult';
 
-    let inLineSearch: {
-        regexWithIdGroup: RegExp,
-        captureGroupId: string,
-    } | undefined;
+    let flags = 'g';
+    if (caseInsensitive) {
+        flags += 'i';
+    }
 
-    const flags = 'g' + (caseInsensitive ? 'i' : '');
+    // inline search regex is a secondary regex which makes use of NodeJS's regex capture groups
+    //      to do additional searches inside of CONTENTS_OF_LINE for the actual matched text
+    let inlineSource = searchBarValue;
     if (!useRegex) {
-        searchBarValue = searchBarValue.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-    if (wholeWord) {
-        searchBarValue = `${wordSeparator}${searchBarValue}${wordSeparator}`;
-        
-        inLineSearch = {
-            regexWithIdGroup: new RegExp(`${wordSeparator}(?<${captureGroupId}>${searchBarValue})${wordSeparator}`, 'gi'),
-            captureGroupId: captureGroupId,
-        }
+        inlineSource = inlineSource.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
-    const results: [ vscode.Location, string ][] = [];
-    const regex = new RegExp(searchBarValue, flags);
+    let inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${inlineSource})`, flags);
+    if (wholeWord) {
+        inlineSearchRegex = new RegExp(`${extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${extension.wordSeparator}`, flags);
+    }
+
+    const output: [ vscode.Location, string ][] = [];
     try {
         const applicableUris = await getDataDirectoryPaths();
 
@@ -69,7 +68,8 @@ export async function grepExtensionDirectory (
 
         const documents: vscode.TextDocument[] = [];
 
-        const locations: [vscode.Location, string][] = [];
+        console.log(inlineSearchRegex);
+
         const totalCount = documentPromises.length;
         let completedFilesCount = 0;
         while (completedFilesCount < totalCount) {
@@ -78,34 +78,54 @@ export async function grepExtensionDirectory (
             );
 
             const lines = openedDoc.getText().split('\n');
-            for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-                const lineContents = lines[lineIndex];
+            for (let line = 0; line < lines.length; line++) {
+                const lineContents = lines[line];
 
-                const parseLineReg = regex;
                 let lineMatch: RegExpExecArray | null;
-                let lastLineMatch: RegExpExecArray | undefined;
-                while ((lineMatch = parseLineReg.exec(lineContents)) !== null) {
-                    if (lineMatch.index === lastLineMatch?.index) {
-                        break;
+
+                // Since there can be multiple matched values for the search regex inside of CONTENTS_OF_LINE
+                //      we need to continually apply the inlineSearchRegex to CONTENTS_OF_LINE until all matches 
+                //      run out
+                while ((lineMatch = inlineSearchRegex.exec(lineContents)) !== null) {
+                    let characterStart = lineMatch.index;
+
+                    // Using the captureGroupId we baked into the inlineSearchRegex, we can isolate just the current 
+                    //      matched text from the whole line
+                    const actualMatchedText = lineMatch.groups?.[captureGroupId] || lineMatch[lineMatch.length - 1];
+
+                    // In lined search results are also off-by-one
+                    if (inlineSearchRegex) {
+                        characterStart += lineMatch[0].indexOf(actualMatchedText);
                     }
-                    
-                    let characterStart = lineMatch.index + 1;
-                    const searchedText = lineMatch.groups && captureGroupId
-                        ? lineMatch.groups[captureGroupId]
-                        : lineMatch[lineMatch.length - 1];
-            
-                    if (captureGroupId) {
-                        characterStart += lineMatch[0].indexOf(searchedText);
-                    }
-                    
-                    const characterEnd = characterStart + searchedText.length;
-            
-                    const startPosition = new vscode.Position(lineIndex, characterStart);
-                    const endPosition = new vscode.Position(lineIndex, characterEnd);
+
+                    // Index of the ending character of the vscode Location is derived by getting the starting character of the 
+                    //      of the grep result + the length of the searchedText
+                    const characterEnd = characterStart + actualMatchedText.length;
+
+                    // Create positions and ranges for the Location
+                    const startPosition = new vscode.Position(line, characterStart);
+                    const endPosition = new vscode.Position(line, characterEnd);
                     const foundRange = new vscode.Selection(startPosition, endPosition);
             
-                    results.push([new vscode.Location(openedDoc.uri, foundRange), searchedText]);
-                    lastLineMatch = lineMatch;
+                    // As long as the Uri belongs to this vscode workspace then yield this location
+                    const uri = openedDoc.uri;
+                    if (
+                        (
+                            uri.fsPath.toLocaleLowerCase().endsWith('.wt') 
+                            || uri.fsPath.toLocaleLowerCase().endsWith('.wtnote') 
+                            || uri.fsPath.toLocaleLowerCase().endsWith('.config')
+                        )
+                        && 
+                        (
+                            isSubdirectory(extension.ExtensionGlobals.workspace.chaptersFolder, uri)
+                            || isSubdirectory(extension.ExtensionGlobals.workspace.workSnipsFolder, uri)
+                            || isSubdirectory(extension.ExtensionGlobals.workspace.notebookFolder, uri)
+                            || isSubdirectory(extension.ExtensionGlobals.workspace.scratchPadFolder, uri)
+                        )
+                    ) {
+                        // Finally, finally, finally yield the result
+                        output.push([ new vscode.Location(uri, foundRange), lineMatch[0] ]);
+                    }
                 }
             }
             
@@ -113,7 +133,7 @@ export async function grepExtensionDirectory (
             documentPromises.splice(index, 1);
             documents.push(openedDoc);
         }
-        return results;
+        return output;
     }
     catch (err: any) {
         console.log(err);
