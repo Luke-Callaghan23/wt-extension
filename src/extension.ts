@@ -190,7 +190,8 @@ async function loadExtensionWorkspace (
             ['wt.colors', 'colors', colorIntellisense],
             ['wt.textStyle', 'textStyle', textStyles],
             ['wt.autocorrections', 'autocorrections', autocorrection],
-            ['wt.overview', 'overview', fragmentOverview]
+            ['wt.overview', 'overview', fragmentOverview],
+            ['wt.wtSearch.results', 'searchResults', searchResultsView],
         ]);
 
         const tabLabels = new TabLabels(context);

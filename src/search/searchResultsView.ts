@@ -8,7 +8,16 @@ import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContain
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, isSubdirectory, showTextDocumentWithPreview, vagueNodeSearch } from '../miscTools/help';
 import { CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
+import { Timed } from '../timedView';
 
+const SearchHighlight = vscode.window.createTextEditorDecorationType(__<vscode.DecorationRenderOptions>({
+    backgroundColor: new vscode.ThemeColor('editor.findMatchBackground'),
+    border: '1px solid',
+    borderColor: new vscode.ThemeColor('editor.findMatchBorder'),
+    overviewRulerColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
+    isWholeLine: false,
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+}))
 
 export type SearchNodeKind = 
     SearchContainerNode
@@ -19,7 +28,9 @@ export type SearchNodeKind =
 
 export class SearchResultsView 
     extends UriBasedView<SearchNode<SearchNodeKind>>
-    implements vscode.TreeDataProvider<SearchNode<SearchNodeKind>> 
+    implements 
+        vscode.TreeDataProvider<SearchNode<SearchNodeKind>>,
+        Timed
 {
     private static viewId = 'wt.wtSearch.results';
     private filteredUris: vscode.Uri[];
@@ -32,6 +43,7 @@ export class SearchResultsView
         this.rootNodes = [];
         this.filteredUris = [];
         this.results = [];
+        this.enabled = true;
     }
 
     
@@ -47,6 +59,17 @@ export class SearchResultsView
         this.context.subscriptions.push(view);
         this.registerCommands();
         this.view = view;
+
+        // Add or remove the search results highlights depending on whether the view is visible and enabled
+        this.context.subscriptions.push(view.onDidChangeVisibility((event) => {
+            // If try update returns false, then remove highlights
+            if (!this.tryUpdate()) {
+                for (const editor of vscode.window.visibleTextEditors) {
+                    editor.setDecorations(SearchHighlight, []);
+                }
+            }
+            // If it returns true it already does the updates so nothing else to do here
+        }));
 
         await this.initUriExpansion(SearchResultsView.viewId, this.view, this.context);
     }
@@ -187,14 +210,18 @@ export class SearchResultsView
                 }
                 // At the end of every chunk, refresh the tree
                 currentTree && this.refresh(currentTree);
+                this.tryUpdate();
             }
 
             // Once the entire tree for this search is completed, start creating 'title' nodes
             //      to display any matches within the title of snips/chapters/fragments
             currentTree = await searchNodeGenerator.createTitleNodes(cancellationToken);
             currentTree && this.refresh(currentTree);
+            this.tryUpdate();
         });
     }
+
+
 
     public async replace (originalText: string, replacedTerm: string): Promise<boolean> {
 
@@ -325,6 +352,36 @@ WARNING: For best results.  Save ALL open .wtnote notebook files before doing th
         const parentUri = element.getParentUri();
         if (!parentUri) return null;
         return this.getTreeElementByUri(parentUri);
+    }
+
+    enabled: boolean;
+    getUpdatesAreVisible(): boolean {
+        return this.view.visible;
+    }
+
+
+    async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
+        const target = editor.document.uri;
+        const targetFmt = formatFsPathForCompare(target);
+        const searchResults = this.results.filter(([loc, _]) => formatFsPathForCompare(loc.uri) === targetFmt);
+        if (searchResults.length === 0) return;
+
+        for (const filtered of this.filteredUris) {
+            if (compareFsPath(filtered, target) || isSubdirectory(filtered, target)) {
+                return;
+            }
+        }
+        editor.setDecorations(SearchHighlight, searchResults.map(([ { range }, _ ]) => range));
+    }
+
+    private tryUpdate (): boolean {
+        if (this.view.visible && this.enabled) {
+            for (const editor of vscode.window.visibleTextEditors) {
+                this.update(editor, []);
+            }
+            return true;
+        }
+        return false;
     }
 }
 
