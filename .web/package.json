@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.144",
+	"version": "0.0.145",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
 	"private": false,
@@ -140,6 +140,11 @@
 				},
 				"wt.timedSearches.autocorrections": {
 					"description": "Enable Autocorrections",
+					"type": "boolean",
+					"default": true
+				},
+				"wt.timedSearches.searchResults": {
+					"description": "Enable highlighting of search results in the editor (only when Writing Tool Search panel is open)",
 					"type": "boolean",
 					"default": true
 				},

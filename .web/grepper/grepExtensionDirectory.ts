@@ -124,7 +124,7 @@ export async function grepExtensionDirectory (
                         )
                     ) {
                         // Finally, finally, finally yield the result
-                        output.push([ new vscode.Location(uri, foundRange), lineMatch[0] ]);
+                        output.push([ new vscode.Location(uri, foundRange), actualMatchedText ]);
                     }
                 }
             }
