@@ -18,11 +18,17 @@ import { getFsPathKey, setFsPathKey } from '../miscTools/help';
 import * as extension from './../extension';
 
 export type TODO = {
-	rowStart: number,
-	rowEnd: number,
-	colStart: number,
-	colEnd: number,
-	preview: string
+	rowStart: number;
+	rowEnd: number;
+	colStart: number;
+	colEnd: number;
+	preview: string;
+
+	location: vscode.Location;
+	surroundingText: string;
+	surroundingTextHighlight: [ number, number ];
+	largerSurrounding: string;
+	largerSurroundingHighlight: [ number, number ];
 };
 
 export type Validation = {

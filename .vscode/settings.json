@@ -30,8 +30,8 @@
     "python.analysis.autoImportCompletions": true,
     "workbench.editor.customLabels.enabled": true,
     "workbench.editor.customLabels.patterns": {
-        "*/media/search/main.js": "search bar webview",
-        "*/media/search/main.css": "search bar css"
+        "*/src/TODO/node.ts": "TODONode",
+        "*/src/TODO/nodes_impl/getChildren.ts": "TODO getChildren"
     },
     // "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }

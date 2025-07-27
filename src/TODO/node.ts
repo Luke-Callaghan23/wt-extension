@@ -13,6 +13,7 @@ import { getChildren } from './nodes_impl/getChildren';
 import { getTODOCounts } from './nodes_impl/getTODOCounts';
 import { MoveNodeResult } from '../outline/nodes_impl/handleMovement/common';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
+import { __ } from '../miscTools/help';
 
 export type ChapterNode = fsNodes.ChapterNode<TODONode>;
 export type ContainerNode = fsNodes.ContainerNode<TODONode>;
@@ -38,8 +39,7 @@ export class TODONode extends TreeNode {
     }
     
     getTooltip (): string | vscode.MarkdownString {
-        
-        return `${this.data.ids.type} | '${this.data.ids.display}'`;
+        return this.tooltip || `${this.data.ids.type} | '${this.data.ids.display}'`;
     }
     
     async generalMoveNode (
@@ -58,8 +58,11 @@ export class TODONode extends TreeNode {
     getUri (): vscode.Uri {
         return this.data.ids.uri;
     }
-    getDisplayString (): string {
-        return this.data.ids.display;
+
+    getDisplayString (): vscode.TreeItemLabel {
+        return this.label || __<vscode.TreeItemLabel>({
+            label: this.data.ids.display
+        });
     }
 
     getParentUri(): vscode.Uri {
@@ -127,9 +130,12 @@ export class TODONode extends TreeNode {
     }
 
     data: NodeTypes;
-
-    constructor(data: NodeTypes) {
+    private tooltip: vscode.MarkdownString | null;
+    private label: vscode.TreeItemLabel | null;
+    constructor(data: NodeTypes, label?: vscode.TreeItemLabel, tooltip?: vscode.MarkdownString) {
         super();
         this.data = data;
+        this.label = label || null;
+        this.tooltip = tooltip || null;
     }
 }

@@ -6,7 +6,7 @@ import { TODOData, TODONode } from '../node';
 import { v4 as uuidv4 } from 'uuid';
 import { TODOsView, Validation } from '../TODOsView';
 import { ExtensionGlobals } from '../../extension';
-import { getFsPathKey } from '../../miscTools/help';
+import { __, applyHighlightToMarkdownString, getFsPathKey } from '../../miscTools/help';
 
 export async function convertToTODOData (this: TODONode): Promise<TODONode[]> {
     const todos = getFsPathKey<Validation>(this.getUri(), TODOsView.todo)!;
@@ -33,6 +33,13 @@ export async function convertToTODOData (this: TODONode): Promise<TODONode[]> {
             },
             todo: data,
         } as TODOData;
-        return new TODONode(todoData);
+        return new TODONode(
+            todoData, 
+            __<vscode.TreeItemLabel>({
+                label: data.surroundingText,
+                highlights: [data.surroundingTextHighlight]
+            }), 
+            applyHighlightToMarkdownString(data.largerSurrounding, data.largerSurroundingHighlight)
+        );
     });;
 }

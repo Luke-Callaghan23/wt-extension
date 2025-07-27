@@ -302,6 +302,27 @@ export type SurroundingTextResult = {
     highlight: [ number, number ]
 };
 
+export function applyHighlightToMarkdownString (surroundingText: string, highlights: [number, number]) {
+    // Split on the highlights for the larger surrounding text
+    const splits = [
+        surroundingText.substring(0, highlights[0]),
+        surroundingText.substring(highlights[0], highlights[1]),
+        surroundingText.substring(highlights[1])
+    ]
+    
+    // Clean all the markings from the three sections 
+    // (Need to do cleaning here or else the `highlights` indices might get messed up)
+    const cleaned = splits.map(splt => splt.replaceAll(/[#^*_~]/g, ''));
+    
+    const joined = cleaned[0] + '<mark>' + cleaned[1] + '</mark>' + cleaned[2];
+    const finalMarkdown = joined.replaceAll(/\n/g, '\n\n');
+    
+    // Create md and mark it as supporting HTML
+    const md = new vscode.MarkdownString(finalMarkdown);
+    md.supportHtml = true;
+    return md;
+}
+
 export function getSurroundingTextInRange(
     fullText: string, 
     surroundingStartOff: number,

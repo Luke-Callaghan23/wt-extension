@@ -15,7 +15,7 @@ export abstract class TreeNode {
 	abstract getParentUri(): vscode.Uri;
 	abstract getTooltip(): string | vscode.MarkdownString;
 	abstract getUri(): vscode.Uri;
-	abstract getDisplayString(): string;
+	abstract getDisplayString(): string | vscode.TreeItemLabel;
 	abstract getChildren(filter: boolean, insertIntoNodeMap: (node: TreeNode, uri: vscode.Uri)=>void): Promise<TreeNode[]>;
 	abstract hasChildren(): boolean;
 	abstract getDroppableUris(): vscode.Uri[];
@@ -164,9 +164,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		return {
 			id: uuidv4(),
 
-			label: /**vscode.TreeItemLabel**/<any>{ 
-				label: label
-            },
+			label: label,
 			// An example of how to use codicons in a MarkdownString in a tree item tooltip.
 			tooltip: treeElement.getTooltip(),
 			collapsibleState: collapseState,
