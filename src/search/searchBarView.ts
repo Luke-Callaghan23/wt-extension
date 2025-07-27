@@ -89,7 +89,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
         }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.searchError', (errorBarValue: string, errorMessage) => {
             return this.searchBarError(errorBarValue, errorMessage);
-        }))
+        }));
     }
 
     private setSlowModeValue () {
@@ -174,7 +174,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
                         this.latestReplaceBarValue = message.value;
                         Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestReplaceBarValue', this.latestReplaceBarValue);
                         if (message.push) {
-                            this.searchResults.replace(this.latestSearchBarValue, this.latestReplaceBarValue).then((success) => {
+                            this.searchResults.replace(this.latestSearchBarValue, this.latestReplaceBarValue, this.regex).then((success) => {
                                 if (success) {
                                     this.triggerUpdates(this.latestSearchBarValue);
                                 }

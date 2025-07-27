@@ -78,6 +78,10 @@ export class SearchResultsView
         if (updatedNodes) {
             this.rootNodes = updatedNodes;
             this.filteredUris = [];
+            if (updatedNodes.length === 0) {
+                this.results = [];
+            }
+            this.tryUpdate();
         }
         this._onDidChangeTreeData.fire(undefined);
     }
@@ -223,14 +227,12 @@ export class SearchResultsView
 
 
 
-    public async replace (originalText: string, replacedTerm: string): Promise<boolean> {
-
-
+    public async replace (originalText: string, replacedTerm: string, isRegex: boolean): Promise<boolean> {
         // For all locations that are not children of filtered uris, create and add the 
         //      workspace edit to a vscode.WorkspaceEdit object
         const edits = new vscode.WorkspaceEdit();
         const urisUpdated = new Set<string>();
-        for (const [location, _] of this.results) {
+        for (const [ location, actualMatchedText ] of this.results) {
             // Check if filtered or not
             let okay = true;
             for (const filtered of this.filteredUris) {
@@ -241,7 +243,72 @@ export class SearchResultsView
             }
             if (!okay) continue;
 
-            await addSingleWorkspaceEdit(edits, location, replacedTerm);
+            let replacement: string;
+            if (isRegex) {
+                // Capture groups:
+                // If the user is doing a replacement on a search string that **is** a regex, and that regex contains capture groups
+                //      surrounded by parentheses
+                // The user can take segments of each individual matched location's captured values and use them in the replacement
+                //      by using $ plus an index.
+                // Ex: 
+                //      Search regex           = 'I want pi(z*)a (now)?'
+                //      Replace string         = 'You're making me sleep $1 $2'
+                //      
+                //      Fragment file 1        = 'I want pizzzzzzzzzzzza'
+                //      Fragment file 1 result = 'You're making me sleep zzzzzzzzzzzz '
+                //      Fragment file 2        = 'I want piza now'
+                //      Fragment file 2 result = 'You're making me sleep  now'
+
+
+                // Create a new regex containing only the text currently in the search bar, and
+                //      use that to search the actual matched text
+                // This generates an exec array with details about capture groups embedded within
+                //      the search text
+                const captureMyself = new RegExp('^' + originalText + '$');
+                const execArray: RegExpExecArray | null = captureMyself.exec(actualMatchedText)!;
+
+                // Do replacements
+                replacement = execArray.reduce((acc, captured, index) => {
+                    // In instances of **OPTIONAL** capture groups, they will appear in the exec array
+                    //      even if they do not appear in the string
+                    // They will be undefined
+                    // But, since we are doing string manipulation later down in the function we will just
+                    //      treat it as if it was an empty string (Otherwise, the string 'undefined' will appear
+                    //      in spaces we probably don't want them to)
+                    if (captured === undefined || captured === null) {
+                        captured = '';
+                    }
+
+                    // Cast capture group index as string for easier manipulation
+                    const captureGroupIndex = `${index}`;   
+
+                    // Searching greedily for as many repeating dollar signs as possible,
+                    //      plus the capture group index
+                    const search = '\\$+' + captureGroupIndex;
+                    const searchReg = new RegExp(search, 'gi');
+
+                    return acc.replaceAll(searchReg, match => {
+                        // Since the regex is greedily capturing all dollar signs in a row, we know that if there is more than
+                        //      once dollar sign in the 'match' text provided by this function then the capture is "escaped"
+                        // (You can escape a capture group index by adding an extra dollar sign in front)
+
+                        // Test this by replacing the capture group index with an empty string and getting the length
+                        // If greater than one, then there is more than one dollar sign in the replace string here
+                        //      so, no replacements are necessary
+                        if (match.replace(captureGroupIndex, "").length > 1) {
+                            return match;
+                        }
+
+                        // Otherwise, return the current string that was captured by the incoming regex
+                        return captured;
+                    });
+                }, replacedTerm);
+            }
+            else {
+                // Otherwise, just replace using the original provided value
+                replacement = replacedTerm;
+            }
+            await addSingleWorkspaceEdit(edits, location, replacement);
             urisUpdated.add(location.uri.fsPath);
         }
 

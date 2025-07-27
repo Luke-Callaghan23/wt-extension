@@ -42,7 +42,7 @@ export abstract class Grepper {
     }
 
     protected transformLine (line: string): string {
-        return line;
+        return line.replace(/^,/, '');
     }
 
     static runningGreps: Record<number, childProcess.ChildProcessWithoutNullStreams> = [];
@@ -65,7 +65,8 @@ export abstract class Grepper {
             // Call git grep
             const command = this.getCommand(regex.source, caseInsensitive);
             const ps = childProcess.spawnSync(this.name, command, {
-                cwd: extension.rootPath.fsPath
+                cwd: extension.rootPath.fsPath,
+                maxBuffer: 1024 * 1024 * 50                 // 50 MB max buffer
             });
 
             if (!ps.output || ps.error) {
