@@ -452,6 +452,7 @@ export class TabStates implements Packageable<'wt.tabStates.savedTabStates' | "w
     private async update () {
         await this.context.workspaceState.update('wt.tabStates.savedTabStates', this.savedTabStates);
         await this.context.workspaceState.update("wt.tabStates.latestTabState", this.latestTabState);
+        await Workspace.forcePackaging(this.context, 'wt.tabStates.savedTabStates', this.savedTabStates);
         const statusBarText = this.latestTabState === null 
             ? 'Tab State Options'
             : `Tab State Options (${this.latestTabState})`
