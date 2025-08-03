@@ -471,11 +471,18 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
             
             this.activationState.ts = Date.now();
-
+            
+            // `forceSelectIndex` forces `provideCompletionItems__impl` to select the index specified in the activation state
+            // This will override any other selections that this function will try to use
             this.forceSelectIndex = true;
+
             await vscode.commands.executeCommand('hideSuggestWidget');
             await vscode.commands.executeCommand('editor.action.triggerSuggest');
-            this.forceSelectIndex = false;
+
+            // Set a small timeout for `provideCompletionItems__impl` to finish
+            setTimeout(() => {
+                this.forceSelectIndex = false;
+            }, 100);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand(`wt.intellisense.synonyms.nextDefinition`, async () => {
@@ -498,10 +505,17 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
             this.activationState.ts = Date.now();
 
+            // `forceSelectIndex` forces `provideCompletionItems__impl` to select the index specified in the activation state
+            // This will override any other selections that this function will try to use
             this.forceSelectIndex = true;
+            
             await vscode.commands.executeCommand('hideSuggestWidget');
             await vscode.commands.executeCommand('editor.action.triggerSuggest');
-            this.forceSelectIndex = false;
+
+            // Set a small timeout for `provideCompletionItems__impl` to finish
+            setTimeout(() => {
+                this.forceSelectIndex = false;
+            }, 100);
         }));
 
     }
