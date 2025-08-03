@@ -21,7 +21,7 @@ export const commonReplacements = {
     ' ': ' ',
 };
 
-const UNDERLINE_TIMER = 20 * 1000; // ms
+const UNDERLINE_TIMER = 5 * 1000; // ms
 
 type UriFileName = string;
 type IncorrectWord = string;
@@ -44,7 +44,7 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
     private exclusions:  { [index: UriFileName]: {
         [index: IncorrectWord]: HowMany;            // Tells us how many times we should ignore 
     } };
-    private replacementsRegex: RegExp;
+    private specialCharactersSearch: RegExp;
 
     private diagnosticCollection: vscode.DiagnosticCollection;
 
@@ -216,7 +216,7 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
         const specialCharacterEdits: [ vscode.Range, CorrectedWord ][] = [];
 
         let m: RegExpExecArray | null;
-        while ((m = this.replacementsRegex.exec(docText)) !== null) {
+        while ((m = this.specialCharactersSearch.exec(docText)) !== null) {
             const original = m[0];
             const replacement = commonReplacements[m[0] as keyof typeof commonReplacements];
             const specialCharacterRange = new vscode.Range(
@@ -251,19 +251,31 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
         }
         
         let diagnostics : vscode.Diagnostic[] = [];
-        const results = editor.setDecorations(Autocorrect.BlueUnderline,  Object.entries(this.allCorrections).map(([ filename, corrections ]) => {
-            if (filename !== vscodeUri.Utils.basename(editor.document.uri)) return [];
-            return Object.entries(corrections).map(([ _, data ]) => {
-                if (!data.active) return [];
+        const decorations = Object.entries(this.allCorrections).map(([ filename, corrections ]) => {
+            if (filename !== vscodeUri.Utils.basename(editor.document.uri)) {
+                return [];
+            }
+            return Object.entries(corrections).map(([ _, correctionData ]) => {
+                if (!correctionData.active) return [];
+                
+                // Do not do not show the underline if the text of the editor
+                //      at the underline location is no longer the same
+                //      as the corrected text
+                const currentText = editor.document.getText(correctionData.range);
+                const replacedText = correctionData.corrected;
+                if (currentText !== replacedText) {
+                    return [];
+                }
 
-                diagnostics.push(new vscode.Diagnostic(data.range, 
-                    `Corrected ${data.original} to ${data.corrected} in '${data.nodeLabel}'`,
+                diagnostics.push(new vscode.Diagnostic(correctionData.range, 
+                    `Corrected ${correctionData.original} to ${correctionData.corrected} in '${correctionData.nodeLabel}'`,
                     vscode.DiagnosticSeverity.Information
                 ));
                 
-                return data.range;
+                return correctionData.range;
             }).flat();
-        }).flat());
+        }).flat();
+        const results = editor.setDecorations(Autocorrect.BlueUnderline, decorations);
         this.diagnosticCollection.set(editor.document.uri, diagnostics);
         return results;
     }
@@ -312,7 +324,7 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
         ));
 
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection("stuff");
-        this.replacementsRegex = new RegExp(`(${Object.keys(commonReplacements).join("|")})`, 'g');
+        this.specialCharactersSearch = new RegExp(`(${Object.keys(commonReplacements).join("|")})`, 'g');
         this.context.subscriptions.push(Autocorrect.BlueUnderline);
         this.context.subscriptions.push(this.diagnosticCollection);
     }
