@@ -48,9 +48,8 @@ export class PersonalDictionary implements Packageable<'wt.personalDictionary'> 
         
         // Add the word
         this.dict[word] = 1;
-        this.context.workspaceState.update('wt.personalDictionary', this.dict);
-        vscode.commands.executeCommand('wt.timedViews.update')
-        Workspace.packageContextItems();
+        vscode.commands.executeCommand('wt.timedViews.update');
+        Workspace.forcePackaging(this.context, 'wt.personalDictionary', this.dict);
     }
 
     // Command for removing a word from the personal dictionary
@@ -70,8 +69,7 @@ export class PersonalDictionary implements Packageable<'wt.personalDictionary'> 
 
         // Remove the word
         delete this.dict[remove];
-        this.context.workspaceState.update('wt.personalDictionary', this.dict);
-        Workspace.packageContextItems();
+        Workspace.forcePackaging(this.context, 'wt.personalDictionary', this.dict);
     }
 
 
