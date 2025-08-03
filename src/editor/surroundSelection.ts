@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
+import { wordSeparator, wordSeparatorRegex } from '../extension';
 
 // Function for surrounding selected text with a specified string
-export async function surroundSelectionWith (startRanges: string | string[], endRanges?: string | string[], overrideSelections?: vscode.Selection[]) {
+export async function surroundSelectionWith (startRanges: (string | null) | (string | null)[], endRanges?: (string | null) | (string | null)[], overrideSelections?: vscode.Selection[], insertSpaceOnRemoval?: boolean) {
     // Get the active text editor
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
@@ -39,6 +40,10 @@ export async function surroundSelectionWith (startRanges: string | string[], end
             const start = Array.isArray(startRanges) ? startRanges[selIndex % startRanges.length] : startRanges;
             const end = (Array.isArray(endRanges) ? endRanges[selIndex % endRanges.length] : endRanges) || start;
 
+            if (start === null || end === null) {
+                continue;
+            }
+
             // Get the selected text within the selection
             const selected = document.getText(selection);
         
@@ -52,9 +57,12 @@ export async function surroundSelectionWith (startRanges: string | string[], end
                 else {
                     if (selection.start.character >= start.length) {
                         const newStart = new vscode.Position(selection.start.line, selection.start.character - start.length);
-                        beforeSelection = new vscode.Selection(newStart, selection.start);
+
                         const beforeText = document.getText(beforeSelection);
-                        if (beforeText !== start) beforeSelection = undefined;
+                        const prefixSelection = new vscode.Selection(newStart, selection.start);
+                        if (beforeText === start) {
+                            beforeSelection = prefixSelection;
+                        }
                     }
                 }
             }
@@ -68,9 +76,12 @@ export async function surroundSelectionWith (startRanges: string | string[], end
                 }
                 else {
                     const newEnd = new vscode.Position(selection.end.line, (selection.end.character) + end.length);
-                    afterSelection = new vscode.Selection(new vscode.Position(selection.end.line, selection.end.character), newEnd);
-                    const afterText = document.getText(afterSelection);
-                    if (afterText !== end) afterSelection = undefined;
+                    const postfixSelection = new vscode.Selection(new vscode.Position(selection.end.line, selection.end.character), newEnd);
+                    const afterText = document.getText(postfixSelection);
+
+                    if (afterText === end) {
+                        afterSelection = postfixSelection;
+                    }
                 }
             }
         
@@ -86,10 +97,42 @@ export async function surroundSelectionWith (startRanges: string | string[], end
             else if (beforeSelection && afterSelection) {
                 const before = beforeSelection as vscode.Selection;
                 const after = afterSelection as vscode.Selection;
+                
+                const text = document.getText();
+
+                const beforeBefore = text[document.offsetAt(before.start) - 1];
+                const afterBefore = text[document.offsetAt(before.end) + 1];
+
+                const beforeAfter = text[document.offsetAt(after.start) - 1];
+                const afterAfter = text[document.offsetAt(after.start) + 1];
+
                 // If both the before and after the selection are already equal to the surround string, then
                 //      remove those strings
-                editBuilder.delete(before);
-                editBuilder.delete(after);
+                if (!insertSpaceOnRemoval) {
+                    // Default case is that we do not need to be aware of surrounding contents -- we can just delete without checking them
+                    editBuilder.delete(before);
+                    editBuilder.delete(after);
+                }
+                else {
+
+                    // When insertSpaceOnRemoval is set, we need to confirm whether or not the characters surrounding the removed text (`before` and `after` are word separators)
+                    // If, after removing `before` and `after`, there are no word separators on either side of the content, then we need to add a space there instead of just deleting
+
+                    if (!wordSeparatorRegex.test(beforeBefore) && !wordSeparatorRegex.test(afterBefore)) {
+                        editBuilder.replace(before, " ");
+                    }
+                    else {
+                        editBuilder.delete(before);
+                    }
+
+                    if (!wordSeparatorRegex.test(beforeAfter) && !wordSeparatorRegex.test(afterAfter)) {
+                        editBuilder.replace(after, " ");
+                    }
+                    else {
+                        editBuilder.delete(after);
+                    }
+                }
+
 
                 // Removed characters ***reduce*** the character offset of the current line
                 offsetsMap[beforeSelection.start.line] = (offsetsMap[beforeSelection.start.line] || 0) + (start.length * -1);
@@ -163,12 +206,47 @@ export function commasize () {
     if (!document) return;
 
     const text = document.getText();
-
     
     const newSelections: vscode.Selection[] = [];
-    const starts: string[] = [];
-    const ends: string[] = [];
+    const starts: (string | null)[] = [];
+    const ends: (string | null)[] = [];
     for (const selection of editor.selections) {
+
+        // It's really complicated to cover all the cases where
+        //      we are supposed to move the cursor forward instead
+        //      of inserting or removing content
+        // So, just do it manually here
+        if (selection.isEmpty) {
+            let startOffset = document.offsetAt(selection.start);
+
+            // Skip over whitespace in front of the cursor
+            while (text[startOffset] === ' ') {
+                startOffset++;
+            }
+
+            // If the first non-whitespace character in front of the cursor is a comma, attempt to move the cursor in front of it
+            if (text[startOffset] === ',') {
+
+                // Skip the whitespace after the comma as well
+                let off = 1;
+                while (text[startOffset + off] === ' ') {
+                    off++;
+                }
+
+                // Push the updated position
+                const position = document.positionAt(startOffset + off);
+                newSelections.push(new vscode.Selection(position, position));
+
+                // Starts and ends at this index are null -- 
+                //      this indicates to `surroundSelectionWith` that the 
+                //      selection at the specified index is dealt with and shouldn't 
+                //      be updated
+                starts.push(null);
+                ends.push(null);
+                continue;
+            }
+        }
+
         let startPos: vscode.Position = selection.start;
         let startStr = ', ';
     
@@ -180,6 +258,11 @@ export function commasize () {
         // Check if the character before the cursor is a space
         // If so, then move the cursor back to before the space and only insert ',' instead of ', '
         const startOffset = document.offsetAt(selection.start);
+
+        if (text[startOffset] === ' ') {
+            diff = 0;
+        }
+
         while (text[startOffset - diff] === ' ') {
             const prev = document.positionAt(startOffset - diff);
             startPos = prev;
@@ -199,14 +282,17 @@ export function commasize () {
             diff++;
         }
         if (text[endOffset] === ' ') endStr = ',';
-        if (text[endOffset + 0] === ',' && text[endOffset + 1] === ' ') endStr = ',';
     
+        if (selection.isEmpty) {
+            startStr = ', ';
+        }
+
         newSelections.push(new vscode.Selection(startPos, endPos));
         starts.push(startStr);
         ends.push(endStr);
     }
     editor.selections = newSelections;
-    return surroundSelectionWith(starts, ends);
+    return surroundSelectionWith(starts, ends, undefined, true);
 }
 
 export async function emDash () {
