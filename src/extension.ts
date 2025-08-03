@@ -229,7 +229,7 @@ async function loadExtensionWorkspace (
         activateDebug(context);
         report("Loaded text-to-speech debugger");
 
-        await reloadWatcher.checkForRestoreTabs();
+        reloadWatcher.checkForRestoreTabs();
         await outline.selectActiveDocument(vscode.window.activeTextEditor);
         report("Finished.");
     }
