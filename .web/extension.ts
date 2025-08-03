@@ -215,7 +215,7 @@ async function loadExtensionWorkspace (
         await TabLabels.assignNamesForOpenTabs();
 		report("Loaded tab labels");
         
-        await reloadWatcher.checkForRestoreTabs();
+        reloadWatcher.checkForRestoreTabs();
         await outline.selectActiveDocument(vscode.window.activeTextEditor);
 		report("Finished.");
     }
