@@ -11,3 +11,4 @@ vsc-extension-quickstart.md
 media/README/**
 media/walkthroughs/**
 !media/walkthroughs/imports/overview.md
+!media/walkthroughs/icon.png

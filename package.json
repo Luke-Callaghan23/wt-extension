@@ -2271,7 +2271,7 @@
 			{
 				"id": "wt.introWalkthrough",
 				"title": "Introduction to WTANIWE",
-				"icon": "https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/icon.png",
+				"icon": "media/walkthroughs/icon.png",
 				"description": "A broad overview of Writing Tool's major features.",
 				"steps": [
 					{
@@ -2369,7 +2369,7 @@
 			{
 				"id": "wt.importsWalkthrough",
 				"title": "Introduction to WTANIWE's Imports",
-				"icon": "https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/icon.png",
+				"icon": "media/walkthroughs/icon.png",
 				"description": "An in depth look at WTANIWE's imports feature",
 				"steps": [
 					{
