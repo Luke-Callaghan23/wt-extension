@@ -537,10 +537,6 @@ export function __ <T> (obj: T): T {
 }
 
 export async function showDocument (uri: vscode.Uri, options?: vscode.TextDocumentShowOptions) {
-    console.log(uri);
-    console.log(uri);
-    console.log(uri);
-    console.log(uri);
     if (uri.fsPath.toLowerCase().endsWith('.wtnote')) {
         return vscode.commands.executeCommand('vscode.openWith', uri, 'wt.notebook', options);
     }
@@ -652,12 +648,6 @@ export async function showTextDocumentWithPreview (docOrUri: vscode.Uri | vscode
     const uri = docOrUri instanceof vscode.Uri 
         ? docOrUri
         : docOrUri.uri;
-    console.log(uri);
-    console.log(uri);
-    console.log(uri);
-    console.log(uri);
-    console.log(uri);
-    console.log(uri);
 
     let isActiveTextDocument = vscode.window.activeTextEditor && compareFsPath(uri, vscode.window.activeTextEditor.document.uri);
     return vscode.window.showTextDocument(uri, {

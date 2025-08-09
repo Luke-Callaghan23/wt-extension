@@ -3,12 +3,15 @@ import { HasGetUri, UriBasedView } from '../outlineProvider/UriBasedView';
 import { Workspace } from '../workspace/workspaceClass';
 import * as extension from '../extension';
 import { v4 as uuid } from 'uuid';
-import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
+import { grepExtensionDirectory, grepSingleFile } from '../miscTools/grepper/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, isSubdirectory, showTextDocumentWithPreview, vagueNodeSearch } from '../miscTools/help';
+import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, getFsPathKey, isSubdirectory, setFsPathKey, showTextDocumentWithPreview, UriFsPathFormatted, vagueNodeSearch } from '../miscTools/help';
 import { CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
 import { Timed } from '../timedView';
+import { BounceOnIt } from '../miscTools/bounceOnIt';
+import { SearchResultsTree } from './searchResultsTree';
+import { nodeGrep } from '../miscTools/grepper/nodeGrep';
 
 const SearchHighlight = vscode.window.createTextEditorDecorationType(__<vscode.DecorationRenderOptions>({
     backgroundColor: new vscode.ThemeColor('editor.findMatchBackground'),
@@ -27,41 +30,26 @@ export type SearchNodeKind =
     | MatchedTitleNode;
 
 export class SearchResultsView 
-    extends UriBasedView<SearchNode<SearchNodeKind>>
-    implements 
-        vscode.TreeDataProvider<SearchNode<SearchNodeKind>>,
-        Timed
+extends 
+    BounceOnIt<[vscode.Uri | vscode.TextDocument]>
+implements 
+    Timed
 {
-    private static viewId = 'wt.wtSearch.results';
-    private filteredUris: vscode.Uri[];
-    private results: [vscode.Location, string][];
+    private searchTree: SearchResultsTree
     constructor (
         protected workspace: Workspace,
         protected context: vscode.ExtensionContext
     ) {
-        super("Search Results");
-        this.rootNodes = [];
-        this.filteredUris = [];
-        this.results = [];
+        super();
+        this.searchTree = new SearchResultsTree(this.workspace, this.context, this);
         this.enabled = true;
     }
 
-    
-    private _onDidChangeTreeData: vscode.EventEmitter<SearchNode<SearchNodeKind> | undefined> = new vscode.EventEmitter<SearchNode<SearchNodeKind> | undefined>();
-    readonly onDidChangeTreeData: vscode.Event<SearchNode<SearchNodeKind> | undefined> = this._onDidChangeTreeData.event;
-    
-    async initialize() {
-        const view = vscode.window.createTreeView(SearchResultsView.viewId, { 
-            treeDataProvider: this,
-            showCollapseAll: true, 
-            canSelectMany: true,
-        });
-        this.context.subscriptions.push(view);
-        this.registerCommands();
-        this.view = view;
+    public async initialize ()  {
+        await  this.searchTree.initialize();
 
         // Add or remove the search results highlights depending on whether the view is visible and enabled
-        this.context.subscriptions.push(view.onDidChangeVisibility((event) => {
+        this.context.subscriptions.push(this.searchTree.view.onDidChangeVisibility((event) => {
             // If try update returns false, then remove highlights
             if (!this.tryUpdate()) {
                 for (const editor of vscode.window.visibleTextEditors) {
@@ -71,104 +59,16 @@ export class SearchResultsView
             // If it returns true it already does the updates so nothing else to do here
         }));
 
-        await this.initUriExpansion(SearchResultsView.viewId, this.view, this.context);
-    }
+        const searchResultsUpdateWatcher = vscode.workspace.createFileSystemWatcher(
+            new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{wt,wtnote}`),
+            false, false,false
+        );
+        searchResultsUpdateWatcher.onDidCreate(this.triggerDebounce.bind(this));
+        searchResultsUpdateWatcher.onDidChange(this.triggerDebounce.bind(this));
+        searchResultsUpdateWatcher.onDidDelete(this.triggerDebounce.bind(this));
+        this.context.subscriptions.push(searchResultsUpdateWatcher);
 
-    async refresh(updatedNodes?: typeof this.rootNodes): Promise<void> {
-        if (updatedNodes) {
-            this.rootNodes = updatedNodes;
-            this.filteredUris = [];
-            if (updatedNodes.length === 0) {
-                this.results = [];
-            }
-            this.tryUpdate();
-        }
-        this._onDidChangeTreeData.fire(undefined);
-    }
-
-    registerCommands() {
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.search', async () => {
-            const response = await vscode.window.showInputBox({
-                ignoreFocusOut: false,
-                password: false,
-                placeHolder: 'Search . . . ',
-                prompt: 'Search Term',
-                title: 'Search Term',
-            });
-            if (!response) return;
-            return this.searchBarValueWasUpdated(response, true, true, true, true, new vscode.CancellationTokenSource().token);
-        }));
-
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {
-            if (location.uri.fsPath.toLowerCase().endsWith('.wtnote')) {
-                const options: vscode.NotebookDocumentShowOptions = {
-                    preview: false,
-                    viewColumn: await determineAuxViewColumn(extension.ExtensionGlobals.notebookPanel.getNote.bind(extension.ExtensionGlobals.notebookPanel)),
-                    preserveFocus: false,
-                };
-                vscode.commands.executeCommand('vscode.openWith', location.uri, 'wt.notebook', options)
-                return;
-            }
-
-            // Called when a file location node is clicked in the results tree, opens the location in the editor
-            const doc = await vscode.workspace.openTextDocument(location.uri);
-            const editor = await showTextDocumentWithPreview(doc);
-            editor.selections = [ new vscode.Selection(location.range.start, location.range.end) ];
-            return editor.revealRange(location.range);
-        }));
-
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.showNode', async (node: SearchNode<MatchedTitleNode>) => {
-            // Called when a MatchedTitleNode is clicked in the outline tree,
-            // When the matched title is the title of a fragment, opens that in the editor
-            // Otherwise, reveals that node in the Outline / Scratch Pad / Recycling Bin / Notebook view
-            
-            // Notebook or scratch pad or fragment: open in editor
-            if (
-                node.node.linkNode.source === 'notebook' || 
-                node.node.linkNode.source === 'scratch' || 
-                node.node.linkNode.node.data.ids.type === 'fragment'
-            ) {
-                const doc = await vscode.workspace.openTextDocument(node.getUri());
-                return showTextDocumentWithPreview(doc);
-            }
-
-            // Outline or Recycling (when type is not fragment), then reveal the node 
-            //      in its view
-            let provider: UriBasedView<OutlineNode>;
-            switch (node.node.linkNode.source) {
-                case 'outline': provider = extension.ExtensionGlobals.outlineView; break;
-                case 'recycle': provider = extension.ExtensionGlobals.recyclingBinView; break;
-            }
-            provider.expandAndRevealOutlineNode(node.node.linkNode.node);
-        }));
-
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wtSearch.results.revealNodeInOutline", async (node: SearchNode<SearchNodeKind>) => {
-
-            const nodeResult = await vagueNodeSearch(node.getUri());
-            if (nodeResult.node === null || nodeResult.source === null) return;
-
-            if (nodeResult.source === 'notebook') {
-                extension.ExtensionGlobals.notebookPanel.view.reveal(nodeResult.node, {
-                    expand: true,
-                    focus: false,
-                    select: true
-                });
-                return;
-            }
-
-            let provider: UriBasedView<OutlineNode>;
-            switch (nodeResult.source) {
-                case 'outline': provider = extension.ExtensionGlobals.outlineView; break;
-                case 'recycle': provider = extension.ExtensionGlobals.recyclingBinView; break;
-                case 'scratch': provider = extension.ExtensionGlobals.scratchPadView; break;
-            }
-            return provider.expandAndRevealOutlineNode(nodeResult.node);
-        }));
-
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wtSearch.results.hideNode", (node: SearchNode<SearchNodeKind>) => {
-            this.filteredUris.push(node.getUri());
-            this.refresh();
-        }));
+        this.context.subscriptions.push(vscode.workspace.onDidChangeTextDocument((ev) => this.triggerDebounce(ev.document)));
     }
 
     public async searchBarValueWasUpdated (
@@ -179,270 +79,124 @@ export class SearchResultsView
         wholeWord: boolean,
         cancellationToken: vscode.CancellationToken
     ) {
-
-        // Use `withProgress` pointing at this viewId to show the user that there is 
-        //      something going on with the search
-        return vscode.window.withProgress<void>({
-            location: { viewId: SearchResultsView.viewId },
-        }, async () => {
-            // Grep results
-            
-            let results: [vscode.Location, string][] | null;
-            try {
-                results = await grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
-                if (results === null || results.length === 0) return this.searchCleared();
-                if (cancellationToken.isCancellationRequested) return;
-            }
-            catch (err: any) {
-                vscode.commands.executeCommand('wt.wtSearch.searchError', searchBarValue, `${err}`);
-                return;
-            }
-            this.results = results;
-
-            const searchNodeGenerator = new SearchNodeGenerator();
-            let currentTree: SearchNode<SearchContainerNode>[] | null = null;
-
-            const chunkedResults = chunkArray(results, 25);
-            for (const chunk of chunkedResults) {
-                if (cancellationToken.isCancellationRequested) return;
-
-                for (const result of chunk) {
-                    if (cancellationToken.isCancellationRequested) return;
-
-                    // Iteratively insert every result in this chunk into the search result generator
-                    currentTree = await searchNodeGenerator.insertResult(result[0], matchTitles, cancellationToken);
-                }
-                // At the end of every chunk, refresh the tree
-                currentTree && this.refresh(currentTree);
-                this.tryUpdate();
-            }
-
-            // Once the entire tree for this search is completed, start creating 'title' nodes
-            //      to display any matches within the title of snips/chapters/fragments
-            currentTree = await searchNodeGenerator.createTitleNodes(cancellationToken);
-            currentTree && this.refresh(currentTree);
-            this.tryUpdate();
-        });
+        return this.searchTree.searchBarValueWasUpdated(searchBarValue, useRegex, caseInsensitive, matchTitles, wholeWord, cancellationToken);
     }
-
-
+    
 
     public async replace (originalText: string, replacedTerm: string, isRegex: boolean): Promise<boolean> {
-        // For all locations that are not children of filtered uris, create and add the 
-        //      workspace edit to a vscode.WorkspaceEdit object
-        const edits = new vscode.WorkspaceEdit();
-        const urisUpdated = new Set<string>();
-        for (const [ location, actualMatchedText ] of this.results) {
-            // Check if filtered or not
-            let okay = true;
-            for (const filtered of this.filteredUris) {
-                if (compareFsPath(filtered, location.uri) || isSubdirectory(filtered, location.uri)) {
-                    okay = false;
-                    break;
-                }
-            }
-            if (!okay) continue;
-
-            let replacement: string;
-            if (isRegex) {
-                // Capture groups:
-                // If the user is doing a replacement on a search string that **is** a regex, and that regex contains capture groups
-                //      surrounded by parentheses
-                // The user can take segments of each individual matched location's captured values and use them in the replacement
-                //      by using $ plus an index.
-                // Ex: 
-                //      Search regex           = 'I want pi(z*)a (now)?'
-                //      Replace string         = 'You're making me sleep $1 $2'
-                //      
-                //      Fragment file 1        = 'I want pizzzzzzzzzzzza'
-                //      Fragment file 1 result = 'You're making me sleep zzzzzzzzzzzz '
-                //      Fragment file 2        = 'I want piza now'
-                //      Fragment file 2 result = 'You're making me sleep  now'
-
-
-                // Create a new regex containing only the text currently in the search bar, and
-                //      use that to search the actual matched text
-                // This generates an exec array with details about capture groups embedded within
-                //      the search text
-                const captureMyself = new RegExp('^' + originalText + '$');
-                const execArray: RegExpExecArray | null = captureMyself.exec(actualMatchedText)!;
-
-                // Do replacements
-                replacement = execArray.reduce((acc, captured, index) => {
-                    // In instances of **OPTIONAL** capture groups, they will appear in the exec array
-                    //      even if they do not appear in the string
-                    // They will be undefined
-                    // But, since we are doing string manipulation later down in the function we will just
-                    //      treat it as if it was an empty string (Otherwise, the string 'undefined' will appear
-                    //      in spaces we probably don't want them to)
-                    if (captured === undefined || captured === null) {
-                        captured = '';
-                    }
-
-                    // Cast capture group index as string for easier manipulation
-                    const captureGroupIndex = `${index}`;   
-
-                    // Searching greedily for as many repeating dollar signs as possible,
-                    //      plus the capture group index
-                    const search = '\\$+' + captureGroupIndex;
-                    const searchReg = new RegExp(search, 'gi');
-
-                    return acc.replaceAll(searchReg, match => {
-                        // Since the regex is greedily capturing all dollar signs in a row, we know that if there is more than
-                        //      once dollar sign in the 'match' text provided by this function then the capture is "escaped"
-                        // (You can escape a capture group index by adding an extra dollar sign in front)
-
-                        // Test this by replacing the capture group index with an empty string and getting the length
-                        // If greater than one, then there is more than one dollar sign in the replace string here
-                        //      so, no replacements are necessary
-                        if (match.replace(captureGroupIndex, "").length > 1) {
-                            return match;
-                        }
-
-                        // Otherwise, return the current string that was captured by the incoming regex
-                        return captured;
-                    });
-                }, replacedTerm);
-            }
-            else {
-                // Otherwise, just replace using the original provided value
-                replacement = replacedTerm;
-            }
-            await addSingleWorkspaceEdit(edits, location, replacement);
-            urisUpdated.add(location.uri.fsPath);
-        }
-
-        // Confirm with user
-        const resp = await vscode.window.showInformationMessage(`Are you sure you want to replace ${edits.size} instances of '${originalText}' to '${replacedTerm}' in ${urisUpdated.size} files?`, {
-            detail: `
-WARNING: For best results.  Save ALL open .wtnote notebook files before doing this.  If the edit is large enough, I'd also recommend doing a git commit before doing this as well.
-            `,
-            modal: true,
-        }, "Yes");
-        if (resp !== 'Yes') return false;
-
-        // And apply
-        return vscode.workspace.applyEdit(edits, {
-            isRefactoring: true,
-        });
+        return this.searchTree.replace(originalText, replacedTerm, isRegex);
     }
 
     public async searchCleared () {
-        this.refresh([]);
+        this.searchTree.searchCleared();
     }
     
-    async getTreeItem (element: SearchNode<SearchNodeKind>): Promise<vscode.TreeItem> {
-        // File location nodes link to a location in a document, and have more complicated labels and tooltips
-        if (element.node.kind === 'fileLocation') {
-            return {
-                id: uuid(),
-                label: element.getLabel(),        
-                collapsibleState: vscode.TreeItemCollapsibleState.None,
-                resourceUri: element.getUri(),
-                tooltip: element.getTooltip(),
-                description: element.description,
-                command: {
-                    command: 'wt.wtSearch.results.openResult',
-                    title: 'Open Result',
-                    arguments: [ element.node.location ]
-                }
-            }
-        }
-        else if (element.node.kind === 'matchedTitle') {
-            let icon: vscode.ThemeIcon;
-            if (element.node.linkNode.source === 'notebook' || element.node.linkNode.node.data.ids.type === 'fragment') {
-                icon = new vscode.ThemeIcon('edit');
-            }
-            else {
-                icon = new vscode.ThemeIcon('folder-opened');
-            }
-            return {
-                id: uuid(),
-                label: element.getLabel(),
-                collapsibleState: vscode.TreeItemCollapsibleState.None,
-                resourceUri: element.getUri(),
-                tooltip: element.getTooltip(),
-                description: element.description,
-                iconPath: icon,
-                command: {
-                    command: 'wt.wtSearch.results.showNode',
-                    title: 'Show Node in Outline',
-                    arguments: [ element ]
-                }
-            }
-        }
-        
-        
-        // 'searchTemp' type nodes will have a red (X) icon and no collapse state, where all other 
-        //      nodes will have no icon and (by default) an open collapse state
-        let icon: vscode.ThemeIcon | undefined;
-        let collapseState: vscode.TreeItemCollapsibleState;
-        if (element.node.kind === 'searchTemp') {
-            collapseState = vscode.TreeItemCollapsibleState.Expanded;
-            icon = new vscode.ThemeIcon('notebook-state-error', new vscode.ThemeColor('errorForeground'));
-        }
-        else {
-            collapseState = vscode.TreeItemCollapsibleState.Expanded;
-        }
 
-        return {
-            id: uuid(),
-            label: element.getLabel(),
-            resourceUri: element.getUri(),
-            tooltip: element.getTooltip(),
-            description: element.description && `(${element.description})`,
-            iconPath: icon,
-            collapsibleState: collapseState
-        }
-    }
-
-    async getChildren (
-        element?: SearchNode<SearchNodeKind> | undefined
-    ): Promise<SearchNode<SearchNodeKind>[]> {
-        if (!element) {
-            // When there are no results in the node tree, then create a temporary node to indicate the empty results to the user
-            if (this.rootNodes.length === 0) {
-                return [ new SearchNode<SearchNodeTemporaryText>({
-                    kind: 'searchTemp',
-                    label: 'No results found.',
-                    parentUri: null,
-                    uri: extension.rootPath
-                }) ];
-            }
-            return this.rootNodes.filter(root => !this.filteredUris.find(filtered => compareFsPath(root.getUri(), filtered)));
-        }
-        return (await element.getChildren(false, ()=>{}))
-            .filter(child => !this.filteredUris.find(filtered => compareFsPath(child.getUri(), filtered)));
-    }
-
-    async getParent (element: SearchNode<SearchNodeKind>): Promise<SearchNode<SearchNodeKind> | null> {
-        const parentUri = element.getParentUri();
-        if (!parentUri) return null;
-        return this.getTreeElementByUri(parentUri);
-    }
+    // /home/lcallaghan/wtenvs/fotbb/data/chapters/chapter-b80dzv110/snips/snip-b83x1tgy0
 
     enabled: boolean;
     getUpdatesAreVisible(): boolean {
-        return this.view.visible;
+        return this.searchTree.view.visible;
     }
-
 
     async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
         const target = editor.document.uri;
         const targetFmt = formatFsPathForCompare(target);
-        const searchResults = this.results.filter(([loc, _]) => formatFsPathForCompare(loc.uri) === targetFmt);
-        if (searchResults.length === 0) return;
+        
+        const documentOnlyResults = this.searchTree.results.filter(([loc, _]) => formatFsPathForCompare(loc.uri) === targetFmt);
+        if (documentOnlyResults.length === 0) return;
 
-        for (const filtered of this.filteredUris) {
-            if (compareFsPath(filtered, target) || isSubdirectory(filtered, target)) {
-                return;
-            }
+        const finalResults: vscode.Range[] = [];
+        for (const  [ location, _ ] of documentOnlyResults) {
+            if (this.searchTree.isLocationFiltered(location)) continue;
+            finalResults.push(location.range);
         }
-        editor.setDecorations(SearchHighlight, searchResults.map(([ { range }, _ ]) => range));
+        editor.setDecorations(SearchHighlight, finalResults);
     }
 
-    private tryUpdate (): boolean {
-        if (this.view.visible && this.enabled) {
+    protected async debouncedUpdate (cancellationToken: vscode.CancellationToken, updated: vscode.Uri | vscode.TextDocument): Promise<void> {
+        const updatedUri = 'uri' in updated ? updated.uri : updated;
+        
+        // Remove filters and results for any location or uri that is this document, or a parent of this document
+        // Results will be added back by the end of the function -- but filters will not
+        // (This because if the user is updating the content of the editor, it is extremely difficult 
+        //      to track which matches have been filtered, which are new, which should be highlighted, etc.)
+        // (So, clearing out filters is a better solution than trying to track and guess which filters should remain)
+        const shouldRetainLocation = (location: vscode.Location | vscode.Uri): boolean => {
+            const cmp: vscode.Uri = 'uri' in location ? location.uri : location;
+            const eq =  compareFsPath(cmp, updatedUri);
+            const child = isSubdirectory(cmp, updatedUri);
+            return !eq && !child;
+        };
+        
+        this.searchTree.filteredUris = this.searchTree.filteredUris.filter(shouldRetainLocation);
+        this.searchTree.results = this.searchTree.results.filter(result => shouldRetainLocation(result[0]));
+
+        // TODO: if we remove a filter for a parent uri, should we add back filters for all other 
+        //      children that are not in a direct line to this document???
+        // TODO: very niche case
+
+        this.searchTree.nodeMap = {};
+
+        const node = await this.searchTree.getTreeElementByUri(updatedUri);
+        if (!node) return;
+        
+        const parent = await this.searchTree.getParent(node);
+        if (!parent || parent.node.kind !== 'searchContainer') return;
+    
+        const parentContainer = parent as SearchNode<SearchContainerNode>;
+        
+        // Search the contents map of the parent container for all nodes with the same uri as the 
+        //      deleted file
+        let deleteKeys: string[] = [];
+        for (const [ nodeKey, node ] of Object.entries(parentContainer.node.contents)) {
+            if (compareFsPath(node.node.uri, updatedUri)) {
+                deleteKeys.push(nodeKey);
+            }
+        }
+
+        // Remove those entries from the parent container
+        for (const deleteKey of deleteKeys) {
+            delete parentContainer.node.contents[deleteKey];
+        }
+        
+        const [ latestSearchBarValue, _, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
+        const fileResults = 'uri' in updated
+            ? await nodeGrep(updated, latestSearchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken)
+            : await grepSingleFile(updatedUri, latestSearchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+
+        
+        if (!fileResults) return;
+        
+        // Create a search node generator -- with the current root data as seed information
+        const searchNodeGenerator = new SearchNodeGenerator(this.searchTree.rootNodes as SearchNode<SearchContainerNode>[]);
+
+        let currentTree: SearchNode<SearchContainerNode>[] | null = null;
+        for (const result of fileResults) {
+            if (cancellationToken.isCancellationRequested) return;
+
+            // Iteratively insert every result in this chunk into the search result generator
+            currentTree = await searchNodeGenerator.insertResult(result[0], matchTitles, cancellationToken);
+        }
+
+        // Once the entire tree for this search is completed, start creating 'title' nodes
+        //      to display any matches within the title of snips/chapters/fragments
+        currentTree = await searchNodeGenerator.createTitleNodes(cancellationToken);
+        if (currentTree) {
+            this.searchTree.refresh(currentTree);
+            this.searchTree.results.push(...fileResults);
+            this.tryUpdate();
+        }
+    }
+
+    public clearDecorations () {
+        for (const editor of vscode.window.visibleTextEditors) {
+            editor.setDecorations(SearchHighlight, []);
+        }
+    }
+
+    public tryUpdate (): boolean {
+        if (this.searchTree.view.visible && this.enabled) {
             for (const editor of vscode.window.visibleTextEditors) {
                 this.update(editor, []);
             }

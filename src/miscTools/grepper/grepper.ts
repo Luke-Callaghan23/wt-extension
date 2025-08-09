@@ -19,7 +19,7 @@ export type GrepResult = {
 
 export abstract class Grepper {
     protected abstract get name (): string;
-    protected abstract getCommand (regexSource: string, caseInsensitive: boolean): string[];
+    protected abstract getCommand (regexSource: string, caseInsensitive: boolean, filter?: string): string[];
 
     protected getWordSeparators (): [ string, string ] {
         const shellWordSeparatorStart = '(^|\\s|-|[.?:;,()\\!\\&\\"\'^_*~])';
@@ -51,7 +51,8 @@ export abstract class Grepper {
         useRegex: boolean, 
         caseInsensitive: boolean, 
         wholeWord: boolean, 
-        cancellationToken: vscode.CancellationToken
+        cancellationToken: vscode.CancellationToken,
+        overrideFilter?: string,
     ): Promise<GrepResult> {
         // Output of a git grep command is of this format:
         // URI:ONE_INDEXED_LINE:CONTENTS_OF_LINE
@@ -63,7 +64,7 @@ export abstract class Grepper {
         const regex = this.createRegex(searchBarValue, useRegex, wholeWord);
         try {
             // Call git grep
-            const command = this.getCommand(regex.source, caseInsensitive);
+            const command = this.getCommand(regex.source, caseInsensitive, overrideFilter);
             const ps = childProcess.spawnSync(this.name, command, {
                 cwd: extension.rootPath.fsPath,
                 maxBuffer: 1024 * 1024 * 50                 // 50 MB max buffer

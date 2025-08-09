@@ -10,14 +10,16 @@ export class GitGrep extends Grepper {
         return 'git';
     }
 
-    protected getCommand(regexSource: string, caseInsensitive: boolean): string[] {
+    protected getCommand(regexSource: string, caseInsensitive: boolean, overrideFilter?: string): string[] {
         let flags = '-r';
         if (caseInsensitive) {
             flags += 'i';
         }
-
-
-        return ['grep', flags, '-H', '-n', '-E', regexSource];
+        const cmd = ['grep', flags, '-H', '-n', '-E', regexSource];
+        if (overrideFilter) {
+            cmd.push('--', overrideFilter);
+        }
+        return cmd;
     }
 
 

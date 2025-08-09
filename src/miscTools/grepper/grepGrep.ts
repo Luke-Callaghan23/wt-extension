@@ -6,12 +6,12 @@ export class GrepGrep extends Grepper {
         return 'grep';
     }
 
-    protected getCommand(regexSource: string, caseInsensitive: boolean): string[] {
+    protected getCommand(regexSource: string, caseInsensitive: boolean, overrideFilter?: string): string[] {
         let flags = '-r';
         if (caseInsensitive) {
             flags += 'i';
         }
 
-        return [flags, '-n', '-E', '--include', '*.config', '--include', '*.wt', '--include', '*.wtnote', regexSource, './'];
+        return [flags, '-n', '-E', '--include', '*.config', '--include', '*.wt', '--include', '*.wtnote', regexSource, overrideFilter || './'];
     }
 }

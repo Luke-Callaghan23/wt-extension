@@ -1,10 +1,22 @@
 import * as vscode from 'vscode';
 import * as extension from '../../extension';
-import { isSubdirectory } from '../help';
+import { getRelativePath, isSubdirectory } from '../help';
 import { Grepper } from './grepper';
 import { showMeUrGreppers } from './findGreppers';
 
 const grepper = showMeUrGreppers();
+
+export async function grepSingleFile (
+    uri: vscode.Uri,
+    searchBarValue: string, 
+    useRegex: boolean, 
+    caseInsensitive: boolean, 
+    wholeWord: boolean,
+    cancellationToken: vscode.CancellationToken
+): Promise<[vscode.Location, string][] | null> {
+    const fmtUri = './' + getRelativePath(uri);
+    return grep__impl(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken, fmtUri);
+}
 
 export async function grepExtensionDirectory (
     searchBarValue: string, 
@@ -13,6 +25,19 @@ export async function grepExtensionDirectory (
     wholeWord: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[vscode.Location, string][] | null>  {
+    return grep__impl(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+}
+
+
+async function grep__impl (
+    searchBarValue: string, 
+    useRegex: boolean, 
+    caseInsensitive: boolean, 
+    wholeWord: boolean,
+    cancellationToken: vscode.CancellationToken,
+    overrideFilter?: string,
+): Promise<[vscode.Location, string][] | null>  {
+    
     const captureGroupId = 'searchResult';
 
     // inline search regex is a secondary regex which makes use of NodeJS's regex capture groups
@@ -31,7 +56,7 @@ export async function grepExtensionDirectory (
 
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
-    const grepResult = await grepper.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+    const grepResult = await grepper.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken, overrideFilter);
     if (grepResult.status === 'error') {
         vscode.commands.executeCommand('wt.wtSearch.searchError', searchBarValue, grepResult.message);
         return null;

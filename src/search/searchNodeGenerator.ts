@@ -64,7 +64,7 @@ export class CreateSearchResults {
         locationStringInfo: [JSONStringInfo, vscode.Location][],
     }>;
 
-    constructor () {
+    constructor (seedData?: SearchNode<SearchContainerNode>[]) {
         this.configNodes = {};
         this.rootCategoryNodes = {
             'chapters': new SearchNode<SearchContainerNode>({
@@ -124,6 +124,20 @@ export class CreateSearchResults {
             }),
         };
         this.docMap = {};
+
+        if (seedData) {
+            // If we are provided with some seed data, then search through that seed data for any of the "base" category nodes that 
+            //      were created above.  If any titles match (titles are a good enough key to match on given that seed data should always
+            //      be root data anyways), then replace the initialized data above with the seed data
+            for (const seed of seedData) {
+                for (const [ entryKey, rootValue ] of Object.entries(this.rootCategoryNodes)) {
+                    const entryKeyCategory = entryKey as Categories;
+                    if (seed.node.title === rootValue.node.title) {
+                        this.rootCategoryNodes[entryKeyCategory] = seed;
+                    }
+                }
+            }
+        }
     }
 
     private getLabelProviders (): Record<Categories, LabelProvider> {
@@ -564,6 +578,7 @@ export class CreateSearchResults {
                     }
                     parentLabels = [...parentNode.node.parentLabels, createLabelFromTitleAndPrefix(title, prefix)];
                     parentNode = parentNode.node.contents[segment] as SearchNode<SearchContainerNode>;
+                    parentUri = parentNode.node.uri;
                 }
             }
             // If this node has never been added to the node tree before
@@ -599,6 +614,7 @@ export class CreateSearchResults {
 
                     parentNode.node.contents[segment] = next;
                     parentNode = next;
+                    parentUri = parentNode.node.uri;
                 }
             }
         }

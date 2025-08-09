@@ -7,6 +7,7 @@ import { DiskContextType, Workspace } from '../workspace/workspaceClass';
 import { SearchResultsView } from './searchResultsView';
 import { ReloadWatcher } from '../miscTools/reloadWatcher';
 import { Buff } from '../Buffer/bufferSource';
+import { BounceOnIt } from '../miscTools/bounceOnIt';
 
 
 type WebviewMessage = {
@@ -32,8 +33,13 @@ type PostMessage = {
 
 
 const SEARCH_TIMER = 2000;
-export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'wt.wtSearch.search.latestSearchBarValue' | 'wt.wtSearch.search.wholeWord' | 'wt.wtSearch.search.regex' | 'wt.wtSearch.search.caseInsensitive' | 'wt.wtSearch.search.matchTitles'> {
-
+export class SearchBarView 
+extends 
+    BounceOnIt<[string]>
+implements 
+    vscode.WebviewViewProvider, 
+    Packageable<'wt.wtSearch.search.latestSearchBarValue' | 'wt.wtSearch.search.wholeWord' | 'wt.wtSearch.search.regex' | 'wt.wtSearch.search.caseInsensitive' | 'wt.wtSearch.search.matchTitles'> 
+{
     private _view?: vscode.WebviewView;
     private readonly _extensionUri: vscode.Uri;
 
@@ -49,6 +55,8 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
         private workspace: Workspace,
         private searchResults: SearchResultsView,
     ) { 
+        super();
+
         this.latestSearchBarValue = this.context.workspaceState.get<string>('wt.wtSearch.search.latestSearchBarValue') || '';
         this.latestReplaceBarValue = this.context.workspaceState.get<string>('wt.wtSearch.search.latestReplaceBarValue') || '';
         this.wholeWord = this.context.workspaceState.get<boolean>('wt.wtSearch.search.wholeWord') || false;
@@ -65,7 +73,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
         }
 
         if (this.latestSearchBarValue.length > 0) {
-            this.triggerUpdates(this.latestSearchBarValue);
+            this.triggerDebounce(this.latestSearchBarValue);
         }
 
         this.registerCommands();
@@ -90,6 +98,16 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.searchError', (errorBarValue: string, errorMessage) => {
             return this.searchBarError(errorBarValue, errorMessage);
         }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.getSearchContext', () => {
+            return [
+                this.latestSearchBarValue,
+                this.latestReplaceBarValue,
+                this.wholeWord,
+                this.regex,
+                this.caseInsensitive,
+                this.matchTitles
+            ]
+        }))
     }
 
     private setSlowModeValue () {
@@ -108,29 +126,11 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
         }));
     }
 
-    private tokens: vscode.CancellationTokenSource[] = [];
-    private cancelTokens () {
-        for (const tok of this.tokens) {
-            try {
-                tok.cancel();
-                tok.dispose();
-            }
-            catch (err: any) {}
-        }
+    protected debouncedUpdate(cancellationToken: vscode.CancellationToken, searchBarValue: string): Promise<void> {
+        Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
+        return this.searchResults.searchBarValueWasUpdated(searchBarValue, this.regex, this.caseInsensitive, this.matchTitles, this.wholeWord, cancellationToken);
     }
 
-    private debounce: NodeJS.Timeout | null = null;
-    private async triggerUpdates (searchBarValue: string): Promise<any> {
-        this.cancelTokens();
-
-        this.debounce && clearTimeout(this.debounce);
-        this.debounce = setTimeout(async () => {
-            const customCancellationToken: vscode.CancellationTokenSource | null = new vscode.CancellationTokenSource();
-            this.tokens.push(customCancellationToken);
-            Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
-            return this.searchResults.searchBarValueWasUpdated(searchBarValue, this.regex, this.caseInsensitive, this.matchTitles, this.wholeWord, customCancellationToken.token);
-        }, 20);
-    }
 
     private lastRequest: number = 0;
     public resolveWebviewView (
@@ -166,7 +166,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
                         case 'matchTitles': Workspace.updateContext(this.context, 'wt.wtSearch.search.matchTitles', this.matchTitles); break;
                     }
                     if (this.latestSearchBarValue.length !== 0) {
-                        this.triggerUpdates(this.latestSearchBarValue);
+                        this.triggerDebounce(this.latestSearchBarValue);
                     }
                     break;
                 case 'textBoxChange': 
@@ -176,7 +176,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
                         if (message.push) {
                             this.searchResults.replace(this.latestSearchBarValue, this.latestReplaceBarValue, this.regex).then((success) => {
                                 if (success) {
-                                    this.triggerUpdates(this.latestSearchBarValue);
+                                    this.triggerDebounce(this.latestSearchBarValue);
                                 }
                             });
                         }
@@ -186,7 +186,7 @@ export class SearchBarView implements vscode.WebviewViewProvider, Packageable<'w
                         
                         if (message.push) {
                             if (message.value.length > 0) {
-                                this.triggerUpdates(message.value);
+                                this.triggerDebounce(message.value);
                             }
                             else {
                                 this.cancelTokens();

@@ -72,6 +72,14 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
     getUri (): vscode.Uri {
         return this.node.uri;
     }
+
+    getLocation(): vscode.Uri | vscode.Location {
+        if (this.node.kind === 'fileLocation') {
+            return this.node.location;
+        }
+        else return this.node.uri;
+    }
+
     getParentUri (): vscode.Uri | null {
         return this.node.parentUri;
     }

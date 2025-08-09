@@ -6,13 +6,12 @@ export class RipGrep extends Grepper {
         return 'rg';
     }
 
-    protected getCommand(regexSource: string, caseInsensitive: boolean): string[] {
+    protected getCommand(regexSource: string, caseInsensitive: boolean, overrideFilter?: string): string[] {
         let flags = '-n';
         if (caseInsensitive) {
             flags += 'i';
         }
-
-        return ['--no-heading', '-.', flags, regexSource, './']
+        return ['--no-heading', '--with-filename', '-.', flags, regexSource, overrideFilter || './'];
     }
 
     protected transformLine(line: string): string {
