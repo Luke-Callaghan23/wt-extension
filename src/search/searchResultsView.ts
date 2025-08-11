@@ -51,7 +51,7 @@ implements
         // Add or remove the search results highlights depending on whether the view is visible and enabled
         this.context.subscriptions.push(this.searchTree.view.onDidChangeVisibility((event) => {
             // If try update returns false, then remove highlights
-            if (!this.tryUpdate()) {
+            if (!this.updateDecoationsIfViewIsVisible()) {
                 for (const editor of vscode.window.visibleTextEditors) {
                     editor.setDecorations(SearchHighlight, []);
                 }
@@ -115,6 +115,10 @@ implements
     }
 
     protected async debouncedUpdate (cancellationToken: vscode.CancellationToken, updated: vscode.Uri | vscode.TextDocument): Promise<void> {
+        return this.recalculateDocumentResults(cancellationToken, updated);
+    }
+
+    private async recalculateDocumentResults (cancellationToken: vscode.CancellationToken, updated: vscode.Uri | vscode.TextDocument): Promise<void> {
         const updatedUri = 'uri' in updated ? updated.uri : updated;
         
         // Remove filters and results for any location or uri that is this document, or a parent of this document
@@ -139,25 +143,25 @@ implements
         this.searchTree.nodeMap = {};
 
         const node = await this.searchTree.getTreeElementByUri(updatedUri);
-        if (!node) return;
+        if (node) {
+            const parent = await this.searchTree.getParent(node);
+            if (parent && parent.node.kind === 'searchContainer') {
+                const parentContainer = parent as SearchNode<SearchContainerNode>;
+                
+                // Search the contents map of the parent container for all nodes with the same uri as the 
+                //      deleted file
+                let deleteKeys: string[] = [];
+                for (const [ nodeKey, node ] of Object.entries(parentContainer.node.contents)) {
+                    if (compareFsPath(node.node.uri, updatedUri)) {
+                        deleteKeys.push(nodeKey);
+                    }
+                }
         
-        const parent = await this.searchTree.getParent(node);
-        if (!parent || parent.node.kind !== 'searchContainer') return;
-    
-        const parentContainer = parent as SearchNode<SearchContainerNode>;
-        
-        // Search the contents map of the parent container for all nodes with the same uri as the 
-        //      deleted file
-        let deleteKeys: string[] = [];
-        for (const [ nodeKey, node ] of Object.entries(parentContainer.node.contents)) {
-            if (compareFsPath(node.node.uri, updatedUri)) {
-                deleteKeys.push(nodeKey);
+                // Remove those entries from the parent container
+                for (const deleteKey of deleteKeys) {
+                    delete parentContainer.node.contents[deleteKey];
+                }
             }
-        }
-
-        // Remove those entries from the parent container
-        for (const deleteKey of deleteKeys) {
-            delete parentContainer.node.contents[deleteKey];
         }
         
         const [ latestSearchBarValue, _, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
@@ -185,7 +189,7 @@ implements
         if (currentTree) {
             this.searchTree.refresh(currentTree);
             this.searchTree.results.push(...fileResults);
-            this.tryUpdate();
+            this.updateDecoationsIfViewIsVisible();
         }
     }
 
@@ -195,10 +199,26 @@ implements
         }
     }
 
-    public tryUpdate (): boolean {
+    public updateDecoationsIfViewIsVisible (recalculateActiveEditors: boolean = false): boolean {
         if (this.searchTree.view.visible && this.enabled) {
             for (const editor of vscode.window.visibleTextEditors) {
-                this.update(editor, []);
+                if (recalculateActiveEditors) {
+                    // When `recalculateDocumentResults` is sent as true, then we need to delete
+                    //      all entries for the current editor then recalculate them before
+                    //      we re-calculate decorations
+                    // `recalculateDocumentResults` is set to true when the TreeView for the 
+                    //      search tree becomes visible again
+                    // In this case, we don't know if the old search results for the current documents
+                    //      still stand
+                    this.recalculateDocumentResults (
+                        new vscode.CancellationTokenSource().token,
+                        editor.document
+                    ).then(() => this.update(editor, []));
+                }
+                else {
+                    // Otherwise, just redraw the decorations for the search view
+                    this.update(editor, []);
+                }
             }
             return true;
         }

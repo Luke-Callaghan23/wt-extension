@@ -49,7 +49,7 @@ export class SearchResultsTree
         // Add or remove the search results highlights depending on whether the view is visible and enabled
         this.context.subscriptions.push(view.onDidChangeVisibility((event) => {
             // If try update returns false, then remove highlights
-            if (!this.searchResultsView.tryUpdate()) {
+            if (!this.searchResultsView.updateDecoationsIfViewIsVisible(true)) {
                 this.searchResultsView.clearDecorations();
             }
             // If it returns true it already does the updates so nothing else to do here
@@ -66,7 +66,7 @@ export class SearchResultsTree
             if (updatedNodes.length === 0) {
                 this.results = [];
             }
-            this.searchResultsView.tryUpdate();
+            this.searchResultsView.updateDecoationsIfViewIsVisible();
         }
         this._onDidChangeTreeData.fire(undefined);
     }
@@ -153,7 +153,7 @@ export class SearchResultsTree
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.wtSearch.results.hideNode", (node: SearchNode<SearchNodeKind>) => {
             this.filteredUris.push(node.getLocation());
             this.refresh();
-            this.searchResultsView.tryUpdate();
+            this.searchResultsView.updateDecoationsIfViewIsVisible();
             for (const active of vscode.window.visibleTextEditors) {
                 setFsPathKey(active.document.uri, active.document.version, this.editorVersions);
             }
@@ -204,14 +204,14 @@ export class SearchResultsTree
                 }
                 // At the end of every chunk, refresh the tree
                 currentTree && this.refresh(currentTree);
-                this.searchResultsView.tryUpdate();
+                this.searchResultsView.updateDecoationsIfViewIsVisible();
             }
 
             // Once the entire tree for this search is completed, start creating 'title' nodes
             //      to display any matches within the title of snips/chapters/fragments
             currentTree = await searchNodeGenerator.createTitleNodes(cancellationToken);
             currentTree && this.refresh(currentTree);
-            this.searchResultsView.tryUpdate();
+            this.searchResultsView.updateDecoationsIfViewIsVisible();
         });
     }
 
