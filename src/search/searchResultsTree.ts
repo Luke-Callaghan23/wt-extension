@@ -81,7 +81,11 @@ export class SearchResultsTree
                 title: 'Search Term',
             });
             if (!response) return;
-            return this.searchBarValueWasUpdated(response, true, true, true, true, new vscode.CancellationTokenSource().token);
+            
+            const [ _, __, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
+            await vscode.commands.executeCommand('wt.wtSearch.updateSearchBarValue', response);
+            vscode.commands.executeCommand('workbench.view.extension.wtSearch');
+            return this.searchBarValueWasUpdated(response, useRegex, caseInsensitive, matchTitles, wholeWord, new vscode.CancellationTokenSource().token);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {

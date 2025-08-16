@@ -122,6 +122,8 @@
                     searchBar.classList.add("search-error");
                     errorTooltip.innerHTML = message.message;
                     break;
+                case 'updateSearchBar':
+                    searchBar.value = message.searchBar;
             }
         });
     }

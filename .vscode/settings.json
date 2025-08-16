@@ -32,7 +32,8 @@
     "workbench.editor.customLabels.patterns": {
         "*/src/TODO/node.ts": "TODONode",
         "*/src/TODO/nodes_impl/getChildren.ts": "TODO getChildren",
-        "*/media/import/main.js": "importFormScript.js"
+        "*/media/import/main.js": "importFormScript.js",
+        "*/media/search/main.js": "searchViewScript.js"
     },
     // "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }

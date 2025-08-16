@@ -111,7 +111,15 @@ implements
                 this.caseInsensitive,
                 this.matchTitles
             ]
-        }))
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.updateSearchBarValue', (newSearchBarValue) => {
+            this.latestSearchBarValue = newSearchBarValue;
+            Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
+            this._view?.webview.postMessage({
+                kind: 'updateSearchBar',
+                searchBar: this.latestSearchBarValue
+            });
+        }));
     }
 
     private setSlowModeValue () {
