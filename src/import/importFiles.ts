@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
-import { __, compareFsPath, ConfigFileInfo, getNodeNamePath, getSectionedProgressReporter, getDateString } from '../miscTools/help';
+import { __, compareFsPath, ConfigFileInfo, getNodeNamePath, getSectionedProgressReporter, getDateString, readDotConfig } from '../miscTools/help';
 import { getUsableFileName, newSnip } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
@@ -56,6 +56,7 @@ export type DocInfo = {
     outerSplitRegex: string,
     shouldSplitSnips: boolean,
     fragmentSplitRegex: string,
+    elideSingleFragmentSnips: boolean,
 };
 
 export type ImportDocumentInfo = {
@@ -371,6 +372,7 @@ function getSplitInfo (doc: DocInfo): SplitInfo {
 type SnipInfo = {
     type: 'snip',
     outputSnipName: string,
+    elideSingleFragmentSnips: boolean,
     output: {
         dest: 'chapter',
         outputChapter: string,
@@ -398,6 +400,7 @@ function getWriteInfo (docInfo: DocInfo): WriteInfo {
     else if (docInfo.outputType === 'snip') {
         return {
             type: 'snip',
+            elideSingleFragmentSnips: docInfo.elideSingleFragmentSnips,
             output: docInfo.outputIntoChapter
                 ? {
                     dest: 'chapter',
@@ -544,7 +547,9 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
 
     // Uploads fragments in a content array into specified path
     const fragmentUpload = async (splits: NamedSingleSplit[], snipUri: vscode.Uri) => {
-        const dotConfig: { [index: string]: ConfigFileInfo } = {};
+        
+        const dotConfigUri = vscode.Uri.joinPath(snipUri, `.config`);
+        const dotConfig: { [index: string]: ConfigFileInfo } = await readDotConfig(dotConfigUri) || {};
 
         let ordering = 0;
         await Promise.all(splits.map(split => {
@@ -556,7 +561,6 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
 
         // Write the .config file to the location of the snip folder
         const dotConfigJSON = JSON.stringify(dotConfig);
-        const dotConfigUri = vscode.Uri.joinPath(snipUri, `.config`);
         await vscode.workspace.fs.writeFile(dotConfigUri, Buff.from(dotConfigJSON, 'utf-8'));
     };
     
@@ -565,27 +569,28 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
         for (let snipOrdering = 0; snipOrdering < docSplits.data.length; snipOrdering++) {
             const { title: snipTitle, data: fragmentContent } = docSplits.data[snipOrdering];
 
-            // Create current snip
             const snipName = snipTitle && snipTitle.length !== 0 ? snipTitle : `${snipInfo.outputSnipName} (${snipOrdering})`;
-            const snipUri: vscode.Uri | null = await outlineView.newSnip(parentNode, {
-                preventRefresh: true, 
-                defaultName: snipName,
-                skipFragment: true
-            });
-            if (!snipUri) return;
-            
-            // Upload this snip's fragments
-            await fragmentUpload(fragmentContent, snipUri);
+
+            if (snipInfo.elideSingleFragmentSnips && fragmentContent.length === 1 && parentNode && parentNode.data.ids.type === 'snip') {
+                fragmentContent[0].title = snipName;
+                await fragmentUpload(fragmentContent, parentNode.data.ids.uri);
+            }
+            else {
+                // Create current snip
+                const snipUri: vscode.Uri | null = await outlineView.newSnip(parentNode, {
+                    preventRefresh: true, 
+                    defaultName: snipName,
+                    skipFragment: true
+                });
+                if (!snipUri) return;
+                
+                // Upload this snip's fragments
+                await fragmentUpload(fragmentContent, snipUri);
+            }
+
         }
     }
     else {
-        // Create one snip, and load the document data into one fragment inside of it
-        const snipUri: vscode.Uri | null = await outlineView.newSnip(parentNode, {
-            preventRefresh: true, 
-            defaultName: snipInfo.outputSnipName,
-            skipFragment: true
-        });
-        if (!snipUri) return;
 
         let contents: NamedSingleSplit[];
         if (docSplits.type === 'none') {
@@ -600,7 +605,22 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
             contents = docSplits.data;
         }
 
-        await fragmentUpload(contents, snipUri);
+        let parentUri: vscode.Uri;
+        if (snipInfo.elideSingleFragmentSnips && contents.length === 1 && parentNode && parentNode.data.ids.type === 'snip') {
+            parentUri = parentNode.data.ids.uri;
+        }
+        else {
+            // Create one snip, and load the document data into one fragment inside of it
+            const snipUri: vscode.Uri | null = await outlineView.newSnip(parentNode, {
+                preventRefresh: true, 
+                defaultName: snipInfo.outputSnipName,
+                skipFragment: true
+            });
+            if (!snipUri) return;
+            parentUri = snipUri;
+        }
+
+        await fragmentUpload(contents, parentUri);
     }
 }
 
@@ -916,10 +936,19 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
                 // Create multiple snips, and load fragment data inside of each
                 snips = docSplits.data.map(({ title: snipTitle, data: fragmentContent }, snipOrdering) => {
                     const snipName = snipTitle && snipTitle.length !== 0 ? snipTitle : `${snipInfo.outputSnipName} (${snipOrdering})`;
-                    return {
-                        name: `(snip) ${snipName}`,
-                        children: fragmentUpload(fragmentContent)
+                    
+                    if (singleDoc.outputType === 'snip' && singleDoc.elideSingleFragmentSnips && fragmentContent.length === 1) {
+                        const ret = fragmentUpload(fragmentContent)[0];
+                        ret.name = `(fragment) ${snipName}`;
+                        return ret;
                     }
+                    else {
+                        return {
+                            name: `(snip) ${snipName}`,
+                            children: fragmentUpload(fragmentContent)
+                        }
+                    }
+                    
                 });
             }
             else {
@@ -935,10 +964,18 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
                     // Otherwise, use the data array from single split
                     contents = docSplits.data;
                 }
-                snips = [ {
-                    name: `(snip) ${snipInfo.outputSnipName}`,
-                    children: fragmentUpload(contents)
-                } ]
+
+                if (singleDoc.outputType === 'snip' && singleDoc.elideSingleFragmentSnips && contents.length === 1 && droppedSource?.node.data.ids.type === 'snip') {
+                    snips = fragmentUpload(contents)
+                    snips[0].name = `(fragment) ${snipInfo.outputSnipName}`;
+                }
+                else {
+                    snips = [ {
+                        name: `(snip) ${snipInfo.outputSnipName}`,
+                        children: fragmentUpload(contents)
+                    } ]
+                }
+
             }
 
             return __<Li>({

@@ -45,9 +45,11 @@
                 outputIntoDroppedSource: !!droppedSource,
                 
                 shouldSplitFragments: false,
-                outerSplitRegex: '\\[{3,}?([^\\]]*)\\]{3,}?',
+                outerSplitRegex: '\\[{3,}?([^\\[\\]]*)\\]{3,}?',
                 shouldSplitSnips: false,
                 fragmentSplitRegex: '~{3,}?([^~]*)~{3,}?',
+
+                elideSingleFragmentSnips: true,
             };
             if (chapterUris.length !== 0) {
                 allDocInfo[fullPath].outputChapterName = `${name} (Imported)`;
@@ -88,6 +90,7 @@
         let skipElement = document.getElementById("checkbox-skip");
         let extElement = document.getElementById("select-ext-type");
         let outputTypeElement = document.getElementById("select-output-type");
+        let elideSingleFragmentSnipsElement = document.getElementById("checkbox-elide-single-fragment-snip");
         let useDroppedSourceElement = document.getElementById("checkbox-use-dropped-location");
         let useNonGenericFragmentNamesElement = document.getElementById("checkbox-non-generic-fragment-names");
         let outputIntoChapterElement = document.getElementById("checkbox-output-into-chapter");
@@ -116,6 +119,9 @@
             docInfo.outerSplitRegex = outerSplitRegexElement?.value || docInfo.outerSplitRegex;
 
             // Checkboxes need a little more probing
+            if (elideSingleFragmentSnipsElement?.ariaChecked !== undefined && elideSingleFragmentSnipsElement?.ariaChecked !== null) {
+                docInfo.elideSingleFragmentSnips = elideSingleFragmentSnipsElement?.ariaChecked === 'true';
+            }
             if (skipElement?.ariaChecked !== undefined && skipElement?.ariaChecked !== null) {
                 docInfo.skip = skipElement?.ariaChecked === 'true';
             }
@@ -369,6 +375,20 @@
                                             class="input input-tail"
                                         ></vscode-textfield>`
                                 : ''
+                        }
+                        
+                        ${
+                            docInfo.outputType === 'snip'
+                                ? `<vscode-label for="checkbox-elide-single-fragment-snip" class="label">Remove Snip Folders For Single Fragment?</vscode-label>
+                                    <vscode-checkbox 
+                                        label="Indicates that if any imported snip has only one fragment in it, then the snip folder will not be created and just the fragment will be created. (Only applicable if parent folder is also a snip)"
+                                        id="checkbox-elide-single-fragment-snip" 
+                                        name="elide-single-fragment-snip" 
+                                        class="checkbox"
+                                        ${docInfo.elideSingleFragmentSnips && 'checked'}
+                                    ></vscode-checkbox>
+                                `
+                                : ''
                         }`
                     : ''
                 }
@@ -385,6 +405,8 @@
             outerSplitRegexElement = document.getElementById("input-outer-split");
 
             skipElement = document.getElementById("checkbox-skip");
+            elideSingleFragmentSnipsElement = document.getElementById("checkbox-elide-single-fragment-snip");
+            
             useNonGenericFragmentNamesElement = document.getElementById("checkbox-non-generic-fragment-names");
             outputIntoChapterElement = document.getElementById("checkbox-output-into-chapter");
             shouldSplitFragmentsElement = document.getElementById("checkbox-split-document");
@@ -395,6 +417,7 @@
             //      must update to reflect those changes
             [ 
                 skipElement, 
+                elideSingleFragmentSnipsElement,
                 useNonGenericFragmentNamesElement,
                 outputIntoChapterElement, 
                 shouldSplitFragmentsElement, 
