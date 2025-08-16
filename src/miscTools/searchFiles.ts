@@ -453,10 +453,12 @@ async function select (
                         });
                     });
                 })).then(view => {
-                    view.expandAndRevealOutlineNode(selected.node, {
-                        expand: true,
-                        select: true,
-                    });
+                    if (view.view.visible) {
+                        view.expandAndRevealOutlineNode(selected.node, {
+                            expand: true,
+                            select: true,
+                        });
+                    }
                 });
                 qp.dispose();
             }
