@@ -14,10 +14,6 @@ export class RipGrep extends Grepper {
         return ['--no-heading', '--with-filename', '-.', flags, regexSource, overrideFilter || './'];
     }
 
-    protected transformLine(line: string): string {
-        return line.replaceAll(/^,+/g, '');
-    }
-
     protected getWordSeparators (): [string, string] {
         const shellWordSeparatorStart = '(^|\\s|-|[.?:;,()!&"\'^_*~])';
         const shellWordSeparatorEnd = '(\\s|-|[.?:;,()!&"\'^_*~]|$)';

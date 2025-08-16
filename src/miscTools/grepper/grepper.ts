@@ -101,6 +101,7 @@ export abstract class Grepper {
             return {
                 status: 'success',
                 lines: ps.output
+                    .filter(data=>data && data.length)
                     .toString()
                     .split('\n')
                     .map(line => this.transformLine(line))
