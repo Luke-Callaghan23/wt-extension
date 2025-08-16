@@ -68,7 +68,9 @@ export class TabLabels {
 
         const configuration = workspace.getConfiguration();
         configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
-    
+
+        const showFullNameOfActive = !!configuration.get<boolean>('wt.tabLabels.alwaysShowFullNameOfActiveTab');
+        
         const newPatterns: { [index: string]: [ string, boolean ] } = {};
         for (const group of vscode.window.tabGroups.all) {
             for (const tab of group.tabs) {
@@ -113,7 +115,12 @@ export class TabLabels {
                 }
                 else throw 'unreachable';
                 console.log(`Tab labels for ${uri.fsPath}: label='${label}'`);
-                newPatterns['*/' + relativePath] = [label, tab.isActive];
+                newPatterns['*/' + relativePath] = [
+                    label, 
+                    tab.isActive && showFullNameOfActive        // Used to override the shortening of tab labels -- if this is the active tab 
+                                                                //      and `wt.tabLabels.alwaysShowFullNameOfActiveTab` is set then show 
+                                                                //      the full tab name
+                ];
             }
         }
         
@@ -121,7 +128,7 @@ export class TabLabels {
 
         const finalPatterns: { [index: string]: string } = {};
         const set = new Set<string>();
-        Object.entries(newPatterns).forEach(([ pattern, [ label, isActive ] ]) => {
+        Object.entries(newPatterns).forEach(([ pattern, [ label, showFull ] ]) => {
             let finalLabel = label;
             let index = 0;
             while (set.has(finalLabel)) {
@@ -134,7 +141,7 @@ export class TabLabels {
                 ? pattern
                 : `*/${pattern}`;
 
-            finalPatterns[finalPattern] = maxTabLabel && maxTabLabel > 3 && finalLabel.length > maxTabLabel && !isActive
+            finalPatterns[finalPattern] = maxTabLabel && maxTabLabel > 3 && finalLabel.length > maxTabLabel && !showFull
                 ? finalLabel.substring(0, maxTabLabel) + "..."
                 : finalLabel;
         });

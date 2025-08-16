@@ -51,6 +51,11 @@
 					"default": -1,
 					"description": "Max size of labels to be displayed in a tab.  Anything longer than this will be sortened to fit."
 				},
+				"wt.tabLabels.alwaysShowFullNameOfActiveTab": {
+					"type": "boolean",
+					"default": true,
+					"description": "Determines whether to to still show the full name of the active tab even if the tab label is longer than wt.tabLabels.maxSize. Default is true."
+				},
 				"wt.showPanels.wordWatcher": {
 					"type": "boolean",
 					"default": true,
