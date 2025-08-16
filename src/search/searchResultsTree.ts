@@ -88,6 +88,21 @@ export class SearchResultsTree
             return this.searchBarValueWasUpdated(response, useRegex, caseInsensitive, matchTitles, wholeWord, new vscode.CancellationTokenSource().token);
         }));
 
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.openSearch', async () => {
+            let selectedText: string | null = null;
+            let editor = vscode.window.activeTextEditor;
+            if (editor && !editor.selection.isEmpty) {
+                selectedText = editor.document.getText(editor.selection);
+                const [ _, __, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
+                await vscode.commands.executeCommand('wt.wtSearch.updateSearchBarValue', selectedText);
+                vscode.commands.executeCommand('workbench.view.extension.wtSearch');
+                return this.searchBarValueWasUpdated(selectedText, useRegex, caseInsensitive, matchTitles, wholeWord, new vscode.CancellationTokenSource().token);
+            }
+            else {
+                return vscode.commands.executeCommand('workbench.view.extension.wtSearch');
+            }
+        }));
+
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.openResult', async (location: vscode.Location) => {
             if (location.uri.fsPath.toLowerCase().endsWith('.wtnote')) {
                 const options: vscode.NotebookDocumentShowOptions = {

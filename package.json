@@ -1877,6 +1877,13 @@
 				"when": "wt.valid && (wt.valid)"
 			},
 			{
+				"command": "wt.wtSearch.results.openSearch",
+				"win": "ctrl+shift+h",
+				"linux": "ctrl+shift+h",
+				"mac": "cmd+shift+h",
+				"when": "wt.valid && (wt.valid)"
+			},
+			{
 				"command": "wt.editor.addQuotes",
 				"win": "shift+'",
 				"linux": "shift+'",
