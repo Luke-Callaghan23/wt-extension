@@ -524,9 +524,9 @@ Or to always use '${newName}' exactly as you entered it?
 
     async prepareRename (document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.Range | null> {
         const documentMatches = await this.getDocumentMatch(document);
-        if (!documentMatches) return null;
+        if (!documentMatches) return Promise.reject();
         const matchedNote = documentMatches.find(match => match.range.contains(position));
-        if (!matchedNote) return null;
+        if (!matchedNote) return Promise.reject();
         return matchedNote.range;
     }
 
