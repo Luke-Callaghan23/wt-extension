@@ -124,6 +124,9 @@ export async function nodeGrep (
             ) {
                 // Finally, finally, finally yield the result
                 output.push([ new vscode.Location(uri, foundRange), actualMatchedText ]);
+                if (output.length > 100000) {
+                    return output;
+                } 
             }
         }
     }

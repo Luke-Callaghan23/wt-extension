@@ -30,7 +30,7 @@ export function showMeUrGreppers (): Grepper {
     }
 
     const registeredGreppersInOrderOfPreference: Grepper[] = [
-        new RipGrep(),
+        // new RipGrep(),
         new GrepGrep(),
         new PowershellGrep(),
     ];

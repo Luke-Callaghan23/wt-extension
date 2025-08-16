@@ -121,6 +121,12 @@ implements
     private async recalculateDocumentResults (cancellationToken: vscode.CancellationToken, updated: vscode.Uri | vscode.TextDocument): Promise<void> {
         const updatedUri = 'uri' in updated ? updated.uri : updated;
         
+        const [ latestSearchBarValue, _, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
+        if (latestSearchBarValue === '') {
+            return;
+        }
+        
+
         // Remove filters and results for any location or uri that is this document, or a parent of this document
         // Results will be added back by the end of the function -- but filters will not
         // (This because if the user is updating the content of the editor, it is extremely difficult 
@@ -164,7 +170,6 @@ implements
             }
         }
         
-        const [ latestSearchBarValue, _, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
         const fileResults = 'uri' in updated
             ? await nodeGrep(updated, latestSearchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken)
             : await grepSingleFile(updatedUri, latestSearchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);

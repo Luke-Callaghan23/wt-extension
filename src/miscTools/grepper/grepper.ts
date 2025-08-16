@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as console from './../../miscTools/vsconsole';
 import * as childProcess from 'child_process';
 import { RipGrep } from './ripGrep';
 import { GrepGrep } from './grepGrep';
@@ -65,6 +66,9 @@ export abstract class Grepper {
         try {
             // Call git grep
             const command = this.getCommand(regex.source, caseInsensitive, overrideFilter);
+            
+            console.log(`[INFO] Running grep command ${this.name} with args: "${command.join('" "')}"`)
+            
             const ps = childProcess.spawnSync(this.name, command, {
                 cwd: extension.rootPath.fsPath,
                 maxBuffer: 1024 * 1024 * 50                 // 50 MB max buffer

@@ -12,6 +12,6 @@ export class GrepGrep extends Grepper {
             flags += 'i';
         }
 
-        return [flags, '-n', '-E', '--include', '*.config', '--include', '*.wt', '--include', '*.wtnote', regexSource, overrideFilter || './'];
+        return [flags, '-H', '-n', '-E', '--include', '*.config', '--include', '*.wt', '--include', '*.wtnote', regexSource, overrideFilter || './'];
     }
 }
