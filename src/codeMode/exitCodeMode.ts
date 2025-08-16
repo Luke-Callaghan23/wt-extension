@@ -38,9 +38,13 @@ export async function exit (this: CoderModer): Promise<void> {
     }
 
     // Bring back terminal in bottom pane and writing tool in side pane
-    if (this.openedExplorer) {
+    if (this.activityBarSwitchedFrom === 'outline') {
         vscode.commands.executeCommand('workbench.view.extension.wt');
     }
+    else if (this.activityBarSwitchedFrom === 'search') {
+        vscode.commands.executeCommand('workbench.view.extension.wtSearch');
+    }
+
     if (this.openedOutput) {
         vscode.commands.executeCommand('workbench.action.terminal.toggleTerminal');
     }
@@ -48,7 +52,7 @@ export async function exit (this: CoderModer): Promise<void> {
     
     this.openedCodeUris = [];
     this.state = 'noCodeMode';
-    this.openedExplorer = false;
+    this.activityBarSwitchedFrom = 'none';
     this.openedOutput = false;
     
     if (this.previousActiveDocument && this.previousActiveViewColumn) {

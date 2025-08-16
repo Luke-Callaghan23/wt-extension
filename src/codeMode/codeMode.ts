@@ -9,7 +9,7 @@ import { defaultProgress } from '../miscTools/help';
 export type CodeModeState = 'codeMode' | 'noCodeMode';
 export class CoderModer {
 
-    openedExplorer: boolean = false;
+    activityBarSwitchedFrom: 'none' | 'outline' | 'search' = 'none';
     openedOutput: boolean = false;
     previousActiveViewColumn: vscode.ViewColumn | null;
     previousActiveDocument: vscode.Uri | null;

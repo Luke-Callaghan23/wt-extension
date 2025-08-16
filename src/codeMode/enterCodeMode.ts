@@ -6,6 +6,8 @@ import { TabLabels } from '../tabLabels/tabLabels';
 import { OutlineView } from '../outline/outlineView';
 import { NotebookPanel } from '../notebook/notebookPanel';
 import { ExtensionGlobals } from '../extension';
+import { SearchBarView } from '../search/searchBarView';
+import { SearchResultsView } from '../search/searchResultsView';
 
 export async function enter (this: CoderModer): Promise<void> {
 
@@ -42,11 +44,24 @@ export async function enter (this: CoderModer): Promise<void> {
 
     
     const outlineView: OutlineView = ExtensionGlobals.outlineView;
-    const notebookView: NotebookPanel = ExtensionGlobals.notebookPanel;
+    const searchBarView: SearchBarView = ExtensionGlobals.searchBarView;
+    const searchResultsView: SearchResultsView = ExtensionGlobals.searchResultsView;
+    
     if (outlineView.view.visible) {
-        vscode.commands.executeCommand('workbench.view.explorer');
-        this.openedExplorer = true;
+        this.activityBarSwitchedFrom = 'outline';
     }
+    else if (searchBarView.isVisible() || searchResultsView.getUpdatesAreVisible()) {
+        this.activityBarSwitchedFrom = 'search';
+    }
+    else {
+        this.activityBarSwitchedFrom = 'none';
+    }
+    
+    if (this.activityBarSwitchedFrom !== 'none') {
+        vscode.commands.executeCommand('workbench.view.explorer');
+    }
+
+    const notebookView: NotebookPanel = ExtensionGlobals.notebookPanel;
     if (notebookView.view.visible) {
         vscode.commands.executeCommand('workbench.action.output.toggleOutput');
         this.openedOutput = true;

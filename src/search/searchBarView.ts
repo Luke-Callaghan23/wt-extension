@@ -79,6 +79,10 @@ implements
         this.registerCommands();
     }
 
+    isVisible(): boolean {
+        return !!this._view?.visible;
+    }
+
     getPackageItems () {
         return {
             'wt.wtSearch.search.latestSearchBarValue': this.latestSearchBarValue,
