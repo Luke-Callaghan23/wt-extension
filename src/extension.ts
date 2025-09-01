@@ -52,6 +52,47 @@ import { WTNotebookController } from './notebook/notebookApi/notebookController'
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
 export let rootPath: vscode.Uri;
+
+
+export const wordSeparatorArray = [
+    `_`,
+    `.`,
+    `,`,
+    `!`,
+    `?`,
+    `;`,
+    `:`,
+    `'`,
+    `"`,
+    `(`,
+    `)`,
+    `[`,
+    `]`,
+    `{`,
+    `}`,
+    ` `,
+    `\t`,
+    `\n`,
+    `\r`,
+    `\f`,
+    `\v`,
+    `&`,
+    `@`,
+    `#`,
+    `$`,
+    `%`,
+    `^`,
+    `*`,
+    `+`,
+    `=`,
+    `|`,
+    `<`,
+    `>`,
+    `/`,
+    `\\`
+]
+
+
 export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n"\'^_*~]|$)';
 export const wordSeparatorRegex = new RegExp(wordSeparator.split('|')[1], 'g');
 export const sentenceSeparator: RegExp = /[.?!]/g;

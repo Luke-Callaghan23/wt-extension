@@ -31,7 +31,7 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
         return null;
     }
 
-    static async documentOpened (openedUri: vscode.Uri, view?: OutlineView): Promise<void> {
+    static async documentOpened (openedUri: vscode.Uri): Promise<void> {
 
         // Mark the last opened document for each parental node as the document which was just opened
         let currentUri: vscode.Uri | undefined = openedUri;
@@ -158,7 +158,7 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
         // Call document opened for each of the opened fragments in ascending
         //      order to simulate as if all the documents were opened sequentially
         for (const opened of sortedUris) {
-            await this.documentOpened(opened, extension.ExtensionGlobals.outlineView);
+            await this.documentOpened(opened);
         }
 
         FileAccessManager.positions = {};

@@ -101,7 +101,7 @@ export class TimedView implements Packageable<any> {
         ) return;
         // Iterate over all timed views and call their update functions if they're enabled
         this.timedViews.forEach(([ id, viewId, timed ]) => {
-            console.log(`UPDATE: ${id} (${timed.enabled ? 'enabled' : 'disabled'})`);
+            // console.log(`UPDATE: ${id} (${timed.enabled ? 'enabled' : 'disabled'})`);
             // If the view's timer function is not enabled, then skip
             if (!timed.enabled) return;
             if (!timed.getUpdatesAreVisible()) return;

@@ -51,12 +51,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         token: vscode.CancellationToken, 
         context: vscode.CompletionContext
     ): Promise<vscode.CompletionList<vscode.CompletionItem> | vscode.CompletionItem[]> {
-        return new Promise(resolve => {
-            this.debounce && clearTimeout(this.debounce);
-            this.debounce = setTimeout(async () => {
-                resolve(this.provideCompletionItems__impl(document, position, token, context));
-            }, 20);
-        })
+        return this.provideCompletionItems__impl(document, position, token, context);
     }
 
     private async provideCompletionItems__impl(
@@ -88,7 +83,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                     const end = getHoveredWord(document, selection.end);
     
                     if (!start || !end) {
-                        return [];
+                        return Promise.reject();
                     }
     
                     // Transform each to offsets
@@ -112,7 +107,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 else {
                     // Otherwise, simply call hover position on the provided position
                     const tmp = getHoveredWord(document, position);
-                    if (!tmp) return [];
+                    if (!tmp) return Promise.reject();
                     hoverPosition = tmp;
                     wordText = tmp.text;
                     hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
@@ -161,7 +156,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 return corrections;
             }
             else {
-                return [];
+                return Promise.reject();
             }
         }
 
@@ -302,8 +297,13 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 ...synonymCompletions
             ].forEach(item => allItems.push(item));
         }
+
+        if (allItems.length === 0) {
+            return Promise.reject();
+        }
+
         this.allCompletionItems = allItems;
-        return allItems;
+        return new vscode.CompletionList(allItems, true);;
     }
 
     // Returns a list of completion items for each synonym for a selected word's selected definition
@@ -318,7 +318,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         const wordCapitalization: Capitalization = getTextCapitalization(word);
 
         const synonyms = await SynonymsProvider.provideSynonyms(word, this.isWordHippo ? 'wh' : 'synonymsApi');
-        if (!synonyms || synonyms.type === 'error') return [];
+        if (!synonyms || synonyms.type === 'error') return Promise.reject();
 
         // Create completion items for all synonyms of all definitions
         const inserts: { [index: string]: 1 } = {};
@@ -387,6 +387,24 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     }
 
     private registerCommands () {
+
+        this.context.subscriptions.push(
+            vscode.window.onDidChangeTextEditorSelection(e => {
+                if (e.selections.length !== 1) return;
+                if (!e.selections[0].isEmpty) return;
+                
+                const ctrl = (e.textEditor as any).getContribution('editor.contrib.suggestController');
+                // model.state: 0 = Hidden, 1 = Loading, 2 = Open
+                const state = ctrl._model.state;
+                const isVisible = state === 2;
+
+                const position = e.selections[0].start;
+                // if (getHoveredWord(e.textEditor.document, position)) {
+                    vscode.commands.executeCommand('editor.action.triggerSuggest');
+                // }
+            })
+        );
+
         this.context.subscriptions.push(vscode.commands.registerCommand(`wt.intellisense.synonyms.activateDefinition`, (definitionIndex: number) => {
             if (!this.activationState) return;
 
@@ -522,7 +540,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 }
 
 const getMisspellCorrections = (res: SynonymError, hoverRange: vscode.Range, wordText: string) => {
-    if (!res.suggestions) return [];
+    if (!res.suggestions) return Promise.reject();
     const maxDigits = numDigits(res.suggestions.length);
     const corrections = res.suggestions?.map((suggest, index) => {
         const indexStr = ("" + index).padStart(maxDigits, '0')

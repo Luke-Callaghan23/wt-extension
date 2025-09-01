@@ -6,6 +6,7 @@ import { HoverProvider } from './synonyms/hoverProvider';
 import { CodeActionProvider } from './synonyms/codeActionProvider';
 import { PersonalDictionary } from './spellcheck/personalDictionary';
 import { SynonymsProvider } from './synonymsProvider/provideSynonyms';
+import { wordSeparator, wordSeparatorArray } from '../extension';
 
 export class SynonymsIntellisense {
     constructor (
@@ -18,9 +19,25 @@ export class SynonymsIntellisense {
             language: 'wt'
         };
         SynonymsProvider.init(workspace).then(() => {
-            this.context.subscriptions.push(vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace, useWordHippo)));
-            this.context.subscriptions.push(vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace)));
-            this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(context, workspace, personalDictionary)));
+            this.context.subscriptions.push(
+                vscode.languages.registerCompletionItemProvider (
+                    wtSelector, 
+                    new CompletionItemProvider(context, workspace, useWordHippo), 
+                    ...wordSeparatorArray
+                )
+            );
+            this.context.subscriptions.push(
+                vscode.languages.registerHoverProvider (
+                    wtSelector, 
+                    new HoverProvider(context, workspace)
+                )
+            );
+            this.context.subscriptions.push(
+                vscode.languages.registerCodeActionsProvider (
+                    wtSelector, 
+                    new CodeActionProvider(context, workspace, personalDictionary)
+                )
+            );
             this.registerCommands();
         });
     }
