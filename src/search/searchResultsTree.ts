@@ -58,10 +58,10 @@ export class SearchResultsTree
         await this.initUriExpansion(SearchResultsTree.viewId, this.view, this.context);
     }
 
-    async refresh(updatedNodes?: SearchNode<SearchContainerNode>[]): Promise<void> {
+    async refresh(updatedNodes?: SearchNode<SearchContainerNode>[], filteredUris?: typeof this.filteredUris): Promise<void> {
         if (updatedNodes) {
             this.rootNodes = updatedNodes;
-            this.filteredUris = [];
+            this.filteredUris = filteredUris || [];
             this.editorVersions = {};
             if (updatedNodes.length === 0) {
                 this.results = [];
@@ -417,7 +417,8 @@ WARNING: For best results.  Save ALL open .wtnote notebook files before doing th
             return this.rootNodes.filter(root => !this.isUriFiltered(root.getUri()));
         }
 
-        return (await element.getChildren(false, ()=>{}))
+        const children = (await element.getChildren(false, ()=>{}));
+        return children
             .filter(child => !this.isLocationFiltered(child.getLocation()));
     }
 

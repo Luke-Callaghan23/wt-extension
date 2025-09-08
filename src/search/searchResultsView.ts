@@ -139,7 +139,7 @@ implements
             return !eq && !child;
         };
         
-        this.searchTree.filteredUris = this.searchTree.filteredUris.filter(shouldRetainLocation);
+        const newFilteredUris = this.searchTree.filteredUris.filter(shouldRetainLocation);
         this.searchTree.results = this.searchTree.results.filter(result => shouldRetainLocation(result[0]));
 
         // TODO: if we remove a filter for a parent uri, should we add back filters for all other 
@@ -192,7 +192,7 @@ implements
         //      to display any matches within the title of snips/chapters/fragments
         currentTree = await searchNodeGenerator.createTitleNodes(cancellationToken);
         if (currentTree) {
-            this.searchTree.refresh(currentTree);
+            this.searchTree.refresh(currentTree, newFilteredUris);
             this.searchTree.results.push(...fileResults);
             this.updateDecoationsIfViewIsVisible();
         }
