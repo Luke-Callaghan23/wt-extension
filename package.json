@@ -1076,6 +1076,11 @@
 				"icon": "$(x)"
 			},
 			{
+				"command": "wt.wtSearch.results.refresh",
+				"title": "Writing Tool: Clears Filtered Nodes and Refreshes the results (does not redo the search)",
+				"icon": "$(refresh)"
+			},
+			{
 				"title": "Writing Tool: Reveal fragment in VSCode Outline",
 				"command": "wt.editor.revealVSCode"
 			},
@@ -1579,6 +1584,11 @@
 					"command": "wt.notebook.addNote",
 					"when": "view == wt.notebook.tree",
 					"group": "navigation"
+				},
+				{
+					"command": "wt.wtSearch.results.refresh",
+					"when": "wt.valid && view == wt.wtSearch.results",
+					"group": "navigation@1"
 				}
 			],
 			"editor/title/context": [

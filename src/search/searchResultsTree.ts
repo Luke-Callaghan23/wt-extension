@@ -72,6 +72,7 @@ export class SearchResultsTree
     }
 
     registerCommands() {
+
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.search', async () => {
             const response = await vscode.window.showInputBox({
                 ignoreFocusOut: false,
@@ -414,7 +415,8 @@ WARNING: For best results.  Save ALL open .wtnote notebook files before doing th
                     uri: extension.rootPath
                 }) ];
             }
-            return this.rootNodes.filter(root => !this.isUriFiltered(root.getUri()));
+            const res = this.rootNodes.filter(root => !this.isUriFiltered(root.getUri()));
+            return res;
         }
 
         const children = (await element.getChildren(false, ()=>{}));

@@ -69,6 +69,11 @@ implements
         this.context.subscriptions.push(searchResultsUpdateWatcher);
 
         this.context.subscriptions.push(vscode.workspace.onDidChangeTextDocument((ev) => this.triggerDebounce(ev.document)));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.refresh', async () => {
+            this.searchTree.filteredUris = [];
+            this.searchTree.refresh();
+        }));
     }
 
     public async searchBarValueWasUpdated (
