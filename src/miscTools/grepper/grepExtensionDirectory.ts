@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 import * as extension from '../../extension';
 import { getRelativePath, isSubdirectory } from '../help';
-import { Grepper } from './grepper';
-import { showMeUrGreppers } from './findGreppers';
-
-const grepper = showMeUrGreppers();
+import { RipGrep } from './ripGrep';
 
 export async function grepSingleFile (
     uri: vscode.Uri,
@@ -56,7 +53,7 @@ async function grep__impl (
 
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
-    const grepResult = await grepper.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken, overrideFilter);
+    const grepResult = await RipGrep.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken, overrideFilter);
     if (grepResult.status === 'error') {
         vscode.commands.executeCommand('wt.wtSearch.searchError', searchBarValue, grepResult.message);
         return null;

@@ -2552,6 +2552,7 @@
 		"turndown": "^7.1.2",
 		"uuid": "^9.0.0",
 		"vscode-debugadapter": "^1.51.0",
+		"vscode-ripgrep-utils": "^0.6.0",
 		"vscode-uri": "^3.0.8"
 	}
 }
