@@ -59,6 +59,8 @@ export class ExtensionGlobals {
     public static scratchPadView: ScratchPadView;
     public static notebookPanel: NotebookPanel;
     public static todoView: TODOsView;
+    public static searchBarView: SearchBarView;
+    public static searchResultsView: SearchResultsView;
     public static workspace: Workspace;
     public static context: vscode.ExtensionContext;
     
@@ -71,6 +73,8 @@ export class ExtensionGlobals {
         scratchPadView: ScratchPadView, 
         notebook: NotebookPanel,
         todoView: TODOsView,
+        searchBarView: SearchBarView,
+        searchResultsView: SearchResultsView,
         workspace: Workspace,
         context: vscode.ExtensionContext
     ) {
@@ -79,6 +83,8 @@ export class ExtensionGlobals {
         ExtensionGlobals.scratchPadView = scratchPadView;
         ExtensionGlobals.notebookPanel = notebook;
         ExtensionGlobals.todoView = todoView;
+        ExtensionGlobals.searchBarView = searchBarView;
+        ExtensionGlobals.searchResultsView = searchResultsView;
         ExtensionGlobals.workspace = workspace;
         ExtensionGlobals.context = context;
     }
@@ -159,12 +165,13 @@ async function loadExtensionWorkspace (
         await ExtensionGlobals.notebookSerializer.init(context, workspace, notebook, notebookController);
         report("Loaded notebook");
 
-        ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notebook, todo, workspace, context);
 
         const searchResultsView = new SearchResultsView(workspace, context);
         const searchBarView = new SearchBarView(context, workspace, searchResultsView);
         searchResultsView.initialize();
         report("Loaded search bad");
+
+        ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notebook, todo, searchBarView, searchResultsView, workspace, context);
         
         const wordCountStatus = new WordCount(context);
         const statusBarTimer = new StatusBarTimer(context);
@@ -216,7 +223,9 @@ async function loadExtensionWorkspace (
 		report("Loaded tab labels");
         
         reloadWatcher.checkForRestoreTabs();
-        await outline.selectActiveDocument(vscode.window.activeTextEditor);
+        if (outline.view.visible) {
+            await outline.selectActiveDocument(vscode.window.activeTextEditor);
+        }
 		report("Finished.");
     }
     catch (e) {
