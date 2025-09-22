@@ -7,6 +7,7 @@ import { Packageable } from '../packageable';
 import { getAllIndices, vagueNodeSearch } from '../miscTools/help';
 import { ExtensionGlobals } from '../extension';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { report } from 'process';
 export const commonReplacements = {
     '”': '"',
     '“': '"',
@@ -30,6 +31,7 @@ type UnderlineIdentifier = string;
 type HowMany = number;
 
 type CorrectionKind = 'correction' | 'specialCharacterSwap';
+
 
 export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclusions" | "wt.autocorrections.corrections" | "wt.autocorrections.dontCorrect">, vscode.CodeActionProvider<vscode.CodeAction> {
     private static BlueUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
@@ -61,7 +63,10 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
         }
     } } = {};
 
-    private notificationActive: boolean = false;
+    private notificationActive: {
+        token: vscode.CancellationTokenSource,
+        saveAutocorrect: boolean | null,
+    } | null = null;
     async askToCorrect (original: string, correction: string) {
         if (!this.enabled) return;
         original = original.toLocaleLowerCase();
@@ -71,21 +76,76 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
             return;
         }
 
-        type Response = 'Yes' | 'No' | 'Stop Asking!!!';
 
-        const notificationPromise = vscode.window.showInformationMessage(
-            `Save as auto-correction?  You just updated '${original}' to '${correction}'.  Would you like to save this mapping as an auto-correction so that every time you type '${original}' it automatically gets replaced with '${correction}'? (ctrl+shift+A to accept, ctrl+shift+x to reject) * (cmd on Mac) * (Please only use these commands when this is the only active notification)`, 
-            "Yes", "No", "Stop Asking!!!"
-        );
+        const tokenSource = new vscode.CancellationTokenSource();
+        this.notificationActive = {
+            token: tokenSource,
+            saveAutocorrect: false
+        };
 
-        this.notificationActive = true;
-        const response: Response | undefined  = await notificationPromise;
-        this.notificationActive = false;
+        
+        const notificationPromise: Thenable<boolean | null> = vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Correction completed!`,
+        }, async (progress) => {
+            return new Promise((resolve, reject) => {
 
-        if (response !== 'Yes') {
-            if (response === 'Stop Asking!!!') {
-                this.enabled = false;
-            }
+                // Display message to save the autocorrect
+                const reportSave = () => {
+                    progress.report({
+                        message: `Hit alt+enter to save '${original}' -> '${correction}' as a permanent auto-correction . . . `
+                    });
+                };
+
+                // Display message to refuse the autocorrect
+                const reportRefuse = () => {
+                    progress.report({
+                        message: `Hit alt+x to never save '${original}' -> '${correction}' as a permanent auto-correction . . . `
+                    });
+                }
+
+                // Start with the save message
+                reportSave();
+
+                // Create an interval to alternate between the save and refuse
+                //      messages every 2 seconds
+                let idx = 0;
+                const interval = setInterval(() => {
+                    if (idx % 2 !== 0) reportSave();
+                    else reportRefuse();
+                    idx++;
+                }, 2000);
+
+                // If no choice has been made after 20 seconds, return `null` to indicate
+                //      neither a save nor a refusal
+                const timeout = setTimeout(() => {
+                    clearInterval(interval);
+                    resolve(null);
+                }, 20000);
+
+                // Otherwise if the cancellation token was triggered, clear the timeout and the interval
+                //      and return the response from the key binding that was entered 
+                // (This occurs when the user activates either 'wt.autocorrections.acceptAutocorrect' or
+                //      'wt.autocorrections.rejectAutocorrect', which "cancels" the token with a response true or false
+                //      see the bodies of those function below for more info)
+                tokenSource.token.onCancellationRequested(() => {
+                    if (!this.notificationActive || this.notificationActive.saveAutocorrect === null) return;
+                    clearInterval(interval);
+                    clearTimeout(timeout);
+                    resolve(this.notificationActive.saveAutocorrect);
+                });
+            });
+        });
+
+        const saveAutocorrect: boolean | null = await notificationPromise;
+        this.notificationActive = null;
+        tokenSource.dispose();
+
+        if (saveAutocorrect === true) {
+            this.corrections[original] = correction;
+            Workspace.updateContext(this.context, "wt.autocorrections.corrections", this.corrections);
+        }
+        else if (saveAutocorrect === false) {
             if (this.dontCorrect[original]) {
                 this.dontCorrect[original].push(correction);
             }
@@ -93,10 +153,10 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
                 this.dontCorrect[original] = [ correction ];
             }
             Workspace.updateContext(this.context, "wt.autocorrections.dontCorrect", this.dontCorrect);
-            return;
         }
-        this.corrections[original] = correction;
-        Workspace.updateContext(this.context, "wt.autocorrections.corrections", this.corrections);
+
+        // saveAutocorrect === null -> time elapsed without a response
+        else if (saveAutocorrect === null) {}
     }
 
 
@@ -294,16 +354,13 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.autocorrections.stopCorrecting', (original: string) => this.stopCorrecting(original)));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.autocorrections.acceptAutocorrect', async () => {
             if (!this.notificationActive) return;
-            await vscode.commands.executeCommand('notifications.focusFirstToast');
-            return vscode.commands.executeCommand('notification.acceptPrimaryAction');
+            this.notificationActive.saveAutocorrect = true;
+            this.notificationActive.token.cancel();
         }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.autocorrections.rejectAutocorrect', async () => {
-            if (!this.notificationActive) {
-                // Do the default behavior for ctrl+shift+x
-                // Hacky workaround, but I don't believe there is any default way to force this keybinding to fall through
-                return vscode.commands.executeCommand('workbench.view.extensions');
-            }
-            return vscode.commands.executeCommand('notifications.clearAll');
+            if (!this.notificationActive) return;
+            this.notificationActive.saveAutocorrect = false;
+            this.notificationActive.token.cancel();
         }));
     }
 

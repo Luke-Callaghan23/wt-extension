@@ -58,7 +58,7 @@ export class SearchResultsTree
         await this.initUriExpansion(SearchResultsTree.viewId, this.view, this.context);
     }
 
-    async refresh(updatedNodes?: SearchNode<SearchContainerNode>[], filteredUris?: typeof this.filteredUris): Promise<void> {
+    async refresh(updatedNodes?: SearchNode<SearchContainerNode>[], filteredUris?: (vscode.Uri | vscode.Location)[]): Promise<void> {
         if (updatedNodes) {
             this.rootNodes = updatedNodes;
             this.filteredUris = filteredUris || [];

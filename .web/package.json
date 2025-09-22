@@ -1789,16 +1789,16 @@
 			},
 			{
 				"command": "wt.autocorrections.acceptAutocorrect",
-				"win": "ctrl+shift+a",
-				"linux": "ctrl+shift+a",
-				"mac": "cmd+shift+a",
+				"win": "alt+enter",
+				"linux": "alt+enter",
+				"mac": "alt+enter",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
 			},
 			{
 				"command": "wt.autocorrections.rejectAutocorrect",
-				"win": "ctrl+shift+x",
-				"linux": "ctrl+shift+x",
-				"mac": "cmd+shift+x",
+				"win": "alt+x",
+				"linux": "alt+x",
+				"mac": "alt+x",
 				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
 			},
 			{
