@@ -5,10 +5,7 @@ import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentNo
 import { OutlineView } from '../outlineView';
 // import * as console from '../../vsconsole';
 import * as extension from '../../extension';
-import { v4 as uuidv4 } from 'uuid';
 import { FileAccessManager } from '../../miscTools/fileAccesses';
-import { InitializeNode, initializeChapter, initializeFragment, initializeSnip } from '../../outlineProvider/initialize';
-import { NodeTypes } from '../../outlineProvider/fsNodes';
 
 export function getUsableFileName (fileTypePrefix: string, wt?: boolean): string {
     const fileTypePostfix = wt ? '.wt' : '';
@@ -35,21 +32,47 @@ export async function newChapter (
     options?: CreateOptions
 ): Promise<vscode.Uri | null> {
     // Creating a new chapter is simple as new chapters are the "highest" level in the node structure
-    // No need to look at parent ids or anything
-    // Just create a new chapter folder with a new text fragment and an empty snips folder and we're all done
-    
-    // Path and file name for new chapter
-    
+    // Create a new chapter folder with a new text fragment and an empty snips folder and we're all done
+
     const chaptersContainer = (this.rootNodes[0].data as RootNode).chapters;
     const chaptersContainerUri = chaptersContainer.getUri();
 
     const chaptersContainerDotConfigUri = vscode.Uri.joinPath(chaptersContainerUri, '.config');
     const chaptersContainerDotConfig = await readDotConfig(chaptersContainerDotConfigUri);
     if (!chaptersContainerDotConfig) return null; 
+
+    // Only thing to check is if the selected node is a Chapter node
+    // If so, we insert the new chapter directly after that node
+    let chapterNumber;
+    if (resource && resource.data.ids.type === 'chapter') {
+        const selectedChapterNumber = resource.data.ids.ordering;
+        chapterNumber = selectedChapterNumber + 1;
+        
+        // In addition, we'll need to move all the subsequent chapters' orderings back by one to account for the new
+        //      chapter being inserted between
+
+        // First update the .config file
+        for (const [ _, config ] of Object.entries(chaptersContainerDotConfig)) {
+            if (config.ordering > selectedChapterNumber) {
+                config.ordering++;
+            }
+        }
+        
+        // Then, update internal node structure
+        const chapterContainer = (this.rootNodes[0].data as RootNode).chapters.data as ContainerNode;
+        chapterContainer.contents.forEach(chapter => {
+            if (chapter.data.ids.ordering > selectedChapterNumber) {
+                chapter.data.ids.ordering++;
+            }
+        });
+    }
+    // Otherwise, the new chapter will go at the end of the chapter list
+    else {
+        const latestChapter = getLatestOrdering(chaptersContainerDotConfig);
+        chapterNumber = latestChapter + 1;
+    }
     
     // Create a generic chapter name for the new file
-    const latestChapter = getLatestOrdering(chaptersContainerDotConfig);
-    const chapterNumber = latestChapter + 1;
     const chapterTitle = options?.defaultName ?? `New Chapter (${chapterNumber})`;
     const chapterFileName = getUsableFileName(`chapter`);
     const chapterUri = vscode.Uri.joinPath(chaptersContainerUri, chapterFileName);
@@ -170,7 +193,10 @@ export async function newChapter (
     
     // Push the new chapter to the chapter container
     const chapter = new OutlineNode(chapterNode);
-    (chaptersContainer.data as ContainerNode).contents.push(chapter);
+
+    // Use splice instead of push, in order to allow for values of `chapterNumber` !== len(chapters)
+    //      splice with second arg == 0 -> 0 elements are removed, but the following args are inserted
+    (chaptersContainer.data as ContainerNode).contents.splice(chapterNumber, 0, chapter);
 
     if (!options?.preventRefresh) {
         vscode.window.showInformationMessage(`Successfully created new chapter with name 'New Chapter' (file name: ${chapterFileName})`);
@@ -465,7 +491,7 @@ export async function newFragment (
             return null;
         }
     }
-
+    
     // Need to know the uri of the new fragment's parent so that we can insert the new file into it
     let parentUri: vscode.Uri;
     let parentNode: OutlineNode;
@@ -504,11 +530,46 @@ export async function newFragment (
     if (!parentDotConfig) return null;
 
     // Initialize the snip with parent node's data
-
     
-    // Get the fragment number for this fragment
-    const latestFragmentNumber = getLatestOrdering(parentDotConfig);
-    const newFragmentNumber = latestFragmentNumber + 1;
+    
+    // Only thing to check is if the selected node is a Chapter node
+    // If so, we insert the new chapter directly after that node
+    let newFragmentNumber;
+    if (resource && resource.data.ids.type === 'fragment') {
+        const selectedFragmentNumber = resource.data.ids.ordering;
+        newFragmentNumber = selectedFragmentNumber + 1;
+        
+        // In addition, we'll need to move all the subsequent fragments' orderings back by one to account for the new
+        //      chapter being inserted between
+
+        // First update the .config file
+        for (const [ _, config ] of Object.entries(parentDotConfig)) {
+            if (config.ordering > selectedFragmentNumber) {
+                config.ordering++;
+            }
+        }
+        
+        // Then, update internal node structure
+        let contents: OutlineNode[];
+        if (parentNode.data.ids.type === 'chapter') {
+            contents = (parentNode.data as ChapterNode).textData;
+        }
+        else if (parentNode.data.ids.type === 'snip') {
+            contents = (parentNode.data as SnipNode).contents;
+        }
+        else throw `Unexpected parent node type '${parentNode.data.ids.type}'`;
+
+        contents.forEach((fragment) => {
+            if (fragment.data.ids.ordering > selectedFragmentNumber) {
+                fragment.data.ids.ordering++;
+            }
+        })
+    }
+    // Otherwise, the new fragment will go at the end of the fragment list
+    else {
+        const latestFragmentNumber = getLatestOrdering(parentDotConfig);
+        newFragmentNumber = latestFragmentNumber + 1;    
+    }
 
     const title = options?.defaultName ?? `New Fragment (${newFragmentNumber})`;
 
@@ -531,10 +592,10 @@ export async function newFragment (
     // Add snip node to parent node's content array
     const fragmentNode = new OutlineNode(fragment);
     if (parentNode.data.ids.type === 'chapter') {
-        (parentNode.data as ChapterNode).textData.push(fragmentNode);
+        (parentNode.data as ChapterNode).textData.splice(newFragmentNumber, 0, fragmentNode);
     }
     else if (parentNode.data.ids.type === 'snip') {
-        (parentNode.data as SnipNode).contents.push(fragmentNode);
+        (parentNode.data as SnipNode).contents.splice(newFragmentNumber, 0, fragmentNode);
     }
 
     parentDotConfig[fileName] = {
