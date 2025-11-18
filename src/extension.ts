@@ -124,6 +124,8 @@ async function loadExtensionWorkspace (
             console.log(report)
         };
 
+        ExtensionGlobals.workspace = workspace;
+
         const outline = new OutlineView(context, workspace);                // wt.outline
         await outline.init();
         report("Loaded outline");
@@ -191,9 +193,9 @@ async function loadExtensionWorkspace (
         const timedViews = new TimedView(context, [
             ['wt.notebook.tree', 'notebook', notebook],
             ['wt.todo', 'todo', todo],
+            ['wt.spellcheck', 'spellcheck', spellcheck],
             ['wt.wordWatcher', 'wordWatcher', wordWatcher],
             // ['wt.proximity', 'proximity', proximity],
-            ['wt.spellcheck', 'spellcheck', spellcheck],
             ['wt.very', 'very', veryIntellisense],  
             ['wt.colors', 'colors', colorIntellisense],
             ['wt.textStyle', 'textStyle', textStyles],

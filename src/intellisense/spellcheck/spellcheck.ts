@@ -13,7 +13,9 @@ import { ExtensionGlobals } from '../../extension';
 
 export class Spellcheck implements Timed {
     enabled: boolean;
-    
+
+    static currentMisspelledWordRanges: vscode.Range[] = [];
+
     private static RedUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
 		overviewRulerColor: new vscode.ThemeColor('errorForeground'),
@@ -24,6 +26,8 @@ export class Spellcheck implements Timed {
 
     lastUpdate: WordRange[];
     async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
+        Spellcheck.currentMisspelledWordRanges = [];
+
         const stops = /[\^\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/g;
 
         const document = editor.document;
@@ -105,6 +109,7 @@ export class Spellcheck implements Timed {
                     }
                 }
 
+                Spellcheck.currentMisspelledWordRanges.push(range)
                 decorations.push({
                     range: range,
                     hoverMessage: `Unrecognized word: ${text}`
