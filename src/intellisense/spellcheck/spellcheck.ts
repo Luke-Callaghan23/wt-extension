@@ -13,6 +13,8 @@ import { ExtensionGlobals } from '../../extension';
 
 export class Spellcheck implements Timed {
     enabled: boolean;
+
+    static currentMisspelledWordRanges: vscode.Range[] = [];
     
     private static RedUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
 		overviewRulerLane: vscode.OverviewRulerLane.Right,
@@ -24,6 +26,8 @@ export class Spellcheck implements Timed {
 
     lastUpdate: WordRange[];
     async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
+        Spellcheck.currentMisspelledWordRanges = [];
+        
         const stops = /[\^\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/g;
 
         const document = editor.document;
@@ -93,7 +97,6 @@ export class Spellcheck implements Timed {
                     continue;
                 }
 
-
                 // Do not add red decorations to words that have been matched by notebook
                 const notebookPanel = ExtensionGlobals.notebookPanel;
                 if (notebookPanel) {
@@ -105,6 +108,7 @@ export class Spellcheck implements Timed {
                     }
                 }
 
+                Spellcheck.currentMisspelledWordRanges.push(range);
                 decorations.push({
                     range: range,
                     hoverMessage: `Unrecognized word: ${text}`

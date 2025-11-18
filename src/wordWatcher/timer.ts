@@ -8,6 +8,7 @@ import { addWordToWatchedWords } from './engine';
 import { TimedView } from '../timedView';
 import { Color, parseForColor } from './colorPick';
 import { Workspace } from '../workspace/workspaceClass';
+import { Spellcheck } from '../intellisense/spellcheck/spellcheck';
 
 const defaultDecorations: vscode.DecorationRenderOptions = {
     // borderWidth: '1px',
@@ -136,6 +137,9 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
             hoverMessage: new vscode.MarkdownString(tag)
         };
 
+        if (Spellcheck.currentMisspelledWordRanges.find(misspelledRange => misspelledRange.contains(decorationOptions.range))) {
+            continue;
+        }
         
         const isCommented = commentedRanges.find(cr => {
             if (cr.contains(startPos)) {
