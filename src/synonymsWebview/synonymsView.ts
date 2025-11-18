@@ -94,6 +94,7 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 		}));
 
 		this.context.subscriptions.push(vscode.commands.registerCommand("wt.synonyms.refresh", (refreshWith: string[]) => {
+			this.synonyms = refreshWith;
 			this._view?.webview.postMessage({
 				type: "refreshSynonyms",
 				terms: refreshWith

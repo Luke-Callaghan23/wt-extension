@@ -124,35 +124,36 @@ async function loadExtensionWorkspace (
             console.log(report)
         };
 
-
         const outline = new OutlineView(context, workspace);                // wt.outline
         await outline.init();
         report("Loaded outline");
 
-        const importFS = new ImportFileSystemView(context, workspace);        // wt.import.fileSystem
-        const synonyms = new SynonymViewProvider(context, workspace);        // wt.synonyms
-        const wh = new WHViewProvider(context, workspace);        // wt.synonyms
         const todo = new TODOsView(context, workspace);                        // wt.todo
         await todo.init();
         report("Loaded TODO tree");
-
-        const wordWatcher = new WordWatcher(context, workspace);            // wt.wordWatcher
-        const proximity = new Proximity(context, workspace);
-        const textStyles = new TextStyles(context, workspace);    
-        const recycleBin = new RecyclingBinView(context, workspace);        
-        await recycleBin.initialize();
-        report("Loaded recycling bin");
-
+        
         const autocorrection = new Autocorrect(context, workspace);
         const personalDictionary = new PersonalDictionary(context, workspace);
         const spellcheck = new Spellcheck(context, workspace, personalDictionary, autocorrection);
         report("Loaded spellchecker");
 
         const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, true);
+        await synonymsIntellisense.init();
         const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
         const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
         report("Loaded intellisense");
+
+        const importFS = new ImportFileSystemView(context, workspace);        // wt.import.fileSystem
+        const synonyms = new SynonymViewProvider(context, workspace);        // wt.synonyms
+        const wh = new WHViewProvider(context, workspace);        // wt.synonyms
+        
+        const wordWatcher = new WordWatcher(context, workspace);            // wt.wordWatcher
+        const proximity = new Proximity(context, workspace);
+        const textStyles = new TextStyles(context, workspace);    
+        const recycleBin = new RecyclingBinView(context, workspace);        
+        await recycleBin.initialize();
+        report("Loaded recycling bin");
 
         const reloadWatcher = new ReloadWatcher(workspace, context);
         const scratchPad = new ScratchPadView(context, workspace);

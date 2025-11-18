@@ -10,19 +10,21 @@ import { SynonymsProvider } from './synonymsProvider/provideSynonyms';
 export class SynonymsIntellisense {
     constructor (
         private context: vscode.ExtensionContext,
-        workspace: Workspace,
-        personalDictionary: PersonalDictionary,
-        useWordHippo: boolean,
+        private workspace: Workspace,
+        private personalDictionary: PersonalDictionary,
+        private useWordHippo: boolean,
     ) {
+    }
+
+    public async init () {
         const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
             language: 'wt'
         };
-        SynonymsProvider.init(workspace).then(() => {
-            this.context.subscriptions.push(vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(context, workspace, useWordHippo)));
-            this.context.subscriptions.push(vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(context, workspace)));
-            this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(context, workspace, personalDictionary)));
-            this.registerCommands();
-        });
+        await SynonymsProvider.init(this.workspace);
+        this.context.subscriptions.push(vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(this.context, this.workspace, this.useWordHippo)));
+        this.context.subscriptions.push(vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(this.context, this.workspace)));
+        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(this.context, this.workspace, this.personalDictionary)));
+        this.registerCommands();
     }
 
     registerCommands() {

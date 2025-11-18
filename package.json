@@ -1111,6 +1111,14 @@
 			{
 				"title": "Writing Tool: Reveal in file explorer",
 				"command": "wt.import.fileExplorer.revealFileExplorer"
+			},
+			{
+				"title": "Writing Tool: Import Settings from Another Project",
+				"command": "wt.misc.importContextValues"
+			},
+			{
+				"title": "Writing Tool: Open Workspace Context Values",
+				"command": "wt.misc.openContextValues"
 			}
 		],
 		"menus": {

@@ -11,6 +11,7 @@ import { Accents } from './accents';
 import { OutlineView } from '../outline/outlineView';
 import { ExtensionGlobals } from '../extension';
 import { vagueNodeSearch } from '../miscTools/help';
+import { importContextValuesFromFile } from '../miscTools/importContextValues';
 
 
 export function remove () {
@@ -102,7 +103,6 @@ export class Toolbar {
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.fragment.right.shift', () => jumpSentence('right', true, defaultJumpFragmentOptions)));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.left.shift', () => jumpParagraph('left', true)));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.jump.paragraph.right.shift', () => jumpParagraph('right', true)));
-
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.addQuotes', () => addQuotes()));
 
         const accent = new Accents(context);
@@ -143,5 +143,15 @@ export class Toolbar {
                 return vscode.commands.executeCommand('revealFileInOS', tabUri);
             }
         }));
+
+        // Misc commands
+        context.subscriptions.push(vscode.commands.registerCommand('wt.misc.importContextValues', importContextValuesFromFile));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.misc.openContextValues', () => {
+            return vscode.window.showTextDocument(ExtensionGlobals.workspace.contextValuesFilePath, {
+                preserveFocus: false,
+                preview: false,
+                viewColumn: vscode.ViewColumn.Active
+            });
+        }))
     }
 }

@@ -6,6 +6,7 @@ import { loadWorkspaceContext, PositionInfo, TabPositions } from './../workspace
 import { DiskContextType, Workspace } from './../workspace/workspaceClass';
 import { TabLabels } from './../tabLabels/tabLabels';
 import { TabStates } from './tabStates';
+import { Buff } from '../Buffer/bufferSource';
 
 export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs" | "wt.reloadWatcher.enabled"> {
     private static watcher: vscode.FileSystemWatcher;
@@ -75,6 +76,7 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs" 
     static async changedContextValues (
         overrideCommitCheck: boolean = false,
         justViews: boolean = false,
+        overrideContextValues: DiskContextType | null = null,
     ) {
         
         let reloadTabs = overrideCommitCheck;
@@ -94,7 +96,14 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs" 
         }
 
         // Load context items from the new context values json 
-        const contextValues: DiskContextType = await loadWorkspaceContext(ReloadWatcher.context, ReloadWatcher.contextValuesUri);
+        let contextValues: DiskContextType;
+        if (!overrideContextValues) {
+            contextValues = await loadWorkspaceContext(ReloadWatcher.context, ReloadWatcher.contextValuesUri);
+        }
+        else {
+            contextValues = overrideContextValues;
+            await Workspace.replaceContextValuesOnDisk(contextValues);
+        }
 
         if (reloadTabs && !justViews) {
             const tabContext = contextValues["wt.reloadWatcher.openedTabs"];

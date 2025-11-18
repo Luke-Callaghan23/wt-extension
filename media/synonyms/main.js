@@ -5,7 +5,7 @@
     const vscode = acquireVsCodeApi();
 
     let synonyms = [];
-    const synonymElements = [];
+    let synonymElements = [];
 
     let dicationatyApi;
 
@@ -41,9 +41,10 @@
         synonyms = [];
         starting = true;
         for (const syn of syns) {
-            await addSynonym(syn);
+            await addSynonym(syn, true);
         }
         starting = false;
+        vscode.setState({ synonyms: synonyms });
         vscode.postMessage({ 
             type: 'deliveredSynonyms',
             synonyms: synonyms
@@ -68,30 +69,37 @@
                     startup();
                     break;
                 case 'refreshSynonyms':
-                    await clearSynonyms();
+                    clearSynonyms(true);
                     for (const term of message.terms) {
-                        await addSynonym(term);
+                        await addSynonym(term, true);
                     }
+                    vscode.setState({ synonyms: synonyms });
+                    vscode.postMessage({ 
+                        type: 'deliveredSynonyms',
+                        synonyms: synonyms
+                    });
                     break;
             }
         });
     }
     
-    async function addSynonym (term) {
+    async function addSynonym (term, dontDeliver) {
         startupMessage.style.display = 'none';
         clearButton.disabled = false;
         const result = await query(term);
         await addContent(result);
         synonyms.push(result.word);
-        vscode.setState({ synonyms: synonyms });
-        vscode.postMessage({ 
-            type: 'deliveredSynonyms',
-            synonyms: synonyms
-        });
+        if (!dontDeliver) {
+            vscode.setState({ synonyms: synonyms });
+            vscode.postMessage({ 
+                type: 'deliveredSynonyms',
+                synonyms: synonyms
+            });
+        }
     }
 
     const synonymBox = document.getElementById('synonym-box');
-    function clearSynonyms () {
+    function clearSynonyms (dontDeliver) {
         for (const syn of synonyms) {
             const synHeader = document.getElementById(`synonym-${syn}`);
             const synContent = document.getElementById(`synonym-${syn}-content`);
@@ -102,10 +110,13 @@
         synonyms = [];
         synonymElements = [];
         vscode.setState({ synonyms: synonyms });
-        vscode.postMessage({ 
-            type: 'deliveredSynonyms',
-            synonyms: synonyms
-        });
+
+        if (!dontDeliver) {
+            vscode.postMessage({ 
+                type: 'deliveredSynonyms',
+                synonyms: synonyms
+            });
+        }
     }
 
     function showStartupMessage () {
@@ -117,7 +128,14 @@
         word = word.toLowerCase();
         // @ts-ignore
         const api = `https://dictionaryapi.com/api/v3/references/thesaurus/json/${word}?key=${dicationatyApi}`;
-        const resp = await fetch(api);
+        let resp;
+        for (let idx = 0; idx < 5; idx++) {
+            try {
+                resp = await fetch(api);
+                break;
+            }
+            catch (err) {}
+        }
         const json = await resp.json();
 
         function parseList (defs) {
@@ -166,8 +184,6 @@
             }
         )
         .filter(x => x);
-
-        console.log(definitions)
 
         return {
             word: word,

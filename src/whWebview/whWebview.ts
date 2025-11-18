@@ -5,6 +5,25 @@ import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 
+type WHWebviewMessage = {
+	type: 'failedSeach',
+	word: string,
+	suggestions: string[]
+} | {
+	type: 'pasteSynonym',
+	value: string,
+} | {
+	type: 'requestSynonyms',
+	synonyms: string[],
+} | {
+	type: 'deliveredSynonyms',
+	synonyms: string[],
+} | {
+	type: 'requestWH',
+	phrase: string,
+	skipDataPush: boolean | undefined
+};
+
 export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable<'wt.wh.synonyms'> {
 
 	private _view?: vscode.WebviewView;
@@ -95,6 +114,7 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable<'
 		}));
 		
 		this.context.subscriptions.push(vscode.commands.registerCommand("wt.wh.refresh", (refreshWith: string[]) => {
+			this.synonyms = refreshWith;
 			this._view?.webview.postMessage({
 				type: "refreshSynonyms",
 				terms: refreshWith
@@ -115,7 +135,7 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable<'
 		};
 
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-		this.context.subscriptions.push(webviewView.webview.onDidReceiveMessage(data => {
+		this.context.subscriptions.push(webviewView.webview.onDidReceiveMessage((data: WHWebviewMessage) => {
 			switch (data.type) {
 				case 'pasteSynonym':
 					vscode.window.activeTextEditor?.insertSnippet(new vscode.SnippetString(`${data.value}`));
@@ -126,15 +146,9 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable<'
 					const suggestedString = suggestedWords.join("', '");
 					vscode.window.showErrorMessage(`Error: The dictionary api did not recognize search term '${failedWord}'. Did you mean to type one of these: '${suggestedString}'?`);
 					break;
-				case 'requestDictionaryApiKey': 
-					const dictionaryApi = "29029b50-e0f1-4be6-ac00-77ab8233e66b";
-					if (!dictionaryApi) {
-						vscode.window.showWarningMessage(`WARN: The synonyms view uses a dictionary API to function.  If you forked this code from github, you need to get your own API key from 'https://dictionaryapi.dev/'`);
-						return;
-					}
+				case 'requestSynonyms': 
 					webviewView.webview.postMessage({
 						type: 'startupDelivery',
-						dicationatyApi: dictionaryApi,
 						synonyms: this.synonyms
 					});
 					break;
@@ -145,8 +159,10 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable<'
 					break;
 				case 'requestWH':
 					const phrase = data.phrase;
-					this.synonyms.push(phrase);
-					this.context.workspaceState.update('wt.wh.synonyms', this.synonyms);
+					if (!data.skipDataPush) {
+						this.synonyms.push(phrase);
+						this.context.workspaceState.update('wt.wh.synonyms', this.synonyms);
+					}
 
 					const phraseUnderscored = phrase.replaceAll(' ', '_');
 					SynonymsProvider.provideSynonyms(phraseUnderscored, 'wh').then(res => {

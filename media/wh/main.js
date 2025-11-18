@@ -5,7 +5,7 @@
     const vscode = acquireVsCodeApi();
 
     let synonyms = [];
-    const synonymElements = [];
+    let synonymElements = [];
 
     // Clear button
     const clearButton = document.querySelector('.add-color-button');
@@ -32,20 +32,15 @@
     }
 
     // Startup
-    let starting = null;
+    let startupSearchesRemaining = -1;
     const startupMessage = document.getElementById("startup-message");
     async function startup () {
         const syns = [...synonyms];
         synonyms = [];
-        starting = true;
+        startupSearchesRemaining = syns.length;
         for (const syn of syns) {
-            await addSynonym(syn);
+            addSynonym(syn, true);
         }
-        starting = false;
-        vscode.postMessage({ 
-            type: 'deliveredSynonyms',
-            synonyms: synonyms
-        });
     }
 
     // Message handling
@@ -66,32 +61,41 @@
                     break;
                 case 'whResponse':
                     const results = message.result;
+                    startupSearchesRemaining--;
                     addContent(results).then(() => {
                         synonyms.push(results.word);
                         vscode.setState({ synonyms: synonyms });
                     })
                     break;
                 case 'refreshSynonyms':
-                    await clearSynonyms();
+                    clearSynonyms(true);
                     for (const term of message.terms) {
-                        await addSynonym(term);
+                        await addSynonym(term, true);
                     }
+                    vscode.setState({ synonyms: synonyms });
+                    vscode.postMessage({ 
+                        type: 'deliveredSynonyms',
+                        synonyms: synonyms
+                    });
                     break;
             }
         });
     }
     
-    async function addSynonym (phrase) {
+    function addSynonym (phrase, skipDataPush) {
         startupMessage.style.display = 'none';
         clearButton.disabled = false;
         vscode.postMessage({ 
             type: 'requestWH',
-            phrase: phrase
+            phrase: phrase,
+            // During startup we want to call addSynonym without duplicating the data
+            //      in the internal data of the WHWebview
+            skipDataPush: skipDataPush
         });
     }
 
     const synonymBox = document.getElementById('synonym-box');
-    function clearSynonyms () {
+    function clearSynonyms (dontDeliver) {
         for (const syn of synonyms) {
             const synHeader = document.getElementById(`synonym-${syn}`);
             const synContent = document.getElementById(`synonym-${syn}-content`);
@@ -102,10 +106,13 @@
         synonyms = [];
         synonymElements = [];
         vscode.setState({ synonyms: synonyms });
-        vscode.postMessage({ 
-            type: 'deliveredSynonyms',
-            synonyms: synonyms
-        });
+
+        if (!dontDeliver) {
+            vscode.postMessage({ 
+                type: 'deliveredSynonyms',
+                synonyms: synonyms
+            });
+        }
     }
 
     function showStartupMessage () {
@@ -230,18 +237,23 @@
     
             }
     
+            // @ts-ignore
             synonymBox.appendChild(synonymHeader);
+            // @ts-ignore
             synonymBox.appendChild(synonymContent);
     
             // Click handler for showing or hiding this synonyms content (the definition box)
             synonymHeader.addEventListener('click', (event) => {
+                // @ts-ignore
                 if (event.target.id !== synonymHeader.id && !event.target.id.startsWith(synonymHeader.id)) return;
                 const chevronId = `synonym-chevron-${term.word}`;
                 const chevron = document.getElementById(chevronId);
                 if (synonymContent.style.display === "block") {
+                    // @ts-ignore
                     synonymContent.style.display = "none";
                     chevron.name = 'chevron-right';
                 } else {
+                    // @ts-ignore
                     synonymContent.style.display = "block";
                     chevron.name = 'chevron-down';
                 }
@@ -275,7 +287,7 @@
                     .forEach(elt => elt.classList.remove('selected'));
             });
 
-            if (!starting) {
+            if (startupSearchesRemaining < 0) {
                 // Scroll to the new synonym
                 synonymHeader.click();
                 firstDefintionHeader?.click();
@@ -323,12 +335,10 @@
                 header.classList.remove("sticky");
             }
         }
-        
-
     }
 
     // Once the page is loaded, request the api key from the main environment
     vscode.postMessage({
-        type: 'requestDictionaryApiKey'
+        type: 'requestSynonyms'
     });
 }());
