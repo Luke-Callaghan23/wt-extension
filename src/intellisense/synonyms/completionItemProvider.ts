@@ -155,14 +155,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         const res = await SynonymsProvider.provideSynonyms(hoverPosition.text, this.isWordHippo ? 'wh' : 'synonymsApi');
         if (res.type === 'error') {
             const corrections = getMisspellCorrections(res, hoverRange, wordText);
-
-            const currentHover = vscode.window.activeTextEditor && getHoveredWord(vscode.window.activeTextEditor.document, vscode.window.activeTextEditor.selection.start);
-            if (currentHover && currentHover.text === wordText)  {
-                return corrections;
-            }
-            else {
-                return [];
-            }
+            return corrections;
         }
 
         // If there was no error querying for synonyms of the selected word, then store the response from

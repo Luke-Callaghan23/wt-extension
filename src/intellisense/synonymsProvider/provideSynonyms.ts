@@ -241,13 +241,13 @@ export class SynonymsProvider {
         try {
             let result: SynonymSearchResult;
 
-            const cacheResult: SynonymSearchResult | null = await SynonymsProvider.getCachedSynonym(word, provider);
-            if (!cacheResult) {
+            // const cacheResult: SynonymSearchResult | null = await SynonymsProvider.getCachedSynonym(word, provider);
+            // if (!cacheResult) {
                 result = await SynonymsProvider.synonymsApi.getSynonym(word, provider);
-            }
-            else {
-                result = cacheResult;
-            }
+            // }
+            // else {
+            //     result = cacheResult;
+            // }
 
             if (result !== undefined && 
                 result !== null && 

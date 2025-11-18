@@ -205,21 +205,21 @@ implements
         return new RegExp(regexString, 'gi');
     }
 
+    async executeUpdateNoteAndWrite (updateNoteFunction: () => Promise<string | null>) {
+        const result = await updateNoteFunction();
+        if (result === null) return;
+        const noteId = result;
+
+        const note = this.notebook.find(note => note.noteId === noteId);
+        if (note === undefined) return;
+        await this.serializer.writeSingleNote(note);
+        await this.refresh(true);
+        return vscode.commands.executeCommand('wt.timedViews.update');
+    }
+
     private registerCommands () {
-
-        const doTheThingAndWrite = async (f: () => Promise<string | null>) => {
-            const result = await f();
-            if (result === null) return;
-            const noteId = result;
-
-            const note = this.notebook.find(note => note.noteId === noteId);
-            if (note === undefined) return;
-            await this.serializer.writeSingleNote(note);
-            await this.refresh(true);
-            return vscode.commands.executeCommand('wt.timedViews.update');
-        }
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", (resource: NotebookPanelNote | string | undefined) => { doTheThingAndWrite(() => this.addNote(resource)) }));
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.removeNote", (resource: NotebookPanelNote) => { doTheThingAndWrite(() => this.removeNote(resource)) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", (resource: NotebookPanelNote | string | undefined) => { this.executeUpdateNoteAndWrite(() => this.addNote(resource)) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.removeNote", (resource: NotebookPanelNote) => { this.executeUpdateNoteAndWrite(() => this.removeNote(resource)) }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.search', (resource: NotebookPanelNote) => { this.searchInSearchPanel(resource) }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.editNote', (resource: NotebookPanelNote | NoteSection | BulletPoint) => { this.editNote(resource) }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.getNotebook', () => this));
@@ -227,23 +227,40 @@ implements
             return this.refresh(true);
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.addAliasToNote', async (alias: string) => {
-            type NoteSelect = vscode.QuickPickItem & { note: NotebookPanelNote }
-
-            const noteSelect = await vscode.window.showQuickPick<NoteSelect>(this.notebook.map(notebookNote => __<NoteSelect>({
-                label: notebookNote.title,
-                description: `(${notebookNote.aliases.join(", ")})`,
-                alwaysShow: true,
-                note: notebookNote,
-            })));
-            if (!noteSelect) return;
-
-            const note = noteSelect.note;
-            return doTheThingAndWrite(async () => {
-                note.aliases.push(alias);
-                return note.noteId;
-            });
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.addAliasToNote', async (aliasText: string | undefined) => {
+            const textEditor = vscode.window.activeTextEditor;
+            if (!aliasText) {
+                if (textEditor && textEditor?.selections.length === 1 && !textEditor.selection.isEmpty) {
+                    const selectedText = textEditor.document.getText(textEditor.selection);
+                    return this.addAliasStringToNote(selectedText);
+                }
+                else {
+                    vscode.window.showWarningMessage("[WARN] Cannot add alias text for selection when nothing is selected!");
+                    return;
+                }
+            }
+            else {
+                return this.addAliasStringToNote(aliasText);
+            }
         }))
+    }
+
+    async addAliasStringToNote (alias: string) {
+        type NoteSelect = vscode.QuickPickItem & { note: NotebookPanelNote }
+
+        const noteSelect = await vscode.window.showQuickPick<NoteSelect>(this.notebook.map(notebookNote => __<NoteSelect>({
+            label: notebookNote.title,
+            description: `(${notebookNote.aliases.join(", ")})`,
+            alwaysShow: true,
+            note: notebookNote,
+        })));
+        if (!noteSelect) return;
+
+        const note = noteSelect.note;
+        return this.executeUpdateNoteAndWrite(async () => {
+            note.aliases.push(alias);
+            return note.noteId;
+        });
     }
 
     getTreeItem(noteNode: NotebookPanelNote | NoteSection | BulletPoint): vscode.TreeItem {

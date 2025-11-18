@@ -146,20 +146,10 @@ export class SynonymsApi {
                 })
             }
     
-            // If the word was not recognized by word hippo, then query
-            //      the dictionary API instead
-            // (Dictionary API seems to provide better results for unrecognized
-            //      words in general)
+            // If the word was not recognized by word hippo, then query the dictionary API instead
             if (definitions.length === 0) {
                 return this.querySynonymsApi(phrase);
-            } 
-            else if (definitions.length === 1) {
-                const onlyDef = definitions[0];
-                if (onlyDef.part === 'Nearby Words') {
-                    return this.querySynonymsApi(phrase);
-                }
             }
-        
             return {
                 type: 'success',
                 provider: 'wh',

@@ -826,9 +826,8 @@
 				"command": "wt.notebook.search"
 			},
 			{
-				"title": "Writing Tool: Add Alias",
-				"command": "wt.notebook.addAlias",
-				"icon": "$(add)"
+				"title": "Writing Tool: Add Highlighted Text As Alias of Existing Note",
+				"command": "wt.notebook.addAliasToNote"
 			},
 			{
 				"title": "Writing Tool: Search For Note",
