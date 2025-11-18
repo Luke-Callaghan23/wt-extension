@@ -2,7 +2,8 @@ import * as console from '../../miscTools/vsconsole';
 // const fetch = require('node-fetch-commonjs');
 import { Fetch } from '../../Fetch/fetchSource';
 import { queryVery } from '../very/veryQuery';
-import { Definition, SynonymSearchResult, Synonyms } from './provideSynonyms';
+import { Definition, SynonymError, SynonymSearchResult, Synonyms } from './provideSynonyms';
+import { __ } from '../../miscTools/help';
 
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED='0'
@@ -150,6 +151,17 @@ export class SynonymsApi {
             if (definitions.length === 0) {
                 return this.querySynonymsApi(phrase);
             }
+            else if (definitions.length === 1) {
+                const onlyDef = definitions[0];
+                if (onlyDef.part === 'Nearby Words') {
+                    return __<SynonymError>({
+                        type: 'error',
+                        message: "Word Hippo was unable to find any synonyms for this word.",
+                        suggestions: onlyDef.synonyms
+                    });
+                }
+            }
+
             return {
                 type: 'success',
                 provider: 'wh',
