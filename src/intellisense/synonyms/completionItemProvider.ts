@@ -88,7 +88,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                     const end = getHoveredWord(document, selection.end);
     
                     if (!start || !end) {
-                        return [];
+                        return getMisspellCorrections(null, selection, document.getText(selection));
                     }
     
                     // Transform each to offsets
@@ -100,9 +100,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                     const endOff = end.end < start.end ? start.end : end.end;
     
                     wordText = document.getText().substring(startOff, endOff);
-                    
                     hoverRange = new vscode.Range(document.positionAt(startOff), document.positionAt(endOff));
-    
                     hoverPosition = {
                         start: startOff,
                         end: endOff,
@@ -111,10 +109,13 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 }
                 else {
                     // Otherwise, simply call hover position on the provided position
-                    const tmp = getHoveredWord(document, position);
-                    if (!tmp) return [];
-                    hoverPosition = tmp;
-                    wordText = tmp.text;
+                    const hoveredWord = getHoveredWord(document, position);
+                    if (!hoveredWord) {
+                        console.log("REPORT ME!!!");
+                        return [];
+                    }
+                    hoverPosition = hoveredWord;
+                    wordText = hoveredWord.text;
                     hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
                 }
             }
@@ -311,7 +312,9 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         const wordCapitalization: Capitalization = getTextCapitalization(word);
 
         const synonyms = await SynonymsProvider.provideSynonyms(word, this.isWordHippo ? 'wh' : 'synonymsApi');
-        if (!synonyms || synonyms.type === 'error') return [];
+        if (!synonyms || synonyms.type === 'error') {
+            return getMisspellCorrections(null, hoverRange, word);
+        }
 
         // Create completion items for all synonyms of all definitions
         const inserts: { [index: string]: 1 } = {};
@@ -514,10 +517,9 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     }
 }
 
-const getMisspellCorrections = (res: SynonymError, hoverRange: vscode.Range, wordText: string) => {
-    if (!res.suggestions) return [];
-    const maxDigits = numDigits(res.suggestions.length);
-    const corrections = res.suggestions?.map((suggest, index) => {
+const getMisspellCorrections = (res: SynonymError | null, hoverRange: vscode.Range, wordText: string) => {
+    const maxDigits = numDigits(res?.suggestions?.length || 0);
+    const corrections = res?.suggestions?.map((suggest, index) => {
         const indexStr = ("" + index).padStart(maxDigits, '0')
         return <vscode.CompletionItem> {
             label: suggest,
