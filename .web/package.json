@@ -767,9 +767,8 @@
 				"command": "wt.notebook.search"
 			},
 			{
-				"title": "Writing Tool: Add Alias",
-				"command": "wt.notebook.addAlias",
-				"icon": "$(add)"
+				"title": "Writing Tool: Add Highlighted Text As Alias of Existing Note",
+				"command": "wt.notebook.addAliasToNote"
 			},
 			{
 				"title": "Writing Tool: Search For Note",
@@ -1048,6 +1047,14 @@
 			{
 				"title": "Writing Tool: Insert link to fragment",
 				"command": "wt.fragmentLinker.insertLink"
+			},
+			{
+				"title": "Writing Tool: Import Settings from Another Project",
+				"command": "wt.misc.importContextValues"
+			},
+			{
+				"title": "Writing Tool: Open Workspace Context Values",
+				"command": "wt.misc.openContextValues"
 			}
 		],
 		"menus": {

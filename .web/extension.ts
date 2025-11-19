@@ -119,23 +119,15 @@ async function loadExtensionWorkspace (
             console.log(report)
         };
 
+        ExtensionGlobals.workspace = workspace;
 
         const outline = new OutlineView(context, workspace);                // wt.outline
         await outline.init();
         report("Loaded outline");
 
-        
-        const synonyms = new SynonymViewProvider(context, workspace);       // wt.synonyms
         const todo = new TODOsView(context, workspace);                        // wt.todo
         await todo.init();
         report("Loaded TODO tree");
-
-        const wordWatcher = new WordWatcher(context, workspace);            // wt.wordWatcher
-        const proximity = new Proximity(context, workspace);
-        const textStyles = new TextStyles(context, workspace);            
-        const recycleBin = new RecyclingBinView(context, workspace);
-        await recycleBin.initialize();
-        report("Loaded recycling bin");
 
         const autocorrection = new Autocorrect(context, workspace);
         const personalDictionary = new PersonalDictionary(context, workspace);
@@ -143,10 +135,20 @@ async function loadExtensionWorkspace (
         report("Loaded spellchecker");
 
         const synonymsIntellisense = new Intellisense(context, workspace, personalDictionary, false);
+        await synonymsIntellisense.init();
         const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
         const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
         report("Loaded intellisense");
+        
+        const synonyms = new SynonymViewProvider(context, workspace);        // wt.synonyms
+        
+        const wordWatcher = new WordWatcher(context, workspace);            // wt.wordWatcher
+        const proximity = new Proximity(context, workspace);
+        const textStyles = new TextStyles(context, workspace);    
+        const recycleBin = new RecyclingBinView(context, workspace);        
+        await recycleBin.initialize();
+        report("Loaded recycling bin");
         
         const reloadWatcher = new ReloadWatcher(workspace, context);
         const scratchPad = new ScratchPadView(context, workspace);
@@ -183,9 +185,9 @@ async function loadExtensionWorkspace (
         const timedViews = new TimedView(context, [
             ['wt.notebook.tree', 'notebook', notebook],
             ['wt.todo', 'todo', todo],
+            ['wt.spellcheck', 'spellcheck', spellcheck],
             ['wt.wordWatcher', 'wordWatcher', wordWatcher],
             // ['wt.proximity', 'proximity', proximity],
-            ['wt.spellcheck', 'spellcheck', spellcheck],
             ['wt.very', 'very', veryIntellisense],
             ['wt.colors', 'colors', colorIntellisense],
             ['wt.textStyle', 'textStyle', textStyles],

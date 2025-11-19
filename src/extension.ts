@@ -48,6 +48,7 @@ import { FragmentLinker } from './miscTools/fragmentLinker';
 import { defaultProgress, getSectionedProgressReporter, progressOnViews, statFile } from './miscTools/help';
 import { WTNotebookSerializer } from './notebook/notebookApi/notebookSerializer';
 import { WTNotebookController } from './notebook/notebookApi/notebookController';
+import * as console from './miscTools/vsconsole';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();

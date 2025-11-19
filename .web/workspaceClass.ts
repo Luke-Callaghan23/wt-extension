@@ -50,16 +50,16 @@ export type DiskContextType = {
     "wt.reloadWatcher.openedTabs": TabPositions,
     "wt.tabStates.savedTabStates": SavedTabState,
     "wt.tabStates.latestTabState": string,
-    "wt.autocorrections.enabled": Autocorrect['enabled'];
-    "wt.autocorrections.corrections": Autocorrect['corrections'];
-    "wt.autocorrections.dontCorrect": Autocorrect['dontCorrect'];
-    "wt.autocorrections.exclusions": Autocorrect['exclusions'];
-    'wt.wtSearch.search.latestSearchBarValue': SearchBarView['latestSearchBarValue'];
-    'wt.wtSearch.search.latestReplaceBarValue': SearchBarView['latestReplaceBarValue'];
-    'wt.wtSearch.search.wholeWord': SearchBarView['wholeWord'];
-    'wt.wtSearch.search.regex': SearchBarView['regex'];
-    'wt.wtSearch.search.caseInsensitive': SearchBarView['caseInsensitive'];
-    'wt.wtSearch.search.matchTitles': SearchBarView['matchTitles'];
+    "wt.autocorrections.enabled": Autocorrect["enabled"];
+    "wt.autocorrections.corrections": Autocorrect["corrections"];
+    "wt.autocorrections.dontCorrect": Autocorrect["dontCorrect"];
+    "wt.autocorrections.exclusions": Autocorrect["exclusions"];
+    "wt.wtSearch.search.latestSearchBarValue": SearchBarView["latestSearchBarValue"];
+    "wt.wtSearch.search.latestReplaceBarValue": SearchBarView["latestReplaceBarValue"];
+    "wt.wtSearch.search.wholeWord": SearchBarView["wholeWord"];
+    "wt.wtSearch.search.regex": SearchBarView["regex"];
+    "wt.wtSearch.search.caseInsensitive": SearchBarView["caseInsensitive"];
+    "wt.wtSearch.search.matchTitles": SearchBarView["matchTitles"];
 }
 
 export class Workspace {
@@ -179,6 +179,15 @@ export class Workspace {
         return saveCache;
     }
 
+    static async replaceContextValuesOnDisk(contextValues: DiskContextType) {
+        ReloadWatcher.disableReloadWatch();
+        await vscode.workspace.fs.writeFile(
+            extension.ExtensionGlobals.workspace.contextValuesFilePath, 
+            Buff.from(JSON.stringify(contextValues), 'utf-8')
+        );
+        setTimeout(ReloadWatcher.enableReloadWatch, 1000);
+    }
+
     static async forcePackaging (): Promise<void>;
     static async forcePackaging <K extends keyof DiskContextType> (context: vscode.ExtensionContext, key: K, value: DiskContextType[K]): Promise<void>;
 
@@ -201,7 +210,6 @@ export class Workspace {
         }
         return Workspace.packageContextItems();
     }
-    
 
     
     // Simply initializes all the paths of necessary 
