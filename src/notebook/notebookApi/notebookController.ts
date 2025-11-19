@@ -330,7 +330,7 @@ export class WTNotebookController {
     //     the NotebookSerializer (during notebook.save())
     // And those changes are then reflected in the notebook document when it is 
     //     deserialized again and opened by VSCode
-    private async reopenNotebook (notebook: vscode.NotebookDocument) {
+    public async reopenNotebook (notebook: vscode.NotebookDocument) {
         await notebook.save();
 
         // Store the view column of this notebook so that it can be reopened
@@ -342,9 +342,14 @@ export class WTNotebookController {
             viewColumn: viewColumn,
         });
 
+        // Force the link provider to refresh links on all active text editors
+        // This is in case the reopenNotebook operation was called in response
+        //      to an alias text box being updated (links to aliases will need
+        //      to corresponse with actual aliases)
+        await this.notebook.forceLinkProviderRefresh();
+
         // Assign tab labels again
         return TabLabels.assignNamesForOpenTabs();
-
     }
 
     // TODO: if VSCode ever add the ability to modify notebook contents from the API replace `reopendNotebook`

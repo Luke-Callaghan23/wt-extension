@@ -123,7 +123,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     private context: vscode.ExtensionContext;
     private workspace: Workspace;
     private notebookPanel: NotebookPanel;
-    private controller: WTNotebookController;
+    public controller: WTNotebookController;
     private finishedInitialization: boolean;
 
     // Initialized with empty data

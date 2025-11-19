@@ -257,11 +257,35 @@ implements
         if (!noteSelect) return;
 
         const note = noteSelect.note;
-        return this.executeUpdateNoteAndWrite(async () => {
+        await this.executeUpdateNoteAndWrite(async () => {
             note.aliases.push(alias);
             return note.noteId;
         });
+
+        // The `executeUpdateNoteAndWrite` will handle the visual updates of the alias' blue highlighting,
+        //      but the ctrl+click document link will not exist yet
+        await this.forceLinkProviderRefresh();
+
+        // If the notebook for this note is currently opened, we'll want to reopen it so that the visual content
+        //      of the editor does not go out of sync with the notebook data on disk
+        // Search through all tabs for the notebook that was edited
+        let notebookDocument: vscode.NotebookDocument | null = null;
+        for (const tg of vscode.window.tabGroups.all) {
+            for (const tab of tg.tabs) {
+                if (tab.input instanceof vscode.TabInputNotebook) {
+                    if (tab.input.uri.fsPath.toLocaleLowerCase().endsWith(`${note.noteId}.wtnote`)) {
+                        notebookDocument = await vscode.workspace.openNotebookDocument(tab.input.uri);
+                    }
+                }
+            }
+        }
+
+        // If the notebook was found, then reopen
+        if (notebookDocument !== null) {
+            ExtensionGlobals.notebookSerializer.controller.reopenNotebook(notebookDocument);
+        }
     }
+
 
     getTreeItem(noteNode: NotebookPanelNote | NoteSection | BulletPoint): vscode.TreeItem {
         const editCommand: vscode.Command = {
@@ -397,6 +421,32 @@ implements
             .join('\n');
 
         return `${title}\n${subtitle}\n${descriptions}`;
+    }
+
+    async forceLinkProviderRefresh () {
+        // The best way to force re-indexing of link provider ranges is to do an edit on the document
+        // So, do a single character swap of the first character of the active document
+        if (vscode.window.activeTextEditor) {
+            const editor = vscode.window.activeTextEditor;
+
+            // NOTE: ONLY DO THIS FOR FRAGMENT FILES, NOT NOTEBOOKS
+            // Doing an edit like this on text editors inside of notebooks while the reopenNotebooks function is 
+            //      executing, will cause the wt -> markdown swap to break
+            // (Not sure why????)
+            if (!editor.document.uri.fsPath.endsWith('.wt')) {
+                return;
+            }
+
+            return editor.edit((eb) => {
+                const sel = new vscode.Range(new vscode.Position(0,0), new vscode.Position(1,0));
+                const repl = editor.document.getText(sel)
+                eb.replace(sel, repl);
+            }, {
+                // Disable the undo stop for this action so the user doesn't really notice this happens at all
+                undoStopAfter: false,
+                undoStopBefore: false
+            });
+        };
     }
 
     async provideDocumentLinks(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.DocumentLink[] | null> {
