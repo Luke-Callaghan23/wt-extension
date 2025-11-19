@@ -5,6 +5,7 @@ import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode } from '../../outlineProvider/fsNodes';
 import { DiskContextType } from '../../workspace/workspaceClass';
 import { showTextDocumentWithPreview } from '../../miscTools/help';
+import { TimedView } from '../../timedView';
 
 export function registerCommands(this: TODOsView) {
     this.context.subscriptions.push(vscode.commands.registerCommand('wt.todo.openFile', async (resourceUri: vscode.Uri, todoData: TODO) => {
@@ -129,4 +130,10 @@ export function registerCommands(this: TODOsView) {
             this.refresh(false, []);
         }
     }));
+
+    this.view.onDidChangeVisibility((ev) => {
+        if (ev.visible) {
+            return vscode.commands.executeCommand('wt.todo.refresh');
+        }
+    });
 }
