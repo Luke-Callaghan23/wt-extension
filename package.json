@@ -166,6 +166,11 @@
 					"type": "boolean",
 					"default": true
 				},
+				"wt.timedSearches.spacingHighlights": {
+					"description": "Enable highlighting for misalligned spacing (two spaces after a punctuation when you normally use one, or vice versa)",
+					"type": "boolean",
+					"default": true
+				},
 				"wt.reloadWatcher.enabled": {
 					"description": "Enable a file system watch on 'contextValues.json'.  This will monitor the file for any changes and ask the user to refresh their workspace if we detect a change made to the file that was not performed by the extension.  (Usually, this will occur if you do a git operation such as 'pull' or 'checkout', and is a nice hook to refresh the WTANIWE workspace internal variables to reflect that change).  IMPORTANT: WTANIWE will neglect to overwrite contextValues.json when it finds a version that is newer than the last version it wrote.  This is so the extension does not overwrite any manual edits.",
 					"type": "boolean",

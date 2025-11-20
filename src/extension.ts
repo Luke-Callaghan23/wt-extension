@@ -49,6 +49,7 @@ import { defaultProgress, getSectionedProgressReporter, progressOnViews, statFil
 import { WTNotebookSerializer } from './notebook/notebookApi/notebookSerializer';
 import { WTNotebookController } from './notebook/notebookApi/notebookController';
 import * as console from './miscTools/vsconsole';
+import { SpacingHighlights } from './miscTools/spacingHighlights';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -145,6 +146,7 @@ async function loadExtensionWorkspace (
         const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
         const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+        const spacingHighlights = new SpacingHighlights();
         report("Loaded intellisense");
 
         const importFS = new ImportFileSystemView(context, workspace);        // wt.import.fileSystem
@@ -196,6 +198,7 @@ async function loadExtensionWorkspace (
             ['wt.todo', 'todo', todo],
             ['wt.spellcheck', 'spellcheck', spellcheck],
             ['wt.wordWatcher', 'wordWatcher', wordWatcher],
+            ['wt.spacingHighlights', 'spacingHighlights', spacingHighlights],
             // ['wt.proximity', 'proximity', proximity],
             ['wt.very', 'very', veryIntellisense],  
             ['wt.colors', 'colors', colorIntellisense],
