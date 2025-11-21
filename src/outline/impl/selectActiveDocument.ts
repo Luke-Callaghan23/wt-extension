@@ -49,11 +49,7 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
     }
     else {
         const note = nodeOrNote as NotebookPanelNote;
-        ExtensionGlobals.notebookPanel.view.reveal(note, {
-            expand: true,
-            focus: false,
-            select: true
-        })
+        ExtensionGlobals.notebookPanel.webview.reveal(note);
     }
 
     TabLabels.assignNamesForOpenTabs();

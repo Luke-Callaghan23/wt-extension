@@ -129,10 +129,7 @@ export class Toolbar {
                     expand: true,
                     select: true,
                 });
-                case 'notebook': return ExtensionGlobals.notebookPanel.view.reveal(searchResult.node, {
-                    expand: true,
-                    select: true,
-                });
+                case 'notebook': return ExtensionGlobals.notebookPanel.webview.reveal(searchResult.node);
             }
         }));
         context.subscriptions.push(vscode.commands.registerCommand("wt.editor.revealFileExplorer", (tabUri: vscode.Uri) => {

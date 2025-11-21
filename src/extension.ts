@@ -50,6 +50,7 @@ import { WTNotebookSerializer } from './notebook/notebookApi/notebookSerializer'
 import { WTNotebookController } from './notebook/notebookApi/notebookController';
 import * as console from './miscTools/vsconsole';
 import { SpacingHighlights } from './miscTools/spacingHighlights';
+import { NotebookWebview } from './notebook/notebookWebview';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -171,7 +172,8 @@ async function loadExtensionWorkspace (
         const tabStates = new TabStates(context, workspace);
         report("Loaded tab groups");
 
-        const notebook = new NotebookPanel(workspace, context, ExtensionGlobals.notebookSerializer);
+        const notebookWebview = new NotebookWebview(context, workspace);
+        const notebook = new NotebookPanel(workspace, context, ExtensionGlobals.notebookSerializer, notebookWebview);
         await notebook.initialize();
         const notebookController = new WTNotebookController(context, workspace, notebook, ExtensionGlobals.notebookSerializer);
         await ExtensionGlobals.notebookSerializer.init(context, workspace, notebook, notebookController);

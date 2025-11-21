@@ -8,6 +8,7 @@ import { NotebookPanel } from '../notebook/notebookPanel';
 import { ExtensionGlobals } from '../extension';
 import { SearchBarView } from '../search/searchBarView';
 import { SearchResultsView } from '../search/searchResultsView';
+import { NotebookWebview } from '../notebook/notebookWebview';
 
 export async function enter (this: CoderModer): Promise<void> {
 
@@ -61,8 +62,8 @@ export async function enter (this: CoderModer): Promise<void> {
         vscode.commands.executeCommand('workbench.view.explorer');
     }
 
-    const notebookView: NotebookPanel = ExtensionGlobals.notebookPanel;
-    if (notebookView.view.visible) {
+    const notebookView: NotebookWebview = ExtensionGlobals.notebookPanel.webview;
+    if (notebookView.visible()) {
         vscode.commands.executeCommand('workbench.action.output.toggleOutput');
         this.openedOutput = true;
     }

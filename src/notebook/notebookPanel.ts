@@ -13,6 +13,7 @@ import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirect
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
 import { ExtensionGlobals } from '../extension';
+import { NotebookWebview } from './notebookWebview';
 
 
 export interface NotebookPanelNote {
@@ -49,7 +50,6 @@ export interface NoteMatch {
 
 export class NotebookPanel 
 implements 
-    vscode.TreeDataProvider<NotebookPanelNote | NoteSection | BulletPoint>, 
     vscode.HoverProvider, Timed, Renamable<NotebookPanelNote>,
     vscode.ReferenceProvider,
     vscode.RenameProvider,
@@ -69,11 +69,11 @@ implements
 
     public notebook: NotebookPanelNote[];
     protected notebookFolderPath: vscode.Uri;
-    public view: vscode.TreeView<NotebookPanelNote | NoteSection | BulletPoint>;
     constructor (
         public workspace: Workspace,
         public context: vscode.ExtensionContext,
-        protected serializer: WTNotebookSerializer
+        protected serializer: WTNotebookSerializer,
+        public webview: NotebookWebview,
     ) {
         this.notebookFolderPath = workspace.notebookFolder;
         
@@ -84,7 +84,6 @@ implements
 
         // Read notebook from disk
         this.notebook = []; 
-        this.view = {} as vscode.TreeView<NotebookPanelNote | NoteSection | BulletPoint>
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
 
         this.context.subscriptions.push(notebookDecorations);
@@ -113,12 +112,6 @@ implements
     async initialize () {
         this.notebook = await this.serializer.deserializeNotebookPanel(this.notebookFolderPath);
         this.titlesAndAliasesRegex = this.getTitlesAndAliasesRegex();
-        this.view = vscode.window.createTreeView(`wt.notebook.tree`, {
-            treeDataProvider: this,
-            canSelectMany: true,
-            showCollapseAll: true,
-        });
-        this.context.subscriptions.push(this.view);
         this.context.subscriptions.push(vscode.languages.registerHoverProvider({
             language: 'wt',
         }, this));
@@ -146,6 +139,10 @@ implements
         this.context.subscriptions.push(vscode.languages.registerRenameProvider({
             language: "wtNote",
         }, this));
+
+        this.context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((ev) => {
+            this.checkSelection(ev.textEditor.document, ev.textEditor.selection);
+        }, this))
 
         this.registerCommands();
     }
@@ -385,6 +382,15 @@ implements
         }
     }
 
+    async checkSelection (document: vscode.TextDocument, selection: vscode.Selection) {
+        const position = selection.active;
+        const documentMatches = await this.getDocumentMatch(document);
+        if (!documentMatches) return null;
+        const matchedNote = documentMatches.find(match => match.range.contains(position));
+        if (!matchedNote) return null;
+        this.webview.updateViewForNote(matchedNote.note.noteId, this.getMarkdownForNote(matchedNote.note));
+    }
+
     async provideHover(
         document: vscode.TextDocument, 
         position: vscode.Position, 
@@ -395,30 +401,25 @@ implements
 
         const matchedNote = documentMatches.find(match => match.range.contains(position));
         if (!matchedNote) return null;
-        if (this.view.visible) {
-            this.view.reveal(matchedNote.note, {
-                select: true,
-                expand: true,
-            }).then(()=>{}, error => {});
-        }
+        this.webview.updateViewForNote(matchedNote.note.noteId, this.getMarkdownForNote(matchedNote.note));
         return null;
     }
     
     getMarkdownForNote (note: NotebookPanelNote): string {
         const aliasesString = note.aliases.join(', ');
-        const title = `## ${note.title}`;
+        const title = `# ${note.title}`;
         const subtitle = aliasesString.length !== 0
-            ? `#### (*${aliasesString}*)\n`
+            ? `## (*${aliasesString}*)\n***\n`
             : '';
 
         const descriptions = note.sections
             .filter(section => section.header.toLocaleLowerCase() !== 'aliases' && section.header.toLocaleLowerCase() !== 'alias')
-            .map(section => `- ${capitalize(section.header)}\n` + (
+            .map(section => `# ${capitalize(section.header)}\n` + (
                 section.bullets.map(
-                    bullet => `  - ${bullet.text}`
+                    bullet => `- ${bullet.text}`
                 ).join('\n')
             ))
-            .join('\n');
+            .join('\n\n***\n\n');
 
         return `${title}\n${subtitle}\n${descriptions}`;
     }
@@ -456,13 +457,6 @@ implements
         const documentLinks: vscode.DocumentLink[] = [];
         for (const match of documentMatches) {
             const matchedNote = match.note;
-        
-            if (this.view.visible) {
-                this.view.reveal(matchedNote, {
-                    select: true,
-                    expand: true,
-                }).then(()=>{}, error => {});
-            }
         
             const fileName = `${matchedNote.noteId}.wtnote`;
             const filePath = vscode.Uri.joinPath(this.notebookFolderPath, fileName);

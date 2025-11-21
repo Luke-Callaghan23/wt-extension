@@ -7,8 +7,6 @@ export class SpacingHighlights implements Timed {
     constructor () { this.enabled = true; }
     getUpdatesAreVisible(): boolean { return this.enabled; }
 
-
-    
     private static incorrectInnerSentenceSpaceHighlight = vscode.window.createTextEditorDecorationType({
         backgroundColor: "rgba(128,32,32,0.6)",
     });

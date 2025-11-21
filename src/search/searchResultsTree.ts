@@ -153,11 +153,6 @@ export class SearchResultsTree
             if (nodeResult.node === null || nodeResult.source === null) return;
 
             if (nodeResult.source === 'notebook') {
-                extension.ExtensionGlobals.notebookPanel.view.reveal(nodeResult.node, {
-                    expand: true,
-                    focus: false,
-                    select: true
-                });
                 return;
             }
 
