@@ -27,7 +27,7 @@ export type DiskContextType = {
     "wt.wordWatcher.enabled": boolean,
     "wt.wordWatcher.watchedWords": string[],
     "wt.wordWatcher.disabledWatchedWords": string[],
-    "wt.wordWatcher.unwatchedWords": string[],
+    "wt.wordWatcher.excludedWords": string[],
     "wt.wordWatcher.rgbaColors": {
         [index: string]: string;
     },

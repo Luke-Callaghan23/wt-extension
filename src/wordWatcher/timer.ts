@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import * as extension from './../extension';
 import * as console from '../miscTools/vsconsole';
-import { WordEnrty, WordWatcher } from './wordWatcher';
+import { WordEntry, WordWatcher } from './wordWatcher';
 import { clamp, hexToRgb } from '../miscTools/help';
 import { addWordToWatchedWords } from './engine';
 import { TimedView } from '../timedView';
@@ -33,7 +33,7 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
     let watchedAndEnabled: string[];
     let regexString: string;
     let regex: RegExp;
-    let unwatchedRegeces: RegExp[];
+    let excludedRegeces: RegExp[];
     let watchedRegeces: {uri: string, reg: RegExp }[];
 
     if (this.wasUpdated || !this.lastCalculatedRegeces) {
@@ -44,7 +44,7 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
             watchedAndEnabled = [];
             regexString = 'a^';
             regex = /a^/gi;
-            unwatchedRegeces = [/a^/gi];
+            excludedRegeces = [/a^/gi];
             watchedRegeces = [];
         }
         else {
@@ -60,14 +60,14 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
             // Bookend the main regex with word separators
             regexString = extension.wordSeparator + mainRegex + extension.wordSeparator;
             regex = new RegExp(regexString, 'gi');
-            unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${extension.wordSeparator}${unwatched}${extension.wordSeparator}`, 'i'));
+            excludedRegeces = this.excludedWords.map(excluded => new RegExp(`${extension.wordSeparator}${excluded}${extension.wordSeparator}`, 'i'));
             watchedRegeces = this.watchedWords.map(watched => ({ uri: watched, reg: new RegExp(`${extension.wordSeparator}${watched}${extension.wordSeparator}`, 'i') }));
     
             this.lastCalculatedRegeces = {
                 watchedAndEnabled,
                 regexString,
                 regex,
-                unwatchedRegeces,
+                excludedRegeces,
                 watchedRegeces
             };
         }
@@ -76,7 +76,7 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
         watchedAndEnabled = this.lastCalculatedRegeces.watchedAndEnabled;
         regexString = this.lastCalculatedRegeces.regexString;
         regex = this.lastCalculatedRegeces.regex;
-        unwatchedRegeces = this.lastCalculatedRegeces.unwatchedRegeces;
+        excludedRegeces = this.lastCalculatedRegeces.excludedRegeces;
         watchedRegeces = this.lastCalculatedRegeces.watchedRegeces;
     }
     this.wasUpdated = false;
@@ -117,8 +117,8 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
             catch (err: any) {}
         }
 
-        // Skip if the match also matches an unwatched word
-        if (unwatchedRegeces.find(re => re.test(matchReal[0]))) {
+        // Skip if the match also matches an excluded word
+        if (excludedRegeces.find(re => re.test(matchReal[0]))) {
             continue;
         }
 
@@ -204,8 +204,8 @@ const defaultColorObj: Color = {
     r: 8,
     g: 161
 };
-export async function changeColor(this: WordWatcher, word: WordEnrty) {
-    const colorMap = this.wordColors[word.uri];
+export async function changeColor(this: WordWatcher, word: string) {
+    const colorMap = this.wordColors[word];
     const currentColor: string = (colorMap || { rgbaString: defaultColor }).rgbaString;
     const currentColorObj = parseForColor(currentColor) || defaultColorObj;
 
@@ -218,7 +218,7 @@ export async function changeColor(this: WordWatcher, word: WordEnrty) {
         // Insert a color entry into the color map
         const rgbaString = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`
         const insert: ColorEntry = { rgbaString: rgbaString, decoratorsIndex: index };
-        this.wordColors[word.uri] = insert;
+        this.wordColors[word] = insert;
     
         // Update context
         const context = convertWordColorsToContextItem(this.wordColors);
@@ -230,20 +230,20 @@ export async function changeColor(this: WordWatcher, word: WordEnrty) {
         }
     }
 
-    const wordRegex = new RegExp(word.uri);
+    const wordRegex = new RegExp(word);
 
     let exampleWord: string;
     while (true) {
         const response: string | undefined = await vscode.window.showInputBox({
             ignoreFocusOut: false,
-            placeHolder: word.uri,
+            placeHolder: word,
             title: "Example Word",
             prompt: "Please provide an example word that passes this passes this regex so you can see the colors in action... (For instance: WW='[\w]+ly', you enter='quickly'"
         });
         if (!response) return;
 
         if (!wordRegex.test(response)) {
-            vscode.window.showErrorMessage(`'${response}' did not pass the regex '${word.uri}', please try again!`);
+            vscode.window.showErrorMessage(`'${response}' did not pass the regex '${word}', please try again!`);
             continue;
         }
         exampleWord = response;
@@ -255,7 +255,7 @@ export async function changeColor(this: WordWatcher, word: WordEnrty) {
     while (true) {
         let latestColor: Color | null = null;
         const colorsHistory: Color[] = [];
-        for await (const color of this.colorPick(word.uri, exampleWord, currentColor)) {
+        for await (const color of this.colorPick(word, exampleWord, currentColor)) {
             latestColor = color;
             if (color === null) continue;
     
@@ -332,12 +332,10 @@ export function convertWordColorsToContextItem(wordColors: { [index: string]: Co
     return context;
 }
 
-export async function changePattern (this: WordWatcher, word: WordEnrty) {
-    if (word.type !== 'watchedWord') return;
-    
+export async function changePattern (this: WordWatcher, word: string) {
     // Get the index of the selected watched word in the watched word in the array
     const index = this.watchedWords.findIndex(ww => {
-        return ww === word.uri.toString()
+        return ww === word.toString()
     });
     if (index === -1) return;
 
@@ -345,8 +343,8 @@ export async function changePattern (this: WordWatcher, word: WordEnrty) {
     const newPattern = await this.addWord({
         addWord: false,
         watched: true,
-        placeholder: word.uri,
-        value: word.uri
+        placeholder: word,
+        value: word
     });
     if (newPattern === null) return;
 

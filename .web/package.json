@@ -562,7 +562,7 @@
 				"icon": "$(plus)"
 			},
 			{
-				"command": "wt.wordWatcher.newUnwatchedWord",
+				"command": "wt.wordWatcher.newExcludedWord",
 				"title": "Writing Tool: Prevent Watching Word",
 				"icon": "$(dash)"
 			},
@@ -571,8 +571,8 @@
 				"title": "Writing Tool: Delete Watched Word"
 			},
 			{
-				"command": "wt.wordWatcher.deleteUnwatchedWord",
-				"title": "Writing Tool: Delete Unwatched Word"
+				"command": "wt.wordWatcher.deleteExcludedWord",
+				"title": "Writing Tool: Delete Excluded Word"
 			},
 			{
 				"command": "wt.wordWatcher.jumpNextInstanceOf",
@@ -991,8 +991,8 @@
 				"command": "wt.wordWatcher.commandPalette.deleteWord"
 			},
 			{
-				"command": "wt.wordWatcher.commandPalette.deleteUnwatchedWord",
-				"title": "Writing Tool: Word Watcher: Delete Unwatched Word"
+				"command": "wt.wordWatcher.commandPalette.deleteExcludedWord",
+				"title": "Writing Tool: Word Watcher: Delete Excluded Word"
 			},
 			{
 				"command": "wt.autocorrections.wordReplaced",
@@ -1234,7 +1234,7 @@
 					"when": "false"
 				},
 				{
-					"command": "wt.wordWatcher.deleteUnwatchedWord",
+					"command": "wt.wordWatcher.deleteExcludedWord",
 					"when": "false"
 				},
 				{
@@ -1511,7 +1511,7 @@
 					"group": "navigation@1"
 				},
 				{
-					"command": "wt.wordWatcher.newUnwatchedWord",
+					"command": "wt.wordWatcher.newExcludedWord",
 					"when": "wt.valid && view == wt.wordWatcher",
 					"group": "navigation@2"
 				},
@@ -1659,8 +1659,8 @@
 					"when": "view == wt.wordWatcher && viewItem == watchedWord_disabled"
 				},
 				{
-					"command": "wt.wordWatcher.deleteUnwatchedWord",
-					"when": "view == wt.wordWatcher && viewItem == unwatchedWord"
+					"command": "wt.wordWatcher.deleteExcludedWord",
+					"when": "view == wt.wordWatcher && viewItem == excludedWord"
 				},
 				{
 					"command": "wt.import.fileExplorer.removeResource",
@@ -1907,11 +1907,11 @@
 				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == watchedWord)"
 			},
 			{
-				"command": "wt.wordWatcher.deleteUnwatchedWord",
+				"command": "wt.wordWatcher.deleteExcludedWord",
 				"win": "delete",
 				"linux": "delete",
 				"mac": "delete",
-				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == unwatchedWord)"
+				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.wordWatcher && viewItem == excludedWord)"
 			},
 			{
 				"command": "wt.synonyms.searchWord",

@@ -122,7 +122,7 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs" 
             vscode.commands.executeCommand("wt.wordWatcher.refresh", {
                 watchedWords: contextValues['wt.wordWatcher.watchedWords'],
                 disabledWatchedWords: contextValues['wt.wordWatcher.disabledWatchedWords'],
-                unwatchedWords: contextValues['wt.wordWatcher.unwatchedWords'],
+                excludedWords: contextValues['wt.wordWatcher.excludedWords'],
                 rgbaColors: contextValues['wt.wordWatcher.rgbaColors'],
             }),
             vscode.commands.executeCommand("wt.synonyms.refresh", contextValues['wt.synonyms.synonyms']),

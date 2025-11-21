@@ -89,7 +89,7 @@ export async function createWorkspace (
             "wt.wordWatcher.disabledWatchedWords": [],
             "wt.wordWatcher.enabled": true,
             "wt.wordWatcher.rgbaColors": {},
-            "wt.wordWatcher.unwatchedWords": [],
+            "wt.wordWatcher.excludedWords": [],
             "wt.wordWatcher.watchedWords": [],
             "wt.notebook.dontAskDeleteAppearance": false,
             "wt.notebook.dontAskDeleteDescription": false,

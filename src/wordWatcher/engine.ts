@@ -8,10 +8,11 @@ export function addOrDeleteTargetedWord (
     this: WordWatcher,
     operation: 'add' | 'delete' | 'replace',
     target: string,
-    contextItem: 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.disabledWatchedWords',
+    contextItem: 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.excludedWords' | 'wt.wordWatcher.disabledWatchedWords',
     replaceIndex?: number,
     preventRefresh: boolean = false,
 ) {
+
     if (replaceIndex === undefined || replaceIndex === null) {
         replaceIndex = -1;
     }
@@ -21,8 +22,8 @@ export function addOrDeleteTargetedWord (
     if (contextItem === 'wt.wordWatcher.watchedWords') {
         targetArray = this.watchedWords;
     }
-    else if (contextItem === 'wt.wordWatcher.unwatchedWords') {
-        targetArray = this.unwatchedWords;
+    else if (contextItem === 'wt.wordWatcher.excludedWords') {
+        targetArray = this.excludedWords;
     }
     else if (contextItem === 'wt.wordWatcher.disabledWatchedWords') {
         targetArray = this.disabledWatchedWords;
@@ -61,9 +62,16 @@ export function addOrDeleteTargetedWord (
     for (const editor of vscode.window.visibleTextEditors) {
         this.update(editor, TimedView.findCommentedRanges(editor));
     }
-
+    
     if (!preventRefresh) {
-        this.refresh();
+        this.refresh(
+            operation === 'add' && contextItem === 'wt.wordWatcher.excludedWords'
+                ? target 
+                : undefined
+        );
+    }
+    else {
+        this.tree = this.initializeTree();
     }
 }
 
@@ -118,7 +126,7 @@ export async function addWordToWatchedWords (this: WordWatcher, options?: {
 
         const targetWords = watchedWord
             ? this.watchedWords
-            : this.unwatchedWords;
+            : this.excludedWords;
 
         // Check if the word is already in the word list
         if (targetWords.find(existing => existing === response)) {
@@ -144,7 +152,7 @@ export async function addWordToWatchedWords (this: WordWatcher, options?: {
 
         if (options.addWord) {
             // If the word is valid and doesn't already exist in the word list, then continue adding the words
-            this.updateWords('add', response, watchedWord ? 'wt.wordWatcher.watchedWords' : 'wt.wordWatcher.unwatchedWords');
+            this.updateWords('add', response, watchedWord ? 'wt.wordWatcher.watchedWords' : 'wt.wordWatcher.excludedWords');
         }
         return response;
     }
@@ -173,14 +181,14 @@ export async function jumpNextInstanceOfWord (this: WordWatcher, word: string) {
     const regEx = new RegExp(`${extension.wordSeparator}${word}${extension.wordSeparator}`, 'gi');
 
     // If there were no updates to any of the watched/uwatched words since the last time
-    //      they were calculated, then use the unwatchedRegeces RegExp array from there
-    let unwatchedRegeces: RegExp[];
+    //      they were calculated, then use the excludedRegeces RegExp array from there
+    let excludedRegeces: RegExp[];
     if (!(this.wasUpdated || !this.lastCalculatedRegeces)) {
-        unwatchedRegeces = this.lastCalculatedRegeces.unwatchedRegeces;
+        excludedRegeces = this.lastCalculatedRegeces.excludedRegeces;
     }
     else {
-        // Otherwise, calculate the array of unwatched regeces
-        unwatchedRegeces = this.unwatchedWords.map(unwatched => new RegExp(`${extension.wordSeparator}${unwatched}${extension.wordSeparator}`, 'gi'));
+        // Otherwise, calculate the array of excluded regeces
+        excludedRegeces = this.excludedWords.map(excluded => new RegExp(`${extension.wordSeparator}${excluded}${extension.wordSeparator}`, 'gi'));
     }
     
     const text = activeEditor.document.getText();
@@ -193,8 +201,8 @@ export async function jumpNextInstanceOfWord (this: WordWatcher, word: string) {
         while ((match = regEx.exec(text)) && matchIndex < this.lastJumpInstance) {
             const matchReal: RegExpExecArray = match;
 
-            // Skip if the match also matches an unwatched word
-            if (unwatchedRegeces.find(re => re.test(matchReal[0]))) {
+            // Skip if the match also matches an excluded word
+            if (excludedRegeces.find(re => re.test(matchReal[0]))) {
                 continue;
             }
 

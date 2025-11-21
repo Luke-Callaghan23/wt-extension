@@ -6,18 +6,34 @@ import { Packageable, Packager } from '../packageable';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
 import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, changePattern, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString, defaultWatchedWordDecoration } from './timer';
-import { getChildren, getTreeItem } from './tree';
+import { getChildren, getTreeItem, getParent } from './tree';
 import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';
-import { hexToRgb } from '../miscTools/help';
+import { __, hexToRgb } from '../miscTools/help';
 import { gatherPaths, commonWordsPrompt } from './commonWords';
 import { colorPick } from './colorPick';
+import { v4 as uuid } from 'uuid';
 
-export interface WordEnrty {
-	uri: string;
-	type: 'wordSearch' | 'wordContainer' | 'unwatchedWordContainer' | 'watchedWord' | 'unwatchedWord';
-}
+type WordSearchEntry = {
+	id: 'wordSearch';
+	type: 'wordSearch';
+};
 
-export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packageable<'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.disabledWatchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.rgbaColors'>, Timed {
+type WordWatchedWordEntry = {
+    id: string;
+    word: string;
+    type: 'watchedWord';
+    exclusions: WordExcludedWordEntry[];
+};
+
+type WordExcludedWordEntry = {
+    id: string;
+    exclusion: string;
+    type: 'excludedWord';
+};
+
+export type WordEntry = WordSearchEntry | WordWatchedWordEntry | WordExcludedWordEntry; 
+
+export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packageable<'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.disabledWatchedWords' | 'wt.wordWatcher.excludedWords' | 'wt.wordWatcher.rgbaColors'>, Timed {
     
     
     enabled: boolean;
@@ -34,23 +50,64 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
 
     // Words that we *don't* want to watch out for, but may be caught by a 
     //      pattern in watchedWords
-    public unwatchedWords: string[];
+    public excludedWords: string[];
 
     public wordColors: { [index: string]: ColorEntry };
     public allDecorationTypes: vscode.TextEditorDecorationType[];
 
-    private view: vscode.TreeView<WordEnrty>;
+    protected view: vscode.TreeView<WordEntry>;
 
-    
+    protected tree?: WordWatchedWordEntry[];
+
     // Refresh the word tree
-    private _onDidChangeTreeData: vscode.EventEmitter<WordEnrty | undefined> = new vscode.EventEmitter<WordEnrty | undefined>();
-	readonly onDidChangeTreeData: vscode.Event<WordEnrty | undefined> = this._onDidChangeTreeData.event;
-    refresh(): void {
+    private _onDidChangeTreeData: vscode.EventEmitter<WordEntry | undefined> = new vscode.EventEmitter<WordEntry | undefined>();
+	readonly onDidChangeTreeData: vscode.Event<WordEntry | undefined> = this._onDidChangeTreeData.event;
+    
+    initializeTree (): WordWatchedWordEntry[] {
+        return this.watchedWords.map(watched => {
+            return {
+                type: "watchedWord",
+                id: uuid(),
+                word: watched,
+                exclusions: this.excludedWords.map(excluded => {
+                    if (new RegExp(watched).test(excluded)) {
+                        return __<WordExcludedWordEntry>({
+                            type: "excludedWord",
+                            exclusion: excluded,
+                            id: uuid()
+                        });
+                    }
+                    else return [];
+                }).flat()
+            }
+        });
+    }
+    
+    refresh(revealExcluded?: string): void {
+
+        this.tree = this.initializeTree();
         this._onDidChangeTreeData.fire(undefined);
+
+        // If the refresh function was provided an excluded word to reveal
+        //      then iterate over every word and its exclusions and reveal
+        //      any exclusion whose text matches the provided exclusion
+        setTimeout(() => {
+            this.tree?.forEach(wordEntry => {
+                wordEntry.exclusions.forEach(exclusionEntry => {
+                    if (exclusionEntry.exclusion === revealExcluded) {
+                        this.view.reveal(exclusionEntry, {
+                            expand: true,
+                            select: true,
+                        });
+                    }
+                });
+            });
+        }, 100);
 	}
 
     getChildren = getChildren;
     getTreeItem = getTreeItem;
+    getParent = getParent;
     gatherCommonWords = gatherPaths;
     commonWordsPrompt = commonWordsPrompt;
     colorPick = colorPick;
@@ -72,7 +129,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         watchedAndEnabled: string[],
         regexString: string,
         regex: RegExp,
-        unwatchedRegeces: RegExp[],
+        excludedRegeces: RegExp[],
         watchedRegeces: { uri: string, reg: RegExp }[]
     } | undefined;
 
@@ -86,16 +143,18 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         // Read all the words arrays
         const words: string[] | undefined = context.workspaceState.get('wt.wordWatcher.watchedWords');
         const disabledWords: string[] | undefined = context.workspaceState.get('wt.wordWatcher.disabledWatchedWords');
-        const unwatched: string[] | undefined = context.workspaceState.get('wt.wordWatcher.unwatchedWords');
+        const excluded: string[] | undefined = context.workspaceState.get('wt.wordWatcher.excludedWords') 
+            // Older versions of contextValues.json might use the previous context value
+            || context.workspaceState.get('wt.wordWatcher.unwatchedWords');
 
         // Initial words are 'very' and 'any
         this.watchedWords = words ?? [ 'very', '[a-zA-Z]+ly' ];
         this.disabledWatchedWords = disabledWords ?? [];
-        this.unwatchedWords = unwatched ?? [];
+        this.excludedWords = excluded ?? [];
+        this.tree = this.initializeTree();
 
         // Will later be modified by TimedView
         this.enabled = true;
-
         
         this.allDecorationTypes = [ defaultDecoration ];
         this.wordColors = {};
@@ -129,7 +188,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
 
     registerCommands () {
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.addWord({ watched: true })));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newUnwatchedWord', () => this.addWord({
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newExcludedWord', () => this.addWord({
             watched: false,
         })));
         
@@ -143,17 +202,17 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             }, 'Okay');
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.deleteWord', (resource: WordEnrty) => {
-            this.updateWords('delete', resource.uri, 'wt.wordWatcher.watchedWords');
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.deleteWord', (resource: WordWatchedWordEntry) => {
+            this.updateWords('delete', resource.word, 'wt.wordWatcher.watchedWords');
         }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.deleteUnwatchedWord', (resource: WordEnrty) => {
-            this.updateWords('delete', resource.uri, 'wt.wordWatcher.unwatchedWords');
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.deleteExcludedWord', (resource: WordExcludedWordEntry) => {
+            this.updateWords('delete', resource.exclusion, 'wt.wordWatcher.excludedWords');
         }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.disableWatchedWord', (resource: WordEnrty) => {
-            this.updateWords('add', resource.uri, 'wt.wordWatcher.disabledWatchedWords');
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.disableWatchedWord', (resource: WordWatchedWordEntry) => {
+            this.updateWords('add', resource.word, 'wt.wordWatcher.disabledWatchedWords');
         }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.enableWatchedWord', (resource: WordEnrty) => {
-            this.updateWords('delete', resource.uri, 'wt.wordWatcher.disabledWatchedWords')
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.enableWatchedWord', (resource: WordWatchedWordEntry) => {
+            this.updateWords('delete', resource.word, 'wt.wordWatcher.disabledWatchedWords')
         }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.toggleWatchedWord', (word: string) => {
             const operation = this.disabledWatchedWords.includes(word)
@@ -161,11 +220,11 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
                 : 'add';
             this.updateWords(operation, word, 'wt.wordWatcher.disabledWatchedWords')
         }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.changeColor', (resource: WordEnrty) => {
-            this.changeColor(resource);
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.changeColor', (resource: WordWatchedWordEntry) => {
+            this.changeColor(resource.word);
         }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.changePattern', (resource: WordEnrty) => {
-            this.changePattern(resource);
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.changePattern', (resource: WordWatchedWordEntry) => {
+            this.changePattern(resource.word);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.addCommonWords', () => {
@@ -175,13 +234,13 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.refresh", (refreshWith: {
             watchedWords: string[],
             disabledWatchedWords: string[],
-            unwatchedWords: string[],
+            excludedWords: string[],
             rgbaColors: { [index: string]: string },
         }) => {
 
             this.watchedWords = refreshWith.watchedWords;
             this.disabledWatchedWords = refreshWith.disabledWatchedWords;
-            this.unwatchedWords = refreshWith.unwatchedWords;
+            this.excludedWords = refreshWith.excludedWords;
 
             const contextColors = refreshWith.rgbaColors;
             this.watchedWords.forEach(watched => {
@@ -207,19 +266,13 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.commandPalette.changeColor", async () => {
             const change = await this.selectWatchedWord();
             if (!change) return null;
-            return this.changeColor({
-                type: 'watchedWord',
-                uri: change
-            });
+            return this.changeColor(change);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.commandPalette.changePattern", async () => {
             const change = await this.selectWatchedWord();
             if (!change) return null;
-            return this.changePattern({
-                type: 'watchedWord',
-                uri: change
-            });
+            return this.changePattern(change);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.commandPalette.deleteWord", async () => {
@@ -228,10 +281,10 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
             return this.updateWords('delete', del, 'wt.wordWatcher.watchedWords');
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.commandPalette.deleteUnwatchedWord", async () => {
-            const del = await this.selectUnwatchedWord();
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.commandPalette.deleteExcludedWord", async () => {
+            const del = await this.selectExcludedWord();
             if (!del) return null;
-            return this.updateWords('delete', del, 'wt.wordWatcher.unwatchedWords');
+            return this.updateWords('delete', del, 'wt.wordWatcher.excludedWords');
         }));
 
 	}
@@ -256,12 +309,12 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         return word.word;
     }
 
-    private async selectUnwatchedWord () {
+    private async selectExcludedWord () {
         interface WordEntryItem extends vscode.QuickPickItem {
             label: string;
             word: string;
         }
-        const wei: WordEntryItem[] = this.unwatchedWords.map(word => ({
+        const wei: WordEntryItem[] = this.excludedWords.map(word => ({
             label: `$(edit) ${word}`,
             word: word,
         }));
@@ -269,17 +322,17 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEnrty>, Packagea
         const word = await vscode.window.showQuickPick(wei, {
             canPickMany: false,
             ignoreFocusOut: false,
-            title: "Select an unwatched word"
+            title: "Select an excluded word"
         });
         if (!word) return null;
         return word.word;
     }
 
-    getPackageItems(packager: Packager<'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.disabledWatchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.rgbaColors'>): Pick<DiskContextType, 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.disabledWatchedWords' | 'wt.wordWatcher.unwatchedWords' | 'wt.wordWatcher.rgbaColors'> {
+    getPackageItems(packager: Packager<'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.disabledWatchedWords' | 'wt.wordWatcher.excludedWords' | 'wt.wordWatcher.rgbaColors'>): Pick<DiskContextType, 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.disabledWatchedWords' | 'wt.wordWatcher.excludedWords' | 'wt.wordWatcher.rgbaColors'> {
         return packager({
             'wt.wordWatcher.watchedWords': this.watchedWords,
             'wt.wordWatcher.disabledWatchedWords': this.disabledWatchedWords,
-            'wt.wordWatcher.unwatchedWords': this.unwatchedWords,
+            'wt.wordWatcher.excludedWords': this.excludedWords,
             'wt.wordWatcher.rgbaColors': convertWordColorsToContextItem(this.wordColors)
         })
     }
