@@ -75,84 +75,73 @@ export function addOrDeleteTargetedWord (
     }
 }
 
-export async function addWordToWatchedWords (this: WordWatcher, options?: {
-    watched?: boolean,          // default true
-    addWord?: boolean           // default true
-    placeholder?: string,       // default 'very'
-    value?: string,             // default undefined
+export async function addWordToWatchedWords (this: WordWatcher, options: {
+    watchedOrExcluded: 'watched' | 'excluded',
+    insertOrReplace: 'insert'
+} | {
+    watchedOrExcluded: 'watched',
+    insertOrReplace: 'replace',
+    placeholder: string,
+    value: string,
 }): Promise<string | null> {
-    options = options || {};
-    if (options.watched === undefined) {
-        options.watched = true;
-    }
-    if (options.addWord === undefined) {
-        options.addWord = true;
-    }
-    if (options.placeholder === undefined) {
-        options.placeholder = 'very';
-    }
 
-    const watchedWord = options.watched;
-    const not = !watchedWord ? 'not' : '';
-    const un = !watchedWord ? 'un-' : '';
     while (true) {
-        const response = await vscode.window.showInputBox({
-            placeHolder: options.placeholder,
-            value: options.value,
-            ignoreFocusOut: false,
-            prompt: `Enter the word or word pattern that you would like to ${not} watch out for (note: only alphabetical characters are allowed inside of watched words)`,
-            title: 'Add word'
-        });
+        
+        let response: string | undefined;
+        if (options.insertOrReplace === 'replace') {
+            response = await vscode.window.showInputBox({
+                placeHolder: options.placeholder,
+                value: options.value,
+                ignoreFocusOut: false,
+                prompt: `Enter the replacement value for '${options.value}' (NOTE: this must be parsable as a regex!)`,
+                title: 'Replace word'
+            });
+        }
+        else if (options.watchedOrExcluded === 'watched') {
+            response = await vscode.window.showInputBox({
+                ignoreFocusOut: false,
+                prompt: `Enter the word or word pattern that you would like to highlight in text (NOTE: this must be parsable as a regex!)`,
+                title: 'Add Watched Word'
+            });
+        }
+        else if (options.watchedOrExcluded === 'excluded') {
+            response = await vscode.window.showInputBox({
+                ignoreFocusOut: false,
+                prompt: `Enter the word you'd like to stop watching`,
+                title: 'Add Word Exclusion'
+            });
+        }
         if (!response) return null;
 
-        // Regex for filtering out responses that do not follow the regex subset for specifying watched words
-        // Subset onyl includes: groupings '()', sets '[]', one or more '+', zero or more '*', and alphabetical characters
-        const allowCharacters = /^[a-zA-Z\(\)\[\]\*\+\?-\s|,:&$!@#%_=;'"/><.^ `]+$/;
-        // Regex for matching any escaped non-alphabetical character
-        const escapedNonAlphabetics = /\\\(|\\\[|\\\]|\\\)|\\\*|\\\+|\\\?|\\\-/;
-
-        // Test to make sure there aren't any invalid characters in the user's response or if there are any escaped characters that
-        //      should not be escaped
-
-        
-        if (!allowCharacters.test(response) || escapedNonAlphabetics.test(response)) {
-            const proceed = await vscode.window.showInformationMessage(`Could not parse specified word/pattern!`, {
-                modal: true,
-                detail: `List of allowed characters in watched word/pattern is: a-z, A-Z, '*', '+', '?', '(', ')', '[', ']', ',', ':', '\`', '&', '$', '!', '@', '#', '%', '_', '=', ' ', ';', "'", '"', '/', '>', '<', '.', '^', and '-', where all non alphabetic characters must not be escaped.`
-            }, 'Okay', 'Cancel');
-            if (proceed === 'Cancel') return null;
-            continue;
-        }
-
-        const targetWords = watchedWord
+        const targetWords = options.watchedOrExcluded === 'watched'
             ? this.watchedWords
             : this.excludedWords;
 
         // Check if the word is already in the word list
         if (targetWords.find(existing => existing === response)) {
-            const proceed = await vscode.window.showInformationMessage(`Word '${response}' already in list of ${un}watched words!`, {
+            const proceed = await vscode.window.showInformationMessage(`Word '${response}' already in list of ${options.watchedOrExcluded} words!`, {
                 modal: true
-            }, 'Okay', 'Cancel');
+            }, 'Submit Again', 'Cancel');
             if (proceed === 'Cancel') return null;
             continue;
         }
 
-        // Attempt to creat a regex from the response, if the creation of a regexp out of the word caused an exception, report that to the user
         try {
-            new RegExp(response);
+            new RegExp(response)
         }
-        catch (e) {
-            const proceed = await vscode.window.showInformationMessage(`An error occurred while creating a Regular Expression from your response!`, {
+        catch (err: any) {
+            const proceed = await vscode.window.showInformationMessage(`Could not parse specified word/pattern!`, {
                 modal: true,
-                detail: `Error: ${e}`
-            }, 'Okay', 'Cancel');
+                detail: `Response was not parsable as a regex!  Retrieved this error: '${err}'`
+            }, 'Submit Again', 'Cancel');
             if (proceed === 'Cancel') return null;
             continue;
         }
 
-        if (options.addWord) {
+
+        if (options?.insertOrReplace === 'insert') {
             // If the word is valid and doesn't already exist in the word list, then continue adding the words
-            this.updateWords('add', response, watchedWord ? 'wt.wordWatcher.watchedWords' : 'wt.wordWatcher.excludedWords');
+            this.updateWords('add', response, options.watchedOrExcluded === 'watched' ? 'wt.wordWatcher.watchedWords' : 'wt.wordWatcher.excludedWords');
         }
         return response;
     }

@@ -1331,10 +1331,6 @@
 					"when": "false"
 				},
 				{
-					"command": "wt.wordWatcher.deleteExcludedWord",
-					"when": "false"
-				},
-				{
 					"command": "wt.wordWatcher.jumpNextInstanceOf",
 					"when": "false"
 				},

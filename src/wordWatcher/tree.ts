@@ -37,9 +37,10 @@ export function getTreeItem (this: WordWatcher, element: WordEntry): vscode.Tree
             resourceUri: vscode.Uri.file(element.id),
             command: { 
                 title: "Search",
-                command: 'wt.wordWatcher.wordSearch', 
+                command: 'wt.wordWatcher.newWatchedWord', 
                 arguments: [],
             },
+            tooltip: "Watch out for a new word",
             contextValue: 'wordSearch',
             iconPath: new vscode.ThemeIcon('search')
         } as vscode.TreeItem;
@@ -73,6 +74,7 @@ export function getTreeItem (this: WordWatcher, element: WordEntry): vscode.Tree
                 arguments: [ element.word ],
             },
             contextValue: contextValue,
+            tooltip: element.word,
             iconPath: new vscode.ThemeIcon(icon, color)
         } as vscode.TreeItem;
     }
@@ -83,6 +85,7 @@ export function getTreeItem (this: WordWatcher, element: WordEntry): vscode.Tree
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             resourceUri: vscode.Uri.file(element.id),
             contextValue: 'excludedWord',
+            tooltip: element.exclusion,
             iconPath: new vscode.ThemeIcon('circle-slash', new vscode.ThemeColor('charts.green.'))
         } as vscode.TreeItem;
     }

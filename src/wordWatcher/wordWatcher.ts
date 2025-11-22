@@ -116,7 +116,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
     public lastJumpInstance: number;
 
     updateWords = addOrDeleteTargetedWord;
-    addWord = addWordToWatchedWords;
+    updateWordList = addWordToWatchedWords;
     jumpNextInstanceOf = jumpNextInstanceOfWord;
     
     update = update;
@@ -187,10 +187,19 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
     }
 
     registerCommands () {
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.addWord({ watched: true })));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newExcludedWord', () => this.addWord({
-            watched: false,
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.updateWordList({ 
+            watchedOrExcluded: 'watched',
+            insertOrReplace: 'insert',
         })));
+        
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newExcludedWord', () => this.updateWordList({
+            watchedOrExcluded: 'excluded',
+            insertOrReplace: 'insert',
+        })));
+        
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.deleteExcludedWord', (resource: WordExcludedWordEntry) => {
+            this.updateWords('delete', resource.exclusion, 'wt.wordWatcher.excludedWords');
+        }));
         
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.jumpNextInstanceOf', (word: string) => {
             this.jumpNextInstanceOf(word);
@@ -204,9 +213,6 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.deleteWord', (resource: WordWatchedWordEntry) => {
             this.updateWords('delete', resource.word, 'wt.wordWatcher.watchedWords');
-        }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.deleteExcludedWord', (resource: WordExcludedWordEntry) => {
-            this.updateWords('delete', resource.exclusion, 'wt.wordWatcher.excludedWords');
         }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.disableWatchedWord', (resource: WordWatchedWordEntry) => {
             this.updateWords('add', resource.word, 'wt.wordWatcher.disabledWatchedWords');

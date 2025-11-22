@@ -340,9 +340,9 @@ export async function changePattern (this: WordWatcher, word: string) {
     if (index === -1) return;
 
     // Prompt the user for the new pattern
-    const newPattern = await this.addWord({
-        addWord: false,
-        watched: true,
+    const newPattern = await this.updateWordList({
+        insertOrReplace: 'replace',
+        watchedOrExcluded: 'watched',
         placeholder: word,
         value: word
     });
