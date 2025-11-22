@@ -12,6 +12,7 @@ import { __, hexToRgb } from '../miscTools/help';
 import { gatherPaths, commonWordsPrompt } from './commonWords';
 import { colorPick } from './colorPick';
 import { v4 as uuid } from 'uuid';
+import { getHoveredWord } from '../intellisense/common';
 
 type WordSearchEntry = {
 	id: 'wordSearch';
@@ -187,6 +188,91 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
     }
 
     registerCommands () {
+        
+        const addFromHover = (watchedOrExcluded: 'watched' | 'excluded') => {
+            if (!vscode.window.activeTextEditor) return;
+            
+            const editor = vscode.window.activeTextEditor;
+            const doc = editor.document;
+            const hover = getHoveredWord(doc, editor.selection.active);
+            if (!hover) {
+                vscode.window.showWarningMessage("[WARN] Could not get hovered word!");
+                return;
+            }
+
+            return this.updateWordList({
+                bypassPrompt: true,
+                watchedOrExcluded: watchedOrExcluded,
+                hovered: hover.text
+            });
+        };
+
+        const deleteFromHover = async (watchedOrExcluded: 'watched' | 'excluded') => {
+            if (!vscode.window.activeTextEditor) return;
+            
+            const editor = vscode.window.activeTextEditor;
+            const doc = editor.document;
+            const hover = getHoveredWord(doc, editor.selection.active);
+            if (!hover) {
+                vscode.window.showWarningMessage("[WARN] Could not get hovered word!");
+                return;
+            }
+
+            let wordArray: string[];
+            let wordContext: 'wt.wordWatcher.watchedWords' | 'wt.wordWatcher.excludedWords';
+            if (watchedOrExcluded === 'watched') {
+                wordArray = this.watchedWords;
+                wordContext = 'wt.wordWatcher.watchedWords';
+            }
+            else {
+                wordArray = this.excludedWords;
+                wordContext = 'wt.wordWatcher.excludedWords';
+            }
+
+            const matchedWords: string[] = wordArray.filter(watched => {
+                const watchedReg = new RegExp("^" + watched + "$");
+                return watchedReg.test(hover.text);
+            });
+
+            if (matchedWords.length === 0) {
+                vscode.window.showErrorMessage(`[WARN] Could not find any ${watchedOrExcluded} words that match the highlighted text!`);
+                return;
+            }
+
+            const wordsToDelete: string[] = [];
+            if (matchedWords.length === 1) {
+                wordsToDelete.push(matchedWords[0]);
+            }
+            else if (matchedWords.length > 1) {
+                const responses = await vscode.window.showQuickPick(matchedWords, {
+                    canPickMany: true,
+                    ignoreFocusOut: false,
+                    title: `Multiple Watched Words match highlighted '${hover.text}'`,
+                });
+                if (!responses) return;
+                wordsToDelete.push(...responses);
+            }
+
+            for (const response of wordsToDelete) {
+                this.updateWords('delete', response, wordContext);
+            }
+        };
+
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.deleteWatchedWord.fromHover", () => {
+            return deleteFromHover('watched');
+        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.deleteExcludedWord.fromHover", () => {
+            return deleteFromHover('excluded');
+        }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.newWatchedWord.fromHover", () => {
+            return addFromHover('watched');
+        }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.newExcludedWord.fromHover", () => {
+            return addFromHover('excluded');
+        }));
+
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.newWatchedWord', () => this.updateWordList({ 
             watchedOrExcluded: 'watched',
             insertOrReplace: 'insert',

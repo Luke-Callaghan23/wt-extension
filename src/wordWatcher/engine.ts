@@ -83,12 +83,19 @@ export async function addWordToWatchedWords (this: WordWatcher, options: {
     insertOrReplace: 'replace',
     placeholder: string,
     value: string,
+} | {
+    watchedOrExcluded: 'watched' | 'excluded',
+    bypassPrompt: true,
+    hovered: string,
 }): Promise<string | null> {
 
     while (true) {
         
         let response: string | undefined;
-        if (options.insertOrReplace === 'replace') {
+        if ('bypassPrompt' in options) {
+            response = options.hovered;
+        }
+        else if (options.insertOrReplace === 'replace') {
             response = await vscode.window.showInputBox({
                 placeHolder: options.placeholder,
                 value: options.value,
@@ -132,14 +139,13 @@ export async function addWordToWatchedWords (this: WordWatcher, options: {
         catch (err: any) {
             const proceed = await vscode.window.showInformationMessage(`Could not parse specified word/pattern!`, {
                 modal: true,
-                detail: `Response was not parsable as a regex!  Retrieved this error: '${err}'`
+                detail: `Word '${response}' was not parsable as a regex!  Retrieved this error: '${err}'`
             }, 'Submit Again', 'Cancel');
             if (proceed === 'Cancel') return null;
             continue;
         }
 
-
-        if (options?.insertOrReplace === 'insert') {
+        if ('bypassPrompt' in options || options?.insertOrReplace === 'insert') {
             // If the word is valid and doesn't already exist in the word list, then continue adding the words
             this.updateWords('add', response, options.watchedOrExcluded === 'watched' ? 'wt.wordWatcher.watchedWords' : 'wt.wordWatcher.excludedWords');
         }

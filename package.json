@@ -631,6 +631,22 @@
 				"icon": "$(circle-slash)"
 			},
 			{
+				"command": "wt.wordWatcher.newWatchedWord.fromHover",
+				"title": "Writing Tool: Watch Hovered Word"
+			},
+			{
+				"command": "wt.wordWatcher.newExcludedWord.fromHover",
+				"title": "Writing Tool: Exclude Hovered Word from Word Watcher"
+			},
+			{
+				"command": "wt.wordWatcher.deleteWatchedWord.fromHover",
+				"title": "Writing Tool: Delete Hovered Word from Word Watcher"
+			},
+			{
+				"command": "wt.wordWatcher.deleteExcludedWord.fromHover",
+				"title": "Writing Tool: Delete Exclusion for Hovered Word from Word Watcher"
+			},
+			{
 				"command": "wt.wordWatcher.deleteWord",
 				"title": "Writing Tool: Delete Watched Word"
 			},
