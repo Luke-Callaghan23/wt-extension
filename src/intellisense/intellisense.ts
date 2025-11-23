@@ -6,6 +6,8 @@ import { HoverProvider } from './synonyms/hoverProvider';
 import { CodeActionProvider } from './synonyms/codeActionProvider';
 import { PersonalDictionary } from './spellcheck/personalDictionary';
 import { SynonymsProvider } from './synonymsProvider/provideSynonyms';
+import { rootPath } from '../extension';
+import { statFile } from '../miscTools/help';
 
 export class SynonymsIntellisense {
     constructor (
@@ -20,6 +22,7 @@ export class SynonymsIntellisense {
         const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
             language: 'wt'
         };
+
         await SynonymsProvider.init(this.workspace);
         this.context.subscriptions.push(vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(this.context, this.workspace, this.useWordHippo)));
         this.context.subscriptions.push(vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(this.context, this.workspace)));

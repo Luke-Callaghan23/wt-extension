@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
-import { getHoverText, getHoveredWord } from '../common';
+import { getHoverMarkdown, getHoveredWord } from '../common';
 import { capitalize } from '../../miscTools/help';
 import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
 import { ExtensionGlobals } from '../../extension';
@@ -27,7 +27,7 @@ export class HoverProvider implements vscode.HoverProvider {
             }
         }
 
-        const hoverText = await getHoverText(hoverPosition?.text);
+        const hoverText = await getHoverMarkdown(hoverPosition?.text);
 
         // Create and return the new hover
         const startPosition = document.positionAt(hoverPosition.start);

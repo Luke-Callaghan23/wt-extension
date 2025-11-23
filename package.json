@@ -101,15 +101,15 @@
 					"default": true,
 					"description": "Determines whether you want to show the 'Recycling Bin' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
 				},
-				"wt.showPanels.notebook": {
+				"wt.showPanels.definitions": {
 					"type": "boolean",
 					"default": true,
-					"description": "Determines whether you want to show the 'Notes' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+					"description": "Determines whether you want to show the 'Definitions' panel in the bottom pane.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
 				},
 				"wt.showPanels.notebookWebview": {
 					"type": "boolean",
 					"default": true,
-					"description": "Determines whether you want to show the 'Notes' panel.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
+					"description": "Determines whether you want to show the 'Notebook' panel in the secondary side bar.\n  NOTE: hiding the panel will NOT disable all side effects of the panel."
 				},
 				"wt.speech.voice": {
 					"type": "string",
@@ -220,6 +220,11 @@
 					"description": "Slow mode is for slower machines and larger projects.  In the search bar view without slow mode turned on, a search will be made every time you change the value of the search bar.  With slow mode turned on, the search only occurs when you hit enter or click the search icon next to the search bar.",
 					"type": "boolean",
 					"default": true
+				},
+				"wt.synonyms.cacheLocation": {
+					"description": "Location of the Synonyms Cache LMDB directory.  WTANIWE uses [LMDB](https://www.npmjs.com/package/lmdb) to store copies of every synonym you query while writing so that it never has to query the same word twice.  Defaults to a folder called 'synonyms' in the workspace directory.  NOTE: I'd strongly recommend if you have more than one project, have all project point to the same synonyms cache.  This makes the synonyms querying A LOT faster.",
+					"type": "string",
+					"default": "./synonyms"
 				}
 			}
 		},
@@ -261,8 +266,8 @@
 			],
 			"panel": [
 				{
-					"id": "notebook",
-					"title": "Notes",
+					"id": "wtDefinitions",
+					"title": "Definition",
 					"icon": "$(bookmark)"
 				}
 			]
@@ -348,7 +353,6 @@
 					"when": "wt.valid && config.wt.showPanels.recyclingBin",
 					"icon": "$(edit)"
 				}
-				
 			],
 			"wtNotebookWebview": [
 				{
@@ -361,12 +365,12 @@
 					"icon": "$(edit)"
 				}
 			],
-			"notebook": [
+			"wtDefinitions": [
 				{
-					"id": "wt.notebook.tree",
-					"name": "Notes",
-					"contextualTitle": "Notes",
-					"when": "wt.valid && config.wt.showPanels.notebook",
+					"type": "webview",
+					"id": "wt.definitions",
+					"name": "Definitions",
+					"contextualTitle": "Definition",
 					"icon": "$(edit)"
 				}
 			],
@@ -2664,6 +2668,7 @@
 		"istextorbinary": "^6.0.0",
 		"jsdom": "^21.1.0",
 		"libreoffice-convert": "^1.5.1",
+		"lmdb": "^3.4.4",
 		"mammoth": "^1.5.1",
 		"markdown-it": "^14.1.0",
 		"node-fetch-commonjs": "^3.2.4",

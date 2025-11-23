@@ -9,7 +9,7 @@ import { __ } from '../../miscTools/help';
 process.env.NODE_TLS_REJECT_UNAUTHORIZED='0'
 
 
-export class SynonymsApi {
+export class QuerySynonyms {
     constructor () {}
 
     private parseList (defs: (string | string[])[]): string[] {
@@ -148,8 +148,15 @@ export class SynonymsApi {
             }
     
             // If the word was not recognized by word hippo, then query the dictionary API instead
+            if (text.includes("/what-is/recaptcha.bot")) {
+                console.log('captchad')
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return this.queryWordHippo(phrase);
+            }
             if (definitions.length === 0) {
-                return this.querySynonymsApi(phrase);
+                throw 'not good';
+                // return null;
+                // return this.querySynonymsApi(phrase);
             }
             else if (definitions.length === 1) {
                 const onlyDef = definitions[0];

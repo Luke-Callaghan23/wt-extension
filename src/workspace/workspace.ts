@@ -102,6 +102,9 @@ export async function createWorkspace (
 tmp/
 tmp/**
 **/synonymsCache.json
+synonyms/
+synonyms/data.mdb
+synonyms/lock.mdb
 `));
 
         // Create necessary folders

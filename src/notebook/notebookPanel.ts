@@ -142,7 +142,7 @@ implements
 
         this.context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((ev) => {
             this.checkSelection(ev.textEditor.document, ev.textEditor.selection);
-        }, this))
+        }, this));
 
         this.registerCommands();
     }

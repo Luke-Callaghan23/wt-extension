@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SynonymsProvider } from './synonymsProvider/provideSynonyms';
+import { SynonymProviderType, SynonymsProvider } from './synonymsProvider/provideSynonyms';
 import { capitalize } from '../miscTools/help';
 
 export type HoverPosition = {
@@ -89,17 +89,21 @@ export function getHoveredWord (document: vscode.TextDocument, position: vscode.
 }
 
 
-const hoverText: { [index: string]: string } = {};
-export async function getHoverText (text: string): Promise<string> {
+const hoverMarkdownCache: Record<SynonymProviderType, Record<string, string>> = {
+    synonymsApi: {},
+    wh: {},
+};
+export async function getHoverMarkdown (text: string, provider: SynonymProviderType = 'synonymsApi'): Promise<string> {
 
     // If the hover text for the hovered word has already been calculated and stored in
     //      the hoverText dictionary, then use that string
-    if (hoverText[text]) {
-        return hoverText[text];
+    if (hoverMarkdownCache[provider][text]) {
+        console.log(`Hover cache hit for provider=${provider} and word=${text}`);
+        return hoverMarkdownCache[provider][text];
     }
 
     // Query the synonym api for the hovered word
-    const response = await SynonymsProvider.provideSynonyms(text, 'synonymsApi');
+    const response = await SynonymsProvider.provideSynonyms(text, provider);
     if (response.type === 'error') {
         return response.message;
     }
@@ -119,7 +123,7 @@ export async function getHoverText (text: string): Promise<string> {
 
     // Store the result string inside of the hover text dictionary so we don't query the same word
     //      over and over again
-    hoverText[text] = fullString;
+    hoverMarkdownCache[provider][text] = fullString;
 
     return fullString;
 }

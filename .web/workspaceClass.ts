@@ -163,7 +163,6 @@ export class Workspace {
             return;
         }
 
-        const saveCache = SynonymsProvider.writeCacheToDisk(false);
         // Write context items to the file system before git save
         const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);

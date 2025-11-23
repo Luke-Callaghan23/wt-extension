@@ -1,14 +1,15 @@
 import * as vscode from 'vscode';
-import * as console from '../miscTools/vsconsole';
-import { getNonce } from '../miscTools/help';
-import { Packageable } from '../packageable';
-import { Workspace } from '../workspace/workspaceClass';
-import { SerializedNote, WTNotebookSerializer } from './notebookApi/notebookSerializer';
-import { ExtensionGlobals } from '../extension';
+import * as console from '../../miscTools/vsconsole';
+import { getNonce } from '../../miscTools/help';
+import { Packageable } from '../../packageable';
+import { Workspace } from '../../workspace/workspaceClass';
+import { ExtensionGlobals } from '../../extension';
 import * as MarkdownIt from 'markdown-it';
-import { NotebookPanelNote } from './notebookPanel';
+import { HoverProvider } from '../synonyms/hoverProvider';
+import { getHoveredWord, getHoverMarkdown } from '../common';
+import { SynonymProviderType } from './provideSynonyms';
 
-export class NotebookWebview implements vscode.WebviewViewProvider {
+export class DefinitionsPanelWebview implements vscode.WebviewViewProvider, vscode.HoverProvider {
 
     private _view?: vscode.WebviewView;
     private readonly _extensionUri: vscode.Uri;
@@ -18,28 +19,24 @@ export class NotebookWebview implements vscode.WebviewViewProvider {
         private workspace: Workspace
     ) { 
         this._extensionUri = context.extensionUri;
-        try {
-            context.subscriptions.push(vscode.window.registerWebviewViewProvider('wt.notebook.webview', this));
-        }
-        catch (e) {
-            console.log(`${e}`);
-        }
+        this.context.subscriptions.push(vscode.window.registerWebviewViewProvider('wt.definitions', this));
+        this.context.subscriptions.push(vscode.languages.registerHoverProvider({
+            language: 'wt',
+        }, this));
+        this.context.subscriptions.push(vscode.languages.registerHoverProvider({
+            language: 'wtNote',
+        }, this));
         this.registerCommands();
     }
 
     private registerCommands () {
-        
+        this.context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((ev) => {
+            this.checkSelection(ev.textEditor.document, ev.textEditor.selection);
+        }, this));
     }
 
     public visible() {
         return !!this._view?.visible;
-    }
-
-    public reveal (note: NotebookPanelNote) {
-        const notebookPanel = ExtensionGlobals.notebookPanel;
-        const noteMd = notebookPanel.getMarkdownForNote(note);
-        this.updateViewForNote(note.noteId, noteMd);
-        this._view?.show(true);
     }
 
     public resolveWebviewView (
@@ -61,7 +58,25 @@ export class NotebookWebview implements vscode.WebviewViewProvider {
         }));
     }
 
-    public async updateViewForNote (noteId: string, noteMd: string) {
+    provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Hover> {
+        this.checkSelection(document, new vscode.Selection(position, position));
+        return null;
+    }
+
+    async checkSelection (document: vscode.TextDocument, selection: vscode.Selection) {
+        const position = selection.active;
+        const hover = getHoveredWord(document, position);
+        if (!hover) return;
+
+        const currentProvider: SynonymProviderType = await vscode.commands.executeCommand('wt.intellisense.synonyms.getCurrentProvider');
+        const hoverMd = await getHoverMarkdown(hover.text, currentProvider);
+        if (!hoverMd) return;
+
+        return this.updateViewForDefinition(hoverMd);
+    }
+
+
+    public async updateViewForDefinition (noteMd: string) {
         if (!this._view) return;
 
         const mdit = new MarkdownIt({

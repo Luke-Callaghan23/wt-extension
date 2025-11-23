@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as console from '../../miscTools/vsconsole';
 import * as extension from '../../extension';
-import { WordRange, getHoverText, getHoveredWord } from '../common';
+import { WordRange, getHoverMarkdown, getHoveredWord } from '../common';
 import { capitalize } from '../../miscTools/help';
 import { Workspace } from '../../workspace/workspaceClass';
 import { Timed } from '../../timedView';

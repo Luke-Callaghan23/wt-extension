@@ -151,7 +151,7 @@ export class Workspace {
     ];
 
     static lastWriteTimestamp: number | null = null;
-    static async packageContextItems (useDefaultFS: boolean = false) {
+    static async packageContextItems (shuttingDown: boolean = false) {
         const contextUri = extension.ExtensionGlobals.workspace.contextValuesFilePath;
 
         // 
@@ -166,17 +166,19 @@ export class Workspace {
             return;
         }
 
-        const saveCache = SynonymsProvider.writeCacheToDisk(useDefaultFS);
         // Write context items to the file system before git save
         const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
 
         ReloadWatcher.disableReloadWatch();
-        if (!useDefaultFS) {
-            await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+        if (shuttingDown) {
+            // When the workspace is shutting down, we cannot rely on vscode.workspace.fs to still exist
+            // Use the default nodejs fs to write
+            fs.writeFileSync(contextUri.fsPath, contextJSON);
+            await SynonymsProvider.closeCacheDb();
         }
         else {
-            fs.writeFileSync(contextUri.fsPath, contextJSON);
+            await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
         }
 
         setTimeout(() => {
@@ -184,7 +186,7 @@ export class Workspace {
             this.lastWriteTimestamp = Date.now();
         }, 1000);
 
-        return saveCache;
+        return;
     }
 
     static async replaceContextValuesOnDisk(contextValues: DiskContextType) {

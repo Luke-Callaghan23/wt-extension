@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
-import { HoverPosition, getHoverText, getHoveredWord } from '../common';
+import { HoverPosition, getHoverMarkdown, getHoveredWord } from '../common';
 import { Capitalization, formatFsPathForCompare, getTextCapitalization, transformToCapitalization } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
 import { SynonymError, SynonymSearchResult, Synonyms, SynonymsProvider } from '../synonymsProvider/provideSynonyms';
@@ -373,7 +373,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         //      and use that as the doc string for the completion item
         try {
             const syn = item.insertText as string;
-            const documentation = await getHoverText(syn);
+            const documentation = await getHoverMarkdown(syn);
             item.documentation = new vscode.MarkdownString(documentation);
             return item;
         }
@@ -419,6 +419,10 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 ? 'Word Hippo'
                 : 'Dictionary API'
             vscode.window.showInformationMessage(`[INFO] Synonyms intellisense is now using ${using} for completion`);
+        }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.intellisense.synonyms.getCurrentProvider', () => {
+            return this.isWordHippo ? 'wh' : 'synonymsApi';
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.intellisense.synonyms.prevSelection", async () => {

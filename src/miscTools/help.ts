@@ -552,6 +552,8 @@ export async function showDocument (uri: vscode.Uri, options?: vscode.TextDocume
 
 
 export function capitalize(str: string, justFirstWord=true): string {
+    if (str === '') return str;
+    
     if (justFirstWord) {
         const end = str.substring(1);
         return str[0].toLocaleUpperCase() + end;

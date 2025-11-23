@@ -51,6 +51,7 @@ import { WTNotebookController } from './notebook/notebookApi/notebookController'
 import * as console from './miscTools/vsconsole';
 import { SpacingHighlights } from './miscTools/spacingHighlights';
 import { NotebookWebview } from './notebook/notebookWebview';
+import { DefinitionsPanelWebview } from './intellisense/synonymsProvider/definitionPanel';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -148,6 +149,7 @@ async function loadExtensionWorkspace (
         const colorGroups = new ColorGroups(context);
         const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
         const spacingHighlights = new SpacingHighlights();
+        const definitionsPanel = new DefinitionsPanelWebview(context, workspace);
         report("Loaded intellisense");
 
         const importFS = new ImportFileSystemView(context, workspace);        // wt.import.fileSystem
