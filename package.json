@@ -432,22 +432,22 @@
 			},
 			{
 				"command": "wt.outline.refresh",
-				"title": "Writing Tool: Refresh Outline View",
+				"title": "Refresh Outline View",
 				"icon": "$(refresh)"
 			},
 			{
 				"command": "wt.outline.moveDown",
-				"title": "Writing Tool: Move Resource Down",
+				"title": "Move Resource Down",
 				"icon": "$(diff-editor-next-change)"
 			},
 			{
 				"command": "wt.outline.moveUp",
-				"title": "Writing Tool: Move Resource Up",
+				"title": "Move Resource Up",
 				"icon": "$(diff-editor-previous-change)"
 			},
 			{
 				"command": "wt.outline.help",
-				"title": "Writing Tool: Outline View Help",
+				"title": "Outline View Help",
 				"icon": "$(question)"
 			},
 			{
@@ -456,46 +456,46 @@
 			},
 			{
 				"command": "wt.outline.renameFile",
-				"title": "Writing Tool: Rename Resource"
+				"title": "Rename Resource"
 			},
 			{
 				"command": "wt.outline.newSnip",
-				"title": "Writing Tool: Create New Snip",
+				"title": "Create New Snip",
 				"icon": "$(output-view-icon)"
 			},
 			{
 				"command": "wt.outline.newChapter",
-				"title": "Writing Tool: Create New Chapter",
+				"title": "Create New Chapter",
 				"icon": "$(open-editors-view-icon)"
 			},
 			{
 				"command": "wt.outline.newFragment",
-				"title": "Writing Tool: Create New Fragment",
+				"title": "Create New Fragment",
 				"icon": "$(search-new-editor)"
 			},
 			{
 				"command": "wt.outline.removeResource",
-				"title": "Writing Tool: Delete Resource in Outline"
+				"title": "Delete Resource in Outline"
 			},
 			{
 				"command": "wt.outline.copyItems",
-				"title": "Writing Tool: Copy Outline Tree Items"
+				"title": "Copy Outline Tree Items"
 			},
 			{
 				"command": "wt.outline.pasteItems",
-				"title": "Writing Tool: Paste Outline Tree Items"
+				"title": "Paste Outline Tree Items"
 			},
 			{
 				"command": "wt.outline.duplicateItems",
-				"title": "Writing Tool: Duplicate Outline Tree Items"
+				"title": "Duplicate Outline Tree Items"
 			},
 			{
 				"command": "wt.outline.copyPath",
-				"title": "Writing Tool: Copy Path"
+				"title": "Copy Path"
 			},
 			{
 				"command": "wt.outline.copyRelativePath",
-				"title": "Writing Tool: Copy Relative Path"
+				"title": "Copy Relative Path"
 			},
 			{
 				"command": "wt.scratchPad.openFile",
@@ -503,43 +503,43 @@
 			},
 			{
 				"command": "wt.scratchPad.newFile",
-				"title": "Writing Tool: Create Scratch Pad File",
+				"title": "Create Scratch Pad File",
 				"icon": "$(search-new-editor)"
 			},
 			{
 				"command": "wt.scratchPad.renameFile",
-				"title": "Writing Tool: Rename Resource"
+				"title": "Rename Resource"
 			},
 			{
 				"command": "wt.scratchPad.permanentlyDelete",
-				"title": "Writing Tool: Pemanently Delete Resource"
+				"title": "Pemanently Delete Resource"
 			},
 			{
 				"command": "wt.scratchPad.deleteAll",
-				"title": "Writing Tool: Delete All",
+				"title": "Delete All",
 				"icon": "$(circle-slash)"
 			},
 			{
 				"command": "wt.scratchPad.refresh",
-				"title": "Writing Tool: Refresh Scratch Pad View",
+				"title": "Refresh Scratch Pad View",
 				"icon": "$(refresh)"
 			},
 			{
 				"command": "wt.recyclingBin.renameFile",
-				"title": "Writing Tool: Rename Recycled Resource"
+				"title": "Rename Recycled Resource"
 			},
 			{
 				"command": "wt.recyclingBin.permanentlyDelete",
-				"title": "Writing Tool: Pemanently Delete Resource"
+				"title": "Pemanently Delete Resource"
 			},
 			{
 				"command": "wt.recyclingBin.deleteAll",
-				"title": "Writing Tool: Delete All",
+				"title": "Delete All",
 				"icon": "$(circle-slash)"
 			},
 			{
 				"command": "wt.recyclingBin.refresh",
-				"title": "Writing Tool: Refresh Recycling Bin View",
+				"title": "Refresh Recycling Bin View",
 				"icon": "$(refresh)"
 			},
 			{
@@ -552,12 +552,12 @@
 			},
 			{
 				"command": "wt.import.fileExplorer.refresh",
-				"title": "Writing Tool: Refresh Import File Explorer",
+				"title": "Refresh Import File Explorer",
 				"icon": "$(refresh)"
 			},
 			{
 				"command": "wt.import.fileExplorer.importFiles",
-				"title": "Writing Tool: Import All Files",
+				"title": "Import All Files",
 				"icon": "$(ports-left-icon)"
 			},
 			{
@@ -566,41 +566,41 @@
 			},
 			{
 				"command": "wt.import.fileExplorer.removeResource",
-				"title": "Writing Tool: Remove File from Imports"
+				"title": "Remove File from Imports"
 			},
 			{
 				"command": "wt.import.fileExplorer.help",
-				"title": "Writing Tool: Import File Explorer Help",
+				"title": "Import File Explorer Help",
 				"icon": "$(question)"
 			},
 			{
 				"command": "wt.import.fileExplorer.openImportWindow",
-				"title": "Writing Tool: Open Import Folder",
+				"title": "Open Import Folder",
 				"icon": "$(folder-active)"
 			},
 			{
 				"command": "wt.import.fileExplorer.filter",
-				"title": "Writing Tool: Filter Selected Resource from Imports Folder",
+				"title": "Filter Selected Resource from Imports Folder",
 				"icon": "$(close)"
 			},
 			{
 				"command": "wt.import.fileExplorer.defilter",
-				"title": "Writing Tool: Un-Filter Selected Resource from Imports Folder",
+				"title": "Un-Filter Selected Resource from Imports Folder",
 				"icon": "$(check)"
 			},
 			{
 				"command": "wt.import.fileExplorer.openFileExplorer",
-				"title": "Writing Tool: Open File Explorer",
+				"title": "Open File Explorer",
 				"icon": "$(file-directory)"
 			},
 			{
 				"command": "wt.todo.refresh",
-				"title": "Writing Tool: Refresh TODOs View",
+				"title": "Refresh TODOs View",
 				"icon": "$(refresh)"
 			},
 			{
 				"command": "wt.todo.help",
-				"title": "Writing Tool: TODOs View Help",
+				"title": "TODOs View Help",
 				"icon": "$(question)"
 			},
 			{
@@ -613,20 +613,20 @@
 			},
 			{
 				"command": "wt.wordWatcher.help",
-				"title": "Writing Tool: Word Watcher View Help",
+				"title": "Word Watcher View Help",
 				"icon": "$(question)"
 			},
 			{
 				"command": "wt.wordWatcher.disableWatchedWord",
-				"title": "Writing Tool: Disable Watched Word"
+				"title": "Disable Watched Word"
 			},
 			{
 				"command": "wt.wordWatcher.enableWatchedWord",
-				"title": "Writing Tool: Enable Watched Word"
+				"title": "Enable Watched Word"
 			},
 			{
 				"command": "wt.wordWatcher.newWatchedWord",
-				"title": "Writing Tool: Watch New Word",
+				"title": "Watch New Word",
 				"icon": "$(plus)"
 			},
 			{
@@ -652,11 +652,11 @@
 			},
 			{
 				"command": "wt.wordWatcher.deleteWord",
-				"title": "Writing Tool: Delete Watched Word"
+				"title": "Delete Watched Word"
 			},
 			{
 				"command": "wt.wordWatcher.deleteExcludedWord",
-				"title": "Writing Tool: Delete Excluded Word",
+				"title": "Delete Excluded Word",
 				"icon": "$(trashcan)"
 			},
 			{
@@ -665,11 +665,11 @@
 			},
 			{
 				"command": "wt.wordWatcher.changeColor",
-				"title": "Writing Tool: Change watched word color"
+				"title": "Change watched word color"
 			},
 			{
 				"command": "wt.wordWatcher.changePattern",
-				"title": "Writing Tool: Change watched word pattern"
+				"title": "Change watched word pattern"
 			},
 			{
 				"command": "wt.wordWatcher.addCommonWords",
@@ -677,12 +677,12 @@
 			},
 			{
 				"command": "wt.synonyms.help",
-				"title": "Writing Tool: Synonyms View Help",
+				"title": "Synonyms View Help",
 				"icon": "$(question)"
 			},
 			{
 				"command": "wt.synonyms.searchWord",
-				"title": "Writing Tool: Search Synonym",
+				"title": "Search Synonym",
 				"icon": "$(search)"
 			},
 			{
@@ -691,12 +691,12 @@
 			},
 			{
 				"command": "wt.editor.remove",
-				"title": "Writing Tool: Clear Selection",
+				"title": "Clear Selection",
 				"icon": "$(trash)"
 			},
 			{
 				"command": "wt.editor.save",
-				"title": "Writing Tool: Commit File (to local git)",
+				"title": "Commit File (to local git)",
 				"icon": "$(save)"
 			},
 			{
@@ -706,7 +706,7 @@
 			},
 			{
 				"command": "wt.editor.italisize",
-				"title": "Writing Tool: Italisize Selection",
+				"title": "Italisize Selection",
 				"icon": "$(italic)"
 			},
 			{
@@ -715,17 +715,17 @@
 			},
 			{
 				"command": "wt.editor.bold",
-				"title": "Writing Tool: Bold Selection",
+				"title": "Bold Selection",
 				"icon": "$(bold)"
 			},
 			{
 				"command": "wt.editor.strikethrough",
-				"title": "Writing Tool: Strike Selection",
+				"title": "Strike Selection",
 				"icon": "$(zap)"
 			},
 			{
 				"command": "wt.editor.underline",
-				"title": "Writing Tool: Underline Selection",
+				"title": "Underline Selection",
 				"icon": "$(layout-statusbar)"
 			},
 			{
@@ -862,12 +862,12 @@
 				"when": "wt.valid && view == wt.wordWatcher"
 			},
 			{
-				"title": "Writing Tool: Add Note",
+				"title": "Writing Tool: Create New Notebook",
 				"command": "wt.notebook.addNote",
 				"icon": "$(add)"
 			},
 			{
-				"title": "Writing Tool: Remove Note",
+				"title": "Remove Note",
 				"command": "wt.notebook.removeNote",
 				"icon": "$(trashcan)"
 			},
@@ -884,7 +884,7 @@
 				"command": "wt.notebook.search"
 			},
 			{
-				"title": "Writing Tool: Open Note in editor",
+				"title": "Open Note in editor",
 				"command": "wt.notebook.editNote",
 				"icon": "$(edit)"
 			},
@@ -1016,10 +1016,10 @@
 			},
 			{
 				"command": "wt.outline.manualMove",
-				"title": "Writing Tool: Move Node"
+				"title": "Move Node"
 			},
 			{
-				"title": "Writing Tool: Move Node",
+				"title": "Move Node",
 				"command": "wt.scratchPad.manualMove"
 			},
 			{
@@ -1108,7 +1108,7 @@
 				"title": "Writing Tool: Called when a word is replaced through spellcheck"
 			},
 			{
-				"title": "Writing Tool: Recover Node",
+				"title": "Recover Node",
 				"command": "wt.recyclingBin.recoverNode"
 			},
 			{
@@ -1126,7 +1126,7 @@
 			},
 			{
 				"command": "wt.wtSearch.results.refresh",
-				"title": "Writing Tool: Clears Filtered Nodes and Refreshes the results (does not redo the search)",
+				"title": "Clears Filtered Nodes and Refreshes the results (does not redo the search)",
 				"icon": "$(refresh)"
 			},
 			{
@@ -1158,7 +1158,7 @@
 				"command": "wt.fragmentLinker.insertLink"
 			},
 			{
-				"title": "Writing Tool: Reveal in file explorer",
+				"title": "Reveal in file explorer",
 				"command": "wt.import.fileExplorer.revealFileExplorer"
 			},
 			{
