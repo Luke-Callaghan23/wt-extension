@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { capitalize, formatFsPathForCompare, getFullJSONStringFromLocation, getJSONStringContext, getRelativePath, getSurroundingTextInRange, JSONStringInfo, readDotConfig, UriFsPathFormatted, vagueNodeSearch, VagueNodeSearchResult, VagueSearchSource } from '../miscTools/help';
+import { capitalize, formatFsPathForCompare, getFullJSONStringFromLocation, getJSONStringContext, getRelativePath, getSurroundingTextInRange, JSONStringInfo, readDotConfig, SurroundingTextResult, UriFsPathFormatted, vagueNodeSearch, VagueNodeSearchResult, VagueSearchSource } from '../miscTools/help';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import * as extension from '../extension';
 import * as vscodeUri from 'vscode-uri';
@@ -8,6 +8,8 @@ import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContain
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { SearchNodeKind } from './searchResultsView';
 import { assert } from 'console';
+import { WTNotebookSerializer } from '../notebook/notebookApi/notebookSerializer';
+import {basename} from 'path';
 
 
 
@@ -359,12 +361,16 @@ export class CreateSearchResults {
         let fullText: string;
         let locationStart: number;
         let locationEnd: number;
+
+        let smallSurrounding: SurroundingTextResult;
+        let largerSurrounding: SurroundingTextResult;
         if (locationInFile.uri.fsPath.toLowerCase().endsWith('.wtnote')) {
 
             // WTNOTE documents are formatted using JSON, so we need to extract the full JSON string of the location
             //      this search found
-            const jsonSubstring = getFullJSONStringFromLocation(cachedDoc, cachedDoc.getText(), locationInFile);
-            fullText = jsonSubstring.jsonString;
+            fullText = extension.ExtensionGlobals.notebookPanel.getMarkdownForNote(
+                extension.ExtensionGlobals.notebookPanel.getNote(fileUri)!
+            );
             locationStart = cachedDoc.offsetAt(locationInFile.range.start) - jsonSubstring.startOff;
             locationEnd = cachedDoc.offsetAt(locationInFile.range.end) - jsonSubstring.startOff;
         }
@@ -373,11 +379,11 @@ export class CreateSearchResults {
             fullText = cachedDoc.getText();
             locationStart = cachedDoc.offsetAt(locationInFile.range.start);
             locationEnd = cachedDoc.offsetAt(locationInFile.range.end);
+            smallSurrounding = getSurroundingTextInRange(fullText, locationStart, locationEnd, [ 20, 100 ]);
+            largerSurrounding = getSurroundingTextInRange(fullText, locationStart, locationEnd, 400);
         }
 
-        const smallSurrounding = getSurroundingTextInRange(fullText, locationStart, locationEnd, [ 20, 100 ]);
-        const largerSurrounding = getSurroundingTextInRange(fullText, locationStart, locationEnd, 400);
-
+        
         return new SearchNode<FileResultLocationNode>({
             kind: 'fileLocation',
             location: locationInFile,

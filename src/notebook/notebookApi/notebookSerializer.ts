@@ -389,7 +389,11 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
     //#region SERIALIZE CELLS
 
-    public async createMarkdownStringFromCellText (wtText: string, noteId: string): Promise<string> {
+    // noteId is used when generating links to other WT Notebooks.  We do not want to generate any links to this
+    //      notebook document (will probably make the MD cluttered with links)
+    // NOTE: if noteId is undefined, we assume that the caller does not want ANY links in their Markdown
+    // NOTE: this is for creating tooltip markdowns, which will not need links in them
+    public static async createMarkdownStringFromCellText (wtText: string, noteId?: string): Promise<string> {
 
         // Add '- ' to the beginning of every valid line
         // Replace all sets of four spaces (or one tab character) with two spaces to 
@@ -466,10 +470,16 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
         // Convert wt text stylings to md text stylings
         const asMarkdown = wtToMd(withFragmentLinks);
+
+        // If there is not noteId specified by a caller, we assume no links should be inserted
+        // (As in, when we are creating search node results -- we do not want links in those tooltips)
+        if (noteId === undefined) {
+            return asMarkdown;
+        }
         
         // Search for all references to notes in this cell
         const matches: TextMatchForNote[] = [];
-        for (const match of this.notebookPanel.getNoteMatchesInText(asMarkdown)) {
+        for (const match of extension.ExtensionGlobals.notebookPanel.getNoteMatchesInText(asMarkdown)) {
             if (!match.matchedNote) continue;
 
             // Skip any note that matches this note id
@@ -515,7 +525,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             return {
                 kind: vscode.NotebookCellKind.Markup,
                 languageId: 'markdown',
-                value: await this.createMarkdownStringFromCellText(serializedCell.text, noteId),
+                value: await WTNotebookSerializer.createMarkdownStringFromCellText(serializedCell.text, noteId),
                 metadata: __<NotebookCellMetadata>({
                     kind: 'input',
                     markdown: true,

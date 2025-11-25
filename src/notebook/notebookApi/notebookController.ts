@@ -375,7 +375,7 @@ export class WTNotebookController {
 
             if (action.convert) {
                 if (action.convert === 'header' || action.convert === 'markdown') {
-                    const markdownString = this.serializer.createMarkdownStringFromCellText(updated || cell.document.getText(), noteId);
+                    const markdownString = WTNotebookSerializer.createMarkdownStringFromCellText(updated || cell.document.getText(), noteId);
                     // SET CELL TEXT VALUE TO MARKDOWN STRING
                     vscode.commands.executeCommand("notebook.cell.changeToMarkdown");
                 }
