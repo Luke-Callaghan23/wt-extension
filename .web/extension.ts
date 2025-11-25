@@ -43,6 +43,9 @@ import { defaultProgress, getSectionedProgressReporter, progressOnViews, statFil
 import { WTNotebookSerializer } from './notebook/notebookApi/notebookSerializer';
 import { WTNotebookController } from './notebook/notebookApi/notebookController';
 import * as console from './miscTools/vsconsole';
+import { SpacingHighlights } from './miscTools/spacingHighlights';
+import { NotebookWebview } from './notebook/notebookWebview';
+import { DefinitionsPanelWebview } from './intellisense/synonymsProvider/definitionPanel';
 
 export const decoder = new TextDecoder();
 export const encoder = new TextEncoder();
@@ -139,6 +142,8 @@ async function loadExtensionWorkspace (
         const veryIntellisense = new VeryIntellisense(context, workspace);
         const colorGroups = new ColorGroups(context);
         const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+        const spacingHighlights = new SpacingHighlights();
+        const definitionsPanel = new DefinitionsPanelWebview(context, workspace);
         report("Loaded intellisense");
         
         const synonyms = new SynonymViewProvider(context, workspace);        // wt.synonyms
@@ -160,8 +165,9 @@ async function loadExtensionWorkspace (
         
         const tabStates = new TabStates(context, workspace);
         report("Loaded tab groups");
-
-        const notebook = new NotebookPanel(workspace, context, ExtensionGlobals.notebookSerializer);
+        
+        const notebookWebview = new NotebookWebview(context, workspace);
+        const notebook = new NotebookPanel(workspace, context, ExtensionGlobals.notebookSerializer, notebookWebview);
         await notebook.initialize();
         const notebookController = new WTNotebookController(context, workspace, notebook, ExtensionGlobals.notebookSerializer);
         await ExtensionGlobals.notebookSerializer.init(context, workspace, notebook, notebookController);
@@ -187,6 +193,7 @@ async function loadExtensionWorkspace (
             ['wt.todo', 'todo', todo],
             ['wt.spellcheck', 'spellcheck', spellcheck],
             ['wt.wordWatcher', 'wordWatcher', wordWatcher],
+            ['wt.spacingHighlights', 'spacingHighlights', spacingHighlights],
             // ['wt.proximity', 'proximity', proximity],
             ['wt.very', 'very', veryIntellisense],
             ['wt.colors', 'colors', colorIntellisense],

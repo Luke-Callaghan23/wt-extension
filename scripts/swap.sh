@@ -13,7 +13,6 @@ if
     test -f .web/tsconfig.json &&
     test -f .web/gitTransactions.ts &&
     test -f .web/tabLabels.ts && 
-    test -f .web/provideSynonyms.ts && 
     test -f .web/workspaceClass.ts &&
     test -d .web/grepper;
 then
@@ -30,7 +29,6 @@ then
     mv src/workspace/workspaceClass.ts .local/workspaceClass.ts
     mv src/ttsDebugger .local/ttsDebugger
     mv src/tabLabels/tabLabels.ts .local/tabLabels.ts
-    mv src/intellisense/synonymsProvider/provideSynonyms.ts .local/provideSynonyms.ts
     mv src/miscTools/grepper .local/grepper
 
     mv .web/bufferSource.ts src/Buffer/bufferSource.ts
@@ -44,7 +42,6 @@ then
     mv .web/gitTransactions.ts src/gitTransactions.ts
     mv .web/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .web/tabLabels.ts src/tabLabels/tabLabels.ts
-    mv .web/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
     mv .web/grepper src/miscTools/grepper
 
     npm clean-install
@@ -76,7 +73,6 @@ elif
     test -f .local/ttsDebugger/tts/windows.ts &&
     test -f .local/ttsDebugger/tts/windowsCommand.ts &&
     test -f .local/tabLabels.ts && 
-    test -f .local/provideSynonyms.ts && 
     test -f .local/workspaceClass.ts &&
     test -d .local/grepper;
 then
@@ -91,7 +87,6 @@ then
     mv src/gitTransactions.ts .web/gitTransactions.ts
     mv src/workspace/workspaceClass.ts .web/workspaceClass.ts 
     mv src/tabLabels/tabLabels.ts .web/tabLabels.ts
-    mv src/intellisense/synonymsProvider/provideSynonyms.ts .web/provideSynonyms.ts
     mv src/miscTools/grepper .web/grepper
 
     mv .local/ttsDebugger src/ttsDebugger
@@ -107,7 +102,6 @@ then
     mv .local/gitTransactions.ts src/gitTransactions.ts
     mv .local/workspaceClass.ts src/workspace/workspaceClass.ts
     mv .local/tabLabels.ts src/tabLabels/tabLabels.ts
-    mv .local/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
     mv .local/grepper src/miscTools/grepper
 
     npm clean-install
