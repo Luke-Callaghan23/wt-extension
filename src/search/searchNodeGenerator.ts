@@ -465,7 +465,7 @@ export class CreateSearchResults {
         const isDotConfig = location.uri.fsPath.endsWith('.config');
         const isNotebook = location.uri.fsPath.toLowerCase().endsWith('.wtnote');
         if (isDotConfig || isNotebook) {
-            if (!createTitleNodes) {
+            if (isDotConfig && !createTitleNodes) {
                 return this.cleanNodeTree();
             }
             
