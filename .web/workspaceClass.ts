@@ -175,7 +175,7 @@ export class Workspace {
             this.lastWriteTimestamp = Date.now();
         }, 1000);
 
-        return saveCache;
+        return;
     }
 
     static async replaceContextValuesOnDisk(contextValues: DiskContextType) {

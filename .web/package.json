@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.148",
+	"version": "0.0.150",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
 	"private": false,
@@ -15,9 +15,9 @@
 		"vscode": "^1.74.0"
 	},
 	"categories": [
-		"Programming Languages", 
-		"Debuggers", 
-		"Notebooks", 
+		"Programming Languages",
+		"Debuggers",
+		"Notebooks",
 		"Other"
 	],
 	"keywords": [
@@ -2464,11 +2464,12 @@
 		"webpack-cli": "^5.0.0"
 	},
 	"dependencies": {
-		"@vscode-elements/elements": "^1.16.1",
 		"@types/markdown-it": "^12.0.0",
+		"@vscode-elements/elements": "^1.16.1",
 		"@vscode/codicons": "^0.0.32",
 		"buffer": "^6.0.3",
 		"crypto-browserify": "^3.12.1",
+		"markdown-it": "^14.1.0",
 		"minimist": "^1.2.6",
 		"node-fetch-commonjs": "^3.2.4",
 		"turndown": "^7.1.2",
