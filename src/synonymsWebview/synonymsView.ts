@@ -9,12 +9,22 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 	private _view?: vscode.WebviewView;
 	private synonyms: string[];
 	private readonly _extensionUri: vscode.Uri;
+	private apiKey: string | undefined;
 
 	constructor (
         private context: vscode.ExtensionContext,
 		workspace: Workspace
 	) { 
 		this.synonyms = this.context.workspaceState.get('wt.synonyms.synonyms') ?? ['big', 'sad', 'great'];
+
+		const configuration = vscode.workspace.getConfiguration();
+		const apiKey = configuration.get<string>('wt.synonyms.apiKey');
+		if (!apiKey) {
+			vscode.window.showWarningMessage(`WARN: The synonyms view uses a dictionary API for intellisense to function.  You need to get your own API key from 'https://dictionaryapi.com/register/index', update the wt.synonyms.apiKey setting, then reload your window.`);
+		}
+		else {
+			this.apiKey = apiKey;
+		}
 
 		this._extensionUri = context.extensionUri;
 		try {
@@ -127,14 +137,12 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 					vscode.window.showErrorMessage(`Error: The dictionary api did not recognize search term '${failedWord}'. Did you mean to type one of these: '${suggestedString}'?`);
 					break;
 				case 'requestDictionaryApiKey': 
-					const dictionaryApi = "29029b50-e0f1-4be6-ac00-77ab8233e66b";
-					if (!dictionaryApi) {
-						vscode.window.showWarningMessage(`WARN: The synonyms view uses a dictionary API to function.  If you forked this code from github, you need to get your own API key from 'https://dictionaryapi.dev/'`);
+					if (!this.apiKey) {
 						return;
 					}
 					webviewView.webview.postMessage({
 						type: 'startupDelivery',
-						dicationatyApi: dictionaryApi,
+						dicationatyApi: this.apiKey,
 						synonyms: this.synonyms
 					});
 					break;

@@ -2,7 +2,7 @@
 	"name": "wtaniwe",
 	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
 	"description": "Writing Tool, An Integrated Writing Environment",
-	"version": "0.0.150",
+	"version": "0.0.151",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
 	"private": false,
@@ -221,8 +221,13 @@
 					"type": "boolean",
 					"default": true
 				},
+				"wt.synonyms.apiKey": {
+					"description": "API Key for Merriam-Webster's Thesaurus API (https://dictionaryapi.com/products/api-collegiate-thesaurus), to get the full use of WTANIWE's Intellisense functionality, I recommend you sign up for this API and provide your key here.  Once you do, reload your window and you should start seeing results for synonyms in your intellisense and in the Synonyms Panel.  Register here: https://dictionaryapi.com/register/index.  NOTE: This cannot be updated while the extension is running.  After updating this value, you need to reload the window for it to take effect.",
+					"type": "string",
+					"default": ""
+				},
 				"wt.synonyms.cacheLocation": {
-					"description": "Location of the Synonyms Cache LMDB directory.  WTANIWE uses [LMDB](https://www.npmjs.com/package/lmdb) to store copies of every synonym you query while writing so that it never has to query the same word twice.  Defaults to a folder called 'synonyms' in the workspace directory.  NOTE: I'd strongly recommend if you have more than one project, have all project point to the same synonyms cache.  This makes the synonyms querying A LOT faster.",
+					"description": "Location of the Synonyms Cache LevelDB directory.  WTANIWE uses LevelDB (https://www.npmjs.com/package/level) to store copies of every synonym you query while writing so that it never has to query the same word twice.  Defaults to a folder called 'synonyms' in the workspace directory.  NOTE: I'd strongly recommend if you have more than one project, have all project point to the same synonyms cache.  This makes the synonyms querying A LOT faster.  NOTE: This cannot be updated while the extension is running.  After updating this value, you need to reload the window for it to take effect.",
 					"type": "string",
 					"default": "./synonyms"
 				}
@@ -2667,8 +2672,8 @@
 		"html-to-docx": "^1.6.5",
 		"istextorbinary": "^6.0.0",
 		"jsdom": "^21.1.0",
+		"level": "^10.0.0",
 		"libreoffice-convert": "^1.5.1",
-		"lmdb": "^3.4.4",
 		"mammoth": "^1.5.1",
 		"markdown-it": "^14.1.0",
 		"node-fetch-commonjs": "^3.2.4",

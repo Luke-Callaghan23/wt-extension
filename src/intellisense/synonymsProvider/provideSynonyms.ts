@@ -4,8 +4,7 @@ import * as extension from './../../extension';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
 import * as fs from 'fs';
-import { open } from 'lmdb';
-import lmdb = require('lmdb');
+import { Level } from 'level';
 import { statFile } from '../../miscTools/help';
 export type SynonymProviderType = 'wh' | 'synonymsApi';
 
@@ -35,35 +34,24 @@ export type SynonymSearchResult = Synonyms | SynonymError;
 export class SynonymsProvider {
     private static synonymsApi: QuerySynonyms;
 
-    static db: lmdb.RootDatabase<SynonymSearchResult, [string, SynonymProviderType]>;
+    static db: Level<[string, SynonymProviderType], SynonymSearchResult>;
     private static outgoingQueryCache: Record<SynonymProviderType, Record<string, Promise<SynonymSearchResult>>> = {
         synonymsApi: {},
         wh: {},
     };
     
-    private static currentCacheUri: vscode.Uri;
     static async init (workspace: Workspace) {
-
-        
         const cacheUri = await this.processConfigPath();
-        this.openDB(cacheUri);
-        this.currentCacheUri = cacheUri;
+        await this.openDB(cacheUri);
 
-        vscode.workspace.onDidChangeConfiguration(async (ev) => {
-            if (!ev.affectsConfiguration('wt.synonyms.cacheLocation')) return;
-
-            const cacheUri = await this.processConfigPath();
-            if (cacheUri.fsPath === this.currentCacheUri.fsPath) {
-                vscode.window.showWarningMessage('[WARN] Cache location the same as before configuration edit. Not re-opening db.');
-            }
-            else {
-                await this.db.close();
-            }
-            this.openDB(cacheUri);
-            this.currentCacheUri = cacheUri;
-        })
-
-        this.synonymsApi = new QuerySynonyms();
+        const configuration = vscode.workspace.getConfiguration();
+        const apiKey = configuration.get<string>('wt.synonyms.apiKey');
+        if (!apiKey) {
+            vscode.window.showWarningMessage(`WARN: The synonyms view uses a dictionary API for intellisense to function.  You need to get your own API key from 'https://dictionaryapi.com/register/index', update the wt.synonyms.apiKey setting, then reload your window.`);
+        }
+        else {
+            this.synonymsApi = new QuerySynonyms(apiKey);
+        }
     }
 
     
@@ -95,31 +83,20 @@ export class SynonymsProvider {
     }
 
 
-    private static openDB (cacheUri: vscode.Uri) {
+    private static async openDB (cacheUri: vscode.Uri) {
         console.log(`Opening cache uri at ${cacheUri.fsPath}`)
-        this.db = open(cacheUri.fsPath, {
+        this.db = new Level<[string, SynonymProviderType], SynonymSearchResult>(cacheUri.fsPath, {
+            keyEncoding: 'json',
+            valueEncoding: 'json',
             compression: true,
-        })
-        
-        console.log('Counting cache contents: ');
-        let wh = 0;
-        let synonymsApi = 0;
-        for (const key of this.db.getKeys()) {
-            const [ word, provider ] = key as [ string, SynonymProviderType ];
-            if (provider === 'wh') {
-                wh++;
-            }
-            else {
-                synonymsApi++;
-            }
-        }
-        console.log(`WH cache count: ${wh}, Synonyms API cache count: ${synonymsApi}`);
+        });
+        await this.db.open();
     }
 
     static async getCachedSynonym (word: string, provider: 'wh' | 'synonymsApi'): Promise<SynonymSearchResult | null> {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             word = word.toLocaleLowerCase().trim();
-            const result: SynonymSearchResult | undefined = this.db.get([ word, provider ]);
+            const result: SynonymSearchResult | undefined = await this.db.get([ word, provider ]);
             if (result !== undefined && 
                 result !== null && 
                 typeof result === 'object' &&
@@ -135,8 +112,7 @@ export class SynonymsProvider {
     }
 
     static async closeCacheDb () {
-        await this.db.committed;
-        this.db.close();
+        return this.db.close();
     }
 
     static async provideSynonyms (word: string, provider: 'wh' | 'synonymsApi'): Promise<SynonymSearchResult> {

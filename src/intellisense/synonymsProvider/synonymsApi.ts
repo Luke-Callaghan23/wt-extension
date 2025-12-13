@@ -10,7 +10,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED='0'
 
 
 export class QuerySynonyms {
-    constructor () {}
+    constructor (private apiKey: string) {}
 
     private parseList (defs: (string | string[])[]): string[] {
         const ret: string[] = [];
@@ -32,7 +32,7 @@ export class QuerySynonyms {
         try {
             word = word.toLowerCase();
             // @ts-ignore
-            const api = `https://dictionaryapi.com/api/v3/references/thesaurus/json/${word}?key=29029b50-e0f1-4be6-ac00-77ab8233e66b`;
+            const api = `https://dictionaryapi.com/api/v3/references/thesaurus/json/${word}?key=${this.apiKey}`;
             const resp: Response = await Fetch(api);
             
             if (!resp || resp.status !== 200) {
