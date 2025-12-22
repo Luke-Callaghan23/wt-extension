@@ -11,6 +11,7 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 	private readonly _extensionUri: vscode.Uri;
 	private apiKey: string | undefined;
 
+	private webviewProvider: vscode.Disposable | null;
 	constructor (
         private context: vscode.ExtensionContext,
 		workspace: Workspace
@@ -20,7 +21,14 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 		const configuration = vscode.workspace.getConfiguration();
 		const apiKey = configuration.get<string>('wt.synonyms.apiKey');
 		if (!apiKey) {
-			vscode.window.showWarningMessage(`WARN: The synonyms view uses a dictionary API for intellisense to function.  You need to get your own API key from 'https://dictionaryapi.com/register/index', update the wt.synonyms.apiKey setting, then reload your window.`);
+			vscode.window.showWarningMessage (
+				`WARN: The synonyms view uses a dictionary API for intellisense to function.\n\nYou need to get your own API key from [here](https://dictionaryapi.com/register/index).  Once you have your key, update the \`wt.synonyms.apiKey\` setting, then reload your window.  Or run click "Update API Key" to update it without reloading.`,
+				"Update API Key"
+			).then((response) => {
+				if (response === 'Update API Key') {
+					return vscode.commands.executeCommand("wt.synonyms.updateApiKey");
+				}
+			});
 		}
 		else {
 			this.apiKey = apiKey;
@@ -28,9 +36,11 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 
 		this._extensionUri = context.extensionUri;
 		try {
-			context.subscriptions.push(vscode.window.registerWebviewViewProvider('wt.synonyms', this));
+			this.webviewProvider = vscode.window.registerWebviewViewProvider('wt.synonyms', this);
+			context.subscriptions.push(this.webviewProvider);
 		}
 		catch (e) {
+			this.webviewProvider = null;
 			console.log(`${e}`);
 		}
 
@@ -108,6 +118,15 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 			this._view?.webview.postMessage({
 				type: "refreshSynonyms",
 				terms: refreshWith
+			});
+		}));
+
+		this.context.subscriptions.push(vscode.commands.registerCommand("wt.synonyms.refreshWithKey", (apiKey: string) => {
+			this.apiKey = apiKey;
+			this._view?.webview.postMessage({
+				type: 'startupDelivery',
+				dicationatyApi: this.apiKey,
+				synonyms: this.synonyms
 			});
 		}));
 	}
