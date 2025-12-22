@@ -34,7 +34,7 @@ export type SynonymSearchResult = Synonyms | SynonymError;
 export class SynonymsProvider {
     private static synonymsApi: QuerySynonyms;
 
-    static db: Level<[string, SynonymProviderType], SynonymSearchResult>;
+    static db: Level<[string, SynonymProviderType], SynonymSearchResult> | null;
     private static outgoingQueryCache: Record<SynonymProviderType, Record<string, Promise<SynonymSearchResult>>> = {
         synonymsApi: {},
         wh: {},
@@ -42,7 +42,40 @@ export class SynonymsProvider {
     
     static async init (workspace: Workspace) {
         const cacheUri = await this.processConfigPath();
-        await this.openDB(cacheUri);
+
+        try {
+            await this.openDB(cacheUri);
+        }
+        catch (err: any) {
+            if ("cause" in err && "code" in err.cause && err.cause.code === 'LEVEL_LOCKED') {
+                const response = await vscode.window.showInformationMessage(
+                    `[WARN] Synonyms cache at '${cacheUri.fsPath}' already opened by another process`,
+                    {
+                        detail: `This is probably another WTANIWE workspace that also uses the same cache location opened at the same time as this window.  To solve this, either clone the selected cache (${cacheUri}) to use it in more than one WTANIWE workspace at the same time, or go without the cache.`,
+                        modal: true,
+                    },
+                    "Continue, do not use cache"
+                );
+                if (response !== 'Continue, do not use cache') {
+                    vscode.window.showErrorMessage("[ERR] Please enter a valid snyonyms cache folder into 'wt.synonyms.cacheLocation' before continuing.");
+                    throw err;
+                }
+            }
+            else {
+                const response = await vscode.window.showInformationMessage(
+                    `[ERR] An error occurred while opening synonyms cache DB at '${cacheUri.fsPath}'`, 
+                    {
+                        detail: `Message from LevelDB: '${err?.cause?.message}'.  JSON error: ${JSON.stringify(err)}.  Please resolve this or disable the synonyms cache.`,
+                        modal: true
+                    },
+                    "Continue, do not use cache"
+                );
+                if (response !== 'Continue, do not use cache') {
+                    vscode.window.showErrorMessage("[ERR] Please enter a valid snyonyms cache folder into 'wt.synonyms.cacheLocation' before continuing.");
+                    throw err;
+                }
+            }
+        }
 
         const configuration = vscode.workspace.getConfiguration();
         const apiKey = configuration.get<string>('wt.synonyms.apiKey');
@@ -55,10 +88,11 @@ export class SynonymsProvider {
     }
 
     
+    static cacheConfigName = 'wt.synonyms.cacheLocation';
     private static async processConfigPath () {
         
         const configuration = vscode.workspace.getConfiguration();
-        const synonymsCacheLocation = configuration.get<string>('wt.synonyms.cacheLocation');
+        const synonymsCacheLocation = configuration.get<string>(this.cacheConfigName);
 
         let cacheUri: vscode.Uri;
         if (!synonymsCacheLocation) {
@@ -96,7 +130,7 @@ export class SynonymsProvider {
     static async getCachedSynonym (word: string, provider: 'wh' | 'synonymsApi'): Promise<SynonymSearchResult | null> {
         return new Promise(async (resolve, reject) => {
             word = word.toLocaleLowerCase().trim();
-            const result: SynonymSearchResult | undefined = await this.db.get([ word, provider ]);
+            const result: SynonymSearchResult | undefined = await this.db?.get([ word, provider ]);
             if (result !== undefined && 
                 result !== null && 
                 typeof result === 'object' &&
@@ -112,7 +146,7 @@ export class SynonymsProvider {
     }
 
     static async closeCacheDb () {
-        return this.db.close();
+        return this.db?.close();
     }
 
     static async provideSynonyms (word: string, provider: 'wh' | 'synonymsApi'): Promise<SynonymSearchResult> {
@@ -146,7 +180,7 @@ export class SynonymsProvider {
 
             if (notInCache) {
                 if (result['type'] === 'success' && result['provider'] === provider) {
-                    this.db.put([ word, provider ], result);
+                    this.db?.put([ word, provider ], result);
                 }
             }
 

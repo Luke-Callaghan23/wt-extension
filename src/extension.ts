@@ -259,6 +259,8 @@ async function loadExtensionWorkspace (
     }
 };
 
+// c:/Users/lukec/Desktop/synonyms_repo/synonyms_level
+
 async function handleLoadFailure (err: Error | string | unknown) {
     // First thing to do, is to set wt.valid context value to false
     // This will display the welcome scene in the wt.outline view
