@@ -180,6 +180,22 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
             }
             else {
                 movedOutlineItems = transferItems.value;
+
+                // For some reason, it seems that VSCode is now stripping away functions from the transfer items
+                //      might be a new change in VSCode or a bug
+                // Either way, we need 'getParentUri' on all items in `movedOutlineItems` array, so if that
+                //      method is missing, we need to search for these nodes in the outline tree and reassign
+                //      the array, to get access to these methods
+                // #441
+                if (movedOutlineItems.length > 0 && !('getParentUri' in movedOutlineItems[0])) {
+                    const nodes: OutlineNode[] = [];
+                    for (const moved of movedOutlineItems) {
+                        const node = await this.getTreeElementByUri(moved.data.ids.uri);
+                        if (!node) continue;
+                        nodes.push(node);
+                    }
+                    movedOutlineItems = nodes;
+                }
             }
 
             progress.report({ message: "Finding unique roots" })
