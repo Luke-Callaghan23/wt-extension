@@ -2,7 +2,7 @@
 	"name": "wtaniwe",
 	"displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
 	"description": "Writing Tool, An Integrated Writing Environment",
-	"version": "0.0.154",
+	"version": "0.0.155",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
 	"private": false,
@@ -442,12 +442,12 @@
 			},
 			{
 				"command": "wt.outline.moveDown",
-				"title": "Move Resource Down",
+				"title": "Move Down",
 				"icon": "$(diff-editor-next-change)"
 			},
 			{
 				"command": "wt.outline.moveUp",
-				"title": "Move Resource Up",
+				"title": "Move Up",
 				"icon": "$(diff-editor-previous-change)"
 			},
 			{
@@ -461,7 +461,15 @@
 			},
 			{
 				"command": "wt.outline.renameFile",
-				"title": "Rename Resource"
+				"title": "Rename"
+			},
+			{
+				"command": "wt.outline.editDescription",
+				"title": "Edit Description"
+			},
+			{
+				"command": "wt.outline.editMarkdownDescription",
+				"title": "Edit Markdown Description"
 			},
 			{
 				"command": "wt.outline.newSnip",
@@ -480,19 +488,19 @@
 			},
 			{
 				"command": "wt.outline.removeResource",
-				"title": "Delete Resource in Outline"
+				"title": "Move to Recycling"
 			},
 			{
 				"command": "wt.outline.copyItems",
-				"title": "Copy Outline Tree Items"
+				"title": "Copy"
 			},
 			{
 				"command": "wt.outline.pasteItems",
-				"title": "Paste Outline Tree Items"
+				"title": "Paste"
 			},
 			{
 				"command": "wt.outline.duplicateItems",
-				"title": "Duplicate Outline Tree Items"
+				"title": "Duplicate"
 			},
 			{
 				"command": "wt.outline.copyPath",
@@ -513,11 +521,11 @@
 			},
 			{
 				"command": "wt.scratchPad.renameFile",
-				"title": "Rename Resource"
+				"title": "Rename"
 			},
 			{
 				"command": "wt.scratchPad.permanentlyDelete",
-				"title": "Pemanently Delete Resource"
+				"title": "Pemanently Delete"
 			},
 			{
 				"command": "wt.scratchPad.deleteAll",
@@ -531,11 +539,11 @@
 			},
 			{
 				"command": "wt.recyclingBin.renameFile",
-				"title": "Rename Recycled Resource"
+				"title": "Rename Recycled"
 			},
 			{
 				"command": "wt.recyclingBin.permanentlyDelete",
-				"title": "Pemanently Delete Resource"
+				"title": "Pemanently Delete"
 			},
 			{
 				"command": "wt.recyclingBin.deleteAll",
@@ -585,12 +593,12 @@
 			},
 			{
 				"command": "wt.import.fileExplorer.filter",
-				"title": "Filter Selected Resource from Imports Folder",
+				"title": "Filter Selection from Imports Folder",
 				"icon": "$(close)"
 			},
 			{
 				"command": "wt.import.fileExplorer.defilter",
-				"title": "Un-Filter Selected Resource from Imports Folder",
+				"title": "Un-Filter Selection from Imports Folder",
 				"icon": "$(check)"
 			},
 			{
@@ -1041,11 +1049,11 @@
 			},
 			{
 				"command": "wt.outline.commandPalette.copyNode",
-				"title": "Writing Tool: Outline: Copy Resource"
+				"title": "Writing Tool: Outline: Copy"
 			},
 			{
 				"command": "wt.outline.commandPalette.pasteNode",
-				"title": "Writing Tool: Outline: Paste Resource"
+				"title": "Writing Tool: Outline: Paste"
 			},
 			{
 				"command": "wt.outline.commandPalette.duplicateNode",
@@ -1065,7 +1073,7 @@
 			},
 			{
 				"command": "wt.outline.commandPalette.moveNode",
-				"title": "Writing Tool: Outline: Move Node",
+				"title": "Writing Tool: Outline: Move Resource",
 				"enablement": "editorLangId == wt"
 			},
 			{
@@ -1074,14 +1082,22 @@
 			},
 			{
 				"command": "wt.outline.commandPalette.renameNode",
-				"title": "Writing Tool: Outline: Rename Node"
+				"title": "Writing Tool: Outline: Rename Resource"
 			},
 			{
-				"title": "Writing Tool: Scratch Pad: Pemanently Delete Resource",
+				"command": "wt.outline.commandPalette.editDescription",
+				"title": "Writing Tool: Outline: Edit Resource Description"
+			},
+			{
+				"command": "wt.outline.commandPalette.editMarkdownDescription",
+				"title": "Writing Tool: Outline: Edit Resource Markdown Description"
+			},
+			{
+				"title": "Writing Tool: Scratch Pad: Pemanently Delete",
 				"command": "wt.scratchPad.commandPalette.deleteNode"
 			},
 			{
-				"title": "Writing Tool: Scratch Pad: Rename Resource",
+				"title": "Writing Tool: Scratch Pad: Rename",
 				"command": "wt.scratchPad.commandPalette.renameNode"
 			},
 			{
@@ -1089,15 +1105,15 @@
 				"command": "wt.scratchPad.commandPalette.moveNode"
 			},
 			{
-				"title": "Writing Tool: Recycling Bin: Pemanently Delete Resource",
+				"title": "Writing Tool: Recycling Bin: Pemanently Delete",
 				"command": "wt.recyclingBin.commandPalette.deleteNode"
 			},
 			{
-				"title": "Writing Tool: Recycling Bin: Rename Recycled Resource",
+				"title": "Writing Tool: Recycling Bin: Rename Recycled",
 				"command": "wt.recyclingBin.commandPalette.renameNode"
 			},
 			{
-				"title": "Writing Tool: Recycling Bin: Recover Node",
+				"title": "Writing Tool: Recycling Bin: Recover",
 				"command": "wt.recyclingBin.commandPalette.recoverNode"
 			},
 			{
@@ -1269,6 +1285,14 @@
 				},
 				{
 					"command": "wt.outline.renameFile",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.editDescription",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.editMarkdownDescription",
 					"when": "false"
 				},
 				{
@@ -1697,15 +1721,28 @@
 				},
 				{
 					"command": "wt.outline.renameFile",
-					"when": "view == wt.outline"
+					"when": "view == wt.outline",
+					"group": "0_visualdata@1"
+				},
+				{
+					"command": "wt.outline.editDescription",
+					"when": "view == wt.outline",
+					"group": "0_visualdata@2"
+				},
+				{
+					"command": "wt.outline.editMarkdownDescription",
+					"when": "view == wt.outline",
+					"group": "0_visualdata@3"
 				},
 				{
 					"command": "wt.outline.manualMove",
-					"when": "view == wt.outline"
+					"when": "view == wt.outline",
+					"group": "movenodes@1"
 				},
 				{
 					"command": "wt.outline.removeResource",
-					"when": "view == wt.outline"
+					"when": "view == wt.outline",
+					"group": "movenodes@2"
 				},
 				{
 					"command": "wt.outline.copyItems",
@@ -2020,6 +2057,14 @@
 				"linux": "f2",
 				"mac": "f2",
 				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.outline)"
+			},
+			{
+				"command": "wt.outline.editActiveTabDescription",
+				"key": "-",
+				"win": "ctrl+shift+f2",
+				"linux": "ctrl+shift+f2",
+				"mac": "ctrl+shift+f2",
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.outline.copyItems",

@@ -47,7 +47,7 @@ NOTE: please don't edit anything in this document besides the color.  You'll pro
     await vscode.workspace.fs.writeFile(colorPickerDocUri, contentBuff);
 
     const exampleSentence = `Here is an example sentence with your example word ${exampleWord} inside of it so you can see how ${exampleWord} would look in normal text.  Wow!`
-    const exampleSentenceFN = getUsableFileName('fragment', true);
+    const exampleSentenceFN = `${getUsableFileName('exampleSentence')}.wt`;
     const exampleSentenceUri = vscode.Uri.joinPath(extension.rootPath, 'tmp', exampleSentenceFN);
     const exampleSentenceBuff = extension.encoder.encode(exampleSentence);
     await vscode.workspace.fs.writeFile(exampleSentenceUri, exampleSentenceBuff);

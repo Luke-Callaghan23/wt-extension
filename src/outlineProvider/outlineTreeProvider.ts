@@ -165,6 +165,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 			id: uuidv4(),
 
 			label: label,
+
 			// An example of how to use codicons in a MarkdownString in a tree item tooltip.
 			tooltip: treeElement.getTooltip(),
 			collapsibleState: collapseState,

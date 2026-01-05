@@ -121,12 +121,13 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
                         vscode.window.showErrorMessage(`Error deleting fragment: ${e}`);
                     }
         
-                    const logItem = {
+                    const logItem: RecycleLog = {
                         oldUri: removedFragmentUri.fsPath,
                         deleteTimestamp: timestamp,
                         title: title,
+                        description: target.data.ids.description,
                         resourceType: target.data.ids.type,
-                        recycleBinName: recycleBinName
+                        recycleBinName: recycleBinName,
                     };
                     newLogs.push(logItem);
                 }
@@ -169,12 +170,13 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
                     vscode.window.showErrorMessage(`Error deleting ${target.data.ids.type}: ${e}`);
                 }
 
-                const logItem = {
+                const logItem: RecycleLog = {
                     oldUri: removedNodeAbsPath.fsPath,
                     deleteTimestamp: timestamp,
                     resourceType: target.data.ids.type,
                     recycleBinName: recycleBinName,
-                    title: target.data.ids.display
+                    title: target.data.ids.display,
+                    description: target.data.ids.description,
                 };
                 newLogs.push(logItem);
 
@@ -232,12 +234,13 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
                         vscode.window.showErrorMessage(`Error deleting container: ${e}`);
                     }
 
-                    const logItem = {
+                    const logItem: RecycleLog = {
                         oldUri: removedNodeUri.fsPath,
                         deleteTimestamp: timestamp,
                         resourceType: target.data.ids.type,
                         recycleBinName: recycleBinName,
-                        title: target.data.ids.display
+                        title: target.data.ids.display,
+                        description: target.data.ids.description
                     };
                     newLogs.push(logItem);
                 }

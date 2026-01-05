@@ -2,7 +2,7 @@
 	"name": "wtaniwe-web",
 	"displayName": "WTANIWE (web) - Writing Tool, An Integrated Writing Environment (web extension)",
 	"description": "Writing Tool, An Integrated Writing Environment (web extension)",
-	"version": "0.0.150",
+	"version": "0.0.155",
 	"publisher": "luke-callaghan",
 	"icon": "media/icon.png",
 	"private": false,
@@ -164,7 +164,7 @@
 					"default": true
 				},
 				"wt.reloadWatcher.enabled": {
-					"description": "Enable a file system watch on 'contextValues.json'.  This will monitor the file for any changes and ask the user to refresh their workspace if we detect a change made to the file that was not performed by the extension.  (Usually, this will occur if you do a git operation such as 'pull' or 'checkout', and is a nice hook to refresh the WTANIWE workspace internal variables to reflect that change).  IMPORTANT: WTANIWE will neglect to overwrite contextValues.json when it finds a version that is newer than the last version it wrote.  This is so the extension does not overwrite any manual edits.",
+					"description": "Enable a file system watch on 'contextValues.json'.\n\nThis will monitor the file for any changes and ask the user to refresh their workspace if we detect a change made to the file that was not performed by the extension.  \n\n(Usually, this will occur if you do a git operation such as 'pull' or 'checkout', and is a nice hook to refresh the WTANIWE workspace internal variables to reflect that change).  \n\nIMPORTANT: WTANIWE will neglect to overwrite contextValues.json when it finds a version that is newer than the last version it wrote.  This is so the extension does not overwrite any manual edits.",
 					"type": "boolean",
 					"default": true
 				},
@@ -204,9 +204,14 @@
 					"default": true
 				},
 				"wt.wtSearch.slowMode": {
-					"description": "Slow mode is for slower machines and larger projects.  In the search bar view without slow mode turned on, a search will be made every time you change the value of the search bar.  With slow mode turned on, the search only occurs when you hit enter or click the search icon next to the search bar.",
+					"markdownDescription": "Slow mode is for slower machines and larger projects.  \n\nIn the search bar view without slow mode turned on, a search will be made every time you change the value of the search bar.  With slow mode turned on, the search only occurs when you hit enter or click the search icon next to the search bar.",
 					"type": "boolean",
 					"default": true
+				},
+				"wt.synonyms.apiKey": {
+					"markdownDescription": "API Key for Merriam-Webster's [Thesaurus API](https://dictionaryapi.com/products/api-collegiate-thesaurus), to get the full use of WTANIWE's Intellisense functionality, I recommend you sign up for this API and provide your key here.\n\nOnce you do, reload your window and you should start seeing results for synonyms in your intellisense and in the Synonyms Panel.  Register [here](https://dictionaryapi.com/register/index).  \n\nNOTE: This cannot be updated while the extension is running.  After updating this value, you need to reload the window for it to take effect.  \n\nOR run command `wt.synonyms.updateApi` (Writing Tool: Update Synonyms API Key for User) to update it on the fly.",
+					"type": "string",
+					"default": ""
 				}
 			}
 		},
@@ -397,12 +402,12 @@
 			},
 			{
 				"command": "wt.outline.moveDown",
-				"title": "Move Resource Down",
+				"title": "Move Down",
 				"icon": "$(diff-editor-next-change)"
 			},
 			{
 				"command": "wt.outline.moveUp",
-				"title": "Move Resource Up",
+				"title": "Move Up",
 				"icon": "$(diff-editor-previous-change)"
 			},
 			{
@@ -416,7 +421,23 @@
 			},
 			{
 				"command": "wt.outline.renameFile",
-				"title": "Rename Resource"
+				"title": "Rename"
+			},
+			{
+				"command": "wt.outline.editDescription",
+				"title": "Edit Description"
+			},
+			{
+				"command": "wt.outline.editMarkdownDescription",
+				"title": "Edit Markdown Description"
+			},
+			{
+				"command": "wt.outline.editDescription",
+				"title": "Edit Description"
+			},
+			{
+				"command": "wt.outline.editMarkdownDescription",
+				"title": "Edit Markdown Description"
 			},
 			{
 				"command": "wt.outline.newSnip",
@@ -435,19 +456,19 @@
 			},
 			{
 				"command": "wt.outline.removeResource",
-				"title": "Delete Resource in Outline"
+				"title": "Move to Recycling"
 			},
 			{
 				"command": "wt.outline.copyItems",
-				"title": "Copy Outline Tree Items"
+				"title": "Copy"
 			},
 			{
 				"command": "wt.outline.pasteItems",
-				"title": "Paste Outline Tree Items"
+				"title": "Paste"
 			},
 			{
 				"command": "wt.outline.duplicateItems",
-				"title": "Duplicate Outline Tree Items"
+				"title": "Duplicate"
 			},
 			{
 				"command": "wt.outline.copyPath",
@@ -468,11 +489,11 @@
 			},
 			{
 				"command": "wt.scratchPad.renameFile",
-				"title": "Rename Resource"
+				"title": "Rename"
 			},
 			{
 				"command": "wt.scratchPad.permanentlyDelete",
-				"title": "Pemanently Delete Resource"
+				"title": "Pemanently Delete"
 			},
 			{
 				"command": "wt.scratchPad.deleteAll",
@@ -486,11 +507,11 @@
 			},
 			{
 				"command": "wt.recyclingBin.renameFile",
-				"title": "Rename Recycled Resource"
+				"title": "Rename Recycled"
 			},
 			{
 				"command": "wt.recyclingBin.permanentlyDelete",
-				"title": "Pemanently Delete Resource"
+				"title": "Pemanently Delete"
 			},
 			{
 				"command": "wt.recyclingBin.deleteAll",
@@ -540,12 +561,12 @@
 			},
 			{
 				"command": "wt.import.fileExplorer.filter",
-				"title": "Filter Selected Resource from Imports Folder",
+				"title": "Filter Selection from Imports Folder",
 				"icon": "$(close)"
 			},
 			{
 				"command": "wt.import.fileExplorer.defilter",
-				"title": "Un-Filter Selected Resource from Imports Folder",
+				"title": "Un-Filter Selection from Imports Folder",
 				"icon": "$(check)"
 			},
 			{
@@ -644,6 +665,14 @@
 				"command": "wt.synonyms.searchWord",
 				"title": "Search Synonym",
 				"icon": "$(search)"
+			},
+			{
+				"command": "wt.synonyms.updateApiKey",
+				"title": "Writing Tool: Update Synonyms API Key for User"
+			},
+			{
+				"command": "wt.synonyms.updateCachePath",
+				"title": "Writing Tool: Update Cache Path for Workspace"
 			},
 			{
 				"command": "wt.editor.remove",
@@ -964,11 +993,11 @@
 			},
 			{
 				"command": "wt.outline.commandPalette.copyNode",
-				"title": "Writing Tool: Outline: Copy Resource"
+				"title": "Writing Tool: Outline: Copy"
 			},
 			{
 				"command": "wt.outline.commandPalette.pasteNode",
-				"title": "Writing Tool: Outline: Paste Resource"
+				"title": "Writing Tool: Outline: Paste"
 			},
 			{
 				"command": "wt.outline.commandPalette.duplicateNode",
@@ -988,7 +1017,7 @@
 			},
 			{
 				"command": "wt.outline.commandPalette.moveNode",
-				"title": "Writing Tool: Outline: Move Node",
+				"title": "Writing Tool: Outline: Move Resource",
 				"enablement": "editorLangId == wt"
 			},
 			{
@@ -997,14 +1026,22 @@
 			},
 			{
 				"command": "wt.outline.commandPalette.renameNode",
-				"title": "Writing Tool: Outline: Rename Node"
+				"title": "Writing Tool: Outline: Rename Resource"
 			},
 			{
-				"title": "Writing Tool: Scratch Pad: Pemanently Delete Resource",
+				"command": "wt.outline.commandPalette.editDescription",
+				"title": "Writing Tool: Outline: Edit Resource Description"
+			},
+			{
+				"command": "wt.outline.commandPalette.editMarkdownDescription",
+				"title": "Writing Tool: Outline: Edit Resource Markdown Description"
+			},
+			{
+				"title": "Writing Tool: Scratch Pad: Pemanently Delete",
 				"command": "wt.scratchPad.commandPalette.deleteNode"
 			},
 			{
-				"title": "Writing Tool: Scratch Pad: Rename Resource",
+				"title": "Writing Tool: Scratch Pad: Rename",
 				"command": "wt.scratchPad.commandPalette.renameNode"
 			},
 			{
@@ -1012,15 +1049,15 @@
 				"command": "wt.scratchPad.commandPalette.moveNode"
 			},
 			{
-				"title": "Writing Tool: Recycling Bin: Pemanently Delete Resource",
+				"title": "Writing Tool: Recycling Bin: Pemanently Delete",
 				"command": "wt.recyclingBin.commandPalette.deleteNode"
 			},
 			{
-				"title": "Writing Tool: Recycling Bin: Rename Recycled Resource",
+				"title": "Writing Tool: Recycling Bin: Rename Recycled",
 				"command": "wt.recyclingBin.commandPalette.renameNode"
 			},
 			{
-				"title": "Writing Tool: Recycling Bin: Recover Node",
+				"title": "Writing Tool: Recycling Bin: Recover",
 				"command": "wt.recyclingBin.commandPalette.recoverNode"
 			},
 			{
@@ -1184,6 +1221,14 @@
 				},
 				{
 					"command": "wt.outline.renameFile",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.editDescription",
+					"when": "false"
+				},
+				{
+					"command": "wt.outline.editMarkdownDescription",
 					"when": "false"
 				},
 				{
@@ -1612,15 +1657,28 @@
 				},
 				{
 					"command": "wt.outline.renameFile",
-					"when": "view == wt.outline"
+					"when": "view == wt.outline",
+					"group": "0_visualdata@1"
+				},
+				{
+					"command": "wt.outline.editDescription",
+					"when": "view == wt.outline",
+					"group": "0_visualdata@2"
+				},
+				{
+					"command": "wt.outline.editMarkdownDescription",
+					"when": "view == wt.outline",
+					"group": "0_visualdata@3"
 				},
 				{
 					"command": "wt.outline.manualMove",
-					"when": "view == wt.outline"
+					"when": "view == wt.outline",
+					"group": "movenodes@1"
 				},
 				{
 					"command": "wt.outline.removeResource",
-					"when": "view == wt.outline"
+					"when": "view == wt.outline",
+					"group": "movenodes@2"
 				},
 				{
 					"command": "wt.outline.copyItems",
@@ -1931,6 +1989,14 @@
 				"linux": "f2",
 				"mac": "f2",
 				"when": "wt.valid && (activeViewlet == workbench.view.extension.wt && focusedView == wt.outline)"
+			},
+			{
+				"command": "wt.outline.editActiveTabDescription",
+				"key": "-",
+				"win": "ctrl+shift+f2",
+				"linux": "ctrl+shift+f2",
+				"mac": "ctrl+shift+f2",
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
 			},
 			{
 				"command": "wt.outline.copyItems",

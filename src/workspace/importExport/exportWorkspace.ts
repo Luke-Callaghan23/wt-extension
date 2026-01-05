@@ -10,6 +10,7 @@ import { Buff } from '../../Buffer/bufferSource';
 
 type FragmentsExportPromise = {
     title: string,
+    description?: string,
     markdownPromise: Thenable<Uint8Array>
 }
 
@@ -26,6 +27,7 @@ async function recordSnipData (node: SnipNode): Promise<SnipsExport> {
             const fragment = content.data as FragmentNode;
             const out: FragmentsExportPromise = {
                 title: fragment.ids.display,
+                description: fragment.ids.description,
                 markdownPromise: vscode.workspace.fs.readFile(content.getUri())
             };
             outputPromises.push(out);
@@ -41,6 +43,7 @@ async function recordSnipData (node: SnipNode): Promise<SnipsExport> {
                 op.markdownPromise.then(mdArray => {
                     resolve({
                         title: op.title,
+                        description: op.description,
                         markdown: extension.decoder.decode(mdArray)
                     });
                 });
@@ -55,6 +58,7 @@ async function recordSnipData (node: SnipNode): Promise<SnipsExport> {
 
     return {
         title: node.ids.display,
+        description: node.ids.description,
         contents: output
     }
 }
@@ -75,6 +79,7 @@ async function recordFragmentContainer (fragments: OutlineNode[]): Promise<Fragm
         const markdown = fragmentBuffers[i];
         record.push({
             title: fragment.data.ids.display,
+            description: fragment.data.ids.description,
             markdown: extension.decoder.decode(markdown)
         });
     }
@@ -102,6 +107,7 @@ async function recordChaptersContainer (container: ContainerNode): Promise<Chapt
         const snipsRecord = await recordSnipsContainer(chapterNode.snips.data as ContainerNode);
         chaptersRecord.push({
             title: chapterNode.ids.display,
+            description: chapterNode.ids.description,
             fragments: fragementsRecord,
             snips: snipsRecord,
         });

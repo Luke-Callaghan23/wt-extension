@@ -223,6 +223,7 @@ const handlePaste = async (
                 relativePath: `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}`,
                 ordering: ordering,
                 display: `${snip.data.ids.display} (copy)`,
+                description: snip.data.ids.description ? `${snip.data.ids.description} (copy)` : undefined,
                 type: 'snip'
             }
         });
@@ -272,6 +273,7 @@ const handlePaste = async (
                 relativePath: `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}`,
                 ordering: ordering,
                 display: `${fragment.data.ids.display} (copy)`,
+                description: fragment.data.ids.description ? `${fragment.data.ids.description} (copy)` : undefined,
                 type: 'fragment'
             }
         })

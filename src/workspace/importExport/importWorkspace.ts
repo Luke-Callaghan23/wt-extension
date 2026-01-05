@@ -25,7 +25,8 @@ async function initializeFragments (
         const fragmentFilename = getUsableFileName('fragment', true);
         const fileConfig: ConfigFileInfo = {
             ordering: ordering,
-            title: fragmentRecord.title
+            title: fragmentRecord.title,
+            description: fragmentRecord.description,
         };
         configMap[fragmentFilename] = fileConfig;
 
@@ -59,10 +60,11 @@ async function initializeSnips (
         await vscode.workspace.fs.createDirectory(snipFolderUri);
 
         // Insert config info for this snip
-        const snipConfig = {
+        const snipConfig: ConfigFileInfo = {
             title: snipRecord.title,
+            description: snipRecord.description,
             ordering: ordering
-        } as ConfigFileInfo;
+        };
         configMap[snipFileName] = snipConfig;
 
         // Create the fragments
@@ -109,10 +111,11 @@ async function initializeChapters (
         await vscode.workspace.fs.createDirectory(chapterFolderUri);
 
         // Insert config info for this chapter
-        const chapterConfig = {
+        const chapterConfig: ConfigFileInfo = {
             title: chapterRecord.title,
+            description: chapterRecord.description,
             ordering: ordering
-        } as ConfigFileInfo;
+        };
         configMap[chapterFileName] = chapterConfig;
 
         // Create the snips

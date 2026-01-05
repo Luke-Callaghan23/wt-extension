@@ -9,6 +9,7 @@ import { OutlineTreeProvider } from "../outlineProvider/outlineTreeProvider";
 import * as removeFunctions from './impl/removeNodes';
 import * as createFunctions from './impl/createNodes';
 import * as renameFunctions from './impl/renameNodes';
+import * as editDescriptionFunctions from './impl/editNodeDescription';
 import { Workspace } from '../workspace/workspaceClass';
 import { NodeTypes } from '../outlineProvider/fsNodes';
 import * as console from '../miscTools/vsconsole';
@@ -33,8 +34,10 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 	public newSnip =  createFunctions.newSnip;
 	public newFragment = createFunctions.newFragment;
 
-    // Renaming ndoes
+    // Editing node visual data
 	renameResource = renameFunctions.renameResource;
+	editNodeDescription = editDescriptionFunctions.editNodeDescription;
+	editNodeMarkdownDescription = editDescriptionFunctions.editNodeMarkdownDescription;
 
 	// Copy and pasting files
 	copy = copyPaste.copy;
@@ -50,7 +53,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
         return initializeOutline(OutlineView.viewId, init);
     }
 
-	async refresh(reload: boolean, updates: OutlineNode[]): Promise<void> {
+	async refresh(reload: boolean, updates: OutlineNode[], skipTodosUpdate: boolean = false): Promise<void> {
 
 		// If the reload option is set to true, the caller wants us to reload the outline tree
 		//		completely from disk
@@ -59,7 +62,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 			TODOsView.clearTodos();
 		}
 
-		if (updates.length !== 0) {
+		if (updates.length !== 0 && !skipTodosUpdate) {
 			// Because of all the various edits that the outline view does on the internal structure 
 			//		and because we want to avoid uneeded reading of the disk file structure, we
 			//		send over the outline node to the todo view whenever their is updates

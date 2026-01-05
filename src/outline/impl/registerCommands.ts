@@ -42,6 +42,16 @@ export function registerCommands (this: OutlineView) {
         if (this.view.selection.length > 1) return;
         this.renameResource();
     }));
+    
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.editDescription', (resource: OutlineNode) => {
+        if (this.view.selection.length > 1) return;
+        this.editNodeDescription(resource);
+    }));
+    
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.editMarkdownDescription', (resource: OutlineNode) => {
+        if (this.view.selection.length > 1) return;
+        this.editNodeMarkdownDescription(resource);
+    }));
 
     this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.newChapter", (resource) => {
         this.newChapter(resource);
@@ -328,5 +338,32 @@ export function registerCommands (this: OutlineView) {
         }
         const renamer = result;
         return this.renameResource(renamer);
+    }));
+
+    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.editActiveTabDescription", async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+
+        const uri = editor.document.uri;
+        const outlineNode = await this.getTreeElementByUri(uri);
+        if (!outlineNode) return;
+
+        return this.editNodeMarkdownDescription(outlineNode);
+    }));
+
+    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.commandPalette.editDescription", async () => {
+        const result = await this.selectFile();
+        if (result === null) {
+            return null;
+        }
+        return this.editNodeDescription(result);
+    }));
+
+    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.commandPalette.editMarkdownDescription", async () => {
+        const result = await this.selectFile();
+        if (result === null) {
+            return null;
+        }
+        return this.editNodeMarkdownDescription(result);
     }));
 }

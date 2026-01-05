@@ -55,7 +55,14 @@ export class OutlineNode extends TreeNode {
     }
 
     getTooltip (): string | vscode.MarkdownString {
-        return `${this.data.ids.type} | '${this.data.ids.display}'`;
+        const tooltip = `${this.data.ids.type} | '${this.data.ids.display}'`;
+        if (this.data.ids.description) {
+            const md = new vscode.MarkdownString(`${tooltip}\n\n---\n\n${this.data.ids.description}`);
+            md.supportHtml = true;
+            md.supportThemeIcons = true;
+            return md;
+        }
+        return tooltip;
     }
     
     hasChildren (): boolean {

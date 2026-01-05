@@ -13,6 +13,7 @@ export type WorkspaceExport = {
 // Ordered array of chapters data
 export type ChaptersRecord = {
     title: string,
+    description?: string,
     fragments: FragmentRecord,
     snips: SnipsRecord
 }[];
@@ -20,6 +21,7 @@ export type ChaptersRecord = {
 // Ordered array of snip data
 export type SnipsExport = {
     title: string,
+    description?: string,
     contents: (FragmentsExport | SnipsExport)[],
 };
 
@@ -28,6 +30,7 @@ export type SnipsRecord = SnipsExport[];
 // Ordered array of fragments markdown strings in that container
 export type FragmentsExport = {
     title: string,
+    description?: string,
     markdown: string
 };
 export type FragmentRecord = FragmentsExport[];

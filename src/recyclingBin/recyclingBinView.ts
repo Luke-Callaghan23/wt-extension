@@ -20,6 +20,7 @@ export type RecycleLog = {
     deleteTimestamp: number,
     resourceType: ResourceType,
     title: string,
+    description?: string,
 };
 
 export interface Renamable<T> {
@@ -83,7 +84,8 @@ implements
             const dotConfig: { [index: string]: ConfigFileInfo } = {
                 [logItem.recycleBinName]: {
                     ordering: nodeIdx,
-                    title: logItem.title
+                    title: logItem.title,
+                    description: logItem.description,
                 }
             };
 

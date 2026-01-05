@@ -7,6 +7,7 @@ export type NodeTypes<N extends TreeNode> = RootNode<N> | SnipNode<N> | ChapterN
 export type Ids = {
     type: ResourceType;
     display: string;
+    description?: string;
     uri: vscode.Uri;
     relativePath: string;
     fileName: string;

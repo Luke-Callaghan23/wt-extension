@@ -44,6 +44,7 @@ export async function quickPickPrompt (options: QuickPickOptions): Promise<strin
 
 export type ConfigFileInfoExpanded = {
     title: string,
+    description?: string
     ordering: number,
     fileName: string,
     node: OutlineNode
@@ -51,6 +52,7 @@ export type ConfigFileInfoExpanded = {
 
 export type ConfigFileInfo = {
     title: string,
+    description?: string,
     ordering: number
 };
 

@@ -165,6 +165,7 @@ export async function initializeChapter <T extends TreeNode> ({
 
     const displayName = parentDotConfig[fileName] === undefined ? fileName : parentDotConfig[fileName].title;
     const ordering = parentDotConfig[fileName] === undefined ? 10000 : parentDotConfig[fileName].ordering;
+    const description = parentDotConfig[fileName]?.description;
 
     let chapterFolderEntries: [ string, vscode.FileType ][];
     try {
@@ -258,6 +259,7 @@ export async function initializeChapter <T extends TreeNode> ({
         ids: {
             type: 'chapter',
             display: displayName,
+            description: description,
             ordering: ordering,
             uri: chapterFolderUri,
             relativePath: relativePath,
@@ -294,6 +296,7 @@ export async function initializeSnip<T extends TreeNode> ({
 
     const displayName = parentDotConfig[fileName] === undefined ? fileName : parentDotConfig[fileName].title;
     const ordering = parentDotConfig[fileName] === undefined ? 10000 : parentDotConfig[fileName].ordering;
+    const description = parentDotConfig[fileName]?.description;
 
     let snipFolderEntries: [ string, vscode.FileType ][];
     try {
@@ -361,6 +364,7 @@ export async function initializeSnip<T extends TreeNode> ({
         ids: {
             type: 'snip',
             display: displayName,
+            description: description,
             ordering: ordering,
             uri: snipFolderUri,
             relativePath: relativePath,
@@ -412,10 +416,8 @@ export async function initializeFragment ({
     const displayName = info.title;
     const ordering = info.ordering === undefined ? 10000 : info.ordering;
 
-
     // Create full and relative paths for this fragment
     const fragmentFullPath = vscodeUris.Utils.joinPath(parentUri, fragmentName);
-
 
     // Read the first 200 characters of the markdown string
     const md = readFilePreview(fragmentFullPath.fsPath, fragmentName);
@@ -424,6 +426,7 @@ export async function initializeFragment ({
         ids: {
             type: 'fragment',
             display: displayName,
+            description: info.description,
             ordering: ordering,
             uri: fragmentFullPath,
             relativePath: relativePath,
