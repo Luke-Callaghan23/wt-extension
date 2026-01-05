@@ -95,8 +95,8 @@ export class SearchResultsTree
             if (editor && !editor.selection.isEmpty) {
                 selectedText = editor.document.getText(editor.selection);
                 const [ _, __, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
+                await vscode.commands.executeCommand('workbench.view.extension.wtSearch');
                 await vscode.commands.executeCommand('wt.wtSearch.updateSearchBarValue', selectedText);
-                vscode.commands.executeCommand('workbench.view.extension.wtSearch');
                 return this.searchBarValueWasUpdated(selectedText, useRegex, caseInsensitive, matchTitles, wholeWord, new vscode.CancellationTokenSource().token);
             }
             else {

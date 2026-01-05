@@ -114,6 +114,8 @@
         // Handle messages sent from the extension to the webview
         window.addEventListener('message', async (event) => {
             const message = event.data; // The json data that the extension sent
+            console.log({message});
+            console.log({event});
             switch (message.kind) {
                 case 'slowModeValueUpdated':
                     slowMode = message.slowMode;
@@ -124,6 +126,10 @@
                     break;
                 case 'updateSearchBar':
                     searchBar.value = message.searchBar;
+                    if (message.focus) {
+                        console.log("erm, heller?")
+                        searchBar.focus();
+                    }
             }
         });
     }

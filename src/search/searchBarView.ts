@@ -112,12 +112,13 @@ implements
                 this.matchTitles
             ]
         }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.updateSearchBarValue', (newSearchBarValue) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.updateSearchBarValue', async (newSearchBarValue) => {
             this.latestSearchBarValue = newSearchBarValue;
             Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
             this._view?.webview.postMessage({
                 kind: 'updateSearchBar',
-                searchBar: this.latestSearchBarValue
+                searchBar: this.latestSearchBarValue,
+                focus: true,
             });
         }));
     }
