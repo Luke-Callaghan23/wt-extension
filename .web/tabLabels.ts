@@ -10,6 +10,7 @@ import { ScratchPadView } from '../scratchPad/scratchPadView';
 import { NotebookPanelNote, NotebookPanel } from '../notebook/notebookPanel';
 import { vagueNodeSearch } from '../miscTools/help';
 
+export type FileName = string;
 export class TabLabels {
     public static enabled: boolean = true;
         constructor (private context: vscode.ExtensionContext) {
@@ -20,6 +21,11 @@ export class TabLabels {
             if (!e.affectsConfiguration(configuration)) return;
             TabLabels.assignNamesForOpenTabs();
         }));
+    }
+
+    private static tmpLabels: Record<FileName, string> = {};
+    public static setTmpLabel (fileName: FileName, title: string) {
+        TabLabels.tmpLabels[fileName] = title;
     }
 
     private registerCommands() {
@@ -147,8 +153,12 @@ export class TabLabels {
         });
 
         // Patterns for the color picker
-        finalPatterns['*/tmp/**.wt'] = 'Example Fragment';
+        finalPatterns['*/tmp/**exampleSentence*.wt'] = 'Example Fragment';
         finalPatterns['*/tmp/**.css'] = 'Color Picker';
+
+        for (const [ fileName, title ] of Object.entries(TabLabels.tmpLabels)) {
+            finalPatterns[`*/tmp/**${fileName}`] = title;
+        }
 
         return configuration.update('workbench.editor.customLabels.patterns', finalPatterns, ConfigurationTarget.Workspace);
     }
