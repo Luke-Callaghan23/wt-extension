@@ -11,7 +11,6 @@ import { TextMatchForNote } from '../timedViewUpdate';
 import { WTNotebookController } from './notebookController';
 import { markdownFormattedFragmentLinkRegex } from '../../miscTools/fragmentLinker';
 
-export const invalidAliasCharactersRegex = /([^a-zA-Z0-9\s-.?])/;
 
 /*
 NOTES on NotebookSerializer and NotebookController and how wtnote files are handled
@@ -774,9 +773,6 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             }
 
             const serializedCell = this.getSerializedCell(cell, cellMetadata);
-            if (lastHeaderWasAlias && invalidAliasCharactersRegex.exec(serializedCell.text)) {
-                throw "Cells under the alias header can only use alphanumeric, whitespace, and regular hyphens (-) characters.";
-            }   
             headerBuckets[lastHeader].push(serializedCell);
         }
 

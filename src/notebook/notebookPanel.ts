@@ -8,7 +8,7 @@ import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { __, addSingleWorkspaceEdit, compareFsPath, defaultProgress, formatFsPathForCompare, getFullJSONStringFromLocation, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
+import { __, addSingleWorkspaceEdit, compareFsPath, defaultProgress, escapeUserTextForRegex, formatFsPathForCompare, getFullJSONStringFromLocation, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
@@ -174,7 +174,7 @@ implements
 
     protected getTitleAndAliasPattern (note: NotebookPanelNote, withId: boolean = true) {
         const realAliases = [...note.aliases, note.title]
-            .map(a => a.trim())
+            .map(a => escapeUserTextForRegex(a.trim()))
             .filter(a => a.length > 0)
             .sort((a, b) => b.length - a.length);
 

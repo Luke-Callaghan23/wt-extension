@@ -720,3 +720,7 @@ export async function addSingleWorkspaceEdit (edits: vscode.WorkspaceEdit, locat
         edits.replace(location.uri, location.range, replaceString);
     }
 }
+
+export function escapeUserTextForRegex (text: string) {
+    return text.replaceAll(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}

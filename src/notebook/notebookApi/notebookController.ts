@@ -3,7 +3,7 @@ import { Workspace } from '../../workspace/workspaceClass';
 import { NotebookPanel } from '../notebookPanel';
 import { __, compareFsPath } from '../../miscTools/help';
 import { TabLabels } from '../../tabLabels/tabLabels';
-import { invalidAliasCharactersRegex, NotebookCellMetadata, NotebookCellOutputMetadata, NotebookMetadata, WTNotebookSerializer } from './notebookSerializer';
+import { NotebookCellMetadata, NotebookCellOutputMetadata, NotebookMetadata, WTNotebookSerializer } from './notebookSerializer';
 import { ExtensionGlobals,  } from '../../extension';
 
 export class WTNotebookController {
@@ -177,13 +177,6 @@ export class WTNotebookController {
                 execution.end(false, Date.now());
                 return;
             }
-            if (invalidAliasCharactersRegex.exec(responseName)) {
-                const resp = await vscode.window.showInformationMessage(`Invalid input`, {
-                    detail: `Notebook titles can only have alphanumeric, whitespace, and regular hyphen (-) characters in them.  Please try again.`,
-                    modal: true,
-                }, "Okay");
-                if (!resp) return;
-            }
             else {
                 newName = responseName;
                 break;
@@ -269,16 +262,6 @@ export class WTNotebookController {
                     }
                 }
             }
-        }
-
-        if (isAliasTextBox && invalidAliasCharactersRegex.exec(cell.document.getText())) {
-            execution.replaceOutput([
-                new vscode.NotebookCellOutput([
-                    vscode.NotebookCellOutputItem.stderr("ERROR: Cells under the alias header can only use alphanumeric, whitespace, and regular hyphens (-) characters.  Please clean up your input and try again.")
-                ])
-            ]);
-            execution.end(true, Date.now());
-            return false;
         }
 
         // Add an output to the cell with `convert` set to `markdown`
