@@ -29,7 +29,15 @@ export type ColorEntry = {
     decoratorsIndex: number
 };
 
-export async function update (this: WordWatcher, editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
+export interface WatchedWordRegexInfo {
+    watchedAndEnabled: string[];
+    regexString: string;
+    regex: RegExp;
+    excludedRegeces: RegExp[];
+    watchedRegeces: {uri: string, reg: RegExp }[];
+}
+
+export function getWordWatcherRegexInfo (this: WordWatcher): WatchedWordRegexInfo {
     let watchedAndEnabled: string[];
     let regexString: string;
     let regex: RegExp;
@@ -80,6 +88,24 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
         watchedRegeces = this.lastCalculatedRegeces.watchedRegeces;
     }
     this.wasUpdated = false;
+
+    return {
+        watchedAndEnabled,
+        regexString,
+        regex,
+        excludedRegeces,
+        watchedRegeces,
+    }
+}
+
+export async function update (this: WordWatcher, editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
+    const {
+        watchedAndEnabled,
+        regexString,
+        regex,
+        excludedRegeces,
+        watchedRegeces,
+    } = this.getWordWatcherRegexInfo();
 
     // Clear all old decorations first
     this.allDecorationTypes.forEach(dec => {

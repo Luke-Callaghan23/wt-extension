@@ -5,7 +5,7 @@ import * as console from '../miscTools/vsconsole';
 import { Packageable, Packager } from '../packageable';
 import { Timed } from '../timedView';
 import * as extension from '../extension';
-import { update, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, changePattern, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString, defaultWatchedWordDecoration } from './timer';
+import { update, getWordWatcherRegexInfo, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, changePattern, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString, defaultWatchedWordDecoration } from './timer';
 import { getChildren, getTreeItem, getParent } from './tree';
 import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';
 import { __, hexToRgb } from '../miscTools/help';
@@ -13,6 +13,7 @@ import { gatherPaths, commonWordsPrompt } from './commonWords';
 import { colorPick } from './colorPick';
 import { v4 as uuid } from 'uuid';
 import { getHoveredWord } from '../intellisense/common';
+import { WordWatcherCodeActionProvider } from './wordWatcherCodeActions';
 
 type WordSearchEntry = {
 	id: 'wordSearch';
@@ -121,6 +122,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
     jumpNextInstanceOf = jumpNextInstanceOfWord;
     
     update = update;
+    getWordWatcherRegexInfo = getWordWatcherRegexInfo;
     disable = disable;
     changeColor = changeColor;
     changePattern = changePattern;
@@ -176,6 +178,9 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
         });
 
         this.view = vscode.window.createTreeView('wt.wordWatcher', { treeDataProvider: this });
+        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider ({
+            language: 'wt'
+        }, new WordWatcherCodeActionProvider(this.context, this.workspace, this)));
 		context.subscriptions.push(this.view);
         context.subscriptions.push(defaultWatchedWordDecoration);
         this.registerCommands();
@@ -312,6 +317,11 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
                 : 'add';
             this.updateWords(operation, word, 'wt.wordWatcher.disabledWatchedWords')
         }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.addExclusion", (excludedWord: string) => {
+            this.updateWords("add", excludedWord, "wt.wordWatcher.excludedWords");
+        }))
+
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordWatcher.changeColor', (resource: WordWatchedWordEntry) => {
             this.changeColor(resource.word);
         }));
