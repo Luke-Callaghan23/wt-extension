@@ -57,8 +57,9 @@ export async function surroundSelectionWith (startRanges: (string | null) | (str
                 else {
                     if (selection.start.character >= start.length) {
                         const newStart = new vscode.Position(selection.start.line, selection.start.character - start.length);
+                        const newStartRange = new vscode.Range(newStart, selection.start);
 
-                        const beforeText = document.getText(beforeSelection);
+                        const beforeText = document.getText(newStartRange);
                         const prefixSelection = new vscode.Selection(newStart, selection.start);
                         if (beforeText === start) {
                             beforeSelection = prefixSelection;
