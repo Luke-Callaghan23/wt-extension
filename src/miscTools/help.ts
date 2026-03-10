@@ -211,10 +211,20 @@ export async function vagueNodeSearch (
 //      opened, then we want to open the document in the same view column as that doc
 export async function determineAuxViewColumn <T>(getter: ((uri: vscode.Uri)=>Promise<T | null>|(T | null))): Promise<vscode.ViewColumn> {
     
-    const activeEditor = vscode.window.activeTextEditor;
-    if (activeEditor) {
-        const activeDocumentUri = activeEditor.document.uri;
-        if (await getter(activeDocumentUri)) {
+    const activeTextEditor = vscode.window.activeTextEditor;
+    const activeNotebookEditor = vscode.window.activeNotebookEditor;
+
+    let uri: vscode.Uri | null = null;
+    if (activeNotebookEditor) {
+        uri = activeNotebookEditor.notebook.uri;
+    }
+    else if (activeTextEditor) {
+        uri = activeTextEditor.document.uri;
+    }
+
+    if (uri) {
+        const node = await getter(uri);
+        if (node) {
             return vscode.ViewColumn.Active;
         }
     }

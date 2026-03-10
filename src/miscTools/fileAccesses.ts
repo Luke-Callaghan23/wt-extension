@@ -36,7 +36,12 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
         // Mark the last opened document for each parental node as the document which was just opened
         let currentUri: vscode.Uri | undefined = openedUri;
         let { node, source } = await vagueNodeSearch (openedUri);
-        if (!node || !source || source !== 'outline') return;
+        if (!node || !source) return;
+
+        if (source !== 'outline') {
+            TabLabels.assignNamesForOpenTabs();
+            return;
+        }
 
         let currentNode: OutlineNode | null = node as OutlineNode;
         while (currentUri && currentNode) {
@@ -92,8 +97,13 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
     static registerCommands (context: vscode.ExtensionContext): void {
 
 
-        const cb = async (editor: vscode.TextEditor | undefined) => {
+        const cb = async (editor: vscode.TextEditor | vscode.NotebookEditor | undefined) => {
             setTimeout(() => {
+                if (editor && 'notebook' in editor) {
+                    FileAccessManager.documentOpened(editor.notebook.uri);
+                    return;
+                }
+
                 if (editor && editor.document) {
                     FileAccessManager.documentOpened(editor.document.uri);
                 }
@@ -106,6 +116,7 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
         };
 
         context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(cb));
+        context.subscriptions.push(vscode.window.onDidChangeActiveNotebookEditor(cb));
         context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(() => cb(vscode.window.activeTextEditor)));
         context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((e) => cb(e.textEditor)));
     }

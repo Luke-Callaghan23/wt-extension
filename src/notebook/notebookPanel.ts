@@ -8,7 +8,7 @@ import { editNote,  addNote, removeNote } from './updateNoteContents';
 import { Buff } from '../Buffer/bufferSource';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import { TabLabels } from '../tabLabels/tabLabels';
-import { __, addSingleWorkspaceEdit, compareFsPath, defaultProgress, escapeUserTextForRegex, formatFsPathForCompare, getFullJSONStringFromLocation, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
+import { __, addSingleWorkspaceEdit, compareFsPath, defaultProgress, determineAuxViewColumn, escapeUserTextForRegex, formatFsPathForCompare, getFullJSONStringFromLocation, getTextCapitalization, readDotConfig, transformToCapitalization, writeDotConfig } from '../miscTools/help';
 import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
@@ -222,6 +222,42 @@ implements
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.getNotebook', () => this));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.refresh', () => {
             return this.refresh(true);
+        }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.openNote", async () => {
+            
+            interface NotePick extends vscode.QuickPickItem {
+                idx: number,
+            }
+            
+            const notes: NotePick[] = this.notebook.map<NotePick>((note, idx) => {
+                const aliasesString = note.aliases.join(', ');
+                const title = note.title;
+
+                const noteTitle = `${title} `;
+                return __<NotePick>({
+                    label: noteTitle,
+                    description: note.aliases.length > 0 
+                        ? `(${aliasesString})`
+                        : undefined,
+                    idx: idx,
+                });
+            });
+
+            const picked = await vscode.window.showQuickPick<NotePick>(notes, {
+                canPickMany: false,
+                ignoreFocusOut: false,
+                matchOnDescription: true,
+                matchOnDetail: true,
+                prompt: "Select a notebook",
+            });
+            if (picked === undefined || picked === null) return;
+
+            const pickedNote = this.notebook[picked.idx];
+            const noteDoc = await vscode.workspace.openNotebookDocument(pickedNote.uri);
+            return vscode.window.showNotebookDocument(noteDoc, {
+                viewColumn: await determineAuxViewColumn((uri) => this.getNote(uri))
+            });
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.addAliasToNote', async (aliasText: string | undefined) => {

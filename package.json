@@ -1012,6 +1012,10 @@
 				"title": "Writing Tool: Refresh notebook"
 			},
 			{
+				"command": "wt.notebook.openNote",
+				"title": "Writing Tool: Open Notebook"
+			},
+			{
 				"command": "wt.reloadWatcher.reloadWorkspace",
 				"title": "Writing Tool: Refresh Workspace"
 			},

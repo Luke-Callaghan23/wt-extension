@@ -121,6 +121,11 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             }
         }
 
+        if (wordText === '' || wordText.length === 0) {
+            // No need to emit an error for an empty word
+            return [];
+        }
+
         const uri = formatFsPathForCompare(document.uri);
         const notebookPanel = ExtensionGlobals.notebookPanel;
         if (notebookPanel.matchedNotebook && uri in notebookPanel.matchedNotebook) {
