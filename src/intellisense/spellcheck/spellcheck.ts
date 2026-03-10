@@ -97,7 +97,6 @@ export class Spellcheck implements Timed {
                     continue;
                 }
 
-
                 // Do not add red decorations to words that have been matched by notebook
                 const notebookPanel = ExtensionGlobals.notebookPanel;
                 if (notebookPanel) {

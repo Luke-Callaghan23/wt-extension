@@ -70,6 +70,7 @@ export class ExtensionGlobals {
     public static todoView: TODOsView;
     public static searchBarView: SearchBarView;
     public static searchResultsView: SearchResultsView;
+    public static personalDictionary: PersonalDictionary;
     public static workspace: Workspace;
     public static context: vscode.ExtensionContext;
     
@@ -84,6 +85,7 @@ export class ExtensionGlobals {
         todoView: TODOsView,
         searchBarView: SearchBarView,
         searchResultsView: SearchResultsView,
+        personalDictionary: PersonalDictionary,
         workspace: Workspace,
         context: vscode.ExtensionContext
     ) {
@@ -94,6 +96,7 @@ export class ExtensionGlobals {
         ExtensionGlobals.todoView = todoView;
         ExtensionGlobals.searchBarView = searchBarView;
         ExtensionGlobals.searchResultsView = searchResultsView;
+        ExtensionGlobals.personalDictionary = personalDictionary;
         ExtensionGlobals.workspace = workspace;
         ExtensionGlobals.context = context;
     }
@@ -187,7 +190,7 @@ async function loadExtensionWorkspace (
         searchResultsView.initialize();
         report("Loaded search bad");
 
-        ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notebook, todo, searchBarView, searchResultsView, workspace, context);
+        ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notebook, todo, searchBarView, searchResultsView, personalDictionary, workspace, context);
 
         new CoderModer(context);
         const wordCountStatus = new WordCount(context);

@@ -13,7 +13,11 @@ export class PersonalDictionary implements Packageable<'wt.personalDictionary'> 
     }
 
     search (word: string): boolean {
-        return this.dict[word] === 1;
+        return this.dict[
+            word.toLocaleLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+        ] === 1;
     }
 
     constructor (

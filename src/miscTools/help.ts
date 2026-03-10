@@ -207,8 +207,10 @@ export async function vagueNodeSearch (
 // "auxilliary" documents are documents such as a scratch pad fragment or a notebook wtnote
 // since these documents are often not the main thing a user will be editing, we'll *usually* want to open the 
 //      aux document in in the "Beside" view column
-// BUT, if the currently active view column is already a document of the same type as the aux document being
-//      opened, then we want to open the document in the same view column as that doc
+// But, if the current document is already an auxiliary document of the same type as the document to open,
+//      we want to reuse the active view column
+// Param "getter" is a function that recieves the URI of the current active document and returns that uri's node
+//      if the node is the same type as the active document
 export async function determineAuxViewColumn <T>(getter: ((uri: vscode.Uri)=>Promise<T | null>|(T | null))): Promise<vscode.ViewColumn> {
     
     const activeTextEditor = vscode.window.activeTextEditor;

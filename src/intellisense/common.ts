@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { SynonymProviderType, SynonymsProvider } from './synonymsProvider/provideSynonyms';
 import { capitalize } from '../miscTools/help';
+import { ExtensionGlobals } from '../extension';
 
 export type HoverPosition = {
     start: number;
@@ -105,6 +106,10 @@ export async function getHoverMarkdown (text: string, provider: SynonymProviderT
     // Query the synonym api for the hovered word
     const response = await SynonymsProvider.provideSynonyms(text, provider);
     if (response.type === 'error') {
+        if (ExtensionGlobals.personalDictionary.search(text)) {
+            return "### From your personal dictionary";
+        }
+
         return response.message;
     }
 
