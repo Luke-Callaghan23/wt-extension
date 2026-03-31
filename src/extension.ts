@@ -198,11 +198,12 @@ async function loadExtensionWorkspace (
         report("Loaded status bar items");
 
         new FileLinker(context, workspace);
-        new FragmentLinker(context);
+        const linker = new FragmentLinker(context);
 
         const timedViews = new TimedView(context, [
             ['wt.notebook.tree', 'notebook', notebook],
             ['wt.todo', 'todo', todo],
+            ['wt.fragmentLinker', 'fragmentLinker', linker],
             ['wt.spellcheck', 'spellcheck', spellcheck],
             ['wt.wordWatcher', 'wordWatcher', wordWatcher],
             ['wt.spacingHighlights', 'spacingHighlights', spacingHighlights],

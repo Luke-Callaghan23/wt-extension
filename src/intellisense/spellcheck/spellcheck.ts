@@ -9,6 +9,8 @@ import { compareFsPath, formatFsPathForCompare, stripDiacritics } from '../../mi
 import { Autocorrect } from '../../autocorrect/autocorrect';
 import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
 import { ExtensionGlobals } from '../../extension';
+import { FragmentLinker } from '../../miscTools/fragmentLinker';
+import { notebookDecorations } from '../../notebook/timedViewUpdate';
 
 
 export class Spellcheck implements Timed {
@@ -33,7 +35,7 @@ export class Spellcheck implements Timed {
         const document = editor.document;
         if (!document) return;
 
-        const decorations: vscode.DecorationOptions[] = [];
+        const errorDecorations: vscode.DecorationOptions[] = [];
 
         const fullText: string = document.getText();
         const visible: vscode.Range[] = [ ...editor.visibleRanges ];
@@ -57,6 +59,13 @@ export class Spellcheck implements Timed {
                     }
                 });
                 if (isCommented !== undefined) return;
+
+                const isUrl = FragmentLinker.urlRanges.find(ur => {
+                    if (ur.contains(start)) {
+                        return ur;
+                    }
+                })
+                if (isUrl !== undefined) return;
                 
                 const wordRange = new vscode.Range(start, end);
     
@@ -110,7 +119,7 @@ export class Spellcheck implements Timed {
                 }
 
                 Spellcheck.currentMisspelledWordRanges.push(range)
-                decorations.push({
+                errorDecorations.push({
                     range: range,
                     hoverMessage: `Unrecognized word: ${text}`
                 });
@@ -118,7 +127,7 @@ export class Spellcheck implements Timed {
     
         }
         // Set all red underlines
-        editor.setDecorations(Spellcheck.RedUnderline, decorations);
+        editor.setDecorations(Spellcheck.RedUnderline, errorDecorations);
     }
 
     getUpdatesAreVisible(): boolean {

@@ -4,11 +4,16 @@
     "scopeName": "source.wt",
     "patterns": [
         { "include": "#mdLink" },
+        { "include": "#urlLink" },
         { "include": "#comments" }
     ],
     "repository": {
         "mdLink": {
             "match": "\\[.*?\\]\\(.*?\\)",
+            "name": "keyword"
+        },
+        "urlLink": {
+            "match": "(https?|ftp):\\/\\/[^\\s\/$.?#].[^\\s]*",
             "name": "keyword"
         },
         "comments": {
