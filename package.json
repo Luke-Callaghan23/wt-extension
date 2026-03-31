@@ -222,7 +222,7 @@
 					"default": true
 				},
 				"wt.synonyms.apiKey": {
-					"markdownDescription": "API Key for Merriam-Webster's [Thesaurus API](https://dictionaryapi.com/products/api-collegiate-thesaurus), to get the full use of WTANIWE's Intellisense functionality, I recommend you sign up for this API and provide your key here.\n\nOnce you do, reload your window and you should start seeing results for synonyms in your intellisense and in the Synonyms Panel.  Register [here](https://dictionaryapi.com/register/index).  \n\nNOTE: This cannot be updated while the extension is running.  After updating this value, you need to reload the window for it to take effect.  \n\nOR run command `wt.synonyms.updateApi` (Writing Tool: Update Synonyms API Key for User) to update it on the fly.",
+					"markdownDescription": "API Key for Merriam-Webster's [Thesaurus API](https://dictionaryapi.com/products/api-collegiate-thesaurus), to get the full use of WTANIWE's Intellisense functionality, I recommend you sign up for this API and provide your key here.\n\nOnce you do, reload your window and you should start seeing results for synonyms in your intellisense and in the Synonyms Panel.  Register [here](https://dictionaryapi.com/register/index).  \n\nNOTE: This cannot be updated while the extension is running.  After updating this value, you need to reload the window for it to take effect.\n\nNOTE: You will recieve two keys, make sure you are using the THESAURUS key, not the dictionary key.\n\nOR run command `wt.synonyms.updateApi` (Writing Tool: Update Synonyms API Key for User) to update it on the fly.",
 					"type": "string",
 					"default": ""
 				},

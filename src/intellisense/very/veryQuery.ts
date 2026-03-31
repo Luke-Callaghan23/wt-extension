@@ -1,9 +1,12 @@
 import * as vscode from 'vscode';
 import * as console from '../../miscTools/vsconsole';
 import { Fetch } from '../../Fetch/fetchSource';
+import { stripDiacritics } from '../../miscTools/help';
 
 export async function queryVery (word: string): Promise<string[] | null> {
     try {
+        word = stripDiacritics(word);
+
         const JSDOM = require('jsdom').JSDOM;
         // Fetch losethevery.com to get synonyms for the very word
         const response: Response = await Fetch(`https://www.losethevery.com/another-word/very-${word}`);

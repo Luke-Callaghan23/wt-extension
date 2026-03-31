@@ -27,7 +27,7 @@ export class HoverProvider implements vscode.HoverProvider {
             }
         }
 
-        const hoverText = await getHoverMarkdown(hoverPosition?.text);
+        const hoverText = await getHoverMarkdown(hoverPosition.strippedText);
 
         // Create and return the new hover
         const startPosition = document.positionAt(hoverPosition.start);

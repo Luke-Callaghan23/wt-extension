@@ -79,6 +79,7 @@ export class DefinitionsPanelWebview implements vscode.WebviewViewProvider, vsco
     public async updateViewForDefinition (noteMd: string) {
         if (!this._view) return;
 
+        // @ts-ignore - not sure why this is reported as an error, import seems fine and it works
         const mdit = new MarkdownIt({
             linkify: true,
             breaks: true,

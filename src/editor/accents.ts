@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { stripDiacritics } from '../miscTools/help';
 
 const accentsList: Record<string, string[]> = {
     "A": ["À", "Á", "Â", "Ã", "Ä", "Å", "Ā", "Ă", "Ą", "Ǎ", "Ȁ", "Ȃ", "Ả", "Ấ", "Ầ", "Ẩ", "Ẫ", "Ậ", "Ắ", "Ằ", "Ẳ", "Ẵ", "Ặ"],
@@ -119,8 +120,7 @@ export class Accents {
         for (let selection of editor.selections) {
             let selectionText: string | null = null;
             if (!selection.isEmpty) {
-                selectionText = editor.document.getText(selection)
-                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");      // remove diacritics
+                selectionText = stripDiacritics(editor.document.getText(selection));
                 if (selectionText.length === 1 || selectionText.length === 2) {
                     if (!(selectionText in accentsList)) {
                         selectionText = null;
@@ -132,7 +132,7 @@ export class Accents {
             }
             else {
                 const newSelection = new vscode.Selection(selection.start, new vscode.Position(selection.start.line, selection.start.character + 1));
-                const newSelectionText = editor.document.getText(newSelection).normalize("NFD").replace(/[\u0300-\u036f]/g, "") as string;
+                const newSelectionText = stripDiacritics(editor.document.getText(newSelection));
                 if (newSelectionText in accentsList) {
                     selectionText = newSelectionText;
                     selection = newSelection;

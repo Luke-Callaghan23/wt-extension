@@ -4,7 +4,7 @@ import { Timed } from '../timedView';
 import { DiskContextType, Workspace } from '../workspace/workspaceClass';
 import { PersonalDictionary } from '../intellisense/spellcheck/personalDictionary';
 import { Packageable } from '../packageable';
-import { getAllIndices, vagueNodeSearch } from '../miscTools/help';
+import { getAllIndices, getTextCapitalization, stripDiacritics, transformToCapitalization, vagueNodeSearch } from '../miscTools/help';
 import { ExtensionGlobals } from '../extension';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { report } from 'process';
@@ -207,17 +207,22 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
     }
 
     async tryCorrection (original: string, editor: vscode.TextEditor, range: vscode.Range): Promise<boolean> {
-        const replacement = this.corrections[original];
-        if (!replacement) return false;
+        const capitalization = getTextCapitalization(original);
+        
+        const stripped = stripDiacritics(original.toLocaleLowerCase());
+        const replacementRaw = this.corrections[stripped];
+        if (!replacementRaw) return false;
         if (!this.enabled) return false;
-
+        
+        const replacement = transformToCapitalization(replacementRaw, capitalization);
+        
         const documentFileName = vscodeUri.Utils.basename(editor.document.uri);
-        if (this.exclusions[documentFileName]?.[original]) {
-            const instancesOfOriginal = getAllIndices(editor.document.getText(), original);
+        if (this.exclusions[documentFileName]?.[stripped]) {
+            const instancesOfOriginal = getAllIndices(editor.document.getText(), stripped);
             for (let index = 0; index < instancesOfOriginal.length; index++) {
                 const instanceStartIndex = instancesOfOriginal[index];
                 if (instanceStartIndex === editor.document.offsetAt(range.start)) {
-                    if (index < this.exclusions[documentFileName][original]) {
+                    if (index < this.exclusions[documentFileName][stripped]) {
                         return false;
                     }
                 }
@@ -239,7 +244,6 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
             editor.document.uri, 
             original, replacement, 
             replacedRange,
-
         );
 
         this.update(editor, [])
@@ -247,31 +251,35 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
     }
 
     private wordExcluded (original: string, fileName: string, range: vscode.Range) {
+
+        const stripped = stripDiacritics(original);
+
         if (this.exclusions[fileName]) {
-            if (this.exclusions[fileName][original]) {
-                this.exclusions[fileName][original]++;
+            if (this.exclusions[fileName][stripped]) {
+                this.exclusions[fileName][stripped]++;
             }
             else {
-                this.exclusions[fileName][original] = 1;
+                this.exclusions[fileName][stripped] = 1;
             }
         }
         else {
             this.exclusions[fileName] = {
-                [original]: 1
+                [stripped]: 1
             };
         }
         Workspace.updateContext(this.context, "wt.autocorrections.exclusions", this.exclusions);
     }
     
     private stopCorrecting (original: string): any {
-        delete this.corrections[original];
+        const stripped = stripDiacritics(original);
+        delete this.corrections[stripped];
         Workspace.updateContext(this.context, "wt.autocorrections.corrections", this.corrections);
     }
     
     enabled: boolean;
     async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
 
-        const docText = editor.document.getText();
+        const docText = stripDiacritics(editor.document.getText());
         
         const specialCharacterEdits: [ vscode.Range, CorrectedWord ][] = [];
 
@@ -323,7 +331,7 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
                 //      as the corrected text
                 const currentText = editor.document.getText(correctionData.range);
                 const replacedText = correctionData.corrected;
-                if (currentText !== replacedText) {
+                if (stripDiacritics(currentText) !== stripDiacritics(replacedText)) {
                     return [];
                 }
 

@@ -474,23 +474,28 @@ export async function newFragment (
     options?: CreateOptions
 ): Promise<vscode.Uri | null> {
 
+
     // If the root is the selected node or if there is no selected resource in the
     //      view, it's too ambiguous to decide the destination, instead default to 
     //      the last accessed fragment as the selected resource
     if (!resource || resource.data.ids.type === 'root') {
         const lastAccessedFragmentUri = FileAccessManager.lastAccessedFragment;
         if (lastAccessedFragmentUri === undefined) {
-            vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
-            return null;
+            // If no last accessed fragment, create a new snip instead
+            vscode.window.showWarningMessage("[WARN] Couldn't find where to place the fragment, creating a new 'Work Snip' instead.");
+            return this.newSnip(resource);
         }
         
         // If there is a last accessed fragment, use that
         resource = await this.getTreeElementByUri(lastAccessedFragmentUri)! as OutlineNode;
         if (!resource) {
-            vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
-            return null;
+            // Otherwise create a new work snip and place the fragment there
+            vscode.window.showWarningMessage("[WARN] Couldn't find where to place the fragment, creating a new 'Work Snip' instead.");
+            return this.newSnip(resource);;
         }
     }
+
+    const originalResource = resource;
     
     // Need to know the uri of the new fragment's parent so that we can insert the new file into it
     let parentUri: vscode.Uri;
@@ -501,13 +506,32 @@ export async function newFragment (
         parentNode = await this.getTreeElementByUri(parentUri)! as OutlineNode;
     }
     else if (resource.data.ids.type === 'container') {
+        
+        // If parent is root and this is the work snips folder, then create a new snip
+        if (resource.data.ids.parentTypeId === 'root') {
+            if (compareFsPath(this.workspace.workSnipsFolder, resource.data.ids.uri)) {
+                vscode.window.showWarningMessage("[WARN] Cannot place fragment directly into the 'Work Snips' container, creating a new snip instead.");
+                return this.newSnip(resource);
+            }
+        }
+
+        
         // Get the last fragment of the selected container that was accessed
         const lastAccessedFragmentInContainerUri = FileAccessManager.lastAccessedFragmentForUri(resource.data.ids.uri);
         resource = await this.getTreeElementByUri(lastAccessedFragmentInContainerUri)! as OutlineNode;
-        if (!resource) {
-            // Since a container is a something that holds other folder nodes, you cannot add a fragment direcly to a container
-            vscode.window.showErrorMessage('Error cannot tell where to place the new fragment.  Please open a fragment file or select an item in the outline panel to create a new fragment.');
-            return null;
+        if (!resource || resource.data.ids.type === 'root') {
+
+            // If we couldn't find a "last accessed" fragment, then create a different resource instead
+            // If the selected resource is the chapters container, then create a new chapter
+            if (compareFsPath(this.workspace.chaptersFolder, originalResource.data.ids.uri)) {
+                vscode.window.showWarningMessage("[WARN] Cannot place fragment directly into a the 'Chapters' container, creating a new chapter instead.");
+                return this.newChapter(originalResource);
+            }
+            // Otherwise, create a new snip at the snip container location
+            else {
+                vscode.window.showWarningMessage("[WARN] Cannot place fragment directly into a container, creating a new snip instead.");
+                return this.newSnip(originalResource);
+            }
         }
 
         // Get the parent of that last accessed fragment to use as the house of the new fragment

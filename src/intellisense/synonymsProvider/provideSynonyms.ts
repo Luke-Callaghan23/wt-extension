@@ -94,7 +94,7 @@ export class SynonymsProvider {
                 ignoreFocusOut: false,
                 placeHolder: "00000000-0000-0000-0000-000000000000",
                 prompt: "Enter API Key",
-                title: "Enter Merriam-Webster API Key.  This will be stored in your VSCode User Settings.  (No where else).",
+                title: "Enter Merriam-Webster API Key.  This will be stored in your VSCode User Settings.  (No where else).  (Use the THESAURUS key, not the dictionary key).",
                 value: curKey,
                 valueSelection: [ 0, curKey.length ]
             });

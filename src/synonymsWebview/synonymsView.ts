@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
-import { getNonce } from '../miscTools/help';
+import { getNonce, stripDiacritics } from '../miscTools/help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 
@@ -22,7 +22,7 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 		const apiKey = configuration.get<string>('wt.synonyms.apiKey');
 		if (!apiKey) {
 			vscode.window.showWarningMessage (
-				`WARN: The synonyms view uses a dictionary API for intellisense to function.\n\nYou need to get your own API key from [here](https://dictionaryapi.com/register/index).  Once you have your key, update the \`wt.synonyms.apiKey\` setting, then reload your window.  Or run click "Update API Key" to update it without reloading.`,
+				`WARN: The synonyms view uses a dictionary API for intellisense to function.\n\nYou need to get your own API key from [here](https://dictionaryapi.com/register/index).  Once you have your key, update the \`wt.synonyms.apiKey\` setting, then reload your window.  Or run click "Update API Key" to update it without reloading.  (NOTE: make sure you use the THESAURUS key, not the dictionary key)`,
 				"Update API Key"
 			).then((response) => {
 				if (response === 'Update API Key') {
@@ -92,7 +92,7 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 					}
 	
 					// Get the seleccted text within the selection
-					const selected: string = document.getText(selection);
+					const selected: string = stripDiacritics(document.getText(selection));
 					
 					// If there is a space in the selected text, then split the string on that space, and search only the first
 					//		word in the selection

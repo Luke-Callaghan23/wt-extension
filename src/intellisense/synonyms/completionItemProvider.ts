@@ -2,12 +2,13 @@ import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
 import { HoverPosition, getHoverMarkdown, getHoveredWord } from '../common';
-import { Capitalization, formatFsPathForCompare, getTextCapitalization, transformToCapitalization } from '../../miscTools/help';
+import { Capitalization, formatFsPathForCompare, getTextCapitalization, stripDiacritics, transformToCapitalization } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
 import { SynonymError, SynonymSearchResult, Synonyms, SynonymsProvider } from '../synonymsProvider/provideSynonyms';
 import { ExtensionGlobals } from '../../extension';
 import { TextMatchForNote } from '../../notebook/timedViewUpdate';
 import { __ } from './../../miscTools/help';
+import { nextTick } from 'process';
 
 const NUMBER_COMPLETES = 20;
 
@@ -20,6 +21,7 @@ type ActivationState = {
     hoverRange: vscode.Range,
     hoverPosition: HoverPosition,
     word: string, 
+    strippedWord: string,
     lastSelectedDefinition: number,
     definitionsActivated: boolean[],
     definitionsExpanded: boolean[],
@@ -66,6 +68,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         context: vscode.CompletionContext
     ): Promise<vscode.CompletionList<vscode.CompletionItem> | vscode.CompletionItem[]> {
         let wordText: string;
+        let strippedText: string;
         let hoverPosition: HoverPosition; 
         let hoverRange: vscode.Range;
         {
@@ -77,6 +80,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 hoverPosition = this.activationState.hoverPosition;
                 hoverRange = this.activationState.hoverRange;
                 wordText = this.activationState.word;
+                strippedText = this.activationState.strippedWord;
             }
             else {
 
@@ -100,11 +104,14 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                     const endOff = end.end < start.end ? start.end : end.end;
     
                     wordText = document.getText().substring(startOff, endOff);
+                    strippedText = stripDiacritics(wordText);
                     hoverRange = new vscode.Range(document.positionAt(startOff), document.positionAt(endOff));
+
                     hoverPosition = {
                         start: startOff,
                         end: endOff,
-                        text: wordText.split(/\s/g).join('_')
+                        text: wordText,
+                        strippedText: strippedText
                     }
                 }
                 else {
@@ -116,6 +123,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                     }
                     hoverPosition = hoveredWord;
                     wordText = hoveredWord.text;
+                    strippedText = hoveredWord.strippedText;
                     hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
                 }
             }
@@ -142,7 +150,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 //      it like it's meant to be used :(
                 const filt = document.getText(noteMatch.range);
 
-                const finalOptions = allOptions.filter(opt => opt.toLocaleLowerCase() !== wordText.toLocaleLowerCase());
+                const finalOptions = allOptions.filter(opt => opt.toLocaleLowerCase() !== strippedText.toLocaleLowerCase());
                 return finalOptions.map(option => __<vscode.CompletionItem>({
                     label: option,
                     detail: `Alias of '${noteMatch.note.title}'`,
@@ -158,8 +166,10 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         let response: Synonyms;
 
         // Query the dictionary api for the selected word
-        const res = await SynonymsProvider.provideSynonyms(hoverPosition.text, this.isWordHippo ? 'wh' : 'synonymsApi');
+        const res = await SynonymsProvider.provideSynonyms(strippedText, this.isWordHippo ? 'wh' : 'synonymsApi');
         if (res.type === 'error') {
+            // Pass unstripped text in here because users will see it
+            // All the options come from the stripped query above
             const corrections = getMisspellCorrections(res, hoverRange, wordText);
             return corrections;
         }
@@ -200,6 +210,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 hoverPosition: hoverPosition,
                 hoverRange: hoverRange,
                 word: wordText,
+                strippedWord: strippedText,
                 lastSelectedDefinition: 0,
                 definitionsActivated: activations,
                 definitionsExpanded: expansions,
@@ -257,7 +268,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             // If the current definition is activated, then also show all the synonyms for the hovered definition
             let synonymCompletions: vscode.CompletionItem[] = []
             if (activations[definitionIndex]) {
-                synonymCompletions = await this.resolveDefinitionItems(hoverRange, hoverPosition, wordText, definitionIndex, indexStr);
+                synonymCompletions = await this.resolveDefinitionItems(hoverRange, hoverPosition, wordText, strippedText, definitionIndex, indexStr);
                 const originalLength = synonymCompletions.length;
                 if (!expansions[definitionIndex] && originalLength > 5) {
                     synonymCompletions = synonymCompletions.slice(0, 5);
@@ -310,13 +321,14 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         hoverRange: vscode.Range,
         hoverPosition: HoverPosition,
         word: string, 
+        strippedWord: string,
         definitionIndex: number,
         defIndexStr: string
     ): Promise<vscode.CompletionItem[]> {
         
-        const wordCapitalization: Capitalization = getTextCapitalization(word);
+        const wordCapitalization: Capitalization = getTextCapitalization(strippedWord);
 
-        const synonyms = await SynonymsProvider.provideSynonyms(word, this.isWordHippo ? 'wh' : 'synonymsApi');
+        const synonyms = await SynonymsProvider.provideSynonyms(strippedWord, this.isWordHippo ? 'wh' : 'synonymsApi');
         if (!synonyms || synonyms.type === 'error') {
             return getMisspellCorrections(null, hoverRange, word);
         }

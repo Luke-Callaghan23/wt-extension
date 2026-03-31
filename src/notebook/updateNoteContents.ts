@@ -73,7 +73,7 @@ export async function addNote (this: NotebookPanel, resource: NotebookPanelNote 
                 viewColumn: col
             });
         })
-    })
+    });
 
 
     return insert.noteId;
