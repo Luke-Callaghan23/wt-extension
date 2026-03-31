@@ -22,7 +22,7 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 		const apiKey = configuration.get<string>('wt.synonyms.apiKey');
 		if (!apiKey) {
 			vscode.window.showWarningMessage (
-				`WARN: The synonyms view uses a dictionary API for intellisense to function.\n\nYou need to get your own API key from [here](https://dictionaryapi.com/register/index).  Once you have your key, update the \`wt.synonyms.apiKey\` setting, then reload your window.  Or run click "Update API Key" to update it without reloading.`,
+				`WARN: The synonyms view uses a dictionary API for intellisense to function.\n\nYou need to get your own API key from [here](https://dictionaryapi.com/register/index).  Once you have your key, update the \`wt.synonyms.apiKey\` setting, then reload your window.  Or run click "Update API Key" to update it without reloading.  (NOTE: make sure you use the THESAURUS key, not the dictionary key)`,
 				"Update API Key"
 			).then((response) => {
 				if (response === 'Update API Key') {
