@@ -6,11 +6,15 @@ import { TabLabels } from '../../tabLabels/tabLabels';
 import { NotebookCellMetadata, NotebookCellOutputMetadata, NotebookMetadata, WTNotebookSerializer } from './notebookSerializer';
 import { ExtensionGlobals,  } from '../../extension';
 
+type ExecutionCommand = 'editHeader' | 'editTitle' | 'editCell' | 'convertToHeader';
+
 export class WTNotebookController {
     readonly controllerId = 'wt.notebook.controller';
     readonly notebookType = 'wt.notebook';
     readonly label = 'Writing Tool Notebook Controller';
     readonly supportedLanguages = ['wtnote'];
+
+    private executionCommand: ExecutionCommand | null = null;
 
     private readonly controller: vscode.NotebookController;
     constructor (
@@ -34,11 +38,24 @@ export class WTNotebookController {
             vscode.commands.executeCommand("setContext", "cellKindContextValue", cellMetadata?.kind || 'unknown');
         });
 
+        // Function to run the `executeHandler` function on a cell with a specific command
+        // NOTE: all of these commands must be inside of an `executeHandler` because that is the only
+        //      place in the code where it is safe to begin a cell execution and cell executions are 
+        //      the only way to give error messages beneath cells, if necessary
+        const executeCellWithCommand = (cell: vscode.NotebookCell | null, executionCommand: ExecutionCommand) => {
+            cell = this.getSelectedCell(cell);
+            if (!cell) return;
+            
+            if (vscode.window.activeNotebookEditor && vscode.window.activeNotebookEditor.notebook) {
+                this.executionCommand = executionCommand;
+                return this.executionHandler([cell], vscode.window.activeNotebookEditor.notebook, this.controller);
+            }
+        }
 
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.convertToHeader", this.transformToHeader.bind(this)));
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editHeader", this.editHeaderText.bind(this)));
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editNoteTitle", this.editNoteTitle.bind(this)));
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editCell", this.transformToWTNote.bind(this)));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.convertToHeader", (cell) => executeCellWithCommand(cell, "convertToHeader")));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editHeader", (cell) => executeCellWithCommand(cell, "editHeader")));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editCell", (cell) => executeCellWithCommand(cell, "editCell")));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.cell.editNoteTitle", (cell) => executeCellWithCommand(cell, "editTitle")));
     }
 
     private getSelectedCell (cell: vscode.NotebookCell | null): vscode.NotebookCell | null {
@@ -57,37 +74,37 @@ export class WTNotebookController {
     // Called on a wtnote Code cell -- if that cell has content on exactly one line,
     //      then that cell will be swapped out for a 'header' cell, and the cells 
     //      beneath it will be treated as its children
-    private async transformToHeader (cell: vscode.NotebookCell | null) {
-        cell = this.getSelectedCell(cell);
-        if (!cell) return null;
+    private async transformToHeader (execution: vscode.NotebookCellExecution, cell: vscode.NotebookCell, document: vscode.NotebookDocument): Promise<boolean> {
+        const noteId = (document.metadata as NotebookMetadata).noteId;
 
-        const execution = this.controller.createNotebookCellExecution(cell);
-        execution.start(Date.now());
-        
         // Ensure content on only one line, and exit early if not
         const text = cell.document.getText();
         const fullLines = text.split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0)
+        
         if (fullLines.length > 1) {
             execution.replaceOutput([
                 new vscode.NotebookCellOutput([
                     vscode.NotebookCellOutputItem.stderr(`[ERROR] Header cells must have text on exactly one line.  Please remove text from ${fullLines.length - 1} line(s) of this cell to convert it into a header.`)
                 ], {})
             ]);
-            execution.end(true, Date.now());
-            return;
+            return false;
         }
 
-        // If there is content on just one line, then add output with metadata indicating that
-        //      this cell needs to be converted to a header, and reopen the notebook
-        execution.replaceOutput([
-            new vscode.NotebookCellOutput([], __<NotebookCellOutputMetadata>({
-                convert: 'header'
-            }))
-        ]);
-        execution.end(true, Date.now());
-        return this.reopenNotebook(cell.notebook);
+        const headerText = fullLines[0];
+
+        const headerCellData = new vscode.NotebookCellData(
+            vscode.NotebookCellKind.Markup,
+            await this.serializer.getCellContent(noteId, headerText, 'header', 'markdown'),
+            'markdown'
+        );
+        headerCellData.metadata = __<NotebookCellMetadata>({
+            kind: 'header',
+            originalText: headerText,
+        });
+        await this.updateCells(cell.index, headerCellData, document);
+        return true;
     }
 
     private async getNewName (
@@ -131,70 +148,36 @@ export class WTNotebookController {
 
     // Called on markdown cell with metadata.kind === 'header'
     // Used to change the text of the header cell in the notebook and the NotebookPanel
-    private async editHeaderText (cell: vscode.NotebookCell | null) {
-        cell = this.getSelectedCell(cell);
-        if (!cell) return null;
-
-        const execution = this.controller.createNotebookCellExecution(cell);
-        execution.start(Date.now()); // Keep track of elapsed time to execute cell.
-
-        // Ask user for the new name for this header
-        const newName = await this.getNewName(cell, 'header', execution);
-        if (!newName) {
-            execution.end(false, Date.now());
-            return;
-        }
-
-        // And store that updated value in output metadata for the NotebookSerilizer to pick up
-        execution.replaceOutput([
-            new vscode.NotebookCellOutput([], __<NotebookCellOutputMetadata>({
-                updateValue: newName
-            }))
-        ]);
-
-
-        execution.end(true, Date.now());
-        return this.reopenNotebook(cell.notebook);
+    private async editNoteHeaderText (execution: vscode.NotebookCellExecution, cell: vscode.NotebookCell, document: vscode.NotebookDocument): Promise<boolean> {
+        return this.editNoteHeader___impl(execution, 'header', cell, document);
     }
-
     
     // Called on markdown cell with metadata.kind === 'header-title'
     // Used to change the title of the note
     // Will also ask the user if they would like to replace all instances of this title throughout the work
-    private async editNoteTitle (cell: vscode.NotebookCell | null) {
-        cell = this.getSelectedCell(cell);
-        if (!cell) return null;
+    private async editNoteTitleText (execution: vscode.NotebookCellExecution, cell: vscode.NotebookCell, document: vscode.NotebookDocument): Promise<boolean> {
+        return this.editNoteHeader___impl(execution, 'header-title', cell, document);
+    }
 
-        const execution = this.controller.createNotebookCellExecution(cell);
-        execution.start(Date.now()); // Keep track of elapsed time to execute cell.
+    private async editNoteHeader___impl (
+        execution: vscode.NotebookCellExecution, 
+        cellKind: 'header' | 'header-title', 
+        cell: vscode.NotebookCell, 
+        document: vscode.NotebookDocument
+    ): Promise<boolean> {
+        
+        const newTitleName = await this.getNewName(cell, cellKind, execution);
+        if (!newTitleName) return false;
 
-
-        let newName: string;
-
-        while (true) {
-            const responseName = await this.getNewName(cell, 'header-title', execution);
-            if (!responseName) {
-                execution.end(false, Date.now());
-                return;
-            }
-            else {
-                newName = responseName;
-                break;
-            }
-        }
-
-        const noteId = (cell.notebook.metadata! as NotebookMetadata).noteId;
-        const notebookPanelNote = this.notebook.notebook.find(note => note.noteId === noteId);
-        if (!notebookPanelNote) throw 'not possible';
-
-        const edits = await this.notebook.getRenameEditsForNote(notebookPanelNote, notebookPanelNote.title, newName, new vscode.CancellationTokenSource().token);
-        if (!edits) return;
-        await vscode.workspace.applyEdit(edits, {
-            isRefactoring: true
+        const noteId = (document.metadata as NotebookMetadata).noteId;
+        const markdownCellText = await this.serializer.getCellContent(noteId, newTitleName, cellKind, 'markdown');
+        const updatedCell = new vscode.NotebookCellData(vscode.NotebookCellKind.Markup, markdownCellText, 'markdown');
+        updatedCell.metadata = __<NotebookCellMetadata>({
+            kind: cellKind,
+            originalText: newTitleName
         });
-
-        vscode.commands.executeCommand("wt.reloadWatcher.reloadViews");
-        vscode.window.showInformationMessage("Finished updating.  If you see some inaccuracies in a wtnote notebook window please just close and re-open.")
+        await this.updateCells(cell.index, updatedCell, document);
+        return true;
     }
 
 
@@ -202,37 +185,23 @@ export class WTNotebookController {
     // Called on a markdown cell with metadata.kind === 'input'
     // Used to convert the markdown cell back into its wtnote Code cell equivalent so that the user
     //      can then update contents
-    private async transformToWTNote (cell: vscode.NotebookCell | null) {
-        cell = this.getSelectedCell(cell);
-        if (!cell) return null;
-        
+    private async transformToWTNote (execution: vscode.NotebookCellExecution, cell: vscode.NotebookCell, document: vscode.NotebookDocument): Promise<boolean> {
+        const noteId = (document.metadata as NotebookMetadata).noteId;
+
         const cellMetadata = cell.metadata as NotebookCellMetadata | undefined;
-        if (cellMetadata) {
-            const execution = this.controller.createNotebookCellExecution(cell);
-            execution.start(Date.now());
-            if (cellMetadata.kind === 'header' || cellMetadata.kind === 'header-title') {
-                // Should never be called
-                execution.replaceOutput([
-                    new vscode.NotebookCellOutput([
-                        vscode.NotebookCellOutputItem.stderr("[WARN] Cannot edit headers.  Either delete this header or select 'Edit header'")
-                    ])
-                ]);
-                execution.end(true, Date.now());
-                return;
-            }
-            
-            // Add output with flag to convert this to an input box and reopen the document
-            execution.appendOutput([
-                new vscode.NotebookCellOutput([], __<NotebookCellOutputMetadata>({
-                    convert: 'input'
-                }))
+        if (cellMetadata && 'kind' in cellMetadata && cellMetadata.kind !== 'input') {
+            // Should never be called
+            execution.replaceOutput([
+                new vscode.NotebookCellOutput([
+                    vscode.NotebookCellOutputItem.stderr("[WARN] Cannot edit headers. Either delete this header or select 'Edit header'")
+                ])
             ]);
             execution.end(true, Date.now());
-            return this.reopenNotebook(cell.notebook);
+            return false;
         }
-        else {
-            throw 'todo'
-        }
+        
+        await this.toggleInputCellMode(noteId, cell, document);
+        return true;
     }
 
     // When an execute operation is called on a wtnote Code cell, we want to swap that cell
@@ -245,39 +214,34 @@ export class WTNotebookController {
         const execution = this.controller.createNotebookCellExecution(cell);
         execution.start(Date.now());
 
-        let isAliasTextBox: boolean = false;
-        const cellMetadata: NotebookCellMetadata | undefined = cell.metadata as any;
-        if (cellMetadata && cellMetadata.kind === 'input') {
-            const cells = notebook.getCells();
-            for (let idx = cell.index; idx >= 0; idx--) {
-                const curCell = cells[idx - 1];
-                if (curCell && curCell.metadata) {
-                    const headerMetadata = (curCell.metadata as NotebookCellMetadata);
-                    if (headerMetadata.kind === 'header') {
-                        const formattedHeader = headerMetadata.originalText.toLowerCase().trim();
-                        if (formattedHeader === 'alias' || formattedHeader === 'aliases') {
-                            isAliasTextBox = true;
-                        }
-                        break;
-                    }
-                }
+        const noteMetadata = notebook.metadata as NotebookMetadata;
+        const command = this.executionCommand;
+
+        if (command !== undefined && command !== null) {
+            let result: Promise<boolean>;
+            switch (command) {
+                case 'editTitle': result = this.editNoteTitleText(execution, cell, notebook); break;
+                case 'editHeader': result = this.editNoteHeaderText(execution, cell, notebook); break;
+                case 'convertToHeader': result = this.transformToHeader(execution, cell, notebook); break;
+                case 'editCell': result = this.transformToWTNote(execution, cell, notebook); break;
             }
+            execution.end(true, Date.now());
+            return result;
         }
-
-        // Add an output to the cell with `convert` set to `markdown`
-        // The NotebookSerializer will see this flag and will update the 
-        //      cell accordingly on disk
-        execution.replaceOutput([
-            new vscode.NotebookCellOutput([], __<NotebookCellOutputMetadata>({
-                convert: 'markdown'
-            }))
-        ]);
+        
+        // If there is no cell metadata, all we can do is assume that the cell is a regular input cell
+        // Cell metadata is missing on new cells created by the user
+        const cellMetadata = cell.metadata as NotebookCellMetadata | undefined;
+        if (cellMetadata && 'kind' in cellMetadata && cellMetadata.kind !== 'input') {
+            // If there is cell metadata, but it's not of the appropriate type to toggle mode
+            //      return normally, do not report any errors
+            execution.end(true, Date.now());
+            return true;
+        }
+        
+        // The only other operation left is to toggle the input cell's mode
+        await this.toggleInputCellMode(noteMetadata.noteId, cell, notebook);
         execution.end(true, Date.now());
-
-        // Then, reopen the notebook
-        if (update) {
-            await this.reopenNotebook(notebook);
-        }
         return true;
     }
 
@@ -298,76 +262,136 @@ export class WTNotebookController {
             }
         }
 
-        if (allSucceeded) {
-            return this.reopenNotebook(notebook);
-        }
+        this.executionCommand = null;
+        this.notebook.refresh(true);
     }
 
 
-    // Saves the notebook document, stores the view column, closes the document
-    //      then reopens it
-    // See: note at the top of `NotebookSerializer.ts` about how the notebook
-    //      serilaizer and controller function
-    // Once updates are stored in the metadata of the cells or the cells' outputs,
-    //     those updates are saved to the wtnote file on the file system by 
-    //     the NotebookSerializer (during notebook.save())
-    // And those changes are then reflected in the notebook document when it is 
-    //     deserialized again and opened by VSCode
-    public async reopenNotebook (notebook: vscode.NotebookDocument) {
-        await notebook.save();
+    public async toggleInputCellMode (noteId: string, cell: vscode.NotebookCell, notebook: vscode.NotebookDocument) {
+        const metadata = cell.metadata as NotebookCellMetadata | any;
 
-        // Store the view column of this notebook so that it can be reopened
-        //      in the same location that it was closed
-        const viewColumn = vscode.window.activeNotebookEditor!.viewColumn!;
+        let content: string;
+        let toggledToKind: vscode.NotebookCellKind;
+        let languageId: string;
 
-        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-        await vscode.commands.executeCommand('vscode.openWith', notebook.uri, 'wt.notebook', {
-            viewColumn: viewColumn,
+        // Since each cell metadata is supposed to the store the source text for that cell (lang=wtNote), 
+        //      we need to track not only what the content will be after conversion but also
+        //      the wtNote text
+        let internalContent: string;
+
+        if (cell.kind === vscode.NotebookCellKind.Code) {
+            internalContent = cell.document.getText();
+            content = await this.serializer.getCellContent(noteId, internalContent, 'input', 'markdown');
+            toggledToKind = vscode.NotebookCellKind.Markup;
+            languageId = 'markdown';
+        }
+        else if (cell.kind === vscode.NotebookCellKind.Markup) {
+            internalContent = metadata?.originalText || this.serializer.convertMarkdownCellToWTNoteText(cell.document.getText());
+            content = internalContent;
+            toggledToKind = vscode.NotebookCellKind.Code;
+            languageId = 'wtnote';
+        }
+        else throw 'unreachable';
+
+        const updatedCell = new vscode.NotebookCellData(toggledToKind, content, languageId);
+        updatedCell.metadata = __<NotebookCellMetadata>({
+            kind: 'input',
+            markdown: toggledToKind === vscode.NotebookCellKind.Markup,
+            originalText: internalContent,
         });
+        return this.updateCells(cell.index, updatedCell, notebook);
+    }
+
+
+    public async updateCells (
+        replaceCellIdx: number,
+        replacement: vscode.NotebookCellData[],
+        notebook: vscode.NotebookDocument,
+        preventSave?: boolean,
+    ): Promise<void>;
+    
+    public async updateCells (
+        replaceCellIdx: number,
+        replacement: vscode.NotebookCellData,
+        notebook: vscode.NotebookDocument,
+        preventSave?: boolean,
+    ): Promise<void>;
+
+    public async updateCells (
+        replaceCells: vscode.NotebookRange,
+        replacement: vscode.NotebookCellData[],
+        notebook: vscode.NotebookDocument,
+        preventSave?: boolean,
+    ): Promise<void>;
+
+    public async updateCells (
+        replaceCellsOrCell: number | vscode.NotebookRange,
+        replacement: vscode.NotebookCellData[] | vscode.NotebookCellData,
+        notebook: vscode.NotebookDocument,
+        preventSave?: boolean
+    ): Promise<void> {
+
+        let replaceRange: vscode.NotebookRange;
+        if (typeof replaceCellsOrCell === 'number') {
+            replaceRange = new vscode.NotebookRange(replaceCellsOrCell, replaceCellsOrCell + 1);
+        }
+        else {
+            replaceRange = replaceCellsOrCell;
+        }
+
+        let replacementCellsArray: vscode.NotebookCellData[];
+        if (Array.isArray(replacement)) {
+            replacementCellsArray = replacement;
+        }
+        else {
+            replacementCellsArray = [ replacement ];
+        }
+
+        const notebookEdit = new vscode.NotebookEdit(replaceRange, replacementCellsArray);
+        const workspaceEdit = new vscode.WorkspaceEdit();
+        workspaceEdit.set(notebook.uri, [notebookEdit]);
+
+        try {
+            const editsApplied = await vscode.workspace.applyEdit(workspaceEdit);
+            if (!editsApplied) {
+                throw "workspace.applyEdit returned false";
+            }
+        }
+        catch (err: any) {
+            vscode.window.showErrorMessage(`[ERR] Could not apply edit to notebook document: ${err}`);
+            throw err;
+        }
+
+        if (!preventSave) {
+            await notebook.save();
+        }
 
         // Force the link provider to refresh links on all active text editors
-        // This is in case the reopenNotebook operation was called in response
-        //      to an alias text box being updated (links to aliases will need
-        //      to corresponse with actual aliases)
         await this.notebook.forceLinkProviderRefresh();
 
         // Assign tab labels again
         return TabLabels.assignNamesForOpenTabs();
     }
 
-    // TODO: if VSCode ever add the ability to modify notebook contents from the API replace `reopendNotebook`
-    //      to use this function instead
-    private async _reopenNotebook (notebook: vscode.NotebookDocument, cellActions: {
-        cell: vscode.NotebookCell,
-        update: NotebookCellOutputMetadata
-    }[]) {
-        const noteId = (notebook.metadata as NotebookMetadata).noteId;
-        for (const cellAction of cellActions) {
-            const cell = cellAction.cell;
-            const action = cellAction.update;
-            const cellMetadata: NotebookCellMetadata | undefined = cell.metadata as any;
-            if (!cellMetadata || cellMetadata.kind === 'instructions') {
-                return this.reopenNotebook(notebook);
-            }
-
-            let updated: string | undefined;
-            if (action.updateValue) {
-                cellMetadata.originalText = action.updateValue;
-                updated = action.updateValue
-            }
-
-            if (action.convert) {
-                if (action.convert === 'header' || action.convert === 'markdown') {
-                    const markdownString = this.serializer.createMarkdownStringFromCellText(updated || cell.document.getText(), noteId);
-                    // SET CELL TEXT VALUE TO MARKDOWN STRING
-                    vscode.commands.executeCommand("notebook.cell.changeToMarkdown");
-                }
-                else if (action.convert === 'input') {
-                    // SET CELL TEXT VALUE TO ORIGINAL TEXT
-                    vscode.commands.executeCommand("notebook.cell.changeToCode");
-                }
-                else ((a: never) => {})(action.convert);
-            }
+    public async reopenNotebook (notebook: vscode.NotebookDocument) {
+            await notebook.save();
+    
+            // Store the view column of this notebook so that it can be reopened
+            //      in the same location that it was closed
+            const viewColumn = vscode.window.activeNotebookEditor!.viewColumn!;
+    
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            await vscode.commands.executeCommand('vscode.openWith', notebook.uri, 'wt.notebook', {
+                viewColumn: viewColumn,
+            });
+    
+            // Force the link provider to refresh links on all active text editors
+            // This is in case the reopenNotebook operation was called in response
+            //      to an alias text box being updated (links to aliases will need
+            //      to corresponse with actual aliases)
+            await this.notebook.forceLinkProviderRefresh();
+    
+            // Assign tab labels again
+            return TabLabels.assignNamesForOpenTabs();
         }
-    }
 }

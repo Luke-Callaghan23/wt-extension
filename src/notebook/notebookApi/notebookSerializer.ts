@@ -50,7 +50,7 @@ See NotebookSerializer.serializeNotebook to see how the serializer reads metadat
 
 
 export type NotebookMetadata = {
-    noteId: string,
+    noteId: string
 };
 
 export type NotebookCellMetadata = {
@@ -494,6 +494,23 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         return finalString;
     }
 
+    public async getCellContent (noteId: string, text: string, kind: NotebookCellMetadata['kind'], contentKind: 'markdown' | 'code'): Promise<string> {
+        if (contentKind === 'code') {
+            return text;
+        }
+
+        if (kind === 'header-title') {
+            return `# ${wtToMd(text)}:`;
+        }
+        else if (kind === 'header') {
+            return `### ${capitalize(text)}:`;
+        }
+        else if (kind === 'input') {
+            return this.createMarkdownStringFromCellText(text, noteId);
+        }
+        else throw 'unreachable';
+    }
+
     private async getCelldata (serializedCell: SerializedCell, noteId: string): Promise<vscode.NotebookCellData> {
         if (serializedCell.editing) {
             // If the cell is being edited, then return a vscode.NotebookCellData with kind===Code
@@ -568,7 +585,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         const title: vscode.NotebookCellData = {
             kind: vscode.NotebookCellKind.Markup,
             languageId: 'markdown',
-            value: `# ${wtToMd(serializedNote.title.text)}:`,
+            value: await this.getCellContent(serializedNote.noteId, serializedNote.title.text, 'header-title', 'markdown'),
             metadata: __<NotebookCellMetadata>({ 
                 kind: 'header-title',
                 originalText: serializedNote.title.text
@@ -624,10 +641,11 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
         // For each header:
         for (const header of serializedNote.headers) {
+            
             notebookData.cells.push({
                 kind: vscode.NotebookCellKind.Markup,
                 languageId: 'markdown',
-                value: `### ${capitalize(header.headerText)}:`,
+                value: await this.getCellContent(serializedNote.noteId, header.headerText, 'header', 'markdown'),
                 metadata: __<NotebookCellMetadata>({
                     kind: 'header',
                     originalText: header.headerText,
@@ -702,31 +720,6 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
             if (cellMetadata && cellMetadata.kind === 'instructions') {
                 foundInstructionsCell = true;
                 continue;
-            }
-
-            const convertTarget = this.getCellConvertTarget(cell);
-            if (convertTarget === 'input') {
-                // If convert target is 'input', a markdown cell is being converted to
-                //      a wtnote code cell
-                // So, the kind needs to remain as 'input', but `markdown` flag is now
-                //      set to false
-                // Called when 'Edit Cell' is clicked on a markdown cell
-                cellMetadata = {
-                    kind: 'input',
-                    markdown: false,
-                    originalText: cellMetadata!.originalText
-                };
-                cell.metadata = cellMetadata;
-            }
-            else if (convertTarget === 'header') {
-                // When the convert target is 'header', then change the kind of this cell
-                //      to header and overwrite `originalText` to the current value of the 
-                //      input cell
-                // This is called when the 'Convert to Header' is clicked on a wtnote cell
-                // `originalText` is overwritten because this is the value used by the 
-                //      serializer to set the text value of the header
-                cellMetadata!.kind = 'header';
-                cellMetadata!.originalText = cell.value;
             }
 
             // Update the `originalText` attribute of the cell metadata if the controller
@@ -840,7 +833,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         return new TextEncoder().encode(json);
     }
 
-    private convertMarkdownCellToWTNoteText (markdown: string): string {
+    public convertMarkdownCellToWTNoteText (markdown: string): string {
         return markdown
             .split("\n")                                        // Split lines
             .map(line => line.trim())                           // Trim
@@ -852,25 +845,10 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
     private getSerializedCell (cell: vscode.NotebookCellData, metadata: NotebookCellMetadata | undefined): SerializedCell {
         if (metadata && metadata.kind === 'instructions') throw 'unreachable';
 
-        const convertTarget = this.getCellConvertTarget(cell);
-
         if (cell.kind === vscode.NotebookCellKind.Code) {
-            // If the cell is not being converted into markdown, then set isEditing to true
-            const isEditing: boolean = convertTarget !== 'markdown';
-            return {
-                editing: isEditing,
-                text: cell.value
-            };
-        }
-        else if (convertTarget === 'input') {
-            // If converting from markdown into an input, then take the text value of the input
-            //      from the originalText field of the metadata
-            // And set editing to true
             return {
                 editing: true,
-                text: typeof metadata?.originalText === 'string'
-                    ? metadata.originalText
-                    : cell.value
+                text: cell.value
             };
         }
         else {
@@ -883,22 +861,6 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
         }
     }
 
-    // Reads output metadata to see if there is a target type for this cell to convert into
-    private getCellConvertTarget (cell: vscode.NotebookCellData): NotebookCellConvertTarget | null {
-        if (!cell.outputs) return null;
-
-        for (const output of cell.outputs) {
-            const outputMetadata: NotebookCellOutputMetadata | undefined = output.metadata;
-            if (!outputMetadata || !outputMetadata.convert) continue;
-
-            // TODO: maybe return something different if thre is more than out output???
-            // TODO: don't think that will ever happen, though
-            return outputMetadata.convert;
-        }
-        return null;
-    }
-
-    // Reads output metadata to see if there is updated text to set this cells value to
     private getUpdatedText (cell: vscode.NotebookCellData): string | null {
         if (!cell.outputs) return null;
 
