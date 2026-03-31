@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { stripDiacritics } from '../miscTools/help';
 
 
 export type JumpType = 'left' | 'right'
@@ -47,7 +48,7 @@ export async function jumpSentence (
     const document = editor.document;
     if (!document) return null;
 
-    const docText = document.getText();
+    const docText = stripDiacritics(document.getText());
 
     const newSelections: vscode.Selection[] = editor.selections.map(selection => {
         return jumpSentenceSingleSelection(
@@ -344,7 +345,7 @@ export async function jumpParagraph (jt: JumpType, shiftHeld?: boolean): Promise
     const document = editor.document;
     if (!document) return null;
     
-    const docText = document.getText();
+    const docText = stripDiacritics(document.getText());
 
     const newSelections: vscode.Selection[] = editor.selections.map(selection => {
         return jumpParagraphSingleSelection(
@@ -489,7 +490,7 @@ export async function getJumpWordSelection (jt: JumpType, shiftHeld?: boolean): 
     const document = editor.document;
     if (!document) return null;
 
-    const docText = document.getText();
+    const docText = stripDiacritics(document.getText());
     
     return editor.selections.map(selection => {
         return jumpWordSingleSelection(

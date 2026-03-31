@@ -274,6 +274,9 @@ export function getAllIndices (str: string, subStr: string): number[] {
     const indices: number[] = [];
     let startIndex = 0;
 
+    str = stripDiacritics(str);
+    subStr = stripDiacritics(str);
+
     while (true) {
         const index = str.indexOf(subStr, startIndex);
         if (index === -1) break;
@@ -723,4 +726,9 @@ export async function addSingleWorkspaceEdit (edits: vscode.WorkspaceEdit, locat
 
 export function escapeUserTextForRegex (text: string) {
     return text.replaceAll(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
+
+
+export function stripDiacritics (text: string): string {
+    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");     // strip diacritics
 }

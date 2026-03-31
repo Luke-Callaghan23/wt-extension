@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
-import { getHoveredWord } from '../common';
+import { getHoveredWord, HoverPosition } from '../common';
 import { Capitalization, getTextCapitalization, transformToCapitalization } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
 import { dictionary } from './../spellcheck/dictionary';
@@ -18,47 +18,8 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
 
     }
 
-    async provideCodeActions (
-        document: vscode.TextDocument, 
-        range: vscode.Range | vscode.Selection, 
-        context: vscode.CodeActionContext, 
-        token: vscode.CancellationToken
-    ): Promise<(vscode.CodeAction | vscode.Command)[]> {
-
-        const position = range.start;
-        const hoverPosition = getHoveredWord(document, position);
-        if (!hoverPosition) return [];
-
-        const hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
+    private defaultOptions (hoverPosition: HoverPosition): vscode.CodeAction[] {
         
-        // Check to see if the hovered word is in the dictionary
-        const inDict = dictionary[hoverPosition.text] === 1;
-        const inPersonalDict = this.personalDict.search(hoverPosition.text);
-        if (inDict || inPersonalDict) return [];
-
-        // Then check to see if the thesaurus API has it
-        const response = await SynonymsProvider.provideSynonyms(hoverPosition.text, 'synonymsApi');
-        if (response.type !== 'error') return [];
-
-        const capitalization = getTextCapitalization(hoverPosition.text);
-
-        // If it's not in any of those, then use the suggested words
-        //      from the API response as suggestions for replacements
-        const suggestions = response.suggestions?.map(suggest => {
-            const replaceText = transformToCapitalization(suggest, capitalization);
-            const edit = new vscode.WorkspaceEdit();
-            edit.replace(document.uri, hoverRange, replaceText);
-            return <vscode.CodeAction> {
-                title: `Replace with: '${replaceText}'`,
-                edit: edit,
-                kind: vscode.CodeActionKind.QuickFix,
-                command: {
-                    command: "wt.autocorrections.wordReplaced",
-                    arguments: [ hoverPosition.text, replaceText ]
-                }
-            }
-        }) || [];
-
         const addToDict = <vscode.CodeAction> {
             title: `Add ${capitalize(hoverPosition.text)} to personal dictionary`,
             command: <vscode.Command> {
@@ -91,7 +52,54 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
             addToDict,
             addToNotebook,
             addToNotebookNote,
+        ];
+    }
+
+    async provideCodeActions (
+        document: vscode.TextDocument, 
+        range: vscode.Range | vscode.Selection, 
+        context: vscode.CodeActionContext, 
+        token: vscode.CancellationToken
+    ): Promise<(vscode.CodeAction | vscode.Command)[]> {
+
+        const position = range.start;
+        const hoverPosition = getHoveredWord(document, position);
+        if (!hoverPosition) return [];
+
+        const hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
+        
+        // Check to see if the hovered word is in the dictionary
+        const inDict = dictionary[hoverPosition.strippedText] === 1;
+        const inPersonalDict = this.personalDict.search(hoverPosition.strippedText);
+        if (inDict || inPersonalDict) return this.defaultOptions(hoverPosition);
+
+        // Then check to see if the thesaurus API has it
+        const response = await SynonymsProvider.provideSynonyms(hoverPosition.strippedText, 'synonymsApi');
+        if (response.type !== 'error') return this.defaultOptions(hoverPosition);
+
+        const capitalization = getTextCapitalization(hoverPosition.text);
+
+        // If it's not in any of those, then use the suggested words
+        //      from the API response as suggestions for replacements
+        const suggestions = response.suggestions?.map(suggest => {
+            const replaceText = transformToCapitalization(suggest, capitalization);
+            const edit = new vscode.WorkspaceEdit();
+            edit.replace(document.uri, hoverRange, replaceText);
+            return <vscode.CodeAction> {
+                title: `Replace with: '${replaceText}'`,
+                edit: edit,
+                kind: vscode.CodeActionKind.QuickFix,
+                command: {
+                    command: "wt.autocorrections.wordReplaced",
+                    arguments: [ hoverPosition.text, replaceText ]
+                }
+            }
+        }) || [];
+
+        return [
+            ...this.defaultOptions(hoverPosition),
             ...suggestions
         ];
+
     }
 }

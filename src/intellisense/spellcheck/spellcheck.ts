@@ -5,7 +5,7 @@ import { dictionary } from './dictionary';
 import { PersonalDictionary } from './personalDictionary';
 import { WordRange } from '../../intellisense/common';
 import { NotebookPanel } from '../../notebook/notebookPanel';
-import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
+import { compareFsPath, formatFsPathForCompare, stripDiacritics } from '../../miscTools/help';
 import { Autocorrect } from '../../autocorrect/autocorrect';
 import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
 import { ExtensionGlobals } from '../../extension';
@@ -62,9 +62,7 @@ export class Spellcheck implements Timed {
     
                 const word = fullText.substring(startOff, endOff);
                 words.push({
-                    text: word.toLocaleLowerCase()
-                        .replaceAll(/[#~]/g, '')                                // Strip style characters
-                        .normalize("NFD").replace(/[\u0300-\u036f]/g, ""),      // Strip diacritics,
+                    text: word,
                     range: wordRange,
                 });
             }
@@ -88,15 +86,17 @@ export class Spellcheck implements Timed {
             // Create red underline decorations for each word that does not
             //      exist in the dictionary or personal dictionary
             for (const { text, range } of words) {
-                if (/\d+/.test(text)) continue;                                                         // do not make red if the word is made up entirely of numbers
-                if (dictionary[text]) continue;                                                         // do not make red if the dictionary contains this word
-                if (this.personalDictionary.search(text)) continue;                                     // do not make red if the personal dictionary contains this word
+
+                const strippedText = stripDiacritics(text.toLocaleLowerCase().replaceAll(/[#~]/g, ''));
+
+                if (/\d+/.test(strippedText)) continue;                                                         // do not make red if the word is made up entirely of numbers
+                if (dictionary[strippedText]) continue;                                                         // do not make red if the dictionary contains this word
+                if (this.personalDictionary.search(strippedText)) continue;                                     // do not make red if the personal dictionary contains this word
 
                 // Do not make red if the autocorrector can replace the word
                 if (await this.autocorrect.tryCorrection(text, editor, range)) {
                     continue;
                 }
-
 
                 // Do not add red decorations to words that have been matched by notebook
                 const notebookPanel = ExtensionGlobals.notebookPanel;

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as console from '../../miscTools/vsconsole';
 import * as extension from '../../extension';
 import { WordRange, getHoverMarkdown, getHoveredWord } from '../common';
-import { capitalize } from '../../miscTools/help';
+import { capitalize, stripDiacritics } from '../../miscTools/help';
 import { Workspace } from '../../workspace/workspaceClass';
 import { Timed } from '../../timedView';
 import { ColorGroups } from '../colors/colorGroups';
@@ -37,7 +37,7 @@ export class ColorIntellisense implements Timed {
 
         this.colorLocations = [];
 
-        const fullText: string = document.getText();
+        const fullText: string = stripDiacritics(document.getText());
         const visible: vscode.Range[] = [ ...editor.visibleRanges ];
         for (const { start: visibleStart, end: visibleEnd } of visible) {
             const textStartOff = document.offsetAt(visibleStart);

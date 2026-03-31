@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as console from '../../miscTools/vsconsole';
 import * as extension from '../../extension';
 import { getHoverMarkdown, getHoveredWord } from '../common';
-import { capitalize } from '../../miscTools/help';
+import { capitalize, stripDiacritics } from '../../miscTools/help';
 import { Workspace } from '../../workspace/workspaceClass';
 import { VeryIntellisense } from './veryIntellisense';
 import { queryVery } from './veryQuery';
@@ -97,7 +97,8 @@ export class VeryActionProvider implements vscode.CodeActionProvider {
 
     registerCommands () {
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.very.openBrowser', (veryWord: string) => {
-            vscode.env.openExternal(vscode.Uri.parse(`https://www.losethevery.com/another-word/very-${veryWord}`))
+            const stripped = stripDiacritics(veryWord);
+            vscode.env.openExternal(vscode.Uri.parse(`https://www.losethevery.com/another-word/very-${stripped}`))
         }));
     }
 

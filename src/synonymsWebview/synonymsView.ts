@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
-import { getNonce } from '../miscTools/help';
+import { getNonce, stripDiacritics } from '../miscTools/help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 
@@ -92,7 +92,7 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
 					}
 	
 					// Get the seleccted text within the selection
-					const selected: string = document.getText(selection);
+					const selected: string = stripDiacritics(document.getText(selection));
 					
 					// If there is a space in the selected text, then split the string on that space, and search only the first
 					//		word in the selection
