@@ -708,7 +708,7 @@
 			},
 			{
 				"command": "wt.synonyms.updateCachePath",
-				"title": "Writing Tool: Update Cache Path for Workspace"
+				"title": "Writing Tool: Change Synonyms Cache Database"
 			},
 			{
 				"command": "wt.editor.remove",
