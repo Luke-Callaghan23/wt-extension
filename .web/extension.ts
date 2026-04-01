@@ -38,7 +38,7 @@ import { FileLinker } from './miscTools/fileLinker';
 import { SearchResultsView } from './search/searchResultsView';
 import { SearchBarView } from './search/searchBarView';
 import { FragmentOverviewView } from './fragmentOverview/fragmentOverview';
-import { FragmentLinker } from './miscTools/fragmentLinker';
+import { DocumentLinker } from './miscTools/documentLinker';
 import { defaultProgress, getSectionedProgressReporter, progressOnViews, statFile } from './miscTools/help';
 import { WTNotebookSerializer } from './notebook/notebookApi/notebookSerializer';
 import { WTNotebookController } from './notebook/notebookApi/notebookController';
@@ -54,6 +54,10 @@ export const wordSeparator: string = '(^|[\\.\\?\\:\\;,\\(\\)!\\&\\s\\+\\-\\n"\'
 export const wordSeparatorRegex = new RegExp(wordSeparator.split('|')[1], 'g');
 export const sentenceSeparator: RegExp = /[.?!]/g;
 export const paragraphSeparator: RegExp = /\n\n/g;
+
+export const urlMainRegex = /(https?|ftp):\/\/[^\s\/$.?#].[^\s]*/ig;
+export const urlRegex = new RegExp(`${wordSeparator}(?<link>${urlMainRegex.source})${wordSeparator}`, 'gi');
+
 export let globalWorkspace: Workspace | undefined;
 
 export class ExtensionGlobals {
@@ -64,6 +68,7 @@ export class ExtensionGlobals {
     public static todoView: TODOsView;
     public static searchBarView: SearchBarView;
     public static searchResultsView: SearchResultsView;
+    public static personalDictionary: PersonalDictionary;
     public static workspace: Workspace;
     public static context: vscode.ExtensionContext;
     
@@ -78,6 +83,7 @@ export class ExtensionGlobals {
         todoView: TODOsView,
         searchBarView: SearchBarView,
         searchResultsView: SearchResultsView,
+        personalDictionary: PersonalDictionary,
         workspace: Workspace,
         context: vscode.ExtensionContext
     ) {
@@ -88,6 +94,7 @@ export class ExtensionGlobals {
         ExtensionGlobals.todoView = todoView;
         ExtensionGlobals.searchBarView = searchBarView;
         ExtensionGlobals.searchResultsView = searchResultsView;
+        ExtensionGlobals.personalDictionary = personalDictionary;
         ExtensionGlobals.workspace = workspace;
         ExtensionGlobals.context = context;
     }
@@ -145,7 +152,7 @@ async function loadExtensionWorkspace (
         const spacingHighlights = new SpacingHighlights();
         const definitionsPanel = new DefinitionsPanelWebview(context, workspace);
         report("Loaded intellisense");
-        
+
         const synonyms = new SynonymViewProvider(context, workspace);        // wt.synonyms
         
         const wordWatcher = new WordWatcher(context, workspace);            // wt.wordWatcher
@@ -154,18 +161,18 @@ async function loadExtensionWorkspace (
         const recycleBin = new RecyclingBinView(context, workspace);        
         await recycleBin.initialize();
         report("Loaded recycling bin");
-        
+
         const reloadWatcher = new ReloadWatcher(workspace, context);
         const scratchPad = new ScratchPadView(context, workspace);
         await scratchPad.init();
-		report("Loaded scratch pad");
+        report("Loaded scratch pad");
 
         const fragmentOverview = new FragmentOverviewView(context, workspace);
-		report("Loaded fragment overview");
+        report("Loaded fragment overview");
         
         const tabStates = new TabStates(context, workspace);
         report("Loaded tab groups");
-        
+
         const notebookWebview = new NotebookWebview(context, workspace);
         const notebook = new NotebookPanel(workspace, context, ExtensionGlobals.notebookSerializer, notebookWebview);
         await notebook.initialize();
@@ -179,18 +186,20 @@ async function loadExtensionWorkspace (
         searchResultsView.initialize();
         report("Loaded search bad");
 
-        ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notebook, todo, searchBarView, searchResultsView, workspace, context);
-        
+        ExtensionGlobals.initialize(outline, recycleBin, scratchPad, notebook, todo, searchBarView, searchResultsView, personalDictionary, workspace, context);
+
+
         const wordCountStatus = new WordCount(context);
         const statusBarTimer = new StatusBarTimer(context);
         report("Loaded status bar items");
-        
+
         new FileLinker(context, workspace);
-        new FragmentLinker(context);
+        const linker = new DocumentLinker(context);
 
         const timedViews = new TimedView(context, [
             ['wt.notebook.tree', 'notebook', notebook],
             ['wt.todo', 'todo', todo],
+            ['wt.documentLinker', 'documentLinker', linker],
             ['wt.spellcheck', 'spellcheck', spellcheck],
             ['wt.wordWatcher', 'wordWatcher', wordWatcher],
             ['wt.spacingHighlights', 'spacingHighlights', spacingHighlights],
@@ -218,24 +227,24 @@ async function loadExtensionWorkspace (
             personalDictionary, colorGroups, reloadWatcher, tabStates,
             autocorrection, searchBarView
         ])));
-        
+
         // Lastly, clear the 'tmp' folder
         // This is used to store temporary data for a session and should not last between sessions
         const tmpFolderPath = vscode.Uri.joinPath(rootPath, 'tmp');
         vscode.workspace.fs.delete(tmpFolderPath, { recursive: true, useTrash: false });
-        
+
         // Setting to make writing dialogue easier -- always skip past closing dialogue quotes
         const configuration = vscode.workspace.getConfiguration();
         configuration.update("editor.autoClosingOvertype", "always", vscode.ConfigurationTarget.Workspace)
 
         await TabLabels.assignNamesForOpenTabs();
-		report("Loaded tab labels");
-        
+        report("Loaded tab labels");
+
         reloadWatcher.checkForRestoreTabs();
         if (outline.view.visible) {
             await outline.selectActiveDocument(vscode.window.activeTextEditor);
         }
-		report("Finished.");
+        report("Finished.");
     }
     catch (e) {
         handleLoadFailure(e);
@@ -280,15 +289,15 @@ async function loadExtensionWithProgress (context: vscode.ExtensionContext, titl
 }
 
 async function activateImpl (context: vscode.ExtensionContext) {
-	ExtensionGlobals.notebookSerializer = new WTNotebookSerializer();
+    ExtensionGlobals.notebookSerializer = new WTNotebookSerializer();
     ExtensionGlobals.notebookSerializerDispose = vscode.workspace.registerNotebookSerializer('wt.notebook', ExtensionGlobals.notebookSerializer)
-    
+
     // Load the root path of file system where the extension was loaded
     console.log("Resetting root path");
     rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
         ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
-	context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openIntro", async () => {
+    context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openIntro", async () => {
         return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
     }));
     context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openImports", async () => {
@@ -304,7 +313,7 @@ async function activateImpl (context: vscode.ExtensionContext) {
         return loadExtensionWithProgress(context, "Reloading Integrated Writing Environment");
     }));
 
-	const loadWorkspaceSuccess = await loadExtensionWithProgress(context, "Starting Integrated Writing Environment");
+    const loadWorkspaceSuccess = await loadExtensionWithProgress(context, "Starting Integrated Writing Environment");
     if (loadWorkspaceSuccess) return;
 
     // If the attempt to load the workspace failed, then register commands both for loading 

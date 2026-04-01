@@ -163,6 +163,11 @@
 					"type": "boolean",
 					"default": true
 				},
+				"wt.timedSearches.documentLinks": {
+					"description": "Enable highlighting for url and fragment links",
+					"type": "boolean",
+					"default": true
+				},
 				"wt.reloadWatcher.enabled": {
 					"description": "Enable a file system watch on 'contextValues.json'.\n\nThis will monitor the file for any changes and ask the user to refresh their workspace if we detect a change made to the file that was not performed by the extension.  \n\n(Usually, this will occur if you do a git operation such as 'pull' or 'checkout', and is a nice hook to refresh the WTANIWE workspace internal variables to reflect that change).  \n\nIMPORTANT: WTANIWE will neglect to overwrite contextValues.json when it finds a version that is newer than the last version it wrote.  This is so the extension does not overwrite any manual edits.",
 					"type": "boolean",
@@ -432,14 +437,6 @@
 				"title": "Edit Markdown Description"
 			},
 			{
-				"command": "wt.outline.editDescription",
-				"title": "Edit Description"
-			},
-			{
-				"command": "wt.outline.editMarkdownDescription",
-				"title": "Edit Markdown Description"
-			},
-			{
 				"command": "wt.outline.newSnip",
 				"title": "Create New Snip",
 				"icon": "$(output-view-icon)"
@@ -672,7 +669,7 @@
 			},
 			{
 				"command": "wt.synonyms.updateCachePath",
-				"title": "Writing Tool: Update Cache Path for Workspace"
+				"title": "Writing Tool: Change Synonyms Cache Database"
 			},
 			{
 				"command": "wt.editor.remove",
@@ -954,6 +951,10 @@
 			{
 				"command": "wt.notebook.refresh",
 				"title": "Writing Tool: Refresh notebook"
+			},
+			{
+				"command": "wt.notebook.openNote",
+				"title": "Writing Tool: Open Notebook"
 			},
 			{
 				"command": "wt.reloadWatcher.reloadWorkspace",
