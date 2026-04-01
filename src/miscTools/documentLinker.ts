@@ -12,21 +12,16 @@ import { notebookDecorations } from '../notebook/timedViewUpdate';
 
 export const markdownFormattedFragmentLinkRegex = /\[(?<description>.*?)\]\((?<link>.*?)\)/g;
 
-export class FragmentLinker implements vscode.DocumentLinkProvider, Timed {
+export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
 
     
-    private static urlMainRegex = /(https?|ftp):\/\/[^\s\/$.?#].[^\s]*/ig;
-    private static urlRegex = / /g;
 
-    public static fragmentLinkRanges: vscode.Range[] = [];
-    public static urlRanges: vscode.Range[] = [];
+    public static documentLinkRanges: vscode.Range[] = [];
 
     enabled: boolean;
     constructor (private context: vscode.ExtensionContext) {
 
         this.enabled = true;
-
-        FragmentLinker.urlRegex = new RegExp(`${extension.wordSeparator}(?<link>${FragmentLinker.urlMainRegex.source})${extension.wordSeparator}`, 'gi');
 
         this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({
             pattern: "**/*.wt",
@@ -60,14 +55,13 @@ export class FragmentLinker implements vscode.DocumentLinkProvider, Timed {
         return this.enabled;
     }
 
-    async gatherLinks (document: vscode.TextDocument): Promise<[ vscode.DocumentLink[], vscode.DocumentLink[] ]> {
+    async gatherLinks (document: vscode.TextDocument): Promise<vscode.DocumentLink[]> {
 
-        const fragmentLinks: vscode.DocumentLink[] = [];
-        const urlLinks: vscode.DocumentLink[] = [];
+        const documentLinks: vscode.DocumentLink[] = [];
 
         const lineText = document.getText();
 
-        FragmentLinker.fragmentLinkRanges = [];
+        DocumentLinker.documentLinkRanges = [];
 
         let match: RegExpMatchArray | null;
         while ((match = markdownFormattedFragmentLinkRegex.exec(lineText))) {
@@ -79,25 +73,36 @@ export class FragmentLinker implements vscode.DocumentLinkProvider, Timed {
 
             const start = match.index;
             const end = match.index + match[0].length;
-    
-            const node = await vagueNodeSearch(vscode.Uri.file(link), true);
-            if (!node || node.source === 'notebook') continue;
-            const uri = node.node!.data.ids.uri;
+            
+            // Valid uri for this link, if one exists
+            // Can be either a fragment URI, or a web URL, depending on the format
+            let uri: vscode.Uri | null;
+            
+            // If the link is a regular URL, then just transform it into a vscode.Uri
+            if (extension.urlMainRegex.test(link)) {
+                uri = vscode.Uri.parse(link);
+            }
+            // Otherwise, attempt to match the URL with a fragment by doing a vague node
+            //      search on the uri
+            else {
+                const node = await vagueNodeSearch(vscode.Uri.file(link), true);
+                if (!node || node.source === 'notebook') continue;
+                uri = node.node!.data.ids.uri;
+            }
     
             const range = new vscode.Range(
                 document.positionAt(start),
                 document.positionAt(end)
             );
 
-            fragmentLinks.push({
+            documentLinks.push({
                 target: uri,
                 range: range
             });
-            FragmentLinker.fragmentLinkRanges.push(range);
+            DocumentLinker.documentLinkRanges.push(range);
         }
 
-        FragmentLinker.urlRanges = [];
-        while ((match = FragmentLinker.urlRegex.exec(lineText)) !== null) {
+        while ((match = extension.urlRegex.exec(lineText)) !== null) {
             if (!match || match.index === undefined) continue;
 
             const link = match?.groups?.['link'];
@@ -113,25 +118,21 @@ export class FragmentLinker implements vscode.DocumentLinkProvider, Timed {
                 document.positionAt(start),
                 document.positionAt(end)
             );
-            urlLinks.push({
+            documentLinks.push({
                 target: vscode.Uri.parse(link),
                 range: range
             });
-            FragmentLinker.urlRanges.push(range);
+            DocumentLinker.documentLinkRanges.push(range);
         }
-
-
-        return [ fragmentLinks, urlLinks ];
+        return documentLinks;
     }
 
     async update(editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
         const _ = await this.gatherLinks(editor.document);
-        editor.setDecorations(notebookDecorations, FragmentLinker.fragmentLinkRanges);
-        editor.setDecorations(notebookDecorations, FragmentLinker.urlRanges);
+        editor.setDecorations(notebookDecorations, DocumentLinker.documentLinkRanges);
     }
 
     async provideDocumentLinks(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.DocumentLink[]> {
-        const [ fragmentLinks, urlLinks ] = await this.gatherLinks(document);
-        return [ ...fragmentLinks, ...urlLinks  ]
+        return this.gatherLinks(document);
     }
 }

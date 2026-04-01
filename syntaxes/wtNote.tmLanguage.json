@@ -2,12 +2,17 @@
     "scopeName": "source.wtNote",
     "patterns": [
         { "include": "#mdLink" },
+        { "include": "#urlLink" },
         { "include": "#expression" },
         { "include": "#comments" }
     ],
     "repository": {
         "mdLink": {
             "match": "\\[.*?\\]\\(.*?\\)",
+            "name": "keyword"
+        },
+        "urlLink": {
+            "match": "(https?|ftp):\\/\\/[^\\s\/$.?#].[^\\s]*",
             "name": "keyword"
         },
         "expression": {

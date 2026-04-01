@@ -131,7 +131,19 @@ export class NotebookWebview implements vscode.WebviewViewProvider {
             }
             
             if (noteId === this.selectedNoteId) {
-                noteHtml = html;
+                noteHtml = `
+                    ${html}
+                    <div class="log-settings-row">
+                        <vscode-button id="prev-button">Previous Import</vscode-button>
+                        &nbsp;&nbsp;&nbsp;
+                        <vscode-button id="preview-button">Preview</vscode-button>
+                        &nbsp;&nbsp;&nbsp;
+                        <vscode-button id="import-button">Import All Files</vscode-button>
+                        &nbsp;&nbsp;&nbsp;
+                        <vscode-button id="next-button">Next Import</vscode-button>
+                    </div>
+                `;
+
                 noteSelects.push(`<vscode-option selected value="${noteId}">${titleString}</vscode-option>`);
             }
             else {
@@ -162,6 +174,12 @@ export class NotebookWebview implements vscode.WebviewViewProvider {
                     body {
                         font-size: 15px;
                     }
+                    .log-settings-row {
+                        align-items: center;
+                        display: flex;
+                        flex-wrap: wrap;
+                    }
+
                 </style>    
                 <body>
                 

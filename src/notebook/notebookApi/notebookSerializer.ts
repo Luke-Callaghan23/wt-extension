@@ -9,7 +9,7 @@ import { capitalize } from '../../miscTools/help';
 import { __, formatFsPathForCompare, getRelativePath, statFile, vagueNodeSearch, } from '../../miscTools/help';
 import { TextMatchForNote } from '../timedViewUpdate';
 import { WTNotebookController } from './notebookController';
-import { markdownFormattedFragmentLinkRegex } from '../../miscTools/fragmentLinker';
+import { DocumentLinker, markdownFormattedFragmentLinkRegex } from '../../miscTools/documentLinker';
 
 
 /*
@@ -444,27 +444,37 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 link: string;
                 description: string;
             };
-            const node = await vagueNodeSearch(vscode.Uri.file(link), true);
-            if (!node || node.source === 'notebook') continue
-            const uri = node.node!.data.ids.uri;
+
+            // First check to see if it is a URL link
+            let markdownLink: string;
+            if (extension.urlRegex.test(link)) {
+                markdownLink = link;
+            }
+            // Otherwise, search for a fragment node
+            else {
+                const node = await vagueNodeSearch(vscode.Uri.file(link), true);
+                if (!node || !node.node || node.source === 'notebook') continue
+                const uri = node.node!.data.ids.uri;
+                markdownLink = uri.path;
+            }
 
             replacements.push({
-                replace: `[${description}](${uri.path})`,
+                replace: `[${description}](${markdownLink})`,
                 start: start,
                 end: end
             });
         }
 
         const reversedReplacements = replacements.reverse();
-        let withFragmentLinks = withBulletPoints;
+        let withDocumentLinks = withBulletPoints;
         for (const { start, end, replace } of reversedReplacements) {
-            const nend = withFragmentLinks.substring(end);
-            const nstart = withFragmentLinks.substring(0, start);
-            withFragmentLinks = nstart + replace + nend;
+            const nend = withDocumentLinks.substring(end);
+            const nstart = withDocumentLinks.substring(0, start);
+            withDocumentLinks = nstart + replace + nend;
         }
 
         // Convert wt text stylings to md text stylings
-        const asMarkdown = wtToMd(withFragmentLinks);
+        const asMarkdown = wtToMd(withDocumentLinks);
         
         // Search for all references to notes in this cell
         const matches: TextMatchForNote[] = [];
@@ -652,10 +662,15 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 }),
             });
 
-            // Then deserialize all the contents under this header
-            notebookData.cells.push(
-                ...(await this.deserializeCell(header.cells, serializedNote.noteId))
-            );
+            try {
+                // Then deserialize all the contents under this header
+                notebookData.cells.push(
+                    ...(await this.deserializeCell(header.cells, serializedNote.noteId))
+                );
+            }
+            catch (err: any) {
+                console.log(err);
+            }
         }
 
         // Only metadata needed for the main notebook is the id

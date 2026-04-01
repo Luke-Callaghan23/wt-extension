@@ -9,7 +9,7 @@ import { compareFsPath, formatFsPathForCompare, stripDiacritics } from '../../mi
 import { Autocorrect } from '../../autocorrect/autocorrect';
 import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
 import { ExtensionGlobals } from '../../extension';
-import { FragmentLinker } from '../../miscTools/fragmentLinker';
+import { DocumentLinker } from '../../miscTools/documentLinker';
 import { notebookDecorations } from '../../notebook/timedViewUpdate';
 
 
@@ -60,7 +60,7 @@ export class Spellcheck implements Timed {
                 });
                 if (isCommented !== undefined) return;
 
-                const isUrl = FragmentLinker.urlRanges.find(ur => {
+                const isUrl = DocumentLinker.documentLinkRanges.find(ur => {
                     if (ur.contains(start)) {
                         return ur;
                     }
