@@ -151,18 +151,6 @@ export class SynonymsProvider {
             await this.db.open();
 
             vscode.window.showInformationMessage(`Successfully opened synonyms cache at '${cacheUri.fsPath}'`);
-
-            (async () => {
-                if (!this.db) return;
-
-                let whCount = 0;
-                let synCount = 0;
-                for await (const [ word, provider ] of this.db.keys()) {
-                    if (provider === 'wh') whCount++;
-                    if (provider === 'synonymsApi') synCount++;
-                }
-                vscode.window.showInformationMessage(`Cached data: ${whCount} WH synonyms, ${synCount} Synonyms API synonyms`);
-            })();
         }
         catch (err: any) {
             if ("cause" in err && "code" in err.cause && err.cause.code === 'LEVEL_LOCKED') {

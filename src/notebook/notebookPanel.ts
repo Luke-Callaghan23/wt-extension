@@ -231,39 +231,54 @@ implements
             return this.refresh(true);
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.openNote", async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.openNote", async (noteId?: string, activeTab?: boolean) => {
             
-            interface NotePick extends vscode.QuickPickItem {
-                idx: number,
-            }
-            
-            const notes: NotePick[] = this.notebook.map<NotePick>((note, idx) => {
-                const aliasesString = note.aliases.join(', ');
-                const title = note.title;
-
-                const noteTitle = `${title} `;
-                return __<NotePick>({
-                    label: noteTitle,
-                    description: note.aliases.length > 0 
-                        ? `(${aliasesString})`
-                        : undefined,
-                    idx: idx,
+            let pickedNote: NotebookPanelNote;
+            if (!noteId) {
+                interface NotePick extends vscode.QuickPickItem {
+                    idx: number,
+                }
+                
+                const notes: NotePick[] = this.notebook.map<NotePick>((note, idx) => {
+                    const aliasesString = note.aliases.join(', ');
+                    const title = note.title;
+    
+                    const noteTitle = `${title} `;
+                    return __<NotePick>({
+                        label: noteTitle,
+                        description: note.aliases.length > 0 
+                            ? `(${aliasesString})`
+                            : undefined,
+                        idx: idx,
+                    });
                 });
-            });
+    
+                const picked = await vscode.window.showQuickPick<NotePick>(notes, {
+                    canPickMany: false,
+                    ignoreFocusOut: false,
+                    matchOnDescription: true,
+                    matchOnDetail: true,
+                    prompt: "Select a notebook",
+                });
+                if (picked === undefined || picked === null) return;
+                pickedNote = this.notebook[picked.idx];
+            }
+            else {
+                const noteSearch = this.notebook.find(note => note.noteId === noteId);
+                if (!noteSearch) {
+                    vscode.window.showWarningMessage(`[;WARN] Could not find note with id ${noteId}`);
+                    return;
+                }
+                pickedNote = noteSearch;
+            }
 
-            const picked = await vscode.window.showQuickPick<NotePick>(notes, {
-                canPickMany: false,
-                ignoreFocusOut: false,
-                matchOnDescription: true,
-                matchOnDetail: true,
-                prompt: "Select a notebook",
-            });
-            if (picked === undefined || picked === null) return;
+            const viewColumn = activeTab
+                ? vscode.ViewColumn.Active
+                : await determineAuxViewColumn((uri) => this.getNote(uri));
 
-            const pickedNote = this.notebook[picked.idx];
             const noteDoc = await vscode.workspace.openNotebookDocument(pickedNote.uri);
             return vscode.window.showNotebookDocument(noteDoc, {
-                viewColumn: await determineAuxViewColumn((uri) => this.getNote(uri))
+                viewColumn: viewColumn
             });
         }));
 
