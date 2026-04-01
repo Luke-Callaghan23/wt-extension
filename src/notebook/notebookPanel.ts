@@ -258,7 +258,7 @@ implements
                     ignoreFocusOut: false,
                     matchOnDescription: true,
                     matchOnDetail: true,
-                    prompt: "Select a notebook",
+                    title: "Select a notebook",
                 });
                 if (picked === undefined || picked === null) return;
                 pickedNote = this.notebook[picked.idx];
