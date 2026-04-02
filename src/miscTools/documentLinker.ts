@@ -55,6 +55,28 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
         return this.enabled;
     }
 
+    static *generateLinkRanges (text: string): Generator<{
+        start: number,
+        end: number,
+        link: string
+    }> {
+        let match: RegExpMatchArray | null;
+        while ((match = extension.urlRegex.exec(text)) !== null) {
+            if (!match || match.index === undefined) continue;
+
+            const link = match?.groups?.['link'];
+            if (!link || link.length === 0) continue;
+
+            const matchStartsAtWordSeparator = link[0] === match[0][0];
+            const offset = matchStartsAtWordSeparator ? 0 : 1;
+
+            const start = match.index + offset;
+            const end = start + link.length;
+
+            yield { start, end, link };
+        }
+    }
+
     async gatherLinks (document: vscode.TextDocument): Promise<vscode.DocumentLink[]> {
 
         const documentLinks: vscode.DocumentLink[] = [];
@@ -102,18 +124,7 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
             DocumentLinker.documentLinkRanges.push(range);
         }
 
-        while ((match = extension.urlRegex.exec(lineText)) !== null) {
-            if (!match || match.index === undefined) continue;
-
-            const link = match?.groups?.['link'];
-            if (!link || link.length === 0) continue;
-
-            const matchStartsAtWordSeparator = link[0] === match[0][0];
-            const offset = matchStartsAtWordSeparator ? 0 : 1;
-
-            const start = match.index + offset;
-            const end = start + link.length;
-
+        for (const { start, end, link } of DocumentLinker.generateLinkRanges(lineText)) {
             const range = new vscode.Range(
                 document.positionAt(start),
                 document.positionAt(end)

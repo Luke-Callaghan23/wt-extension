@@ -75,7 +75,7 @@ implements
                 label: element.getDisplayString()
             },
             // An example of how to use codicons in a MarkdownString in a tree item tooltip.
-            tooltip: element.getTooltip(),
+            tooltip: undefined,
             collapsibleState: vscode.TreeItemCollapsibleState.None,
             resourceUri: element.getUri(),
             command: { 
@@ -87,6 +87,12 @@ implements
             iconPath: new vscode.ThemeIcon('edit')
         };
     }
+
+    async resolveTreeItem(item: vscode.TreeItem, element: OutlineNode, token: vscode.CancellationToken): Promise<vscode.TreeItem> {
+        item.tooltip = await element.getTooltip();
+        return item;
+    }
+
     //#endregion
 
     // Refresh the tree data information

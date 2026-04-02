@@ -11,6 +11,24 @@ import { RecyclingBinView } from './../recyclingBin/recyclingBinView';
 import { ScratchPadView } from './../scratchPad/scratchPadView';
 import { NotebookPanel } from '../notebook/notebookPanel';
 import { getFsPathKey, getRelativePath, setFsPathKey, vagueNodeSearch } from './../miscTools/help';
+import { BounceOnIt } from './bounceOnIt';
+
+class DebouncedTreeRefresh extends BounceOnIt<[vscode.TextDocument]> {
+    // One update every second
+    private constructor() { super(1000); }
+    
+    protected async debouncedUpdate(cancellationToken: vscode.CancellationToken, document: vscode.TextDocument): Promise<void> {
+        extension.ExtensionGlobals.outlineView.getTreeElementByUri(document.uri).then((node) => {
+            if (!node) return;
+            extension.ExtensionGlobals.outlineView.refresh(false, [node], true);
+        });
+    }
+    
+    private static instance = new this();
+    public static updateTreeView (document: vscode.TextDocument) {
+        this.instance.triggerDebounce(document);
+    }
+}
 
 export class FileAccessManager implements Packageable<"wt.fileAccesses.positions"> {
 
@@ -117,7 +135,14 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
 
         context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(cb));
         context.subscriptions.push(vscode.window.onDidChangeActiveNotebookEditor(cb));
-        context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(() => cb(vscode.window.activeTextEditor)));
+        context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((document) => {
+            cb(vscode.window.activeTextEditor);
+            
+            // Update the fragment in the outline view.  Forces a refresh for the preview on fragment nodes
+            // Since this is a fragment node with no children, only one node should be updated and shouldn't be too intensive
+            // Still, debounce it so that if the user is spam saving, we do not spam update the tree view
+            DebouncedTreeRefresh.updateTreeView(document);
+        }));
         context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((e) => cb(e.textEditor)));
     }
 

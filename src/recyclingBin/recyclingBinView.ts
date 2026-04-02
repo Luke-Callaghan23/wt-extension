@@ -183,7 +183,7 @@ implements
                 label: label
             },
             // An example of how to use codicons in a MarkdownString in a tree item tooltip.
-            tooltip: element.getTooltip(),
+            tooltip: undefined,
             collapsibleState: collapseState,
             resourceUri: element.getUri(),
         };
@@ -215,6 +215,12 @@ implements
         treeItem.iconPath = new vscode.ThemeIcon(icon);
         return treeItem;
     }
+
+    async resolveTreeItem(item: vscode.TreeItem, element: OutlineNode, token: vscode.CancellationToken): Promise<vscode.TreeItem> {
+        item.tooltip = await element.getTooltip();
+        return item;
+    }
+
     //#endregion
 
     // Refresh the tree data information

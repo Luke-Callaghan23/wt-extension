@@ -13,6 +13,7 @@ import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { generalMoveNode } from './handleMovement/generalMoveNode';
 import { updateChildrenToReflectNewUri } from './updateChildrenToReflectNewUri';
 import { MoveNodeResult } from './handleMovement/common';
+import { wtToHtml } from '../../export/wtToHtml';
 
 export const usedIds: { [index: string]: boolean } = {};
 
@@ -54,15 +55,42 @@ export class OutlineNode extends TreeNode {
         return this.data.ids.parentUri;
     }
 
-    getTooltip (): string | vscode.MarkdownString {
-        const tooltip = `${this.data.ids.type} | '${this.data.ids.display}'`;
+    async getTooltip (): Promise<vscode.MarkdownString> {
+        let tooltip = `${this.data.ids.type} | '${this.data.ids.display}'`;
         if (this.data.ids.description) {
-            const md = new vscode.MarkdownString(`${tooltip}\n\n---\n\n${this.data.ids.description}`);
-            md.supportHtml = true;
-            md.supportThemeIcons = true;
-            return md;
+            const descriptionAsHtml = wtToHtml(this.data.ids.description, {
+                destinationKind: 'html',
+                pageBreaks: false,
+                contentOnly: true
+            });
+            tooltip += `\n\n---\n\n### Description:\n\n${descriptionAsHtml}`;
         }
-        return tooltip;
+
+        if (this.data.ids.type === 'fragment') {
+            const opened = await vscode.workspace.openTextDocument(this.getUri());
+            if (opened) {
+                let preview = opened.getText(new vscode.Range(opened.positionAt(0), opened.positionAt(251)));
+                if (preview.length === 251) {
+                    // If there is 251 characters in the getText that means that there is more content after 250 character
+                    //      cut off.  Slice the last character from the preview and add elipses
+                    preview = preview.substring(0, 250);
+                    preview = preview + "...";
+                }
+
+                const previewAsHtml = wtToHtml(preview, {
+                    destinationKind: 'html',
+                    pageBreaks: false,
+                    contentOnly: true
+                });
+                tooltip += `\n\n---\n\n### Preview:\n\n${previewAsHtml}`;
+            }
+            vscode.workspace.notebookDocuments
+        }
+
+        const md = new vscode.MarkdownString(tooltip);
+        md.supportHtml = true;
+        md.supportThemeIcons = true;
+        return md;
     }
     
     hasChildren (): boolean {

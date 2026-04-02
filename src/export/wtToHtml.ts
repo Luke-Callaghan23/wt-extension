@@ -1,5 +1,8 @@
+import * as vscode from 'vscode';
 import * as he from 'he';
 import { defaultFragmentSeparator } from './exportDocuments';
+import { urlRegex } from '../extension';
+import { DocumentLinker } from '../miscTools/documentLinker';
 
 type Tags = 'paragraph' | 'emphasis' | 'bold' | 'underline' | 'strikethrough' | 'header';
 const conversionsTable: { [index: string]: Tags } = {
@@ -31,7 +34,8 @@ const getTagText = (tag: Tags, kind: 'opening' | 'closing') => {
 
 export const wtToHtml = (wt: string, options: {
     pageBreaks: boolean,
-    destinationKind: 'html' | 'docx' | 'odt'
+    destinationKind: 'html' | 'docx' | 'odt',
+    contentOnly?: boolean
 }): string => {
     wt = wt.replaceAll("\r", '');
     
@@ -55,6 +59,30 @@ export const wtToHtml = (wt: string, options: {
         replaceKeys[replaceKey] = styleChar;
     }
 
+    
+    
+    // Special cases where we do not want any wt -> html replacements performed
+    // Instead, we do custom formatting (stored in property `replace`) 
+    // Those ranges will later be skipped and replaced with the custom text during normal processing    
+    // Cases:
+    //      (1) URL links
+    // That's all for now :)
+    const overrideRanges: {
+        start: number,
+        end: number,
+        replace: string,
+    }[] = [];
+
+    // URL links: use existing DocumentLinker code to create HTML anchor <a> tags
+    //      for each href in the text
+    for (const { start, end, link } of DocumentLinker.generateLinkRanges(wt)) {
+        const replace = `<a href="${link}">${link}</a>`;
+        overrideRanges.push({
+            start: start,
+            end: end,
+            replace: replace,
+        });
+    }
 
     // Initialize the stack of html tags with an opening paragraph tag
     //      which starts at the 0th index of wt text
@@ -72,6 +100,20 @@ export const wtToHtml = (wt: string, options: {
         '<p>'
     ];
     for (let idx = 0; idx < wt.length; idx++) {
+
+        // If we ran into a skip range, then quickly iterate over all the characters between
+        //      the current character and the end of the range and add them all to the last
+        //      data segment on the stack
+        const skip = overrideRanges.find(({ start, end }) => {
+            return idx >= start && idx < end;
+        });
+        if (skip) {
+            const { end, replace } = skip;
+            stack[stack.length - 1].text += replace;
+            idx = end;
+            continue;
+        }
+
         const char = wt[idx];
         if (!(char in conversionsTable)) {
             // If the current character is not a closing character, then add the character
@@ -270,6 +312,10 @@ export const wtToHtml = (wt: string, options: {
     // Undo all the '%%REPLACE_ME__%%'s from earlier with the unescaped forms of each
     for (const [ replaceKey, replaceWith ] of Object.entries(replaceKeys)) {
         finalHtml = finalHtml.replaceAll(replaceKey, replaceWith);
+    }
+
+    if (options.contentOnly) {
+        return finalHtml;
     }
 
     const fullHtml = `<html><style>

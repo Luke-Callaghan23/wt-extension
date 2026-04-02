@@ -13,7 +13,7 @@ import { setFsPathKey } from '../miscTools/help';
 
 export abstract class TreeNode {
 	abstract getParentUri(): vscode.Uri;
-	abstract getTooltip(): string | vscode.MarkdownString;
+	abstract getTooltip(): string | vscode.MarkdownString | Promise<string | vscode.MarkdownString>;
 	abstract getUri(): vscode.Uri;
 	abstract getDisplayString(): string | vscode.TreeItemLabel;
 	abstract getChildren(filter: boolean, insertIntoNodeMap: (node: TreeNode, uri: vscode.Uri)=>void): Promise<TreeNode[]>;
@@ -147,7 +147,7 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 		if (treeElement.hasChildren()) {
 			// If the tree element has children, look that element up in the uri map to find the collapsability
 			const uri = treeElement.getUri();
-			const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');;
+			const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
 			const isCollapsed: boolean | undefined = this.uriToVisibility[usableUri];
 			if (isCollapsed === undefined || isCollapsed === false) {
 				collapseState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -166,11 +166,15 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
 
 			label: label,
 
-			// An example of how to use codicons in a MarkdownString in a tree item tooltip.
-			tooltip: treeElement.getTooltip(),
+			tooltip: undefined,
 			collapsibleState: collapseState,
 			resourceUri: treeElement.getUri(),
 		};
+	}
+
+	public async resolveTreeItem (item: vscode.TreeItem, element: T, token: vscode.CancellationToken): Promise<vscode.TreeItem> {
+		item.tooltip = await element.getTooltip();
+		return item;
 	}
 }
 
