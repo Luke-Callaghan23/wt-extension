@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { OutlineView } from './../outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from './../outline/nodes_impl/outlineNode';
 import { ExtensionGlobals } from './../extension';
-import { compareFsPath, showTextDocumentWithPreview } from './help';
+import { compareFsPath, formatFsPathForCompare, showTextDocumentWithPreview, stripDiacritics, UriFsPathFormatted, vagueNodeSearch } from './help';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import * as extension from '../extension';
 
@@ -10,6 +10,7 @@ export interface IFragmentPick {
     label: string;
     description?: string;
     node: OutlineNode;
+    detail?: string;
     kind?: vscode.QuickPickItemKind;
     alwaysShow?: boolean;
 }
@@ -20,7 +21,7 @@ export interface IButton extends vscode.QuickInputButton {
     id: 'filterButton' | 'clearFilters'
 }
 
-export type Predicate = ((node: OutlineNode)=>boolean);
+export type Predicate = ((node: OutlineNode, qpItem: IFragmentPick)=>boolean);
 
 export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean, prefix: string, predicateFilters?: Predicate[]): {
     options: IFragmentPick[],
@@ -53,11 +54,28 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
     }
 
     // If a tree item is the last item in its collection, then it has a corner character, otherwise it's a T
-    const getTreeChar = (isLast: boolean): string => {
-        return isLast ? '└' : '├';
+    const getTreeChars = (isLast: boolean, hasDescription: boolean): [string, string] => {
+        if (!hasDescription) {
+            return [
+                isLast ? '└' : '├',
+                ''
+            ];
+        }
+        else {
+            if (isLast) {
+                return [
+                    '├', 
+                    '└'
+                ]
+            }
+            else {
+                return [
+                    '├',
+                    '│',
+                ];
+            }
+        }
     }
-
-
 
     // Function to create quick pick options for a snip and all of its children options
     const processSnip = (
@@ -65,20 +83,23 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
         path: string,
         lastItemMarkers: boolean[]
     ) => {
-        if (predicateFilters && !predicateFilters.every(p => p(snipNode))) return;
         const snip = snipNode.data as SnipNode;
-
+        
         // For the snip folder itelf, exclude the last item marker because the last item is inserted as a spacer for the child items
         const space = giveMeSomeSpace(lastItemMarkers.slice(0, lastItemMarkers.length-1));
-        const treeChar = getTreeChar(lastItemMarkers[lastItemMarkers.length - 1]);
+        const treeChars = getTreeChars(lastItemMarkers[lastItemMarkers.length - 1], !!snip.ids.description);
 
         // Create the folder for the current snip
-        options.push({
-            label: `${space}${treeChar}─$(folder) Snip: ${snip.ids.display}`,
+        const qpItem: IFragmentPick = {
+            label: `${space}${treeChars[0]}─$(folder) Snip: ${snip.ids.display}`,
             description: `(${path})`,
             node: snipNode,
-        })
+            // alwaysShow: true,
+            detail: snip.ids.description && `${space}${treeChars[1]}${snip.contents.length > 0 ? (' '.repeat(TAB_SIZE) + "│") : ""}  ${snip.ids.description}`,
+        };
 
+        if (predicateFilters && !predicateFilters.every(p => p(snipNode, qpItem))) return;
+        options.push(qpItem);
         const contentSpace = giveMeSomeSpace(lastItemMarkers);
 
         // Sort and create options for each content of this snip
@@ -86,14 +107,18 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
         snip.contents.forEach((content, contentIndex) => {
             const contentIsLast = contentIndex === snip.contents.length - 1;
             if (content.data.ids.type === 'fragment') {
-                if (predicateFilters && !predicateFilters.every(p => p(content))) return;
                 // Create the option for the current fragment child
-                const fragmentTreeChar = getTreeChar(contentIsLast);
-                options.push({
-                    label: `${contentSpace}${fragmentTreeChar}─$(edit) ${content.data.ids.display}`,
+                const fragmentTreeChar = getTreeChars(contentIsLast, !!content.data.ids.description);
+                const qpItem: IFragmentPick = {
+                    label: `${contentSpace}${fragmentTreeChar[0]}─$(edit) ${content.data.ids.display}`,
                     description: `(${path}/${snip.ids.display})`,
                     node: content,
-                });
+                    // alwaysShow: true,
+                    detail: content.data.ids.description && `${contentSpace}${fragmentTreeChar[1]}   ${content.data.ids.description}`,
+                }
+                
+                if (predicateFilters && !predicateFilters.every(p => p(content, qpItem))) return;
+                options.push(qpItem);
                 
                 // If this fragment is the currently open document in the editor, then set `currentNode` and `currentPick`
                 if (!currentNode && currentDoc && compareFsPath(content.data.ids.uri, currentDoc)) {
@@ -101,7 +126,7 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
                     currentPick = options[options.length - 1];
                 }
                 // Otherwise, if we're filtering generic files (and this is a generic file), then pop the option from the queue
-                else if (filterGeneric && content.data.ids.display.startsWith("Imported Fragment (") || content.data.ids.display.startsWith("New Fragment (")) {
+                else if (filterGeneric && (content.data.ids.display.startsWith("Imported Fragment (") || content.data.ids.display.startsWith("New Fragment ("))) {
                     options.pop();
                 }
             }
@@ -123,10 +148,9 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
         path: string,
         lastItemMarkers: boolean[],
     ) => {
-        if (predicateFilters && !predicateFilters.every(p => p(chapterNode))) return;
-
+        
         const chapter = chapterNode.data as ChapterNode;
-
+        
         let fakeSpace = '';
         let fakeMarkers: boolean[] = [];
         if (path !== 'Base') {
@@ -139,32 +163,41 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
             fakeMarkers[0] = false;
             fakeSpace = giveMeSomeSpace(fakeMarkers);        
         }
-
+        
         // Also want to use the real spacing for the child items of this chapter, so get actual spacing
         const realSpace = giveMeSomeSpace(lastItemMarkers);
-
+        
         // Chapter folder item
-        const treeChar = getTreeChar(lastItemMarkers[lastItemMarkers.length - 1]);
-        options.push({
-            label: `${fakeSpace}${treeChar}─$(folder) Chapter: ${chapter.ids.display}`,
+        const treeChar = getTreeChars(lastItemMarkers[lastItemMarkers.length - 1], !!chapter.ids.description);
+        const qpItemChaptersFolder: IFragmentPick = {
+            label: `${fakeSpace}${treeChar[0]}─$(folder) Chapter: ${chapter.ids.display}`,
             description: `(${path})`,
-            node: chapterNode
-        });
+            node: chapterNode,
+            // alwaysShow: true,
+            detail: chapter.ids.description && `${fakeSpace}${treeChar[1]}${' '.repeat(TAB_SIZE) + "│"}   ${chapter.ids.description}`,
+        };
+
+        if (predicateFilters && !predicateFilters.every(p => p(chapterNode, qpItemChaptersFolder))) return;
+        options.push(qpItemChaptersFolder);
         
         // Sort and create options for text fragments
         chapter.textData.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
         chapter.textData.forEach((fragment, fragmentIndex) => {
-            if (predicateFilters && !predicateFilters.every(p => p(fragment))) return;
-
+            
             // Create option for this fragment
-            const fragmentTreeChar = getTreeChar(fragmentIndex === chapter.textData.length - 1);
-            options.push({
+            const fragmentTreeChar = getTreeChars(fragmentIndex === chapter.textData.length - 1, !!fragment.data.ids.description);
+            const qpItem: IFragmentPick = {
                 // Fake space followed by real space, because we always want the first column to be a line, but we want the second column to be 
                 //      empty if this is the last chapter
-                label: `${fakeSpace}${realSpace}${fragmentTreeChar}─$(edit) ${fragment.data.ids.display}`,
+                label: `${fakeSpace}${realSpace}${fragmentTreeChar[0]}─$(edit) ${fragment.data.ids.display}`,
                 description: `(${path}/${chapter.ids.display})`,
-                node: fragment
-            });
+                node: fragment,
+                // alwaysShow: true,
+                detail: fragment.data.ids.description && `${fakeSpace}${realSpace}${fragmentTreeChar[1]}   ${fragment.data.ids.description}`,
+            };
+            
+            if (predicateFilters && !predicateFilters.every(p => p(fragment, qpItem))) return;
+            options.push(qpItem);
 
             // If this fragment is the currently open document in the editor, then set `currentNode` and `currentPick`
             if (!currentNode && currentDoc && compareFsPath(fragment.data.ids.uri, currentDoc)) {
@@ -182,15 +215,21 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
             }
         });
 
-        if (predicateFilters && !predicateFilters.every(p => p(chapter.snips))) return;
+        const chapterSnipsTreeChars = getTreeChars(true, !!chapter.snips.data.ids.description);
+
         // Snips folder
-        options.push({
+        const qpItemSnipsFolder: IFragmentPick = {
             // Fake space followed by real space, because we always want the first column to be a line, but we want the second column to be 
             //      empty if this is the last chapter
-            label: `${fakeSpace}${realSpace}${getTreeChar(true)}─$(folder) ${chapter.snips.data.ids.display}`,
+            
+            label: `${fakeSpace}${realSpace}${chapterSnipsTreeChars[0]}─$(folder) ${chapter.snips.data.ids.display}`,
             description: `(${path}/${chapter.ids.display})`,
-            node: chapter.snips
-        });
+            node: chapter.snips,
+            // alwaysShow: true,
+            detail: chapter.snips.data.ids.description && `${fakeSpace}${realSpace}${chapterSnipsTreeChars[1]}    ${chapter.snips.data.ids.description}`,
+        };
+        if (predicateFilters && !predicateFilters.every(p => p(chapter.snips, qpItemSnipsFolder))) return;
+        options.push(qpItemSnipsFolder);
 
         // Sort and create options for all of the snips of this chapter
         const snipContents = (chapter.snips.data as ContainerNode).contents;
@@ -211,13 +250,16 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
         const root = rootNode.data as RootNode;
 
         // =========================== CHAPTERS SECTION =========================== 
-        /* Chapters Folder */ 
-        if (!predicateFilters || predicateFilters.every(p => p(root.chapters))) {
-            options.push({
-                label: "$(folder) Chapters:",
-                description: `(${prefix})`,
-                node: root.chapters
-            })
+        /* Chapters Folder */
+        const qpItemChaptersFolder: IFragmentPick = {
+            label: "$(folder) Chapters:",
+            description: `(${prefix})`,
+            node: root.chapters,
+            // alwaysShow: true,
+            detail: root.chapters.data.ids.description && `${root.chapters.data.ids.description}`,
+        }; 
+        if (!predicateFilters || predicateFilters.every(p => p(root.chapters, qpItemChaptersFolder))) {
+            options.push(qpItemChaptersFolder);
             // Sort and create options for chapters 
             const chapters = (root.chapters.data as ContainerNode).contents;
             chapters.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
@@ -231,13 +273,16 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
         }
         
         // =========================== WORK SNIPS SECTIONS =========================== 
-        /* Work Snips Folder */ 
-        if (!predicateFilters || predicateFilters.every(p => p(root.snips))) {
-            options.push({
-                label: "$(folder) Work Snips:",
-                description: `(${prefix})`,
-                node: root.snips
-            });
+        /* Work Snips Folder */
+        const qpItemWorkSnipsFolder: IFragmentPick = {
+            label: "$(folder) Work Snips:",
+            description: `(${prefix})`,
+            node: root.snips,
+            // alwaysShow: true,
+            detail: root.snips.data.ids.description && `${root.snips.data.ids.description}`,
+        }; 
+        if (!predicateFilters || predicateFilters.every(p => p(root.snips, qpItemWorkSnipsFolder))) {
+            options.push(qpItemWorkSnipsFolder);
             // Sort and create options for work snips
             const snips = (root.snips.data as ContainerNode).contents;
             snips.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
@@ -264,13 +309,16 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
             processSnip(base, prefix, [ baseIndex === bases.length - 1 ]);
         }
         else if (base.data.ids.type === 'fragment') {
+            const space = getTreeChars(baseIndex === bases.length - 1, !!base.data.ids.description);
             // Create option for this fragment
             options.push({
                 // Fake space followed by real space, because we always want the first column to be a line, but we want the second column to be 
                 //      empty if this is the last chapter
-                label: `${getTreeChar(baseIndex === bases.length - 1)}─$(edit) ${base.data.ids.display}`,
+                label: `${space[0]}─$(edit) ${base.data.ids.display}`,
                 description: `(${prefix})`,
-                node: base
+                node: base,
+                // alwaysShow: true,
+                detail: base.data.ids.description && `${space[1]}${base.data.ids.description}`,
             });
 
             // If this fragment is the currently open document in the editor, then set `currentNode` and `currentPick`
@@ -279,7 +327,7 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
                 currentPick = options[options.length - 1];
             }
             // Otherwise, if we're filtering generic files (and this is a generic file), then pop the option from the queue
-            else if (filterGeneric && base.data.ids.display.startsWith("Imported Fragment (") || base.data.ids.display.startsWith("New Fragment (")) {
+            else if (filterGeneric && (base.data.ids.display.startsWith("Imported Fragment (") || base.data.ids.display.startsWith("New Fragment ("))) {
                 options.pop();
             }
         }
@@ -367,14 +415,18 @@ async function select (
     return new Promise((accept, reject) => {
         const qp = vscode.window.createQuickPick<IFragmentPick>();
         qp.canSelectMany = allowMultiple;
-        qp.ignoreFocusOut = true;
+        qp.ignoreFocusOut = false;
         qp.matchOnDescription = true;
+        qp.matchOnDetail = true;
         qp.busy = true;
 
         qp.show();
         context.subscriptions.push(qp);
         
-        const refreshInputs = () => {
+        const refreshInputs = (refreshOptions?: {
+            newPredicates?: Predicate[],
+            onlyReturnItems?: boolean            // Only return items, DO NOT update qp state
+        }): IFragmentPick[] => {
             let allOptions: IFragmentPick[] = [];
             let currentFragmentPick: IFragmentPick | null = null;
             for (let index = 0; index < views.length; index++) {
@@ -385,12 +437,24 @@ async function select (
                     allOptions.push(viewSeparatorTitle(view.viewTitle));
                 }
 
-                const { options, currentNode, currentPick } = getFilesQPOptions(view.rootNodes, false, view.viewTitle, predicateFilters);
+                let currentPredicates = predicateFilters;
+                if (refreshOptions?.newPredicates) {
+                    currentPredicates = [
+                        ...predicateFilters,
+                        ...refreshOptions?.newPredicates
+                    ];
+                }
+
+                const { options, currentNode, currentPick } = getFilesQPOptions(view.rootNodes, false, view.viewTitle, currentPredicates);
                 currentFragmentPick = currentFragmentPick || currentPick || null;
 
                 allOptions = allOptions.concat(options);
                 if (index !== views.length - 1) {
                 }
+            }
+
+            if (refreshOptions?.onlyReturnItems) {
+                return allOptions;
             }
 
             qp.busy = false;
@@ -399,6 +463,7 @@ async function select (
                 qp.activeItems = [ currentFragmentPick ];
                 qp.value = `${currentFragmentPick.description?.slice(1, currentFragmentPick.description.length-1)}`
             } 
+            return allOptions;
         }
         refreshInputs();
         
@@ -468,5 +533,64 @@ async function select (
                 qp.busy = false;
             }
         }));
+
+        // Related to https://github.com/microsoft/vscode/issues/73904
+        // This is custom filtering on the OutlineView to not only include nodes with the filter string,
+        //      but also include all parents of those nodes as well and order them in a way that visually 
+        //      makes sense
+        // But, since VSCode overrides your custom sorting to put those with a better match to the qp.value string
+        //      by default, there is no point in using this implementation yet
+        // context.subscriptions.push(qp.onDidChangeValue(async (searchValue: string) => {
+        //     const cleanSearch = stripDiacritics(searchValue);
+
+        //     // TODO: create a master list of IFragmentPick[] at the start of processing
+        //     //      and keep reusing that, instead of re-calculating the inputs every time
+        //     const currentItems = refreshInputs({
+        //         onlyReturnItems: true,
+        //     });
+
+        //     // Filter the nodes based on what is in the search text 
+        //     const filteredItems = currentItems.filter(qpItem => {
+        //         return stripDiacritics(qpItem.label).includes(cleanSearch)
+        //             || stripDiacritics(qpItem.description || "").includes(cleanSearch)
+        //     });
+
+        //     // Retrieve all parents of the nodes and store their uris as a set
+        //     const uriSet: Record<UriFsPathFormatted, OutlineNode> = {};
+        //     const nodeQueue: OutlineNode[] = filteredItems.map(({ node }) => node);
+        //     while (nodeQueue.length > 0) {
+        //         const current = nodeQueue.shift();
+        //         if (!current) continue;
+
+        //         // If we have not seen current node yet, add it to the uri set, 
+        //         //      then add parent to queue
+        //         const uriForCompare = formatFsPathForCompare(current.getUri());
+        //         if (uriForCompare in uriSet) {
+        //             continue;
+        //         }
+        //         uriSet[uriForCompare] = current;
+
+        //         // No parents of root, do not go any further
+        //         if (current.data.ids.type === 'root') continue;
+
+        //         // Search for parent in all views.  Exit early if it wasn't found or
+        //         //      if it's a notebook document (shouldn't be remotely possible, but
+        //         //      check anyways)
+        //         const parent = await vagueNodeSearch(current.data.ids.parentUri);
+        //         if (parent.node === null || parent.source === null || parent.source === 'notebook') continue;
+        //         nodeQueue.push(parent.node);
+        //     }
+
+        //     // Refresh inputs, adding a new predicate that each node in the QP must be in 
+        //     //      the uriSet Record calculated above
+        //     const items = refreshInputs({
+        //         newPredicates: [ (node: OutlineNode) => {
+        //             const uriForCompare = formatFsPathForCompare(node.data.ids.uri);
+        //             return uriForCompare in uriSet;
+        //         }],
+        //         onlyReturnItems: true,
+        //     });
+        //     qp.items = items;
+        // }));
     });
 }
