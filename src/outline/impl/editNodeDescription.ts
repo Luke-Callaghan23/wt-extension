@@ -61,6 +61,12 @@ export async function editNodeDescription (this: OutlineView, overrideNode?: Out
 
     const resource: OutlineNode | undefined = overrideNode || this.view.selection[0] || lastDescriptionUpdatedNode;
     if (!resource) return;
+
+    if (resource.data.ids.type === 'container' || resource.data.ids.type === 'root') {
+        vscode.window.showWarningMessage(`[WARN] Cannot add a description to Outline nodes with '${resource.data.ids.type}' type.`);
+        return;
+    }
+
     lastDescriptionUpdatedNode = resource;
     
     const displayName = resource.data.ids.display;
@@ -82,6 +88,12 @@ export async function editNodeDescription (this: OutlineView, overrideNode?: Out
 export async function editNodeMarkdownDescription (this: OutlineView, overrideNode?: OutlineNode, overrideRename?: string) {
     const resource: OutlineNode | undefined = overrideNode || this.view.selection[0] || lastDescriptionUpdatedNode;
     if (!resource) return;
+
+    if (resource.data.ids.type === 'container' || resource.data.ids.type === 'root') {
+        vscode.window.showWarningMessage(`[WARN] Cannot add a description to Outline nodes with '${resource.data.ids.type}' type.`);
+        return;
+    }
+
     lastDescriptionUpdatedNode = resource;
 
     const existingDescription: string | undefined = resource.data.ids.description;

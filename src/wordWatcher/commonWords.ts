@@ -141,7 +141,8 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
                 label: "everything",
                 node: outlineView.rootNodes[0], 
                 description: "beep",
-                kind: vscode.QuickPickItemKind.Separator
+                kind: vscode.QuickPickItemKind.Separator,
+                alwaysShow: false,
             },
             {
                 label: "Entire Project",
@@ -153,7 +154,8 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
                 label: "filter by outline",
                 node: outlineView.rootNodes[0], 
                 description: "beep",
-                kind: vscode.QuickPickItemKind.Separator
+                kind: vscode.QuickPickItemKind.Separator,
+                alwaysShow: false
             },
             ...options 
         ];
