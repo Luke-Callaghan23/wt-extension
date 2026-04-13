@@ -223,6 +223,10 @@ export async function disable(this: WordWatcher): Promise<void> {
 
 const DEFAULT_ALPHA = 0.3;
 
+function getColorString(color: Color) {
+    return `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
+}
+
 const defaultColor = "rgb(8, 161, 8)";
 const defaultColorObj: Color = {
     a: 1,
@@ -249,7 +253,7 @@ export async function changeColor(this: WordWatcher, word: string) {
         // Update context
         const context = convertWordColorsToContextItem(this.wordColors);
         this.context.workspaceState.update('wt.wordWatcher.rgbaColors', context);
-        if (confirm) Workspace.packageContextItems();
+        if (confirm) Workspace.forcePackaging();
     
         for (const editor of vscode.window.visibleTextEditors) {
             this.update(editor, TimedView.findCommentedRanges(editor));
@@ -264,7 +268,7 @@ export async function changeColor(this: WordWatcher, word: string) {
             ignoreFocusOut: false,
             placeHolder: word,
             title: "Example Word",
-            prompt: "Please provide an example word that passes this passes this regex so you can see the colors in action... (For instance: WW='[\w]+ly', you enter='quickly'"
+            prompt: "Please provide an example word that matches regex so you can see the colors in action... (For instance: WW='[\w]+ly', you enter='quickly'"
         });
         if (!response) return;
 
@@ -295,9 +299,8 @@ export async function changeColor(this: WordWatcher, word: string) {
             if (colorsHistory.length > 0) {
                 response = await vscode.window.showInformationMessage("Use latest color instead?", {
                     modal: true,
-                    detail: `Latest color could not be parsed, would you like to use the latest color '${colorsHistory[colorsHistory.length - 1]}' instead?`
+                    detail: `Latest color could not be parsed, would you like to use the latest color '${getColorString(colorsHistory[colorsHistory.length - 1])}' instead?`
                 }, 'Yes, use last color', 'No, keep choosing') || 'Quit';
-                
             }
             else {
                 // Reload
@@ -311,7 +314,7 @@ export async function changeColor(this: WordWatcher, word: string) {
             // confirm use latest color
             response = await vscode.window.showInformationMessage("Confirm", {
                 modal: true,
-                detail: `Are you sure you want to swap ${currentColor} for ${latestColor}?`
+                detail: `Are you sure you want to swap ${currentColor} for ${getColorString(latestColor)}?`
             }, 'Yes, use new color', 'No, keep choosing') || 'Quit';
         }
 

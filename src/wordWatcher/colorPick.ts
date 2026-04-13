@@ -64,15 +64,51 @@ NOTE: please don't edit anything in this document besides the color.  You'll pro
     });
     await vscode.commands.executeCommand('editor.action.showOrFocusStandaloneColorPicker');
 
+    // Subscribed events for color picker document saved and closed
+    // Each iteration of the loop must unsubscribe from the previous iteration's
+    let closeTabEventDisposable: vscode.Disposable | null = null;
+    let saveDocumentEventDisposable: vscode.Disposable | null = null;
+    function dispose () {
+        try {
+            closeTabEventDisposable?.dispose();
+            saveDocumentEventDisposable?.dispose();
+        }
+        catch (err: any) {}
+    }
 
     let stop = false;
+
+    // Essentially, keep yielding new Color objects every time the user saves the document, or when they close the tab
+    // On tab close, `stop` will be set to true and this loop will no longer continue
     while (!stop) {
+
+        // Promise waits until `onDidChangeTabs` or `onDidSaveTextDocument` is triggered on the color picker css document
+        // When that happens, it cleans up both disposables and yields the current color picker value
+        //      (Cleaning both disposables is necessary because we need to be able to keep yielding more values if necessary
+        //          and the most convenient way to do that is to turn this whole process into a generator and nest both events
+        //          inside of an awaited promise that only resolves when VSCode fires the event, and we do not want to keep
+        //          subscribing new events every time this loop iterates)
+        // When the tab is closed, we will also close the example fragment and the caller will request confirmation from the user
         yield await new Promise<Color | null>(async (accept, reject) => {
-            const dispose1 = vscode.workspace.onDidCloseTextDocument(async e => {
-                dispose1.dispose();
-                dispose2.dispose();
-                const uri = e.uri.fsPath.replaceAll(".git", "");
-                if (uri !== colorPickerDocUri.fsPath) return;
+            closeTabEventDisposable = vscode.window.tabGroups.onDidChangeTabs(async event => {
+                if (event.closed.length === 0) return;
+
+                // Check to see if any of the closed tabs were the color picker document
+                let found = false;
+                for (const closed of event.closed) {
+                    if (!(closed.input instanceof vscode.TabInputText)) {
+                        continue;
+                    }
+
+                    if (compareFsPath(colorPickerDocUri, closed.input.uri)) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) return;
+                dispose();
+
                 const buf = await vscode.workspace.fs.readFile(colorPickerDocUri);
                 const content = extension.decoder.decode(buf);
                 const color = parseForColor(content);
@@ -94,9 +130,9 @@ NOTE: please don't edit anything in this document besides the color.  You'll pro
                     accept(color)
                 }
             });
-            const dispose2 = vscode.workspace.onDidSaveTextDocument(async e => {
-                dispose1.dispose();
-                dispose2.dispose();
+            saveDocumentEventDisposable = vscode.workspace.onDidSaveTextDocument(async e => {
+                dispose();
+
                 const uri = e.uri.fsPath.replaceAll(".git", "");
                 if (uri !== colorPickerDocUri.fsPath) return;
                 const buf = await vscode.workspace.fs.readFile(colorPickerDocUri);
@@ -107,24 +143,6 @@ NOTE: please don't edit anything in this document besides the color.  You'll pro
                 }
                 accept(color);
             });
-            setTimeout(() => {
-                dispose1.dispose();
-                dispose2.dispose();
-                for (const group of vscode.window.tabGroups.all) {
-                    const ind = group.tabs.findIndex(tab => {
-                        return tab.input instanceof vscode.TabInputText && (
-                            compareFsPath(tab.input.uri, exampleSentenceUri) || 
-                            compareFsPath(tab.input.uri, colorPickerDocUri)
-                        )
-                    });
-                    if (ind === -1) continue;
-                    const tab = group.tabs[ind];
-                    vscode.window.tabGroups.close(tab);
-                    break;
-                }
-                stop = false;
-                accept(null);
-            }, 5 * 60 * 1000);
         });
     }
     
