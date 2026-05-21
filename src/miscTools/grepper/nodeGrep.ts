@@ -1,7 +1,6 @@
-import { isSubdirectory } from '../help';
+import { __, isSubdirectory } from '../help';
 import * as extension from './../../extension'
 import * as vscode from 'vscode';
-
 
 export async function nodeGrep (
     document: vscode.TextDocument,
@@ -9,6 +8,8 @@ export async function nodeGrep (
     useRegex: boolean, 
     caseInsensitive: boolean, 
     wholeWord: boolean,
+    useNodeDescriptions: boolean,
+    useIgnoreStyleCharacters: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[ vscode.Location, string ][] | null>;
 
@@ -23,8 +24,10 @@ export async function nodeGrep (
     document: vscode.TextDocument,
     searchBarValueOrInlineSearchRegex: string | RegExp, 
     useRegexOrCancelationToken: boolean | vscode.CancellationToken, 
-    caseInsensitive?: boolean, 
-    wholeWord?: boolean,
+    useCaseInsensitive?: boolean, 
+    useWholeWord?: boolean,
+    useNodeDescriptions?: boolean,
+    useIgnoreStyleCharacters?: boolean,
     cancellationToken?: vscode.CancellationToken
 ): Promise<[ vscode.Location, string ][] | null> {
     let inlineSearchRegex: RegExp;
@@ -33,14 +36,14 @@ export async function nodeGrep (
         const captureGroupId = 'searchResult';
         
         let flags = 'g';
-        if (caseInsensitive) {
+        if (useCaseInsensitive) {
             flags += 'i';
         }
 
         const searchBarValue = searchBarValueOrInlineSearchRegex;
         const useRegex = useRegexOrCancelationToken as boolean;
-        caseInsensitive = caseInsensitive!;
-        wholeWord = wholeWord!;
+        useCaseInsensitive = useCaseInsensitive!;
+        useWholeWord = useWholeWord!;
         cancellationToken = cancellationToken!;
 
         // inline search regex is a secondary regex which makes use of NodeJS's regex capture groups
@@ -51,13 +54,17 @@ export async function nodeGrep (
         }
 
         inlineSearchRegex = new RegExp(`(?<${captureGroupId}>${inlineSource})`, flags);
-        if (wholeWord) {
+        if (useWholeWord) {
             inlineSearchRegex = new RegExp(`${extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${extension.wordSeparator}`, flags);
         }
     }
     else {
         inlineSearchRegex = searchBarValueOrInlineSearchRegex as RegExp;
         cancellationToken = useRegexOrCancelationToken as vscode.CancellationToken;
+    }
+
+    if (useIgnoreStyleCharacters) {
+
     }
 
     const captureGroupId = 'searchResult';

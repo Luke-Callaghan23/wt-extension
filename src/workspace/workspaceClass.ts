@@ -57,10 +57,12 @@ export type DiskContextType = {
     "wt.autocorrections.exclusions": Autocorrect["exclusions"];
     "wt.wtSearch.search.latestSearchBarValue": SearchBarView["latestSearchBarValue"];
     "wt.wtSearch.search.latestReplaceBarValue": SearchBarView["latestReplaceBarValue"];
-    "wt.wtSearch.search.wholeWord": SearchBarView["wholeWord"];
-    "wt.wtSearch.search.regex": SearchBarView["regex"];
-    "wt.wtSearch.search.caseInsensitive": SearchBarView["caseInsensitive"];
-    "wt.wtSearch.search.matchTitles": SearchBarView["matchTitles"];
+    "wt.wtSearch.search.wholeWord": SearchBarView["useWholeWord"];
+    "wt.wtSearch.search.regex": SearchBarView["useRegex"];
+    "wt.wtSearch.search.caseInsensitive": SearchBarView["useCaseInsensitive"];
+    "wt.wtSearch.search.matchTitles": SearchBarView["useMatchTitles"];
+    "wt.wtSearch.search.nodeDescriptions": SearchBarView["useNodeDescriptions"];
+    "wt.wtSearch.search.ignoreStyleCharacters": SearchBarView["useIgnoreStyleCharacters"];
 }
 
 export class Workspace {

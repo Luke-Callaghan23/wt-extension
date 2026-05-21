@@ -17,7 +17,12 @@ type WebviewMessage = {
     push: boolean
 } | {
     kind: 'checkbox',
-    field: 'wholeWord' | 'regex' | 'caseInsensitive' | 'matchTitles',
+    field: 'useWholeWord'
+        | 'useRegex'
+        | 'useCaseInsensitive'
+        | 'useMatchTitles'
+        | 'useNodeDescriptions'
+        | 'useIgnoreStyleCharacters',
     checked: boolean
 } | {
     kind: 'ready',
@@ -31,6 +36,16 @@ type PostMessage = {
     message: string
 }
 
+export type SearchContext = {
+    latestSearchBarValue: string;
+    latestReplaceBarValue: string;
+    useWholeWord: boolean;
+    useRegex: boolean;
+    useCaseInsensitive: boolean;
+    useMatchTitles: boolean;
+    useNodeDescriptions: boolean;
+    useIgnoreStyleCharacters: boolean;
+};
 
 const SEARCH_TIMER = 2000;
 export class SearchBarView 
@@ -38,17 +53,19 @@ extends
     BounceOnIt<[string]>
 implements 
     vscode.WebviewViewProvider, 
-    Packageable<'wt.wtSearch.search.latestSearchBarValue' | 'wt.wtSearch.search.wholeWord' | 'wt.wtSearch.search.regex' | 'wt.wtSearch.search.caseInsensitive' | 'wt.wtSearch.search.matchTitles'> 
+    Packageable<'wt.wtSearch.search.latestSearchBarValue' | 'wt.wtSearch.search.wholeWord' | 'wt.wtSearch.search.regex' | 'wt.wtSearch.search.caseInsensitive' | 'wt.wtSearch.search.matchTitles' | 'wt.wtSearch.search.nodeDescriptions' | 'wt.wtSearch.search.ignoreStyleCharacters'> 
 {
     private _view?: vscode.WebviewView;
     private readonly _extensionUri: vscode.Uri;
 
     private latestSearchBarValue: string;
     private latestReplaceBarValue: string;
-    private wholeWord: boolean;
-    private regex: boolean;
-    private caseInsensitive: boolean;
-    private matchTitles: boolean;
+    private useWholeWord: boolean;
+    private useRegex: boolean;
+    private useCaseInsensitive: boolean;
+    private useMatchTitles: boolean;
+    private useNodeDescriptions: boolean;
+    private useIgnoreStyleCharacters: boolean;
 
     constructor (
         private context: vscode.ExtensionContext,
@@ -59,10 +76,12 @@ implements
 
         this.latestSearchBarValue = this.context.workspaceState.get<string>('wt.wtSearch.search.latestSearchBarValue') || '';
         this.latestReplaceBarValue = this.context.workspaceState.get<string>('wt.wtSearch.search.latestReplaceBarValue') || '';
-        this.wholeWord = this.context.workspaceState.get<boolean>('wt.wtSearch.search.wholeWord') || false;
-        this.regex = this.context.workspaceState.get<boolean>('wt.wtSearch.search.regex') || false;
-        this.caseInsensitive = this.context.workspaceState.get<boolean>('wt.wtSearch.search.caseInsensitive') || false;
-        this.matchTitles = this.context.workspaceState.get<boolean>('wt.wtSearch.search.matchTitles') || false;
+        this.useWholeWord = this.context.workspaceState.get<boolean>('wt.wtSearch.search.wholeWord') || false;
+        this.useRegex = this.context.workspaceState.get<boolean>('wt.wtSearch.search.regex') || false;
+        this.useCaseInsensitive = this.context.workspaceState.get<boolean>('wt.wtSearch.search.caseInsensitive') || false;
+        this.useMatchTitles = this.context.workspaceState.get<boolean>('wt.wtSearch.search.matchTitles') || false;
+        this.useNodeDescriptions = this.context.workspaceState.get<boolean>('wt.wtSearch.search.nodeDescriptions') || false;
+        this.useIgnoreStyleCharacters = this.context.workspaceState.get<boolean>('wt.wtSearch.search.ignoreStyleCharacters') || false;
 
         this._extensionUri = context.extensionUri;
         try {
@@ -86,10 +105,12 @@ implements
     getPackageItems () {
         return {
             'wt.wtSearch.search.latestSearchBarValue': this.latestSearchBarValue,
-            'wt.wtSearch.search.wholeWord': this.wholeWord,
-            'wt.wtSearch.search.regex': this.regex,
-            'wt.wtSearch.search.caseInsensitive': this.caseInsensitive,
-            'wt.wtSearch.search.matchTitles': this.matchTitles,
+            'wt.wtSearch.search.wholeWord': this.useWholeWord,
+            'wt.wtSearch.search.regex': this.useRegex,
+            'wt.wtSearch.search.caseInsensitive': this.useCaseInsensitive,
+            'wt.wtSearch.search.matchTitles': this.useMatchTitles,
+            'wt.wtSearch.search.nodeDescriptions': this.useNodeDescriptions,
+            'wt.wtSearch.search.ignoreStyleCharacters': this.useIgnoreStyleCharacters,
         }
     }
         
@@ -103,14 +124,16 @@ implements
             return this.searchBarError(errorBarValue, errorMessage);
         }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.getSearchContext', () => {
-            return [
-                this.latestSearchBarValue,
-                this.latestReplaceBarValue,
-                this.wholeWord,
-                this.regex,
-                this.caseInsensitive,
-                this.matchTitles
-            ]
+            return __<SearchContext>({
+                latestSearchBarValue: this.latestSearchBarValue,
+                latestReplaceBarValue: this.latestReplaceBarValue,
+                useWholeWord: this.useWholeWord,
+                useRegex: this.useRegex,
+                useCaseInsensitive: this.useCaseInsensitive,
+                useMatchTitles: this.useMatchTitles,
+                useNodeDescriptions: this.useNodeDescriptions,
+                useIgnoreStyleCharacters: this.useIgnoreStyleCharacters
+            });
         }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.updateSearchBarValue', async (newSearchBarValue) => {
             this.latestSearchBarValue = newSearchBarValue;
@@ -141,7 +164,7 @@ implements
 
     protected debouncedUpdate(cancellationToken: vscode.CancellationToken, searchBarValue: string): Promise<void> {
         Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
-        return this.searchResults.searchBarValueWasUpdated(searchBarValue, this.regex, this.caseInsensitive, this.matchTitles, this.wholeWord, cancellationToken);
+        return this.searchResults.searchBarValueWasUpdated(searchBarValue, this.useRegex, this.useCaseInsensitive, this.useMatchTitles, this.useWholeWord, cancellationToken);
     }
 
 
@@ -173,10 +196,12 @@ implements
                 case 'checkbox': 
                     this[message.field] = message.checked;
                     switch (message.field) {
-                        case 'wholeWord': Workspace.updateContext(this.context, 'wt.wtSearch.search.wholeWord', this.wholeWord); break;
-                        case 'regex': Workspace.updateContext(this.context, 'wt.wtSearch.search.regex', this.regex); break;
-                        case 'caseInsensitive': Workspace.updateContext(this.context, 'wt.wtSearch.search.caseInsensitive', this.caseInsensitive); break;
-                        case 'matchTitles': Workspace.updateContext(this.context, 'wt.wtSearch.search.matchTitles', this.matchTitles); break;
+                        case 'useWholeWord': Workspace.updateContext(this.context, 'wt.wtSearch.search.wholeWord', this.useWholeWord); break;
+                        case 'useRegex': Workspace.updateContext(this.context, 'wt.wtSearch.search.regex', this.useRegex); break;
+                        case 'useCaseInsensitive': Workspace.updateContext(this.context, 'wt.wtSearch.search.caseInsensitive', this.useCaseInsensitive); break;
+                        case 'useMatchTitles': Workspace.updateContext(this.context, 'wt.wtSearch.search.matchTitles', this.useMatchTitles); break;
+                        case 'useNodeDescriptions': Workspace.updateContext(this.context, 'wt.wtSearch.search.nodeDescriptions', this.useNodeDescriptions); break;
+                        case 'useIgnoreStyleCharacters': Workspace.updateContext(this.context, 'wt.wtSearch.search.ignoreStyleCharacters', this.useIgnoreStyleCharacters); break;
                     }
                     if (this.latestSearchBarValue.length !== 0) {
                         this.triggerDebounce(this.latestSearchBarValue);
@@ -187,7 +212,7 @@ implements
                         this.latestReplaceBarValue = message.value;
                         Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestReplaceBarValue', this.latestReplaceBarValue);
                         if (message.push) {
-                            this.searchResults.replace(this.latestSearchBarValue, this.latestReplaceBarValue, this.regex).then((success) => {
+                            this.searchResults.replace(this.latestSearchBarValue, this.latestReplaceBarValue, this.useRegex).then((success) => {
                                 if (success) {
                                     this.triggerDebounce(this.latestSearchBarValue);
                                 }
@@ -279,7 +304,7 @@ implements
                                         label="Whole Word"
                                         id="checkbox-whole-word" 
                                         name="whole-word" 
-                                        ${this.wholeWord ? "checked" : ""}
+                                        ${this.useWholeWord ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
                                 
@@ -289,7 +314,7 @@ implements
                                         label="Regex"
                                         id="checkbox-regex" 
                                         name="regex" 
-                                        ${this.regex ? "checked" : ""}
+                                        ${this.useRegex ? "checked" : ""}
                                         class="checkbox"
                                         tooltip=""
                                     ></vscode-checkbox>
@@ -301,7 +326,7 @@ implements
                                         label="Case Insensitive"
                                         id="checkbox-case-insensitive" 
                                         name="case-insensitive" 
-                                        ${this.caseInsensitive ? "checked" : ""}
+                                        ${this.useCaseInsensitive ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
 
@@ -311,7 +336,27 @@ implements
                                         label="Match Titles"
                                         id="checkbox-match-titles" 
                                         name="match-titles" 
-                                        ${this.matchTitles ? "checked" : ""}
+                                        ${this.useMatchTitles ? "checked" : ""}
+                                        class="checkbox"
+                                    ></vscode-checkbox>
+                                </div>
+
+                                <div>
+                                    <vscode-checkbox 
+                                        label="Node Descriptions"
+                                        id="checkbox-node-descriptions" 
+                                        name="node-descriptions" 
+                                        ${this.useNodeDescriptions ? "checked" : ""}
+                                        class="checkbox"
+                                    ></vscode-checkbox>
+
+                                    &nbsp; &nbsp; 
+
+                                    <vscode-checkbox 
+                                        label="Ignore Style Characters"
+                                        id="checkbox-ignore-style-characters" 
+                                        name="ignore-style-characters" 
+                                        ${this.useIgnoreStyleCharacters ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
                                 </div>

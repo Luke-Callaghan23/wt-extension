@@ -12,6 +12,7 @@ import { Timed } from '../timedView';
 import { BounceOnIt } from '../miscTools/bounceOnIt';
 import { SearchResultsTree } from './searchResultsTree';
 import { nodeGrep } from '../miscTools/grepper/nodeGrep';
+import { SearchContext } from './searchBarView';
 
 const SearchHighlight = vscode.window.createTextEditorDecorationType(__<vscode.DecorationRenderOptions>({
     backgroundColor: new vscode.ThemeColor('editor.findMatchBackground'),
@@ -126,7 +127,13 @@ implements
     private async recalculateDocumentResults (cancellationToken: vscode.CancellationToken, updated: vscode.Uri | vscode.TextDocument): Promise<void> {
         const updatedUri = 'uri' in updated ? updated.uri : updated;
         
-        const [ latestSearchBarValue, _, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
+        const { 
+            latestSearchBarValue, 
+            useWholeWord, useRegex, 
+            useCaseInsensitive, useMatchTitles,
+            useNodeDescriptions, useIgnoreStyleCharacters
+        } = await vscode.commands.executeCommand<SearchContext>('wt.wtSearch.getSearchContext');
+
         if (latestSearchBarValue === '') {
             return;
         }
@@ -176,8 +183,8 @@ implements
         }
         
         const fileResults = 'uri' in updated
-            ? await nodeGrep(updated, latestSearchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken)
-            : await grepSingleFile(updatedUri, latestSearchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+            ? await nodeGrep(updated, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, cancellationToken)
+            : await grepSingleFile(updatedUri, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, cancellationToken);
 
         
         if (!fileResults) return;
@@ -190,7 +197,7 @@ implements
             if (cancellationToken.isCancellationRequested) return;
 
             // Iteratively insert every result in this chunk into the search result generator
-            currentTree = await searchNodeGenerator.insertResult(result[0], matchTitles, cancellationToken);
+            currentTree = await searchNodeGenerator.insertResult(result[0], useMatchTitles, cancellationToken);
         }
 
         // Once the entire tree for this search is completed, start creating 'title' nodes
@@ -235,12 +242,3 @@ implements
         return false;
     }
 }
-
-
-/*
-
-overwrite ctrl+shift+h to open in writing tool search
-
-do highlighting in the editor equivalent to vscode search
-
-*/

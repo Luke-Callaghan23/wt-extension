@@ -65,11 +65,13 @@
     const regexCheckbox = document.getElementById("checkbox-regex");
     const caseInsensitiveCheckbox = document.getElementById("checkbox-case-insensitive");
     const matchTitlesCheckbox = document.getElementById("checkbox-match-titles");
+    const nodeDescriptionsCheckbox = document.getElementById("checkbox-node-descriptions");
+    const ignoreStyleCharactersCheckbox = document.getElementById("checkbox-ignore-style-characters");
 
     function checkboxValueChanged (checked, field) {
         /* {
             kind: 'checkbox',
-            field: 'wholeWord' | 'regex' | 'caseInsensitive' | 'matchTitles',
+            field: 'wholeWord' | 'regex' | 'caseInsensitive' | 'matchTitles' | 'nodeDescriptions' | 'ignoreStyleCharacters',
             checked: boolean
         } */
         
@@ -84,10 +86,12 @@
     }
 
 
-    wholeWordCheckbox.addEventListener('click', (event) => { checkboxValueChanged(event.target.checked, 'wholeWord')} );
-    regexCheckbox.addEventListener('click', (event) => { checkboxValueChanged(event.target.checked, 'regex')} );
-    caseInsensitiveCheckbox.addEventListener('click', (event) => { checkboxValueChanged(event.target.checked, 'caseInsensitive')} );
-    matchTitlesCheckbox.addEventListener('click', (event) => { checkboxValueChanged(event.target.checked, 'matchTitles')} );
+    wholeWordCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'wholeWord'));
+    regexCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'regex'));
+    caseInsensitiveCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'caseInsensitive'));
+    matchTitlesCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'matchTitles'));
+    nodeDescriptionsCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'nodeDescriptions'));
+    ignoreStyleCharactersCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'ignoreStyleCharacters'));
 
     const errorTooltip = document.getElementById('error-tooltip');
     function updateError () {
@@ -130,6 +134,7 @@
                         console.log("erm, heller?")
                         searchBar.focus();
                     }
+                    break;
             }
         });
     }

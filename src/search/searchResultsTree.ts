@@ -10,6 +10,7 @@ import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxView
 import { CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
 import { Timed } from '../timedView';
 import { SearchNodeKind, SearchResultsView } from './searchResultsView';
+import { SearchContext } from './searchBarView';
 
 export class SearchResultsTree 
     extends UriBasedView<SearchNode<SearchNodeKind>>
@@ -83,10 +84,15 @@ export class SearchResultsTree
             });
             if (!response) return;
             
-            const [ _, __, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
+            const {
+                useWholeWord, 
+                useRegex, 
+                useCaseInsensitive, 
+                useMatchTitles 
+            } = await vscode.commands.executeCommand<SearchContext>('wt.wtSearch.getSearchContext');
             await vscode.commands.executeCommand('wt.wtSearch.updateSearchBarValue', response);
             vscode.commands.executeCommand('workbench.view.extension.wtSearch');
-            return this.searchBarValueWasUpdated(response, useRegex, caseInsensitive, matchTitles, wholeWord, new vscode.CancellationTokenSource().token);
+            return this.searchBarValueWasUpdated(response, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, new vscode.CancellationTokenSource().token);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.openSearch', async () => {
@@ -94,10 +100,15 @@ export class SearchResultsTree
             let editor = vscode.window.activeTextEditor;
             if (editor && !editor.selection.isEmpty) {
                 selectedText = editor.document.getText(editor.selection);
-                const [ _, __, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
+                const {
+                    useWholeWord, 
+                    useRegex, 
+                    useCaseInsensitive, 
+                    useMatchTitles 
+                } = await vscode.commands.executeCommand<SearchContext>('wt.wtSearch.getSearchContext');
                 await vscode.commands.executeCommand('workbench.view.extension.wtSearch');
                 await vscode.commands.executeCommand('wt.wtSearch.updateSearchBarValue', selectedText);
-                return this.searchBarValueWasUpdated(selectedText, useRegex, caseInsensitive, matchTitles, wholeWord, new vscode.CancellationTokenSource().token);
+                return this.searchBarValueWasUpdated(selectedText, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, new vscode.CancellationTokenSource().token);
             }
             else {
                 return vscode.commands.executeCommand('workbench.view.extension.wtSearch');
