@@ -192,6 +192,10 @@ export function bold () {
     return surroundSelectionWith('^');
 }
 
+export function boldMarkdown () {
+    return surroundSelectionWith('**');
+}
+
 export function strikethrough () {
     return surroundSelectionWith('~');
 }

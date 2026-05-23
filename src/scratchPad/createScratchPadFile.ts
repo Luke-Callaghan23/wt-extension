@@ -3,7 +3,7 @@ import * as extension from './../extension';
 import { FragmentNode, OutlineNode } from "../outline/nodes_impl/outlineNode";
 import { ScratchPadView } from "./scratchPadView";
 import { determineAuxViewColumn, getLatestOrdering, readDotConfig, writeDotConfig } from '../miscTools/help';
-import { getUsableFileName } from '../outline/impl/createNodes';
+import { fragmentModeConfig, FragmentModeOptions, getNewFragmentMode, getUsableFileName } from '../outline/impl/createNodes';
 import { TabLabels } from '../tabLabels/tabLabels';
 
 export async function newScratchPadFile (
@@ -22,10 +22,11 @@ export async function newScratchPadFile (
             break;
         }
     }
-    
+
+
     let showUri: vscode.Uri;
     if (!replace) {
-        const fileName = getUsableFileName('fragment', true);
+        const fileName = getUsableFileName('fragment', getNewFragmentMode());
     
         const parentDotConfig = await readDotConfig(ScratchPadView.scratchPadConfigUri);
         if (!parentDotConfig) return null;

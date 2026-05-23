@@ -274,14 +274,15 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		// }));
 		// context.subscriptions.push(vscode.languages.registerDocumentDropEditProvider(wtSelector, documentDropProvider));
 
-
-		const filterWt = workspace.importFileTypes
-			.filter(importExt => importExt.toLocaleLowerCase() !== 'wt')
+		// Collect all non-wt, non-md importable file types and join on commas -- to be used in glob patter below
+		const importableFileExtensions = workspace.importFileTypes
+			.filter(importExt => importExt.toLocaleLowerCase() !== 'wt' && importExt.toLocaleLowerCase() !== 'md')
 			.join(',');
 
+		// Create a file system watcher that watches for all the importable file types being placed in the data folder
+		//		and will trigger a function when one is created
 		const importWatcher = vscode.workspace.createFileSystemWatcher(
-			new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{${filterWt}}`),
-			// `data/{chapters,snips}/**/*.{${filterWt}}`,
+			new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{${importableFileExtensions}}`),
 			false, 			// do not ignore create events
 			true,			// ignore change events
 			true, 			// ignore delete events
@@ -292,6 +293,23 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 			const insertedNode = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(dirname);
 			if (!insertedNode) return;
 			this.importDroppedDocument([ newDoc ], insertedNode, false);
+		});
+
+		// Create a file system watcher that watches specifically for fragment file types being dropped into the file tree
+		const fragmentDropWatcher = vscode.workspace.createFileSystemWatcher(
+			new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{wt,md}`),
+			false, 			// do not ignore create events
+			true,			// ignore change events
+			true, 			// ignore delete events
+		);
+		
+		fragmentDropWatcher.onDidCreate(async (newDoc: vscode.Uri) => {
+			// TODO: detect if this was created by WTANIWE
+			// TODO: if not created by WTANIWE, then import it into the tree as-is
+			//		tab label is the document title
+			//		add it into the folder structure
+			// TODO: simplest way to detect is to check if it exists in the 
+			// 		Outline tree already
 		});
 
 

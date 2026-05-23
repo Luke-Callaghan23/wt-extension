@@ -138,8 +138,9 @@ export async function vagueNodeSearch (
         
     
     if (!(
-        relative.endsWith("wt") 
-        || relative.endsWith("wtnote")
+        relative.endsWith(".wt") 
+        || relative.endsWith(".wtnote")
+        || relative.endsWith(".md")
         || relative !== target.fsPath
     )) return { node:null, source:null };
     if (relative.includes("tmp/") || relative.includes("tmp\\")) return { node:null, source:null };
@@ -712,7 +713,7 @@ export type RevealOptions = {
 
 
 export async function addSingleWorkspaceEdit (edits: vscode.WorkspaceEdit, location: vscode.Location, replaceString: string): Promise<void> {
-    if (location.uri.fsPath.endsWith('.wt')) {
+    if (location.uri.fsPath.endsWith('.wt') || location.uri.fsPath.endsWith('.md')) {
         edits.replace(location.uri, location.range, replaceString);
     }
     else if (location.uri.fsPath.endsWith('.wtnote') || location.uri.fsPath.endsWith('.config')) {

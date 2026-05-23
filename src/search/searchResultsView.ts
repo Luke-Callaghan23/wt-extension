@@ -60,7 +60,7 @@ implements
         }));
 
         const searchResultsUpdateWatcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{wt,wtnote}`),
+            new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{wt,wtnote,md}`),
             false, false,false
         );
         searchResultsUpdateWatcher.onDidCreate(this.triggerDebounce.bind(this));

@@ -19,9 +19,11 @@ export class SynonymsIntellisense {
     }
 
     public async init () {
-        const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
-            language: 'wt'
-        };
+        const wtSelector: readonly vscode.DocumentFilter[] = [ 
+            { language: 'wt' },
+            { language: 'md' },
+            { language: 'wtnote' },
+        ];
 
         await SynonymsProvider.init(this.workspace);
         this.context.subscriptions.push(vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(this.context, this.workspace, this.useWordHippo)));

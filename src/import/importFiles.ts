@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
 import { __, compareFsPath, ConfigFileInfo, getNodeNamePath, getSectionedProgressReporter, getDateString, readDotConfig } from '../miscTools/help';
-import { getUsableFileName, newSnip } from '../outline/impl/createNodes';
+import { getNewFragmentMode, getUsableFileName, newSnip } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
 import * as extension from '../extension';
 import { DroppedSourceInfo, ImportForm, Li } from './importFormView';
@@ -214,12 +214,21 @@ async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Prom
     const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
     const fileContent = (await vscode.workspace.fs.readFile(fileUri)).toString();
 
-    const tmpString = uuid()
-    const final = fileContent
-        .replaceAll("~~~", tmpString)
-        .replaceAll("**", "^")
-        .replaceAll("~~", "~")
-        .replaceAll(tmpString, "~~~");
+    let final: string;
+
+    if (getNewFragmentMode() === 'wt') {
+        // Do simple conversions from markdown to wt files
+        const tmpString = uuid();
+        final = fileContent
+            .replaceAll("~~~", tmpString)
+            .replaceAll("**", "^")
+            .replaceAll("~~", "~")
+            .replaceAll(tmpString, "~~~");
+    }
+    else {
+        // If we're outputing markdown, there's nothing to convert
+        final = fileContent;
+    }
 
     // Split the content with the split rules provided in `split`
     const splits = splitWt(final, split);
@@ -234,6 +243,7 @@ const readAndSplitTxt = readAndSplitWt;
 
 async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<DocSplit | null> {
     // Create a converter for turning the provided html into md
+    // @ts-ignore
     const turndownService = new TurndownService({ 
         bulletListMarker: '-',
         hr: '~~~',
@@ -243,27 +253,58 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
         }
     });
 
-    turndownService.addRule('strikethrough', {
-        //@ts-ignore
-        filter: ['del', 's', 'strike' ],
-        replacement: function (content: string) {
-            return '~' + content + '~'
-        }
-    });
+    // wt files support strikethroughs, use a different bold character, and use _ for underlines (NOT italics)
+    if (getNewFragmentMode() === 'wt') {
+        turndownService.addRule('strikethrough', {
+            //@ts-ignore
+            filter: ['del', 's', 'strike' ],
+            replacement: function (content: string) {
+                return '~' + content + '~'
+            }
+        });
+    
+        turndownService.addRule('bold', {
+            filter: [ 'b', 'strong' ],
+            replacement: function (content: string) {
+                return '^' + content + '^'
+            }
+        });
+    
+        turndownService.addRule('underline', {
+            filter: [ 'u' ],
+            replacement: function (content: string) {
+                return '_' + content + '_'
+            }
+        });
+    }
+    // md files don't support strikethrough or underline, and use ** for bold
+    else {
+    
+        // Bold will be surrounded by ** on both sides
+        turndownService.addRule('bold', {
+            filter: [ 'b', 'strong' ],
+            replacement: function (content: string) {
+                return '**' + content + '**'
+            }
+        });
 
-    turndownService.addRule('bold', {
-        filter: [ 'b', 'strong' ],
-        replacement: function (content: string) {
-            return '^' + content + '^'
-        }
-    });
+        // Not supported in markdown -- just clear the tags
+        turndownService.addRule('strikethrough', {
+            //@ts-ignore
+            filter: ['del', 's', 'strike' ],
+            replacement: function (content: string) {
+                return content;
+            }
+        });
+    
+        turndownService.addRule('underline', {
+            filter: [ 'u' ],
+            replacement: function (content: string) {
+                return content;
+            }
+        });
+    }
 
-    turndownService.addRule('underline', {
-        filter: [ 'u' ],
-        replacement: function (content: string) {
-            return '_' + content + '_'
-        }
-    });
 
     // Convert the html to markdown
     const convertedMd = turndownService.turndown(htmlContent);
@@ -426,7 +467,7 @@ async function createFragmentFromSource (
     ordering: number,
 ): Promise<string> {
     // Create the fragment file
-    const fragmentFileName = getUsableFileName('fragment', true);
+    const fragmentFileName = getUsableFileName('fragment', getNewFragmentMode());
     const fragmentUri = vscode.Uri.joinPath(containerUri, fragmentFileName);
     await vscode.workspace.fs.writeFile(fragmentUri, Buff.from(content, 'utf-8'));
 

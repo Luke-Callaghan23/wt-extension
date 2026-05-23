@@ -20,12 +20,11 @@ export class DefinitionsPanelWebview implements vscode.WebviewViewProvider, vsco
     ) { 
         this._extensionUri = context.extensionUri;
         this.context.subscriptions.push(vscode.window.registerWebviewViewProvider('wt.definitions', this));
-        this.context.subscriptions.push(vscode.languages.registerHoverProvider({
-            language: 'wt',
-        }, this));
-        this.context.subscriptions.push(vscode.languages.registerHoverProvider({
-            language: 'wtNote',
-        }, this));
+        this.context.subscriptions.push(vscode.languages.registerHoverProvider([ 
+            { language: 'wt' },
+            { language: 'md' },
+            { language: 'wtnote' },
+        ], this));
         this.registerCommands();
     }
 

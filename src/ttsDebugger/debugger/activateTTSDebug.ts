@@ -93,7 +93,7 @@ class TtsConfigurationProvider implements vscode.DebugConfigurationProvider {
 		// if launch.json is missing or empty
 		if (!config.type && !config.request && !config.name) {
 			const editor = vscode.window.activeTextEditor;
-			if (editor && editor.document.languageId === 'wt') {
+			if (editor && (editor.document.languageId === 'wt' || editor.document.languageId === 'md')) {
 				config.type = 'tts';
 				config.name = 'Launch';
 				config.request = 'launch';

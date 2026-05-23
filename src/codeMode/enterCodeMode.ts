@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
 import { CoderModer } from './codeMode';
-import { Buff } from '../Buffer/bufferSource';
-import { isText } from 'istextorbinary';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { OutlineView } from '../outline/outlineView';
 import { NotebookPanel } from '../notebook/notebookPanel';

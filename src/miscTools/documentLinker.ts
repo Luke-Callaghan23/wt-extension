@@ -23,16 +23,19 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
 
         this.enabled = true;
 
-        this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({
-            pattern: "**/*.wt",
-            scheme: "file"
-        }, this));
-
-        this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({
-            pattern: "**/*.wtnote",
-        }, this));
-
-        // this.context.subscriptions.push(vscode.languages.registerDocumentDropEditProvider)
+        this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider([
+            {
+                pattern: "**/*.wt",
+                scheme: "file"
+            },
+            {
+                pattern: "**/*.md",
+                scheme: "file"
+            },
+            {
+                pattern: "**/*.wtnote",
+            }
+        ], this));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.fragmentLinker.insertLink', async () => {
             const fragment = await selectFragment();

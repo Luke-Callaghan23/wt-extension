@@ -86,7 +86,7 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
 
             const lastUri = document.uri;
             const usableUri = lastUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
-            if (usableUri.endsWith('.wt') || usableUri.endsWith('.wtnote')) {
+            if (usableUri.endsWith('.wt') || usableUri.endsWith('.wtnote') || usableUri.endsWith('.md')) {
                 FileAccessManager.positions[usableUri] = FileAccessManager.lastEditor.selection;
             }
         }

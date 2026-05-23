@@ -183,7 +183,7 @@ export async function initializeChapter <T extends TreeNode> ({
     // Keep the files that end with .wt
     // These are the text fragments for the chapter
     const wtEntries = chapterFolderEntries.filter(([ name, fileType ]) => {
-        return fileType === vscode.FileType.File && name.endsWith('.wt');
+        return fileType === vscode.FileType.File && (name.endsWith('.wt') || name.endsWith(".md"));
     });
 
     // Find the folder that stores all the snips for this chapter
@@ -318,7 +318,7 @@ export async function initializeSnip<T extends TreeNode> ({
         if (fileType === vscode.FileType.Directory) {
             innerSnipEntries.push([ name, fileType ]);
         }
-        return fileType === vscode.FileType.File && name.endsWith('.wt');
+        return fileType === vscode.FileType.File && (name.endsWith('.wt') || name.endsWith('.md'));
     });
 
     const snipFragmentsDotConfigUri = vscodeUris.Utils.joinPath(snipFolderUri, `.config`);

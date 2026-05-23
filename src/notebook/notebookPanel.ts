@@ -114,33 +114,29 @@ implements
         this.notebook = await this.serializer.deserializeNotebookPanel(this.notebookFolderPath);
         this.updateSidePanelHtml();
         this.titlesAndAliasesRegex = this.getTitlesAndAliasesRegex();
-        this.context.subscriptions.push(vscode.languages.registerHoverProvider({
-            language: 'wt',
-        }, this));
-        this.context.subscriptions.push(vscode.languages.registerHoverProvider({
-            language: 'wtNote',
-        }, this));
+        this.context.subscriptions.push(vscode.languages.registerHoverProvider([
+            { language: 'wt', },
+            { language: 'wtNote', },
+            { language: 'md', },
+        ], this));
 
-        this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({
-            language: 'wt',
-        }, this));
-        this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({
-            language: 'wtNote',
-        }, this));
+        this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider([
+            { language: 'wt', },
+            { language: 'wtNote', },
+            { language: 'md', },
+        ], this));
 
-        this.context.subscriptions.push(vscode.languages.registerReferenceProvider({
-            language: "wt",
-        }, this));
-        this.context.subscriptions.push(vscode.languages.registerReferenceProvider({
-            language: "wtNote",
-        }, this));
+        this.context.subscriptions.push(vscode.languages.registerReferenceProvider([
+            { language: "wt", },
+            { language: "wtNote", },
+            { language: "md", },
+        ], this));
 
-        this.context.subscriptions.push(vscode.languages.registerRenameProvider({
-            language: "wt",
-        }, this));
-        this.context.subscriptions.push(vscode.languages.registerRenameProvider({
-            language: "wtNote",
-        }, this));
+        this.context.subscriptions.push(vscode.languages.registerRenameProvider([
+            { language: "wt", },
+            { language: "wtNote", },
+            { language: "md", },
+        ], this));
 
         this.context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((ev) => {
             this.checkSelection(ev.textEditor.document, ev.textEditor.selection);
@@ -502,7 +498,7 @@ implements
             // Doing an edit like this on text editors inside of notebooks while the reopenNotebooks function is 
             //      executing, will cause the wt -> markdown swap to break
             // (Not sure why????)
-            if (!editor.document.uri.fsPath.endsWith('.wt')) {
+            if (!editor.document.uri.fsPath.endsWith('.wt') && !editor.document.uri.fsPath.endsWith('.md')) {
                 return;
             }
 

@@ -382,11 +382,11 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
         this.exclusions = this.context.workspaceState.get<DiskContextType['wt.autocorrections.exclusions']>('wt.autocorrections.exclusions') || {};
         this.registerCommands();
 
-        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider(
-            <vscode.DocumentFilter>{
-                language: 'wt'
-            }, this
-        ));
+        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider([ 
+            { language: 'wt' },
+            { language: 'md' },
+            { language: 'wtnote' },
+        ], this));
 
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection("stuff");
         this.specialCharactersSearch = new RegExp(`(${Object.keys(commonReplacements).join("|")})`, 'g');

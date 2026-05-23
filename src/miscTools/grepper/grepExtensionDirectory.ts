@@ -105,6 +105,7 @@ async function grep__impl (
                 (
                     uri.fsPath.toLocaleLowerCase().endsWith('.wt') 
                     || uri.fsPath.toLocaleLowerCase().endsWith('.wtnote') 
+                    || uri.fsPath.toLocaleLowerCase().endsWith('.md') 
                     || uri.fsPath.toLocaleLowerCase().endsWith('.config')
                 )
                 && 

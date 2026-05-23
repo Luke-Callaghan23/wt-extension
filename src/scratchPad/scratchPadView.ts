@@ -69,6 +69,18 @@ implements
     }
 
     async getTreeItem (element: OutlineNode): Promise<vscode.TreeItem> {
+
+        let icon: string;
+        let color: vscode.ThemeColor | undefined;
+        if (element.data.ids.uri.fsPath.toLocaleLowerCase().endsWith(".md")) {
+            icon = 'markdown';
+            color = new vscode.ThemeColor('button.background');
+        }
+        else {
+            icon = 'edit';
+        }
+        const themeIcon = new vscode.ThemeIcon(icon, color);
+
         return {
             id: uuidv4(),
             label: /**vscode.TreeItemLabel**/<any>{ 
@@ -84,7 +96,7 @@ implements
                 arguments: [element.getUri()], 
             },
             contextValue: 'file',
-            iconPath: new vscode.ThemeIcon('edit')
+            iconPath: themeIcon
         };
     }
     //#endregion

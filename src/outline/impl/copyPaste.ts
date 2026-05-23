@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 import { FileAccessManager } from '../../miscTools/fileAccesses';
-import { getUsableFileName } from './createNodes';
 import { ConfigFileInfo, getFsPathKey, getLatestOrdering, readDotConfig, setFsPathKey, writeDotConfig } from '../../miscTools/help';
 import * as extension from './../../extension';
 

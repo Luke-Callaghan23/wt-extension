@@ -204,15 +204,22 @@ implements
         }
 
         // Add the icon, depending on whether this node represents a folder or a text fragment
-        let icon = element.data.ids.type === 'fragment'
-            ? 'edit'
-            : 'symbol-folder';
-
-        if (element.data.ids.relativePath === '') {
-            icon = 'trash';
+        let icon: string;
+        let color: vscode.ThemeColor | undefined;
+        if (element.data.ids.type === 'fragment') {
+            if (element.data.ids.uri.fsPath.toLocaleLowerCase().endsWith(".md")) {
+                icon = 'markdown';
+                color = new vscode.ThemeColor('button.background');
+            }
+            else {
+                icon = 'edit';
+            }
+        }
+        else {
+            icon = 'symbol-folder';
         }
 
-        treeItem.iconPath = new vscode.ThemeIcon(icon);
+        treeItem.iconPath = new vscode.ThemeIcon(icon, color);
         return treeItem;
     }
     //#endregion

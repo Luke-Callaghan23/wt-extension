@@ -113,7 +113,7 @@ export async function* yieldMarkdownDescription (displayName: string, initialDes
     }
     catch (err: any) {}
 
-    const descriptionFN = `${getUsableFileName('descriptionMarkdown')}.wt`;
+    const descriptionFN = getUsableFileName('descriptionMarkdown', 'md')
     const descriptionUri = vscode.Uri.joinPath(extension.rootPath, 'tmp', descriptionFN);
     const contentBuff = extension.encoder.encode(currentDescription);
     await vscode.workspace.fs.writeFile(descriptionUri, contentBuff);

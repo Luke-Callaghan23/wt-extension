@@ -72,6 +72,14 @@ export function registerCommands (this: OutlineView) {
         }
         this.newFragment(resource);
     }));
+    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.newFragmentMarkdown", (resource) => {
+        if (!resource && this.view.selection.length > 0) {
+            // If the resource of the command is undefined, but there are selected items in the view
+            //      then use the first selected item as the resource
+            resource = this.view.selection[0];
+        }
+        this.newFragment(resource, { markdown: true });
+    }));
 
     this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.moveUp", async (resource: OutlineNode) => {
         const parent = await this.getTreeElementByUri(resource.data.ids.parentUri);

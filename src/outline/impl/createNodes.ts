@@ -7,8 +7,36 @@ import { OutlineView } from '../outlineView';
 import * as extension from '../../extension';
 import { FileAccessManager } from '../../miscTools/fileAccesses';
 
-export function getUsableFileName (fileTypePrefix: string, wt?: boolean): string {
-    const fileTypePostfix = wt ? '.wt' : '';
+export const fragmentModeConfig = "wt.editor.fragmentMode";
+export type FragmentModeOptions = ".wt (writing tool)" | ".md (markdown)";
+
+export function getNewFragmentMode (): 'wt' | 'md' {
+    const configuration = vscode.workspace.getConfiguration();
+    const fragmentModeRaw: string | undefined = configuration.get<string>(fragmentModeConfig);
+    const fragmentMode: FragmentModeOptions = fragmentModeRaw ? fragmentModeRaw as FragmentModeOptions : ".wt (writing tool)";
+    const fragmentExtension = fragmentMode === '.wt (writing tool)'
+        ? 'wt'
+        : 'md';
+
+    return fragmentExtension;
+}
+
+export function getUsableFileName (fileTypePrefix: string, fileExt?: boolean | 'wt' | 'md'): string {
+
+    // Default is a folder, no extension
+    let extension = '';
+
+    // Legacy support for `getUsableFileName` that had `wt` as a boolean parameter,
+    //      if `true` is passed into this function then set to default writing tool 
+    //      fragment extension
+    if (fileExt === true) {
+        extension = '.wt';
+    }
+    // Otherwise for string file names, just use the value passed in
+    else if (typeof fileExt === 'string') {
+        extension = "." + fileExt;
+    }
+
     let nano;
     try {
         nano = process.hrtime.bigint();
@@ -17,7 +45,7 @@ export function getUsableFileName (fileTypePrefix: string, wt?: boolean): string
         nano = parseInt(Date.now() + (Math.random() * 10000) + "");
     }
     const nanoB36 = nano.toString(36);
-    return `${fileTypePrefix}-${nanoB36}${fileTypePostfix}`;
+    return `${fileTypePrefix}-${nanoB36}${extension}`;
 }
 
 type CreateOptions = {
@@ -142,7 +170,7 @@ export async function newChapter (
             
             
             // New fragment's file name and path
-            const fragmentFileName = getUsableFileName(`fragment`, true);
+            const fragmentFileName = getUsableFileName(`fragment`, getNewFragmentMode());
             const fragmentUri = vscode.Uri.joinPath(chapterUri, fragmentFileName);
             const fragmentTitle = 'New Fragment';
 
@@ -401,7 +429,7 @@ export async function newSnip (
     //      new snip
     if (!options?.skipFragment) {
         // Create a new fragment file for this snip
-        const fragmentFileName = getUsableFileName(`fragment`, true);
+        const fragmentFileName = getUsableFileName(`fragment`, getNewFragmentMode());
         const fragmentUri = vscode.Uri.joinPath(snipUri, fragmentFileName);
         const fragmentTitle = 'New Fragment (0)';
     
@@ -471,7 +499,7 @@ export async function newSnip (
 export async function newFragment (
     this: OutlineView, 
     resource: OutlineNode | undefined, 
-    options?: CreateOptions
+    options?: CreateOptions & { markdown?: boolean }
 ): Promise<vscode.Uri | null> {
 
 
@@ -545,7 +573,8 @@ export async function newFragment (
         parentNode = resource;
     }
 
-    const fileName = getUsableFileName('fragment', true);
+    // If the markdown option is sent in, use md extension, but treat is a fragment all the same
+    const fileName = getUsableFileName('fragment', options?.markdown ? 'md' : getNewFragmentMode());
 
     const parentDotConfigUri = vscode.Uri.joinPath(parentUri, `.config`);
     if (!parentDotConfigUri) return null;

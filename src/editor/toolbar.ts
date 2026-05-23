@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { gitCommit, gitiniter } from '../gitTransactions';
 import { Workspace } from '../workspace/workspaceClass';
 import { JumpType, defaultJumpFragmentOptions, getJumpWordSelection, jumpParagraph, jumpSentence, jumpWord } from './jumps';
-import { bold, commasize, emDash, emDashes, italisize, strikethrough, underline } from './surroundSelection';
+import { bold, boldMarkdown, commasize, emDash, emDashes, italisize, strikethrough, underline } from './surroundSelection';
 import { commentFragment, commentParagraph, commentSentence } from './comment';
 import { highlightExpand } from './highlights';
 import { addQuotes } from './addQuotes';
@@ -71,6 +71,7 @@ export class Toolbar {
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.saveAll', saveAll));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.italisize', italisize));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.bold', bold));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.boldMarkdown', boldMarkdown));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.strikethrough', strikethrough));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.commasize', commasize));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.underline', underline));

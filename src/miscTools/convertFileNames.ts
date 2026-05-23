@@ -33,7 +33,17 @@ class ConfigFile {
         const newConfigs: { [index: string]: FileInfo } = {};
         for (const [ fn, cfg ] of Object.entries(this.fileInfo)) {
             const [ ft, ...rdlp ] = fn.split('-');
-            const newname = getUsableFileName(ft, fn.endsWith('.wt'));
+
+            // Get the new extension of the file
+            // If it was markdown or wt, use that ext, otherwise send in `undefined`
+            //      to indicate it being a folder
+            const splt = fn.split('.')
+            const oldExt = splt[splt.length - 1];
+            const newExt = oldExt === 'wt' || oldExt === 'md'
+                ? oldExt
+                : undefined;
+
+            const newname = getUsableFileName(ft, newExt);
             const fullOld = vscode.Uri.joinPath(this.parent, fn)
             const fullNew = vscode.Uri.joinPath(this.parent, newname);
             

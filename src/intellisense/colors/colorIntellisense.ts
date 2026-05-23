@@ -110,9 +110,11 @@ export class ColorIntellisense implements Timed {
         private colorGroups: ColorGroups
     ) {
         this.enabled = true;
-        const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
-            language: 'wt'
-        };
+        const wtSelector: readonly vscode.DocumentFilter[] = [ 
+            { language: 'wt' },
+            { language: 'md' },
+            { language: 'wtnote' },
+        ];
         this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider(wtSelector, new ColorActionProvider(context, workspace, this)));
         this.context.subscriptions.push(ColorIntellisense.ColorMarker);
     }

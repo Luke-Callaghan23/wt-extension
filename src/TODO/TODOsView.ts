@@ -142,11 +142,24 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
 		}
 
 		// Add the icon, depending on whether this node represents a folder or a text fragment
-		const icon = element.data.ids.type === 'fragment'
-			? 'edit'
-			: 'symbol-folder';
+		let icon: string;
+		let color: vscode.ThemeColor | undefined;
+		if (element.data.ids.type === 'fragment') {
+			// Actual todos should not have the markdown symbol, so if parent is fragment use the pencil symbol
+			if (element.data.ids.parentTypeId === 'fragment' || element.data.ids.uri.fsPath.toLocaleLowerCase().endsWith(".wt")) {
+				icon = 'edit';
+			}
+			// Only markdown file, not todos should have the markdown symbol
+			else {
+				icon = 'markdown';
+				color = new vscode.ThemeColor('button.background');
+			}
+		}
+		else {
+			icon = 'symbol-folder';
+		}
 
-		treeItem.iconPath = new vscode.ThemeIcon(icon);
+		treeItem.iconPath = new vscode.ThemeIcon(icon, color);
 		return treeItem;
 	}
 

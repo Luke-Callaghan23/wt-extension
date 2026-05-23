@@ -349,8 +349,6 @@ export class CreateSearchResults {
         return node;
     }
 
-
-
     private async createLocationNode (fileUri: vscode.Uri, locationInFile: vscode.Location, parentLabels: string[], title: string, prefix: string): Promise<SearchNode<FileResultLocationNode>> {
         const fsUri = formatFsPathForCompare(locationInFile.uri);
         const cachedDoc = this.docMap[fsUri] || await vscode.workspace.openTextDocument(locationInFile.uri);
