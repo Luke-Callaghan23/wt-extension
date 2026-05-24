@@ -218,15 +218,15 @@
                     "type": "string",
                     "default": ""
                 },
-				"wt.editor.fragmentMode": {
-					"description": ".wt (writing tool)",
-					"markdownDescription": "Controls whether the default fragment in WTANIWE is .wt or .md (NOTE: markdown support is still experimental, and may have some bugs).",
-					"enum": [
-						".wt (writing tool)",
-						".md (markdown)"
-					],
-					"default": ".wt (writing tool)"
-				}
+                "wt.editor.fragmentMode": {
+                    "description": ".wt (writing tool)",
+                    "markdownDescription": "Controls whether the default fragment in WTANIWE is .wt or .md (NOTE: markdown support is still experimental, and may have some bugs).",
+                    "enum": [
+                        ".wt (writing tool)",
+                        ".md (markdown)"
+                    ],
+                    "default": ".wt (writing tool)"
+                }
             }
         },
         "viewsWelcome": [
@@ -460,11 +460,11 @@
                 "title": "Create New Fragment",
                 "icon": "$(search-new-editor)"
             },
-			{
-				"command": "wt.outline.newFragmentMarkdown",
-				"title": "Create New (Markdown) Fragment",
-				"icon": "$(search-new-editor)"
-			},
+            {
+                "command": "wt.outline.newFragmentMarkdown",
+                "title": "Create New (Markdown) Fragment",
+                "icon": "$(search-new-editor)"
+            },
             {
                 "command": "wt.outline.removeResource",
                 "title": "Move to Recycling"
@@ -1670,21 +1670,21 @@
                     "when": "view == wt.outline && viewItem != container",
                     "group": "inline@2"
                 },
-				{
-					"command": "wt.outline.newFragment",
-					"when": "view == wt.outline && viewItem == dir",
-					"group": "000__create@1"
-				},
-				{
-					"command": "wt.outline.newFragmentMarkdown",
-					"when": "view == wt.outline && viewItem == dir",
-					"group": "000__create@2"
-				},
-				{
-					"command": "wt.outline.newSnip",
-					"when": "view == wt.outline && viewItem == dir",
-					"group": "000__create@3"
-				},
+                {
+                    "command": "wt.outline.newFragment",
+                    "when": "view == wt.outline && viewItem == dir",
+                    "group": "000__create@1"
+                },
+                {
+                    "command": "wt.outline.newFragmentMarkdown",
+                    "when": "view == wt.outline && viewItem == dir",
+                    "group": "000__create@2"
+                },
+                {
+                    "command": "wt.outline.newSnip",
+                    "when": "view == wt.outline && viewItem == dir",
+                    "group": "000__create@3"
+                },
                 {
                     "command": "wt.outline.renameFile",
                     "when": "view == wt.outline",
@@ -1827,40 +1827,40 @@
             ],
             "editor/title": [
                 {
-					"command": "wt.editor.save",
-					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showSaveAll",
-					"group": "navigation@2"
-				},
-				{
-					"command": "wt.synonyms.searchWord",
-					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showSearchWord",
-					"group": "navigation@3"
-				},
-				{
-					"command": "wt.editor.italisize",
-					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showItalisize",
-					"group": "navigation@3"
-				},
-				{
-					"command": "wt.editor.bold",
-					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showBold",
-					"group": "navigation@5"
-				},
-				{
-					"command": "wt.editor.strikethrough",
-					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showStrikethrough",
-					"group": "navigation@6"
-				},
-				{
-					"command": "wt.editor.underline",
-					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showUnderline",
-					"group": "navigation@7"
-				},
-				{
-					"command": "wt.editor.remove",
-					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showRemove",
-					"group": "navigation@9"
-				}
+                    "command": "wt.editor.save",
+                    "when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showSaveAll",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "wt.synonyms.searchWord",
+                    "when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showSearchWord",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "wt.editor.italisize",
+                    "when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showItalisize",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "wt.editor.bold",
+                    "when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showBold",
+                    "group": "navigation@5"
+                },
+                {
+                    "command": "wt.editor.strikethrough",
+                    "when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showStrikethrough",
+                    "group": "navigation@6"
+                },
+                {
+                    "command": "wt.editor.underline",
+                    "when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showUnderline",
+                    "group": "navigation@7"
+                },
+                {
+                    "command": "wt.editor.remove",
+                    "when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showRemove",
+                    "group": "navigation@9"
+                }
             ],
             "notebook/cell/title": [
                 {
@@ -2116,14 +2116,14 @@
                 "mac": "cmd+alt+b",
                 "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
             },
-			{
-				"command": "wt.editor.boldMarkdown",
-				"key": "-",
-				"win": "ctrl+alt+b",
-				"linux": "ctrl+alt+b",
-				"mac": "cmd+alt+b",
-				"when": "wt.valid && (editorLangId == markdown && editorTextFocus)"
-			},
+            {
+                "command": "wt.editor.boldMarkdown",
+                "key": "-",
+                "win": "ctrl+alt+b",
+                "linux": "ctrl+alt+b",
+                "mac": "cmd+alt+b",
+                "when": "wt.valid && (editorLangId == markdown && editorTextFocus)"
+            },
             {
                 "command": "wt.editor.strikethrough",
                 "key": "-",
@@ -2521,14 +2521,14 @@
                     "wtNote"
                 ]
             },
-			{
-				"language": "markdown",
-				"scopeName": "source.markdown",
-				"path": "./syntaxes/markdown.tmLanguage.json",
-				"injectTo": [
-					"markdown"
-				]
-			},
+            {
+                "language": "markdown",
+                "scopeName": "source.markdown",
+                "path": "./syntaxes/markdown.tmLanguage.json",
+                "injectTo": [
+                    "markdown"
+                ]
+            },
             {
                 "language": "wt",
                 "scopeName": "source.wt",
