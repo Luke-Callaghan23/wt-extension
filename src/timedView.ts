@@ -112,7 +112,7 @@ export class TimedView implements Packageable<any> {
     }
     
     private timeout: NodeJS.Timer | undefined = undefined;
-	private triggerUpdates(throttle: boolean = false) {
+    private triggerUpdates(throttle: boolean = false) {
 
         // Clear timeout if it exists
         // This is the 'throttling' part of the function
@@ -141,7 +141,7 @@ export class TimedView implements Packageable<any> {
                 }
             }
         }, 250);
-	}
+    }
 
     private registerCommands () {
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.timedViews.update', () => this.triggerUpdates(true)));

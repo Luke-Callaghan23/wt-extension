@@ -13,10 +13,10 @@ export class VeryIntellisense implements Timed {
     
     private static VeryMarker: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         borderStyle: 'none none solid none',
-		borderWidth: '3px',
-		overviewRulerLane: vscode.OverviewRulerLane.Right,
+        borderWidth: '3px',
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
         borderColor: '#34c3eb',
-		overviewRulerColor: '#34c3eb',
+        overviewRulerColor: '#34c3eb',
     });
 
 

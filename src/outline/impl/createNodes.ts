@@ -328,13 +328,13 @@ export async function newSnip (
                     // Need to check the parent node to see where we should add the new snip
                     if (resource.data.ids.parentTypeId === 'root') {
                         // If the parent type is root, we still don't know if the selected item is a chapter container
-                        //		or the work snips
+                        //        or the work snips
                         // Need to check the ids of each of these containers against the id of the resource
                         const rootNode: OutlineNode = await this.getTreeElementByUri(resource.data.ids.parentUri)! as OutlineNode;
                         const root: RootNode = rootNode.data as RootNode;
 
                         // Check the id of the chapters container and the work snips container of the root node against
-                        //		the id of the selected resource
+                        //        the id of the selected resource
                         if (compareFsPath(resource.data.ids.uri, (root.chapters as OutlineNode).data.ids.uri)) {
                             // If the id matches against the chapters container, then there's nothing we can do
                             // Cannot add snips to the chapters container

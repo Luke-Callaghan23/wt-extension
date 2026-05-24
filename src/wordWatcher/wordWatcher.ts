@@ -16,8 +16,8 @@ import { getHoveredWord } from '../intellisense/common';
 import { WordWatcherCodeActionProvider } from './wordWatcherCodeActions';
 
 type WordSearchEntry = {
-	id: 'wordSearch';
-	type: 'wordSearch';
+    id: 'wordSearch';
+    type: 'wordSearch';
 };
 
 type WordWatchedWordEntry = {
@@ -63,7 +63,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
 
     // Refresh the word tree
     private _onDidChangeTreeData: vscode.EventEmitter<WordEntry | undefined> = new vscode.EventEmitter<WordEntry | undefined>();
-	readonly onDidChangeTreeData: vscode.Event<WordEntry | undefined> = this._onDidChangeTreeData.event;
+    readonly onDidChangeTreeData: vscode.Event<WordEntry | undefined> = this._onDidChangeTreeData.event;
     
     initializeTree (): WordWatchedWordEntry[] {
         return this.watchedWords.map(watched => {
@@ -105,7 +105,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
                 });
             });
         }, 100);
-	}
+    }
 
     getChildren = getChildren;
     getTreeItem = getTreeItem;
@@ -136,7 +136,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
         watchedRegeces: { uri: string, reg: RegExp }[]
     } | undefined;
 
-	constructor(
+    constructor(
         public context: vscode.ExtensionContext,
         public workspace: Workspace,
     ) {
@@ -182,10 +182,10 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
             { language: 'wt' },
             { language: 'markdown' },
         ], new WordWatcherCodeActionProvider(this.context, this.workspace, this)));
-		context.subscriptions.push(this.view);
+        context.subscriptions.push(this.view);
         context.subscriptions.push(defaultWatchedWordDecoration);
         this.registerCommands();
-	}
+    }
 
     getUpdatesAreVisible(): boolean {
         // Even though this is a distinct view panel view, and most other view panels do not get updated when
@@ -390,7 +390,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
             return this.updateWords('delete', del, 'wt.wordWatcher.excludedWords');
         }));
 
-	}
+    }
 
     private async selectWatchedWord (): Promise<string | null> {
         

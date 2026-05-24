@@ -13,7 +13,7 @@ export class TextStyles implements Timed {
     update = update;
     disable = disable;
     public wasUpdated: boolean = true;
-	constructor(
+    constructor(
         public context: vscode.ExtensionContext,
         public workspace: Workspace,
     ) {
@@ -24,7 +24,7 @@ export class TextStyles implements Timed {
         this.context.subscriptions.push(boldDecoration);
         this.context.subscriptions.push(underlineDecoration);
         this.context.subscriptions.push(strikethroughDecoration);
-	}
+    }
 
     getUpdatesAreVisible(): boolean {
         return true;
@@ -32,5 +32,5 @@ export class TextStyles implements Timed {
 
     registerCommands () {
 
-	}
+    }
 }

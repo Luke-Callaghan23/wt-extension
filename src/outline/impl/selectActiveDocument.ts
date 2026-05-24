@@ -10,7 +10,7 @@ import { UriBasedView } from '../../outlineProvider/UriBasedView';
 
 // Is called whenever there is a change in the active document in vscode
 // Simply selects (but does not focus) the node in the outline view that corresponds
-//		to the new active document (if it exists in the outline)
+//        to the new active document (if it exists in the outline)
 export async function selectActiveDocument (this: OutlineView, editor: vscode.TextEditor | undefined): Promise<void> {
     if (!editor) return;
     if (!editor.document) return;

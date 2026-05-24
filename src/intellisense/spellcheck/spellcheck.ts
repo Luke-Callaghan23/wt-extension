@@ -18,8 +18,8 @@ export class Spellcheck implements Timed {
     static currentMisspelledWordRanges: vscode.Range[] = [];
 
     private static RedUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-		overviewRulerLane: vscode.OverviewRulerLane.Right,
-		overviewRulerColor: new vscode.ThemeColor('errorForeground'),
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
+        overviewRulerColor: new vscode.ThemeColor('errorForeground'),
         textDecoration: 'underline wavy',
         color: new vscode.ThemeColor('errorForeground'),
         borderColor: new vscode.ThemeColor('errorForeground'),

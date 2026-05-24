@@ -58,7 +58,7 @@ export async function renameResource (this: OutlineView, overrideNode?: OutlineN
     else {
         // Set the new mapping for this file's key in the config file
         // This essentially "renames" the file because the mapping is what is displayed in the 
-        //		tree view
+        //        tree view
         oldName = dotConfig[fileName].title;
         dotConfig[fileName].title = newName;
     }

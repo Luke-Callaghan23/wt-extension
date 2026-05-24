@@ -20,10 +20,10 @@ export class ColorIntellisense implements Timed {
     
     private static ColorMarker: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         borderStyle: 'none none solid none',
-		borderWidth: '3px',
-		overviewRulerLane: vscode.OverviewRulerLane.Right,
+        borderWidth: '3px',
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
         borderColor: '#a8325a',
-		overviewRulerColor: '#a8325a',
+        overviewRulerColor: '#a8325a',
     });
 
 

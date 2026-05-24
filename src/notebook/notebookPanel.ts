@@ -158,22 +158,22 @@ implements
         return `a${mappedId}`;                              // add an 'a' to the beginning
     }
 
-	public _onDidChangeFile: vscode.EventEmitter<vscode.FileChangeEvent[]>;
-	get onDidChangeFile(): vscode.Event<vscode.FileChangeEvent[]> {
-		return this._onDidChangeFile.event;
-	}
+    public _onDidChangeFile: vscode.EventEmitter<vscode.FileChangeEvent[]>;
+    get onDidChangeFile(): vscode.Event<vscode.FileChangeEvent[]> {
+        return this._onDidChangeFile.event;
+    }
 
-	private _onDidChangeTreeData: vscode.EventEmitter<NotebookPanelNote | NoteSection | BulletPoint | undefined> = new vscode.EventEmitter<NotebookPanelNote | NoteSection | BulletPoint | undefined>();
-	readonly onDidChangeTreeData: vscode.Event<NotebookPanelNote | NoteSection | BulletPoint | undefined> = this._onDidChangeTreeData.event;
-	async refresh (reload: boolean = false) {
+    private _onDidChangeTreeData: vscode.EventEmitter<NotebookPanelNote | NoteSection | BulletPoint | undefined> = new vscode.EventEmitter<NotebookPanelNote | NoteSection | BulletPoint | undefined>();
+    readonly onDidChangeTreeData: vscode.Event<NotebookPanelNote | NoteSection | BulletPoint | undefined> = this._onDidChangeTreeData.event;
+    async refresh (reload: boolean = false) {
         if (reload) {
             this.notebook = await this.serializer.deserializeNotebookPanel(this.notebookFolderPath);
         }
         // Also update the titles and aliases regex
         this.updateSidePanelHtml();
         this.titlesAndAliasesRegex = this.getTitlesAndAliasesRegex();
-		this._onDidChangeTreeData.fire(undefined);
-	}
+        this._onDidChangeTreeData.fire(undefined);
+    }
 
     protected getTitleAndAliasPattern (note: NotebookPanelNote, withId: boolean = true) {
         const realAliases = [...note.aliases, note.title]

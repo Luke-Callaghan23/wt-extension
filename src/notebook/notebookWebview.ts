@@ -187,7 +187,7 @@ export class NotebookWebview implements vscode.WebviewViewProvider {
                 </style>    
                 <body>
                 
-					<script src="${elementsUri}" nonce="${nonce}" type="module"></script>
+                    <script src="${elementsUri}" nonce="${nonce}" type="module"></script>
                     <script nonce="${nonce}" type="module">
                         (function () {
                             const vscode = acquireVsCodeApi();

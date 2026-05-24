@@ -158,18 +158,18 @@ implements
     async getTreeItem (element: OutlineNode): Promise<vscode.TreeItem> {
         const label = element.getDisplayString();
 
-		let collapseState: vscode.TreeItemCollapsibleState;
-		if (element.hasChildren()) {
-			// If the tree element has children, look that element up in the uri map to find the collapsability
-			const uri = element.getUri();
-			const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');;
-			const isCollapsed: boolean | undefined = this.uriToVisibility[usableUri];
-			if (isCollapsed === undefined || isCollapsed === false) {
-				collapseState = vscode.TreeItemCollapsibleState.Collapsed;
-			}
-			else {
-				collapseState = vscode.TreeItemCollapsibleState.Expanded;
-			}
+        let collapseState: vscode.TreeItemCollapsibleState;
+        if (element.hasChildren()) {
+            // If the tree element has children, look that element up in the uri map to find the collapsability
+            const uri = element.getUri();
+            const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');;
+            const isCollapsed: boolean | undefined = this.uriToVisibility[usableUri];
+            if (isCollapsed === undefined || isCollapsed === false) {
+                collapseState = vscode.TreeItemCollapsibleState.Collapsed;
+            }
+            else {
+                collapseState = vscode.TreeItemCollapsibleState.Expanded;
+            }
             // collapseState = vscode.TreeItemCollapsibleState.Expanded;
         }
         else {

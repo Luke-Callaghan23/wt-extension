@@ -29,11 +29,11 @@ export type QuickPickOptions = {
 };
 
 export async function quickPickPrompt (options: QuickPickOptions): Promise<string> {
-	const result = await vscode.window.showQuickPick(options.options, {
-		placeHolder: options.placeholder,
+    const result = await vscode.window.showQuickPick(options.options, {
+        placeHolder: options.placeholder,
         ignoreFocusOut: true,
         title: options.prompt,
-	});
+    });
 
     if (!result) {
         throw new Error("Not possible.");
@@ -92,12 +92,12 @@ export async function writeDotConfig (path: vscode.Uri, dotConfig: { [index: str
 
 
 export function getNonce () {
-	let text = '';
-	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	for (let i = 0; i < 32; i++) {
-		text += possible.charAt(Math.floor(Math.random() * possible.length));
-	}
-	return text;
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
 }
 
 export function hexToRgb (hex: string): null | { r: number, g: number, b: number } {

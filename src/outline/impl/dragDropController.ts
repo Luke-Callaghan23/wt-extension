@@ -170,15 +170,15 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
             progress.report({ message: "Parsing input" });
     
             // When the transfer item comes from another view, it seems that the tranfer item is stringified before landing here
-            //		so when the recycling bin tranfers nodes to recover, they will come as JSON strings
+            //        so when the recycling bin tranfers nodes to recover, they will come as JSON strings
             // To recover from this, JSON parse the transfered nodes, then search the recycling bin view for those items by their 
-            //		uris
+            //        uris
             if (typeof transferItems.value === 'string') {
                 const movedItemsJSON: OutlineNode[] = JSON.parse(transferItems.value as string);
                 const movedRecyclingItemsRaw: (OutlineNode | null)[] = await Promise.all(
                     movedItemsJSON.map(mij => {
                         // Convert to a string then back to the Uri because I'm not sure if the parsed JSON will be correctly viewed
-                        //		as an instanceof vscode.Uri on all platforms
+                        //        as an instanceof vscode.Uri on all platforms
                         const uri = vscode.Uri.file(mij.data.ids.uri.fsPath);
                         if (operation === 'recover') {
                             return recyclingView.getTreeElementByUri(uri) as Promise<OutlineNode | null>;
@@ -190,7 +190,7 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
                     })
                 );
                 // The 'Dummy' node that tells users to drag and drop onto it to delete is the only possible
-                //		node with a fragment type and a root parent type
+                //        node with a fragment type and a root parent type
                 // Obviously, we do not want to recover this node, so ignore it
                 movedOutlineItems = movedRecyclingItemsRaw.filter(ri => {
                     return ri && !(ri.data.ids.type === 'fragment' && ri.data.ids.parentTypeId === 'root');
@@ -234,15 +234,15 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
             
             // Offset tells how many nodes have moved downwards in the same container so far
             // In the case where multiple nodes are moving downwards at once, it lets
-            //		.moveNode know how many nodes have already moved down, and 
-            //		lets it adapt to those changes
+            //        .moveNode know how many nodes have already moved down, and 
+            //        lets it adapt to those changes
             let offset = 0;
             for (const mover of filteredOutlineParents) {
                 reporter(`${actualOperationGerund} '${mover.data.ids.display}'`);
     
                 // Do the move on the target destination with the selected operation
                 const res: MoveNodeResult = await mover.generalMoveNode(
-                    actualOperation, targ, sourceProvider,				// the source is either the outline tree for 'move's or the recycling bin for 'recovers'
+                    actualOperation, targ, sourceProvider,                // the source is either the outline tree for 'move's or the recycling bin for 'recovers'
                     this, offset, overrideDestination,
                     rememberedMoveDecision,
                 );
@@ -253,9 +253,9 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
                 rememberedMoveDecision = moveDecision || rememberedMoveDecision;
     
                 // If there was a destination created by the latest move, then use that destination as the override destination for 
-                //		all future moves in this function call
+                //        all future moves in this function call
                 // New destinations are created when dragging a fragment into a snip container (a new snip is created inside of the
-                //		snip container and all future fragments will also be tranferred into that container)
+                //        snip container and all future fragments will also be tranferred into that container)
                 if (createdDestination) {
                     overrideDestination = createdDestination;
                 }
@@ -268,7 +268,7 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
             }
     
             // Refresh the entire recycling/scratch view every time we recover, because the recycling/scratch should be rather 
-            //		small most of the time
+            //        small most of the time
             if (operation === 'recover') {
                 await recyclingView.refresh(false, []);
             }

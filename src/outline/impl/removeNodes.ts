@@ -223,7 +223,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
             }
             else if (target.data.ids.type === 'container') {
                 // When removing items in a container, we want to clear all the directory entries in that
-                //		container in the file system, but not remove the container itself
+                //        container in the file system, but not remove the container itself
                 // No need to shift items
 
                 // Get the abs path of the container

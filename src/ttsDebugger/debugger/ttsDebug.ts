@@ -189,8 +189,8 @@ export class TTSDebugSession extends LoggingDebugSession {
 
     protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): void {
         console.log(`disconnectRequest suspend: ${args.suspendDebuggee}, terminate: ${args.terminateDebuggee}`);
-		stopSpeaking();
-		this._runtime.closed = true;
+        stopSpeaking();
+        this._runtime.closed = true;
     }
 
     protected async attachRequest(response: DebugProtocol.AttachResponse, args: IAttachRequestArguments) {
@@ -292,8 +292,8 @@ export class TTSDebugSession extends LoggingDebugSession {
 
     protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments): void {
         this._runtime.continue(true).then(() => {
-			this.sendResponse(response);
-		});
+            this.sendResponse(response);
+        });
      }
 
     protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
@@ -372,19 +372,19 @@ export class TTSDebugSession extends LoggingDebugSession {
             ]
         };
         this.sendResponse(response);
-	}
+    }
 
     private idx = 0;
     protected stackTraceRequest (response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
-		const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
-		const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
-		const endFrame = startFrame + maxLevels;
+        const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
+        const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
+        const endFrame = startFrame + maxLevels;
 
-		const stk = this._runtime.stack(startFrame, endFrame);
-		const stackFrame: DebugProtocol.StackFrame = new StackFrame(
-			stk.index, stk.name, 
-			this.createSource(stk.file), this.convertDebuggerLineToClient(stk.line)
-		);
+        const stk = this._runtime.stack(startFrame, endFrame);
+        const stackFrame: DebugProtocol.StackFrame = new StackFrame(
+            stk.index, stk.name, 
+            this.createSource(stk.file), this.convertDebuggerLineToClient(stk.line)
+        );
 
         if (this._runtime.wordMarkerStream && this._runtime.wordMarkerStream.length > 0) {
             const latest = this._runtime.wordMarkerStream[this._runtime.wordMarkerStream.length - 1];
@@ -396,12 +396,12 @@ export class TTSDebugSession extends LoggingDebugSession {
             stackFrame.name = latest.spokenText;
         }
 
-		response.body = {
-			stackFrames: [ stackFrame ],
-			totalFrames: 1
-		};
-		this.sendResponse(response);
-	}
+        response.body = {
+            stackFrames: [ stackFrame ],
+            totalFrames: 1
+        };
+        this.sendResponse(response);
+    }
 
     //---- helpers
 

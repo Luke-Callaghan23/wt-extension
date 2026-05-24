@@ -11,10 +11,10 @@ export function registerCommands(this: TODOsView) {
     this.context.subscriptions.push(vscode.commands.registerCommand('wt.todo.openFile', async (resourceUri: vscode.Uri, todoData: TODO) => {
         // Create a range object representing where the TODO lies on the document
         const textDocumentRange = new vscode.Range (
-            todoData.rowStart,		// start line
-            todoData.colStart,		// start character
-            todoData.rowEnd,		// end line
-            todoData.colEnd,		// end character
+            todoData.rowStart,        // start line
+            todoData.colStart,        // start character
+            todoData.rowEnd,        // end line
+            todoData.colEnd,        // end character
         );
 
         // Open the document
@@ -59,8 +59,8 @@ export function registerCommands(this: TODOsView) {
 
     // Command for recieving an updated outline tree from the outline view --
     // Since the OutlineView handles A LOT of modification of its node tree, it's a lot easier
-    //		to just emit changes from there over to here and then reflect the changes on this end
-    //		rather than trying to make sure the two trees are always in sync with each other
+    //        to just emit changes from there over to here and then reflect the changes on this end
+    //        rather than trying to make sure the two trees are always in sync with each other
     // `updated` is always the root node of the outline tree
     this.context.subscriptions.push(vscode.commands.registerCommand('wt.todo.updateTree', (arr: OutlineNode[], targets: OutlineNode[]) => {
         const updated = arr[0];
@@ -117,7 +117,7 @@ export function registerCommands(this: TODOsView) {
         }
 
         // Convert the outline's Outline nodes into TODO nodes and swap out the TODO tree's data
-        //		with those converted nodes
+        //        with those converted nodes
         if (this.rootNodes[0].data) {
             (this.rootNodes[0].data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
             (this.rootNodes[0].data as RootNode<TODONode>).snips = new TODONode(<ContainerNode<TODONode>> {
