@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Packageable } from '../packageable';
 import { DiskContextType } from '../workspace/workspaceClass';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { FileAccessManager } from './fileAccesses';
 import { searchFiles, selectFile, selectFragment } from './searchFiles';
 import * as path from 'path'
@@ -83,7 +83,7 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
             let uri: vscode.Uri | null;
             
             // If the link is a regular URL, then just transform it into a vscode.Uri
-            if (extension.urlMainRegex.test(link)) {
+            if (Extension.urlMainRegex.test(link)) {
                 uri = vscode.Uri.parse(link);
             }
             // Otherwise, attempt to match the URL with a fragment by doing a vague node
@@ -106,7 +106,7 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
             DocumentLinker.documentLinkRanges.push(range);
         }
 
-        while ((match = extension.urlRegex.exec(lineText)) !== null) {
+        while ((match = Extension.urlRegex.exec(lineText)) !== null) {
             if (!match || match.index === undefined) continue;
 
             const link = match?.groups?.['link'];

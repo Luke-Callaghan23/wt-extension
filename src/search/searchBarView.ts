@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
 import { __, getNonce } from '../miscTools/help';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { Packageable } from '../packageable';
 import { DiskContextType, Workspace } from '../workspace/workspaceClass';
 import { SearchResultsView } from './searchResultsView';

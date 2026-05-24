@@ -1,5 +1,5 @@
 import { isSubdirectory } from '../help';
-import * as extension from './../../extension'
+import { Extension } from   './../../extension'
 import * as vscode from 'vscode';
 
 
@@ -52,7 +52,7 @@ export async function nodeGrep (
 
         inlineSearchRegex = new RegExp(`(?<${captureGroupId}>${inlineSource})`, flags);
         if (wholeWord) {
-            inlineSearchRegex = new RegExp(`${extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${extension.wordSeparator}`, flags);
+            inlineSearchRegex = new RegExp(`${Extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${Extension.wordSeparator}`, flags);
         }
     }
     else {
@@ -104,10 +104,10 @@ export async function nodeGrep (
                 )
                 && 
                 (
-                    isSubdirectory(extension.ExtensionGlobals.workspace.chaptersFolder, uri)
-                    || isSubdirectory(extension.ExtensionGlobals.workspace.workSnipsFolder, uri)
-                    || isSubdirectory(extension.ExtensionGlobals.workspace.notebookFolder, uri)
-                    || isSubdirectory(extension.ExtensionGlobals.workspace.scratchPadFolder, uri)
+                    isSubdirectory(Extension.workspace.chaptersFolder, uri)
+                    || isSubdirectory(Extension.workspace.workSnipsFolder, uri)
+                    || isSubdirectory(Extension.workspace.notebookFolder, uri)
+                    || isSubdirectory(Extension.workspace.scratchPadFolder, uri)
                 )
             ) {
                 // Finally, finally, finally yield the result

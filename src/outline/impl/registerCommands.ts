@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../nodes_impl/outlineNode';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { CopiedSelection, genericPaste } from './copyPaste';
 import { ConfigFileInfo, readDotConfig, writeDotConfig, setFsPathKey, vagueNodeSearch, showTextDocumentWithPreview } from '../../miscTools/help';
 import { searchFiles, selectFile, selectFiles } from '../../miscTools/searchFiles';
@@ -202,7 +202,7 @@ export function registerCommands (this: OutlineView) {
         const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
         const chapterData = chaptersContainer.contents.map(c => {
             const title = c.data.ids.display;
-            const uri = c.getUri().fsPath.split(extension.rootPath.fsPath)[1];
+            const uri = c.getUri().fsPath.split(Extension.rootPath.fsPath)[1];
             return { uri, title, ordering: c.data.ids.ordering };
         });
 
@@ -332,10 +332,10 @@ export function registerCommands (this: OutlineView) {
         // `manualMove` does not update non-Outline views, so if the source of the node was not outline
         //      then we have to manually update it
         if (result.source === 'scratch') {
-            extension.ExtensionGlobals.scratchPadView.refresh(true, []);
+            Extension.scratchPadView.refresh(true, []);
         }
         else if (result.source === 'recycle') {
-            extension.ExtensionGlobals.recyclingBinView.refresh(true, []);
+            Extension.recyclingBinView.refresh(true, []);
         }
     }));
     

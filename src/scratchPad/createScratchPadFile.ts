@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { FragmentNode, OutlineNode } from "../outline/nodes_impl/outlineNode";
 import { ScratchPadView } from "./scratchPadView";
 import { determineAuxViewColumn, getLatestOrdering, readDotConfig, writeDotConfig } from '../miscTools/help';
@@ -19,7 +19,7 @@ export async function newScratchPadFile (
     let replace: vscode.Uri | null = null;
     for (const scratch of this.rootNodes) {
         const buff = await vscode.workspace.fs.readFile(scratch.data.ids.uri);
-        const content = extension.decoder.decode(buff);
+        const content = Extension.decoder.decode(buff);
 
         const scratchContentType = vscodeUris.Utils.extname(scratch.data.ids.uri).replace(".", "");
         if (/^\s*$/.test(content) && scratchContentType === newFragmentMode) {

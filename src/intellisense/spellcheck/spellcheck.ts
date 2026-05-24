@@ -8,7 +8,7 @@ import { NotebookPanel } from '../../notebook/notebookPanel';
 import { compareFsPath, formatFsPathForCompare, stripDiacritics } from '../../miscTools/help';
 import { Autocorrect } from '../../autocorrect/autocorrect';
 import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 import { DocumentLinker } from '../../miscTools/documentLinker';
 
 
@@ -107,7 +107,7 @@ export class Spellcheck implements Timed {
                 }
 
                 // Do not add red decorations to words that have been matched by notebook
-                const notebookPanel = ExtensionGlobals.notebookPanel;
+                const notebookPanel = Extension.notebookPanel;
                 if (notebookPanel) {
                     if (notebookPanel.matchedNotebook) {
                         const matches = notebookPanel.matchedNotebook[formatFsPathForCompare(document.uri)];

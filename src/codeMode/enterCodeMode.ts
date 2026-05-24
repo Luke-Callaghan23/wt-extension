@@ -3,7 +3,7 @@ import { CoderModer } from './codeMode';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { OutlineView } from '../outline/outlineView';
 import { NotebookPanel } from '../notebook/notebookPanel';
-import { ExtensionGlobals } from '../extension';
+import { Extension } from '../extension';
 import { SearchBarView } from '../search/searchBarView';
 import { SearchResultsView } from '../search/searchResultsView';
 import { NotebookWebview } from '../notebook/notebookWebview';
@@ -42,9 +42,9 @@ export async function enter (this: CoderModer): Promise<void> {
     }
 
     
-    const outlineView: OutlineView = ExtensionGlobals.outlineView;
-    const searchBarView: SearchBarView = ExtensionGlobals.searchBarView;
-    const searchResultsView: SearchResultsView = ExtensionGlobals.searchResultsView;
+    const outlineView: OutlineView = Extension.outlineView;
+    const searchBarView: SearchBarView = Extension.searchBarView;
+    const searchResultsView: SearchResultsView = Extension.searchResultsView;
     
     if (outlineView.view.visible) {
         this.activityBarSwitchedFrom = 'outline';
@@ -60,7 +60,7 @@ export async function enter (this: CoderModer): Promise<void> {
         vscode.commands.executeCommand('workbench.view.explorer');
     }
 
-    const notebookView: NotebookWebview = ExtensionGlobals.notebookPanel.webview;
+    const notebookView: NotebookWebview = Extension.notebookPanel.webview;
     if (notebookView.visible()) {
         vscode.commands.executeCommand('workbench.action.output.toggleOutput');
         this.openedOutput = true;

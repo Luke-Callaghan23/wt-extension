@@ -86,33 +86,39 @@ export class StatusBarTimer {
                 }
             }
             else if (response === 'Reset Timer') {
-                vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
+                this.resetTimer();
             }
             else if (response === 'Show Timer rules') {
-                vscode.commands.executeCommand('wt.statusBarTimer.showInfo');
+                this.showInfo();
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.showInfo', () => {
-            vscode.window.showInformationMessage(
-                "Session Timer Rules",
-                {
-                    modal: true,
-                    detail: "Timer shows the amount of time you have spent on your current session.  Time does not progress when: \n  -  In code mode, \n  -  Focused out of VS Code, \n  -  Active document extension is not '.wt' or '.md', \n  -  Editor is not focused (reorganizing notebook is not writing, either, sorry)."
-                }
-            )
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.showInfo', this.showInfo.bind(this)));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.resetTimer', () => {
-            this.activeTimer = 0;
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.resetTimer', this.resetTimer.bind(this)));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.enteredCodeMode', this.enteredCodeMode.bind(this)));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.exitedCodeMode', this.exitedCodeMode.bind(this)));
+    }
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.enteredCodeMode', () => {
-            this.isCodeMode = true;
-        }));
+    showInfo () {
+        vscode.window.showInformationMessage(
+            "Session Timer Rules",
+            {
+                modal: true,
+                detail: "Timer shows the amount of time you have spent on your current session.  Time does not progress when: \n  -  In code mode, \n  -  Focused out of VS Code, \n  -  Active document extension is not '.wt' or '.md', \n  -  Editor is not focused (reorganizing notebook is not writing, either, sorry)."
+            }
+        )
+    }
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.statusBarTimer.exitedCodeMode', () => {
-            this.isCodeMode = false;
-        }));
+    resetTimer () {
+        this.activeTimer = 0;
+    }
+
+    enteredCodeMode () {
+        this.isCodeMode = true;
+    }
+
+    exitedCodeMode () {
+        this.isCodeMode = false;
     }
 }

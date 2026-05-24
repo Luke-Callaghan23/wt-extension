@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import { Workspace } from '../workspace/workspaceClass';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { InitializeNode, initializeChapter, initializeFragment, initializeSnip } from '../outlineProvider/initialize';
 // import { OutlineNode, ResourceType } from '../outline/node';
 import { NodeTypes, ResourceType } from '../outlineProvider/fsNodes';
@@ -40,7 +40,7 @@ implements
         const recyclingLogUri = vscode.Uri.joinPath(RecyclingBinView.recyclingUri, '.log');
         try {
             const recyclingData = await vscode.workspace.fs.readFile(recyclingLogUri);
-            const recyclingJSON = extension.decoder.decode(recyclingData);
+            const recyclingJSON = Extension.decoder.decode(recyclingData);
             return JSON.parse(recyclingJSON);
         }
         catch (err: any) {
@@ -53,7 +53,7 @@ implements
         const recyclingLogUri = vscode.Uri.joinPath(RecyclingBinView.recyclingUri, '.log');
         try {
             const recyclingJSON = JSON.stringify(log);
-            const recyclingData = extension.encoder.encode(recyclingJSON);
+            const recyclingData = Extension.encoder.encode(recyclingJSON);
             vscode.workspace.fs.writeFile(recyclingLogUri, recyclingData);
         }
         catch (err: any) {
@@ -162,7 +162,7 @@ implements
         if (element.hasChildren()) {
             // If the tree element has children, look that element up in the uri map to find the collapsability
             const uri = element.getUri();
-            const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');;
+            const usableUri = uri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');;
             const isCollapsed: boolean | undefined = this.uriToVisibility[usableUri];
             if (isCollapsed === undefined || isCollapsed === false) {
                 collapseState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -304,7 +304,7 @@ implements
     ) {
         super("Recycling Bin");
         this.view = {} as vscode.TreeView<OutlineNode>;
-        RecyclingBinView.recyclingUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
+        RecyclingBinView.recyclingUri = vscode.Uri.joinPath(Extension.rootPath, `data/recycling`);
     }
 
     static readonly viewId: string = 'wt.recyclingBin';
@@ -336,7 +336,7 @@ implements
         const outlineTransferItem = dataTransfer.get('application/vnd.code.tree.outline');
         if (!outlineTransferItem) return;
         
-        const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+        const outlineView: OutlineView = Extension.outlineView;
         const movedItemsJSON: OutlineNode[] = JSON.parse(outlineTransferItem.value);
         const movedItems: OutlineNode[] = await Promise.all(
             movedItemsJSON.map(mij => {
@@ -367,14 +367,14 @@ implements
     }
 
     async recoverNode (resource: OutlineNode) {
-        const outline =  extension.ExtensionGlobals.outlineView;
+        const outline =  Extension.outlineView;
         const chose = await outline.selectFile([ (node) => {
             return node.data.ids.type !== 'fragment'
         } ]);
         if (chose === null) return;
         if (chose.data.ids.type === 'root') return;
         
-        const moveResult = await resource.generalMoveNode("recover", chose, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.outlineView, 0, null, "Insert");
+        const moveResult = await resource.generalMoveNode("recover", chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
         if (moveResult.moveOffset === -1) return;
         const effectedContainers = moveResult.effectedContainers;
         return Promise.all([

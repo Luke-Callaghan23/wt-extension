@@ -6,7 +6,7 @@ import { OutlineTreeProvider, TreeNode } from '../../outlineProvider/outlineTree
 import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../miscTools/help';
 import { OutlineView } from '../outlineView';
 import * as fsNodes from '../../outlineProvider/fsNodes';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { getChildren } from './getChildren';
 import { shiftTrailingNodesDown } from './shiftTrailingNodes';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';

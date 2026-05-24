@@ -5,7 +5,7 @@ import { Workspace } from '../workspace/workspaceClass';
 import * as console from '../miscTools/vsconsole';
 import { DroppedSourceInfo, ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import {sep} from 'path';
 import { compareFsPath, getNodeNamePath, getDateString, statFile, __, vagueNodeSearch, readDotConfig, isSubdirectory, writeDotConfig, getLatestOrdering, showTextDocumentWithPreview } from '../miscTools/help';
 import { ChapterNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
@@ -152,7 +152,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         }
         
         // Only import the incoming document as a chapter if it was dropped directly into the '/data/chapters' folder
-        const destinationKind: 'snip' | 'chapter' = compareFsPath(dropped.data.ids.uri, extension.ExtensionGlobals.workspace.chaptersFolder)
+        const destinationKind: 'snip' | 'chapter' = compareFsPath(dropped.data.ids.uri, Extension.workspace.chaptersFolder)
             ? 'chapter'
             : 'snip'
         const nodeNamePath = await getNodeNamePath(dropped);
@@ -193,7 +193,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
     }
 
     private async importDroppedFragmentDocument (docs: vscode.Uri[], dropped: OutlineNode | undefined | null) {
-        const outlineView = extension.ExtensionGlobals.outlineView;
+        const outlineView = Extension.outlineView;
         const rootOutlineNode = outlineView.rootNodes[0];
         const rootNode = rootOutlineNode.data as RootNode;
         dropped = dropped || rootOutlineNode;
@@ -285,7 +285,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         return this.importDroppedFragmentDocumentIntoOutline(
             'ScratchPad', docs, 
             ScratchPadView.scratchPadContainerUri, "snip",
-            extension.ExtensionGlobals.scratchPadView.rootNodes
+            Extension.scratchPadView.rootNodes
         );
     }
 
@@ -427,14 +427,14 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         if (source === 'Outline') {
 
             // Consequence of generic function, have to requery for the OutlineNode parent so we can refresh it:
-            const outlineView = extension.ExtensionGlobals.outlineView;
+            const outlineView = Extension.outlineView;
             const parent = await outlineView.getTreeElementByUri(parentUri);
             if (!parent) return;
             outlineView.refresh(false, [ parent ]);
         }
         else {
             // Just refresh the whole scratch pad view like normal
-            extension.ExtensionGlobals.scratchPadView.refresh(false, []);
+            Extension.scratchPadView.refresh(false, []);
         }
 
         for (const openDoc of openDocuments) {
@@ -537,7 +537,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         // Create a file system watcher that watches for all the importable file types being placed in the data folder
         //        and will trigger a function when one is created
         const importWatcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{${importableFileExtensions}}`),
+            new vscode.RelativePattern(Extension.rootPath, `data/{chapters,snips}/**/*.{${importableFileExtensions}}`),
             false,             // do not ignore create events
             true,            // ignore change events
             true,             // ignore delete events
@@ -545,14 +545,14 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         
         importWatcher.onDidCreate(async (newDoc: vscode.Uri) => {
             const dirname = vscodeUris.Utils.dirname(newDoc);
-            const insertedNode = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(dirname);
+            const insertedNode = await Extension.outlineView.getTreeElementByUri(dirname);
             if (!insertedNode) return;
             this.importDroppedDocument([ newDoc ], insertedNode, false);
         });
 
         // Create a file system watcher that watches specifically for fragment file types being dropped into the file tree
         const fragmentDropWatcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips,scratchPad}/**/*.{wt,md}`),
+            new vscode.RelativePattern(Extension.rootPath, `data/{chapters,snips,scratchPad}/**/*.{wt,md}`),
             false,             // do not ignore create events
             true,            // ignore change events
             true,             // ignore delete events

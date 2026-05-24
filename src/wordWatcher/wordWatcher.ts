@@ -4,7 +4,7 @@ import { DiskContextType, Workspace } from '../workspace/workspaceClass';
 import * as console from '../miscTools/vsconsole';
 import { Packageable, Packager } from '../packageable';
 import { Timed } from '../timedView';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { update, getWordWatcherRegexInfo, disable, defaultWatchedWordDecoration as defaultDecoration, changeColor, changePattern, ColorEntry, createDecorationType, convertWordColorsToContextItem, createDecorationFromRgbString, defaultWatchedWordDecoration } from './timer';
 import { getChildren, getTreeItem, getParent } from './tree';
 import { addWordToWatchedWords, addOrDeleteTargetedWord, jumpNextInstanceOfWord } from './engine';

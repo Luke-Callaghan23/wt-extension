@@ -3,7 +3,7 @@ import * as console from '../../miscTools/vsconsole';
 import { getNonce } from '../../miscTools/help';
 import { Packageable } from '../../packageable';
 import { Workspace } from '../../workspace/workspaceClass';
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 import * as MarkdownIt from 'markdown-it';
 import { HoverProvider } from '../synonyms/hoverProvider';
 import { getHoveredWord, getHoverMarkdown } from '../common';

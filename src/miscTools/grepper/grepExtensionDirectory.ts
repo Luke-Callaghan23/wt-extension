@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { getRelativePath, isSubdirectory } from '../help';
 import { RipGrep } from './ripGrep';
 
@@ -46,7 +46,7 @@ async function grep__impl (
 
     let inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${inlineSource})`, 'gi');
     if (wholeWord) {
-        inlineSearchRegex = new RegExp(`${extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${extension.wordSeparator}`, 'gi');
+        inlineSearchRegex = new RegExp(`${Extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${Extension.wordSeparator}`, 'gi');
     }
 
     const parseOutput: RegExp = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
@@ -100,7 +100,7 @@ async function grep__impl (
             const foundRange = new vscode.Selection(startPosition, endPosition);
     
             // As long as the Uri belongs to this vscode workspace then yield this location
-            const uri = vscode.Uri.joinPath(extension.rootPath, path);
+            const uri = vscode.Uri.joinPath(Extension.rootPath, path);
             if (
                 (
                     uri.fsPath.toLocaleLowerCase().endsWith('.wt') 
@@ -110,10 +110,10 @@ async function grep__impl (
                 )
                 && 
                 (
-                    isSubdirectory(extension.ExtensionGlobals.workspace.chaptersFolder, uri)
-                    || isSubdirectory(extension.ExtensionGlobals.workspace.workSnipsFolder, uri)
-                    || isSubdirectory(extension.ExtensionGlobals.workspace.notebookFolder, uri)
-                    || isSubdirectory(extension.ExtensionGlobals.workspace.scratchPadFolder, uri)
+                    isSubdirectory(Extension.workspace.chaptersFolder, uri)
+                    || isSubdirectory(Extension.workspace.workSnipsFolder, uri)
+                    || isSubdirectory(Extension.workspace.notebookFolder, uri)
+                    || isSubdirectory(Extension.workspace.scratchPadFolder, uri)
                 )
             ) {
                 // Finally, finally, finally yield the result

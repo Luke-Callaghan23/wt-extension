@@ -5,7 +5,7 @@ import { compareFsPath, ConfigFileInfo, getLatestOrdering, readDotConfig, writeD
 import * as console from '../../miscTools/vsconsole';
 import { OutlineView } from '../outlineView';
 import { OutlineNode, SnipNode } from '../nodes_impl/outlineNode';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { TODOsView } from '../../TODO/TODOsView';
 import { TODONode } from '../../TODO/node';
@@ -21,7 +21,7 @@ async function updateDescription (
     const fileName = resource.data.ids.fileName;
     const displayName = resource.data.ids.display;
 
-    const fullPath = vscode.Uri.joinPath(extension.rootPath, relativePath, fileName);
+    const fullPath = vscode.Uri.joinPath(Extension.rootPath, relativePath, fileName);
 
     const dotConfigUri = vscodeUris.Utils.joinPath(resource.data.ids.parentUri, '.config');
     if (!dotConfigUri) {
@@ -53,7 +53,7 @@ async function updateDescription (
     resource.data.ids.description = newDescriprion;
     
     vscode.window.showInformationMessage(`Successfully updated '${displayName}' description to '${newDescriprion}'`);
-    await extension.ExtensionGlobals.outlineView.refresh(false, [resource], true);
+    await Extension.outlineView.refresh(false, [resource], true);
 }
 
 let lastDescriptionUpdatedNode: OutlineNode | undefined;
@@ -107,15 +107,15 @@ export async function editNodeMarkdownDescription (this: OutlineView, overrideNo
 export async function* yieldMarkdownDescription (displayName: string, initialDescription: string | undefined): AsyncGenerator<vscode.MarkdownString | null> {
     const currentDescription = initialDescription || "";
 
-    const tmpFolder = vscode.Uri.joinPath(extension.rootPath, 'tmp');
+    const tmpFolder = vscode.Uri.joinPath(Extension.rootPath, 'tmp');
     try {
         await vscode.workspace.fs.createDirectory(tmpFolder);
     }
     catch (err: any) {}
 
     const descriptionFN = getUsableFileName('descriptionMarkdown', 'md')
-    const descriptionUri = vscode.Uri.joinPath(extension.rootPath, 'tmp', descriptionFN);
-    const contentBuff = extension.encoder.encode(currentDescription);
+    const descriptionUri = vscode.Uri.joinPath(Extension.rootPath, 'tmp', descriptionFN);
+    const contentBuff = Extension.encoder.encode(currentDescription);
     await vscode.workspace.fs.writeFile(descriptionUri, contentBuff);
     
     await vscode.window.showTextDocument(descriptionUri, {
@@ -137,7 +137,7 @@ export async function* yieldMarkdownDescription (displayName: string, initialDes
                 if (uri !== descriptionUri.fsPath) return;
 
                 const buf = await vscode.workspace.fs.readFile(descriptionUri);
-                const content = extension.decoder.decode(buf);
+                const content = Extension.decoder.decode(buf);
                 stop = true;
                 accept(new vscode.MarkdownString(content));
             });
@@ -150,7 +150,7 @@ export async function* yieldMarkdownDescription (displayName: string, initialDes
                 if (uri !== descriptionUri.fsPath) return;
 
                 const buf = await vscode.workspace.fs.readFile(descriptionUri);
-                const content = extension.decoder.decode(buf);
+                const content = Extension.decoder.decode(buf);
                 accept(new vscode.MarkdownString(content));
             });
 

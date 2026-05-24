@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { QuerySynonyms } from "./synonymsApi";
-import * as extension from './../../extension';
+import { Extension } from   './../../extension';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
 import * as fs from 'fs';
@@ -66,20 +66,20 @@ export class SynonymsProvider {
         let cacheUri: vscode.Uri;
         if (!synonymsCacheLocation) {
             vscode.window.showWarningMessage('[WARN] Configuration for Synonyms Cache Location is missing. Using default ./synonyms instead');
-            cacheUri = vscode.Uri.joinPath(extension.rootPath, 'synonyms');
+            cacheUri = vscode.Uri.joinPath(Extension.rootPath, 'synonyms');
         }
         else {
             if (synonymsCacheLocation.startsWith('/') || synonymsCacheLocation.startsWith('\\') || /^[a-zA-Z]:[\\/]/.test(synonymsCacheLocation)) {
                 cacheUri = vscode.Uri.file(synonymsCacheLocation);
             }
             else {
-                cacheUri = vscode.Uri.joinPath(extension.rootPath, synonymsCacheLocation);
+                cacheUri = vscode.Uri.joinPath(Extension.rootPath, synonymsCacheLocation);
             }
 
             const stat = await statFile(cacheUri);
             if (stat === null) {
                 vscode.window.showWarningMessage(`[WARN] Could not open Synonyms Cache at ${synonymsCacheLocation}.  Using default ./synonyms instead.`);
-                cacheUri = vscode.Uri.joinPath(extension.rootPath, 'synonyms');
+                cacheUri = vscode.Uri.joinPath(Extension.rootPath, 'synonyms');
             }
         }
         this.cacheLocation = cacheUri;

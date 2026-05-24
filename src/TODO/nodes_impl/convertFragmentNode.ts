@@ -5,7 +5,7 @@ import { Ids } from '../../outlineProvider/fsNodes';
 import { TODOData, TODONode } from '../node';
 import { v4 as uuidv4 } from 'uuid';
 import { TODOsView, Validation } from '../TODOsView';
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 import { __, applyHighlightToMarkdownString, getFsPathKey } from '../../miscTools/help';
 
 export async function convertToTODOData (this: TODONode): Promise<TODONode[]> {

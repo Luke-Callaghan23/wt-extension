@@ -3,7 +3,7 @@ import { NotebookPanelNote, NotebookPanel, BulletPoint, NoteSection } from './no
 import { TabLabels } from '../tabLabels/tabLabels';
 import { determineAuxViewColumn } from '../miscTools/help';
 import { Buff } from '../Buffer/bufferSource';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { SerializedNote } from './notebookApi/notebookSerializer';
 
 export async function addNote (this: NotebookPanel, resource: NotebookPanelNote | string | undefined): Promise<string | null> {

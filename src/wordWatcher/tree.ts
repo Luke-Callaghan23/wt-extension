@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { WordEntry, WordWatcher } from './wordWatcher';
 import { __ } from '../miscTools/help';
 

@@ -3,7 +3,7 @@ import { DiskContextType, Workspace } from "../workspace/workspaceClass";
 import { SavedTabState, TabPositions } from '../workspace/workspace';
 import { Packageable, Packager } from '../packageable';
 import { FileAccessManager } from './fileAccesses';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { TabLabels } from '../tabLabels/tabLabels';
 import { showDocument } from './help';
 
@@ -56,7 +56,7 @@ export class TabStates implements Packageable<'wt.tabStates.savedTabStates' | "w
                         continue;
                     }
 
-                    const usableUri = uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
+                    const usableUri = uri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');
                     
                     const selection = FileAccessManager.getPosition(uri);
                     
@@ -101,7 +101,7 @@ export class TabStates implements Packageable<'wt.tabStates.savedTabStates' | "w
                 // Open all of the tabs in this tab group in order
                 let activeUri: vscode.Uri | undefined;
                 for (const [ relativePath, positions ] of Object.entries(tabs)) {
-                    const openUri = vscode.Uri.joinPath(extension.rootPath, relativePath);
+                    const openUri = vscode.Uri.joinPath(Extension.rootPath, relativePath);
                     
                     try {
                         await showDocument(openUri, {

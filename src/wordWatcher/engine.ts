@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { WordWatcher } from './wordWatcher';
 import { TimedView } from '../timedView';
 import { Workspace } from '../workspace/workspaceClass';
@@ -173,7 +173,7 @@ export async function jumpNextInstanceOfWord (this: WordWatcher, word: string) {
     }
 
     // Create a single regex for all words in this.words
-    const regEx = new RegExp(`${extension.wordSeparator}${word}${extension.wordSeparator}`, 'gi');
+    const regEx = new RegExp(`${Extension.wordSeparator}${word}${Extension.wordSeparator}`, 'gi');
 
     // If there were no updates to any of the watched/uwatched words since the last time
     //      they were calculated, then use the excludedRegeces RegExp array from there
@@ -183,7 +183,7 @@ export async function jumpNextInstanceOfWord (this: WordWatcher, word: string) {
     }
     else {
         // Otherwise, calculate the array of excluded regeces
-        excludedRegeces = this.excludedWords.map(excluded => new RegExp(`${extension.wordSeparator}${excluded}${extension.wordSeparator}`, 'gi'));
+        excludedRegeces = this.excludedWords.map(excluded => new RegExp(`${Extension.wordSeparator}${excluded}${Extension.wordSeparator}`, 'gi'));
     }
     
     const text = activeEditor.document.getText();

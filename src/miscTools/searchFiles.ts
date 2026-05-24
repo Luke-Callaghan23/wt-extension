@@ -1,10 +1,9 @@
 import * as vscode from 'vscode';
 import { OutlineView } from './../outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from './../outline/nodes_impl/outlineNode';
-import { ExtensionGlobals } from './../extension';
 import { compareFsPath, formatFsPathForCompare, showTextDocumentWithPreview, stripDiacritics, UriFsPathFormatted, vagueNodeSearch } from './help';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 
 export interface IFragmentPick {
     label: string;
@@ -350,9 +349,9 @@ export async function searchFiles () {
 
 export async function selectFragment (): Promise<OutlineNode | null> {
     const selected = await select([
-        ExtensionGlobals.outlineView,
-        ExtensionGlobals.scratchPadView,
-        ExtensionGlobals.recyclingBinView,
+        Extension.outlineView,
+        Extension.scratchPadView,
+        Extension.recyclingBinView,
     ], [], false, true);
     if (!selected || selected.length === 0) return null;
     return selected[0];
@@ -380,8 +379,8 @@ const viewSeparatorTitle = (prefix: string): IFragmentPick => ({
             fileName: "",
             ordering: 0,
             parentTypeId: 'root',
-            parentUri: extension.rootPath,
-            uri: extension.rootPath,
+            parentUri: Extension.rootPath,
+            uri: Extension.rootPath,
             relativePath: "",
         },
         contents: [],
@@ -410,7 +409,7 @@ async function select (
         ? viewOrViews
         : [ viewOrViews ];
 
-    const context = ExtensionGlobals.context;
+    const context = Extension.context;
 
     return new Promise((accept, reject) => {
         const qp = vscode.window.createQuickPick<IFragmentPick>();
@@ -433,7 +432,7 @@ async function select (
                 const view = views[index];
 
                 allOptions.push(viewSeparatorLine(view.viewTitle));
-                if (view !== ExtensionGlobals.outlineView) {
+                if (view !== Extension.outlineView) {
                     allOptions.push(viewSeparatorTitle(view.viewTitle));
                 }
 

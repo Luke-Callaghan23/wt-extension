@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import * as console from '../miscTools/vsconsole';
-import  * as extension from '../extension';
+import { Extension } from '../extension';
 import { getNonce } from '../miscTools/help';
 import { DocInfo, handleImport, handlePreview, ImportDocumentInfo } from './importFiles';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
@@ -73,7 +73,7 @@ export class ImportForm {
 
             const name = vscodeUris.Utils.basename(documentUri);
             const ext = vscodeUris.Utils.extname(documentUri);
-            const fullPath = documentUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');;
+            const fullPath = documentUri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');;
             return {
                 fullPath, name, ext
             };

@@ -5,7 +5,7 @@ import { DiskContextType, Workspace } from '../workspace/workspaceClass';
 import { PersonalDictionary } from '../intellisense/spellcheck/personalDictionary';
 import { Packageable } from '../packageable';
 import { getAllIndices, getTextCapitalization, stripDiacritics, transformToCapitalization, vagueNodeSearch } from '../miscTools/help';
-import { ExtensionGlobals } from '../extension';
+import { Extension } from '../extension';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { report } from 'process';
 export const commonReplacements = {

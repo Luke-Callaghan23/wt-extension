@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { HasGetUri, UriBasedView } from '../outlineProvider/UriBasedView';
 import { Workspace } from '../workspace/workspaceClass';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { v4 as uuid } from 'uuid';
 import { grepExtensionDirectory, grepSingleFile } from '../miscTools/grepper/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
@@ -60,7 +60,7 @@ implements
         }));
 
         const searchResultsUpdateWatcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{wt,wtnote,md}`),
+            new vscode.RelativePattern(Extension.rootPath, `data/{chapters,snips}/**/*.{wt,wtnote,md}`),
             false, false,false
         );
         searchResultsUpdateWatcher.onDidCreate(this.triggerDebounce.bind(this));

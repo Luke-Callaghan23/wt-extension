@@ -13,9 +13,8 @@ import { update } from './impl/timerFunctions';
 import { disable } from '../wordWatcher/timer';
 import { registerCommands } from './impl/registerCommands';
 import { getTODOCounts } from './nodes_impl/getTODOCounts';
-import { ExtensionGlobals } from '../extension';
 import { getFsPathKey, setFsPathKey } from '../miscTools/help';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 
 export type TODO = {
     rowStart: number;
@@ -66,7 +65,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
     ) {
         const pathsToInvalidate: vscode.Uri[] = [];
     
-        const root = extension.rootPath;
+        const root = Extension.rootPath;
         const relativePath = invalidate.fsPath.replace(root.fsPath, '');
         const elets = relativePath.split(/\\|\//).filter(s => s.length > 0);
         let running = root;
@@ -178,7 +177,6 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
         super(context, TODOsView.viewId, "TODO");
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
         this.context.subscriptions.push(this._onDidChangeFile);
-        ExtensionGlobals.todoView = this;
     }
     
     getUpdatesAreVisible(): boolean {

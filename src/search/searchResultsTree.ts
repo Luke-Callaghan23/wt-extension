@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { HasGetUri, UriBasedView } from '../outlineProvider/UriBasedView';
 import { Workspace } from '../workspace/workspaceClass';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { v4 as uuid } from 'uuid';
 import { grepExtensionDirectory, grepSingleFile } from '../miscTools/grepper/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
@@ -85,7 +85,7 @@ export class SearchResultsTree
             
             const [ _, __, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
             await vscode.commands.executeCommand('wt.wtSearch.updateSearchBarValue', response);
-            vscode.commands.executeCommand('workbench.view.extension.wtSearch');
+            vscode.commands.executeCommand('workbench.view.Extension.wtSearch');
             return this.searchBarValueWasUpdated(response, useRegex, caseInsensitive, matchTitles, wholeWord, new vscode.CancellationTokenSource().token);
         }));
 
@@ -95,12 +95,12 @@ export class SearchResultsTree
             if (editor && !editor.selection.isEmpty) {
                 selectedText = editor.document.getText(editor.selection);
                 const [ _, __, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
-                await vscode.commands.executeCommand('workbench.view.extension.wtSearch');
+                await vscode.commands.executeCommand('workbench.view.Extension.wtSearch');
                 await vscode.commands.executeCommand('wt.wtSearch.updateSearchBarValue', selectedText);
                 return this.searchBarValueWasUpdated(selectedText, useRegex, caseInsensitive, matchTitles, wholeWord, new vscode.CancellationTokenSource().token);
             }
             else {
-                return vscode.commands.executeCommand('workbench.view.extension.wtSearch');
+                return vscode.commands.executeCommand('workbench.view.Extension.wtSearch');
             }
         }));
 
@@ -108,7 +108,7 @@ export class SearchResultsTree
             if (location.uri.fsPath.toLowerCase().endsWith('.wtnote')) {
                 const options: vscode.NotebookDocumentShowOptions = {
                     preview: false,
-                    viewColumn: await determineAuxViewColumn(extension.ExtensionGlobals.notebookPanel.getNote.bind(extension.ExtensionGlobals.notebookPanel)),
+                    viewColumn: await determineAuxViewColumn(Extension.notebookPanel.getNote.bind(Extension.notebookPanel)),
                     preserveFocus: false,
                 };
                 vscode.commands.executeCommand('vscode.openWith', location.uri, 'wt.notebook', options)
@@ -141,8 +141,8 @@ export class SearchResultsTree
             //      in its view
             let provider: UriBasedView<OutlineNode>;
             switch (node.node.linkNode.source) {
-                case 'outline': provider = extension.ExtensionGlobals.outlineView; break;
-                case 'recycle': provider = extension.ExtensionGlobals.recyclingBinView; break;
+                case 'outline': provider = Extension.outlineView; break;
+                case 'recycle': provider = Extension.recyclingBinView; break;
             }
             provider.expandAndRevealOutlineNode(node.node.linkNode.node);
         }));
@@ -158,9 +158,9 @@ export class SearchResultsTree
 
             let provider: UriBasedView<OutlineNode>;
             switch (nodeResult.source) {
-                case 'outline': provider = extension.ExtensionGlobals.outlineView; break;
-                case 'recycle': provider = extension.ExtensionGlobals.recyclingBinView; break;
-                case 'scratch': provider = extension.ExtensionGlobals.scratchPadView; break;
+                case 'outline': provider = Extension.outlineView; break;
+                case 'recycle': provider = Extension.recyclingBinView; break;
+                case 'scratch': provider = Extension.scratchPadView; break;
             }
             return provider.expandAndRevealOutlineNode(nodeResult.node);
         }));
@@ -407,7 +407,7 @@ WARNING: For best results.  Save ALL open .wtnote notebook files before doing th
                     kind: 'searchTemp',
                     label: 'No results found.',
                     parentUri: null,
-                    uri: extension.rootPath
+                    uri: Extension.rootPath
                 }) ];
             }
             const res = this.rootNodes.filter(root => !this.isUriFiltered(root.getUri()));

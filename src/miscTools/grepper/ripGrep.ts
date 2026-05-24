@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as console from '../vsconsole';
 import * as childProcess from 'child_process';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { getBinPath } from "vscode-ripgrep-utils";
 
 
@@ -65,7 +65,7 @@ export class RipGrep {
             const rgBinPath = await getBinPath(vscode.env.appRoot);
             if (!rgBinPath) throw "Error executing 'rg'";
             const ps = childProcess.spawnSync(rgBinPath, command, {
-                cwd: extension.rootPath.fsPath,
+                cwd: Extension.rootPath.fsPath,
                 maxBuffer: 1024 * 1024 * 50                 // 50 MB max buffer
             });
 

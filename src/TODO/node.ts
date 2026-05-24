@@ -6,7 +6,7 @@ import * as console from '../miscTools/vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../outlineProvider/outlineTreeProvider';
 import * as fsNodes from '../outlineProvider/fsNodes';
 import { Validation, TODO, TODOsView } from './TODOsView';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { scanFragment } from './impl/scanFragment';
 import { convertToTODOData } from './nodes_impl/convertFragmentNode';
 import { getChildren } from './nodes_impl/getChildren';

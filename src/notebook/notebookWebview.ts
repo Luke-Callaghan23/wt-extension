@@ -4,7 +4,7 @@ import { getNonce } from '../miscTools/help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 import { SerializedNote, WTNotebookSerializer } from './notebookApi/notebookSerializer';
-import { ExtensionGlobals } from '../extension';
+import { Extension } from '../extension';
 import * as MarkdownIt from 'markdown-it';
 import { NotebookPanel, NotebookPanelNote } from './notebookPanel';
 

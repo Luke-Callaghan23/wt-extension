@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { capitalize, formatFsPathForCompare, getFullJSONStringFromLocation, getJSONStringContext, getRelativePath, getSurroundingTextInRange, JSONStringInfo, readDotConfig, UriFsPathFormatted, vagueNodeSearch, VagueNodeSearchResult, VagueSearchSource } from '../miscTools/help';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import * as vscodeUri from 'vscode-uri';
 import { Buff } from '../Buffer/bufferSource';
 import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode } from './searchResultsNode';
@@ -69,55 +69,55 @@ export class CreateSearchResults {
         this.rootCategoryNodes = {
             'chapters': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
-                uri: vscode.Uri.joinPath(extension.rootPath, 'data', 'chapters'),
+                uri: vscode.Uri.joinPath(Extension.rootPath, 'data', 'chapters'),
                 contents: {},
                 results: 0,
                 parentLabels: [],
-                parentUri: vscode.Uri.joinPath(extension.rootPath, 'data'),
+                parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data'),
                 title: 'Chapters',
                 prefix: '',
                 ordering: 0,
             }),
             'snips': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
-                uri: vscode.Uri.joinPath(extension.rootPath, 'data', 'snips'),
+                uri: vscode.Uri.joinPath(Extension.rootPath, 'data', 'snips'),
                 contents: {},
                 results: 0,
                 parentLabels: [],
-                parentUri: vscode.Uri.joinPath(extension.rootPath, 'data'),
+                parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data'),
                 title: 'Work Snips',
                 prefix: '',
                 ordering: 0,
             }),
             'scratchPad': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
-                uri: vscode.Uri.joinPath(extension.rootPath, 'data', 'scratchPad'),
+                uri: vscode.Uri.joinPath(Extension.rootPath, 'data', 'scratchPad'),
                 contents: {},
                 results: 0,
                 parentLabels: [],
-                parentUri: vscode.Uri.joinPath(extension.rootPath, 'data'),
+                parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data'),
                 title: 'Scratch Pad',
                 prefix: '',
                 ordering: 0,
             }),
             'recycle': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
-                uri: vscode.Uri.joinPath(extension.rootPath, 'data', 'recycling'),
+                uri: vscode.Uri.joinPath(Extension.rootPath, 'data', 'recycling'),
                 contents: {},
                 results: 0,
                 parentLabels: [],
-                parentUri: vscode.Uri.joinPath(extension.rootPath, 'data'),
+                parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data'),
                 title: 'Recycling Bin',
                 prefix: '',
                 ordering: 0,
             }),
             'notebook': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
-                uri: vscode.Uri.joinPath(extension.rootPath, 'data', 'notebook'),
+                uri: vscode.Uri.joinPath(Extension.rootPath, 'data', 'notebook'),
                 contents: {},
                 results: 0,
                 parentLabels: [],
-                parentUri: vscode.Uri.joinPath(extension.rootPath, 'data'),
+                parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data'),
                 title: 'Work Notebook',
                 prefix: '',
                 ordering: 0,
@@ -166,13 +166,13 @@ export class CreateSearchResults {
         };
 
         return {
-            'chapters': mainLabelProvider(extension.ExtensionGlobals.outlineView),
-            'snips': mainLabelProvider(extension.ExtensionGlobals.outlineView),
-            'scratchPad': mainLabelProvider(extension.ExtensionGlobals.scratchPadView),
-            'recycle': mainLabelProvider(extension.ExtensionGlobals.recyclingBinView),
+            'chapters': mainLabelProvider(Extension.outlineView),
+            'snips': mainLabelProvider(Extension.outlineView),
+            'scratchPad': mainLabelProvider(Extension.scratchPadView),
+            'recycle': mainLabelProvider(Extension.recyclingBinView),
             // For the notebook, since OutlineNodes are not used, we can just take the "title" in the note as the label
             'notebook': async (uri: vscode.Uri) => {
-                const note = extension.ExtensionGlobals.notebookPanel.getNote(uri);
+                const note = Extension.notebookPanel.getNote(uri);
                 if (!note) return null;
                 return {
                     prefix: 'Note', 
@@ -536,7 +536,7 @@ export class CreateSearchResults {
             const segment = pathSegments[index];
             relativePath.push(segment);
 
-            const uri = vscode.Uri.joinPath(extension.rootPath, ...relativePath);
+            const uri = vscode.Uri.joinPath(Extension.rootPath, ...relativePath);
             const isLeaf = index === pathSegments.length - 1;
 
             const label = await labelProviders[category](uri);

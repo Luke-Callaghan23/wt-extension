@@ -6,8 +6,6 @@ import { HoverProvider } from './synonyms/hoverProvider';
 import { CodeActionProvider } from './synonyms/codeActionProvider';
 import { PersonalDictionary } from './spellcheck/personalDictionary';
 import { SynonymsProvider } from './synonymsProvider/provideSynonyms';
-import { rootPath } from '../extension';
-import { statFile } from '../miscTools/help';
 
 export class SynonymsIntellisense {
     constructor (

@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../miscTools/help';
 import * as console from '../../miscTools/vsconsole';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { RecyclingBinView } from '../recyclingBinView';
 import { OutlineNode } from '../../outline/nodes_impl/outlineNode';
 import { TabLabels } from '../../tabLabels/tabLabels';
@@ -21,7 +21,7 @@ export async function renameResource (this: RecyclingBinView, overrideNode?: Out
         return;
     }
 
-    const fullPath = vscode.Uri.joinPath(extension.rootPath, relativePath, fileName);
+    const fullPath = vscode.Uri.joinPath(Extension.rootPath, relativePath, fileName);
     const originalName = displayName;
 
     const newName = await vscode.window.showInputBox({

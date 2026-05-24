@@ -5,7 +5,7 @@ import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from
 import * as console from '../../miscTools/vsconsole';
 import { OutlineView } from '../outlineView';
 import { OutlineNode, SnipNode } from '../nodes_impl/outlineNode';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { TODOsView } from '../../TODO/TODOsView';
 import { TODONode } from '../../TODO/node';
@@ -22,7 +22,7 @@ export async function renameResource (this: OutlineView, overrideNode?: OutlineN
     const displayName = resource.data.ids.display;
     const type = resource.data.ids.type;
 
-    const fullPath = vscode.Uri.joinPath(extension.rootPath, relativePath, fileName);
+    const fullPath = vscode.Uri.joinPath(Extension.rootPath, relativePath, fileName);
     const originalName = displayName;
 
     const newName = overrideRename || await vscode.window.showInputBox({
@@ -69,7 +69,7 @@ export async function renameResource (this: OutlineView, overrideNode?: OutlineN
     // Update internal outline tree structure's name
     resource.data.ids.display = newName;
 
-    const todoView: TODOsView = extension.ExtensionGlobals.todoView;
+    const todoView: TODOsView = Extension.todoView;
 
 
     vscode.window.showInformationMessage(`Successfully renamed '${oldName}' to '${newName}'`);

@@ -4,7 +4,7 @@ import { Workspace } from '../workspace/workspaceClass';
 import * as console from '../miscTools/vsconsole';
 import { Packageable } from '../packageable';
 import { Timed } from '../timedView';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { update, disable, italicsDecoration, boldDecoration, underlineDecoration, strikethroughDecoration  } from './timer';
 import { hexToRgb } from '../miscTools/help';
 

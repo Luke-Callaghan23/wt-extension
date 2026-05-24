@@ -9,7 +9,7 @@ import { highlightExpand } from './highlights';
 import { addQuotes } from './addQuotes';
 import { Accents } from './accents';
 import { OutlineView } from '../outline/outlineView';
-import { ExtensionGlobals } from '../extension';
+import { Extension } from '../extension';
 import { vagueNodeSearch } from '../miscTools/help';
 import { importContextValuesFromFile } from '../miscTools/importContextValues';
 
@@ -118,19 +118,19 @@ export class Toolbar {
                 return vscode.window.showErrorMessage(`[ERROR] Unable to find Outline fragment for uri '${tabUri.fsPath}'`);
             }
             switch (searchResult.source) {
-                case 'outline': return ExtensionGlobals.outlineView.expandAndRevealOutlineNode(searchResult.node, {
+                case 'outline': return Extension.outlineView.expandAndRevealOutlineNode(searchResult.node, {
                     expand: true,
                     select: true,
                 });
-                case 'recycle': return ExtensionGlobals.recyclingBinView.expandAndRevealOutlineNode(searchResult.node, {
+                case 'recycle': return Extension.recyclingBinView.expandAndRevealOutlineNode(searchResult.node, {
                     expand: true,
                     select: true,
                 });
-                case 'scratch': return ExtensionGlobals.scratchPadView.expandAndRevealOutlineNode(searchResult.node, {
+                case 'scratch': return Extension.scratchPadView.expandAndRevealOutlineNode(searchResult.node, {
                     expand: true,
                     select: true,
                 });
-                case 'notebook': return ExtensionGlobals.notebookPanel.webview.reveal(searchResult.node);
+                case 'notebook': return Extension.notebookPanel.webview.reveal(searchResult.node);
             }
         }));
         context.subscriptions.push(vscode.commands.registerCommand("wt.editor.revealFileExplorer", (tabUri: vscode.Uri) => {
@@ -145,7 +145,7 @@ export class Toolbar {
         // Misc commands
         context.subscriptions.push(vscode.commands.registerCommand('wt.misc.importContextValues', importContextValuesFromFile));
         context.subscriptions.push(vscode.commands.registerCommand('wt.misc.openContextValues', () => {
-            return vscode.window.showTextDocument(ExtensionGlobals.workspace.contextValuesFilePath, {
+            return vscode.window.showTextDocument(Extension.workspace.contextValuesFilePath, {
                 preserveFocus: false,
                 preview: false,
                 viewColumn: vscode.ViewColumn.Active

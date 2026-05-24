@@ -1,4 +1,4 @@
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import * as vscode from 'vscode';
 import { RecycleLog, RecyclingBinView } from "../recyclingBinView";
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from '../../outline/nodes_impl/outlineNode';

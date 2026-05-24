@@ -5,7 +5,7 @@ import { RecyclingBinView } from '../../recyclingBin/recyclingBinView';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { MoveNodeResult } from '../nodes_impl/handleMovement/common';
 import { ScratchPadView } from '../../scratchPad/scratchPadView';
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 import { defaultProgress, getNodeNamePath, getSectionedProgressReporter, isSubdirectory, progressOnViews, setFsPathKey } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
 import * as vscodeUri from 'vscode-uri';
@@ -96,8 +96,8 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
         [index: string]: OutlineNode,
     } = {};
 
-    const recyclingView: RecyclingBinView = ExtensionGlobals.recyclingBinView;
-    const scratchPadView: ScratchPadView = ExtensionGlobals.scratchPadView;
+    const recyclingView: RecyclingBinView = Extension.recyclingBinView;
+    const scratchPadView: ScratchPadView = Extension.scratchPadView;
 
     const moveOperations: { 
         dataTransferType: DataTransferType, 

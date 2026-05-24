@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { __, compareFsPath, ConfigFileInfo, getNodeNamePath, getSectionedProgressReporter, getDateString, readDotConfig } from '../miscTools/help';
 import { getNewFragmentMode, getUsableFileName, newSnip } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { DroppedSourceInfo, ImportForm, Li } from './importFormView';
 import { ChapterNode, OutlineNode, RootNode, ContainerNode } from '../outline/nodes_impl/outlineNode';
 import * as mammoth from 'mammoth';
@@ -197,7 +197,7 @@ function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
 
 async function readAndSplitWt (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
     // Get the full file path and read the content of that file
-    const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+    const fileUri = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
     const fileContent = (await vscode.workspace.fs.readFile(fileUri)).toString();
 
     // Split the content with the split rules provided in `split`
@@ -211,7 +211,7 @@ async function readAndSplitWt (split: SplitInfo, fileRelativePath: string): Prom
 
 async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
     // Get the full file path and read the content of that file
-    const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+    const fileUri = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
     const fileContent = (await vscode.workspace.fs.readFile(fileUri)).toString();
 
     let final: string;
@@ -322,7 +322,7 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
 }
 
 async function readAndSplitHtml (split: SplitInfo, fileRelativePath: string): Promise<DocSplit | null> {
-    const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+    const fileUri = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
     const fileContent: string = (await vscode.workspace.fs.readFile(fileUri)).toString();
     return doHtmlSplits(split, fileContent);
 }
@@ -331,7 +331,7 @@ async function readAndSplitDocx (split: SplitInfo, fileRelativePath: string): Pr
     let html: string;
     try {
         // Use mammoth to convert the docx to html
-        const fullFilePath = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+        const fullFilePath = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
         const result = await mammoth.convertToHtml({
             path: fullFilePath.fsPath
         }, {
@@ -360,7 +360,7 @@ async function readAndSplitDocx (split: SplitInfo, fileRelativePath: string): Pr
 async function readAndSplitOdt (split: SplitInfo, fileRelativePath: string): Promise<DocSplit | null> {
     let html: string;
     try {
-        const fullFilePath = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+        const fullFilePath = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
         const odtArr = await vscode.workspace.fs.readFile(fullFilePath);
         const odtBuf = Buffer.from(odtArr);
         const result: Buffer = await libreofficeConvert.convertAsync(odtBuf, "html", "");
@@ -505,7 +505,7 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
         return;
     }
 
-    const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+    const outlineView: OutlineView = Extension.outlineView;
     const chapterUri: vscode.Uri | null = await outlineView.newChapter(undefined, {
         preventRefresh: false, 
         defaultName: chapterInfo.outputChapterName,
@@ -537,7 +537,7 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
 }
 
 async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource: DroppedSourceInfo | null) {
-    const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+    const outlineView: OutlineView = Extension.outlineView;
     
     // Get the parent node where the new snip(s) should be inserted
     let parentNode: OutlineNode | undefined;
@@ -547,7 +547,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
         parentNode = droppedSource.node;
     }
     else if (output.dest === 'snip') {
-        const snipUri = vscode.Uri.joinPath(extension.rootPath, output.outputSnipPath);
+        const snipUri = vscode.Uri.joinPath(Extension.rootPath, output.outputSnipPath);
         const snipNode: OutlineNode | null = await outlineView.getTreeElementByUri(snipUri);
         if (!snipNode) return;
         // dest = 'snip' -> inserted snips are work snips
@@ -556,7 +556,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
     else if (output.dest === 'chapter') {
         // dest = 'chapter' -> inserted snips are inserted into the specified chapter
         // Find the chapter by its uri and use that as the parent node
-        const chapterUri = vscode.Uri.joinPath(extension.rootPath, output.outputChapter);
+        const chapterUri = vscode.Uri.joinPath(Extension.rootPath, output.outputChapter);
         const chapterNode: OutlineNode | null = await outlineView.getTreeElementByUri(chapterUri);
         if (!chapterNode) return;
         parentNode = chapterNode;
@@ -754,7 +754,7 @@ export async function handleImport (docInfo: ImportDocumentInfo, droppedSource: 
         
         // Assign modified dates to each of the doc names provided by called
         for (const docName of docNames) {
-            const doc = vscode.Uri.joinPath(extension.rootPath, docName);
+            const doc = vscode.Uri.joinPath(Extension.rootPath, docName);
             const stat = await vscode.workspace.fs.stat(doc);
             docLastModified.push({
                 name: docName,
@@ -773,7 +773,7 @@ export async function handleImport (docInfo: ImportDocumentInfo, droppedSource: 
             progress.report({ message: "Creating containers" });
             
             // If there is more than one work snip account to import, then make a parent container to insert all work snips into
-            const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+            const outlineView: OutlineView = Extension.outlineView;
             const workSnipsContainer = (outlineView.rootNodes[0].data as RootNode).snips;
             const snipUri = await outlineView.newSnip(workSnipsContainer, {
                 defaultName: `Imported ${getDateString()}`,
@@ -910,7 +910,7 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
                 });
             }
             else {
-                const chapterNumber = ((extension.ExtensionGlobals.outlineView.rootNodes[0].data as RootNode).chapters.data as ContainerNode).contents.length;
+                const chapterNumber = ((Extension.outlineView.rootNodes[0].data as RootNode).chapters.data as ContainerNode).contents.length;
                 const chapterName = `(chapter) New Chapter (${chapterNumber})`;
                 chapters = [{
                     name: chapterName,
@@ -919,28 +919,28 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
             }
 
             return __<Li>({ 
-                name: `${extension.ExtensionGlobals.workspace.config.title}/Chapters`,
+                name: `${Extension.workspace.config.title}/Chapters`,
                 children: chapters
             });
         }
         else {
             const snipInfo = writeInfo;
-            const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+            const outlineView: OutlineView = Extension.outlineView;
 
             // Get the parent node where the new snip(s) should be inserted
-            let parentNodeDisplayName: string = `${extension.ExtensionGlobals.workspace.config.title}/Work Snips/Imported Snips`;
+            let parentNodeDisplayName: string = `${Extension.workspace.config.title}/Work Snips/Imported Snips`;
             const output = snipInfo.output;
             if (singleDoc.outputIntoDroppedSource && droppedSource) {
                 parentNodeDisplayName = droppedSource.namePath;
             }
             else if (output.dest === 'snip') {
                 if (output.outputSnipPath.endsWith(workSnipAdditionalPathName)) {
-                    const snipUri = vscode.Uri.joinPath(extension.rootPath, output.outputSnipPath.replace(`/${workSnipAdditionalPathName}`, ''));
+                    const snipUri = vscode.Uri.joinPath(Extension.rootPath, output.outputSnipPath.replace(`/${workSnipAdditionalPathName}`, ''));
                     const snipNode: OutlineNode = await outlineView.getTreeElementByUri(snipUri) || outlineView.rootNodes[0];
                     parentNodeDisplayName = await getNodeNamePath(snipNode) + '/' + workSnipsParentName;
                 }
                 else {
-                    const snipUri = vscode.Uri.joinPath(extension.rootPath, output.outputSnipPath);
+                    const snipUri = vscode.Uri.joinPath(Extension.rootPath, output.outputSnipPath);
                     const parent: OutlineNode = await outlineView.getTreeElementByUri(snipUri) || outlineView.rootNodes[0];
                     parentNodeDisplayName = await getNodeNamePath(parent);
                 }
@@ -948,7 +948,7 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
             else if (output.dest === 'chapter') {
                 // dest = 'chapter' -> inserted snips are inserted into the specified chapter
                 // Find the chapter by its uri and use that as the parent node
-                const chapterUri = vscode.Uri.joinPath(extension.rootPath, output.outputChapter);
+                const chapterUri = vscode.Uri.joinPath(Extension.rootPath, output.outputChapter);
                 let parent: OutlineNode = await outlineView.getTreeElementByUri(chapterUri) || outlineView.rootNodes[0];
                 if (parent.data.ids.type === 'chapter') {
                     const chapter = parent.data as ChapterNode

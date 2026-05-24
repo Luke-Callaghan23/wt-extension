@@ -1,7 +1,7 @@
 import { ChapterNode, ContainerNode, OutlineNode, ResourceType, SnipNode } from "../nodes_impl/outlineNode";
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import * as console from '../../miscTools/vsconsole';
 import { Buff } from "../../Buffer/bufferSource";
 import { compareFsPath, getSectionedProgressReporter, progressOnViews, writeDotConfig } from "../../miscTools/help";
@@ -140,7 +140,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
 
                     const recycleBinName = getUsableDeleteFileName(target.data.ids.type, deleteExtension);
                     try {
-                        const newLocationUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
+                        const newLocationUri = vscode.Uri.joinPath(Extension.rootPath, `data/recycling/${recycleBinName}`);
                         await vscode.workspace.fs.rename(removedFragmentUri, newLocationUri);
                     }
                     catch (e) {
@@ -189,7 +189,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
                 const removedNodeAbsPath = target.getUri();
                 const recycleBinName = getUsableDeleteFileName(target.data.ids.type);
                 try {
-                    const moveToPath = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
+                    const moveToPath = vscode.Uri.joinPath(Extension.rootPath, `data/recycling/${recycleBinName}`);
                     await vscode.workspace.fs.rename(removedNodeAbsPath, moveToPath);
                 }
                 catch (e) {
@@ -249,7 +249,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
 
                 for (const name of clearedEntries) {
                     const recycleBinName = getUsableDeleteFileName(target.data.ids.type);
-                    const recyclingUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
+                    const recyclingUri = vscode.Uri.joinPath(Extension.rootPath, `data/recycling/${recycleBinName}`);
                     const removedNodeUri = vscode.Uri.joinPath(clearedContainerUri, name);
 
                     // All entries in a container are folders, so remove them as dirs
@@ -286,11 +286,11 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
     });
     
     // Read the current recycling log
-    const recyclingLogUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/.log`);
+    const recyclingLogUri = vscode.Uri.joinPath(Extension.rootPath, `data/recycling/.log`);
 
     let recyclingLog: RecycleLog[];
     try {
-        const recyclingLogJSON = extension.decoder.decode(await vscode.workspace.fs.readFile(recyclingLogUri));
+        const recyclingLogJSON = Extension.decoder.decode(await vscode.workspace.fs.readFile(recyclingLogUri));
         if (recyclingLogJSON === '') {
             recyclingLog = [];
         }

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { NotebookPanel } from '../notebook/notebookPanel';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { v4 as uuidv4 } from 'uuid';
 import { Buff } from '../Buffer/bufferSource';
 import { SerializedNote } from '../notebook/notebookApi/notebookSerializer';
@@ -168,7 +168,7 @@ async function readNotebook (notebookPath: vscode.Uri): Promise<Note[]> {
             return vscode.workspace.fs.readFile(pathUri).then(buff => {
                 return {
                     noteId: noteId,
-                    content: extension.decoder.decode(buff),
+                    content: Extension.decoder.decode(buff),
                     uri: pathUri
                 }
             });

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
 import { statFile } from '../miscTools/help';
 import * as vsconsole from '../miscTools/vsconsole';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { Config, loadWorkspaceContext, PositionInfo, SavedTabState, TabPositions } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
 import { ReloadWatcher } from '../miscTools/reloadWatcher';
@@ -152,7 +152,7 @@ export class Workspace {
 
     static lastWriteTimestamp: number | null = null;
     static async packageContextItems (shuttingDown: boolean = false) {
-        const contextUri = extension.ExtensionGlobals.workspace.contextValuesFilePath;
+        const contextUri = Extension.workspace.contextValuesFilePath;
 
         // 
         const contextFileStat = await statFile(contextUri);
@@ -192,7 +192,7 @@ export class Workspace {
     static async replaceContextValuesOnDisk(contextValues: DiskContextType) {
         ReloadWatcher.disableReloadWatch();
         await vscode.workspace.fs.writeFile(
-            extension.ExtensionGlobals.workspace.contextValuesFilePath, 
+            Extension.workspace.contextValuesFilePath, 
             Buff.from(JSON.stringify(contextValues), 'utf-8')
         );
         setTimeout(ReloadWatcher.enableReloadWatch, 1000);
@@ -205,7 +205,7 @@ export class Workspace {
         if (context && key && value) {
             await context.globalState.update(key, value);
         }
-        const contextUri = extension.ExtensionGlobals.workspace.contextValuesFilePath;
+        const contextUri = Extension.workspace.contextValuesFilePath;
         const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
         ReloadWatcher.disableReloadWatch();
@@ -224,20 +224,20 @@ export class Workspace {
 
     // Simply initializes all the paths of necessary 
     constructor(context: vscode.ExtensionContext) {
-        this.dotWtconfigPath = vscode.Uri.joinPath(extension.rootPath, `.wtconfig`);
-        this.chaptersFolder = vscode.Uri.joinPath(extension.rootPath, `data/chapters`);
-        this.workSnipsFolder = vscode.Uri.joinPath(extension.rootPath, `data/snips`);
-        this.importFolder = vscode.Uri.joinPath(extension.rootPath, `data/import`);
-        this.exportFolder = vscode.Uri.joinPath(extension.rootPath, `data/export`);
-        this.recyclingBin = vscode.Uri.joinPath(extension.rootPath, `data/recycling`);
-        this.contextValuesFilePath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-        this.notebookFolder = vscode.Uri.joinPath(extension.rootPath, `data/notebook`);
-        this.scratchPadFolder = vscode.Uri.joinPath(extension.rootPath, `data/scratchPad`);
-        this.synonymsCachePath = vscode.Uri.joinPath(extension.rootPath, 'synonymsCache.json');
+        this.dotWtconfigPath = vscode.Uri.joinPath(Extension.rootPath, `.wtconfig`);
+        this.chaptersFolder = vscode.Uri.joinPath(Extension.rootPath, `data/chapters`);
+        this.workSnipsFolder = vscode.Uri.joinPath(Extension.rootPath, `data/snips`);
+        this.importFolder = vscode.Uri.joinPath(Extension.rootPath, `data/import`);
+        this.exportFolder = vscode.Uri.joinPath(Extension.rootPath, `data/export`);
+        this.recyclingBin = vscode.Uri.joinPath(Extension.rootPath, `data/recycling`);
+        this.contextValuesFilePath = vscode.Uri.joinPath(Extension.rootPath, `data/contextValues.json`);
+        this.notebookFolder = vscode.Uri.joinPath(Extension.rootPath, `data/notebook`);
+        this.scratchPadFolder = vscode.Uri.joinPath(Extension.rootPath, `data/scratchPad`);
+        this.synonymsCachePath = vscode.Uri.joinPath(Extension.rootPath, 'synonymsCache.json');
         
         // Old folders
-        this.notebookPath = vscode.Uri.joinPath(extension.rootPath, 'data/worldNotebook.json');
-        this.workBibleFolder = vscode.Uri.joinPath(extension.rootPath, `data/workBible`);
+        this.notebookPath = vscode.Uri.joinPath(Extension.rootPath, 'data/worldNotebook.json');
+        this.workBibleFolder = vscode.Uri.joinPath(Extension.rootPath, `data/workBible`);
     }
 
     registerCommands(context: vscode.ExtensionContext): void {

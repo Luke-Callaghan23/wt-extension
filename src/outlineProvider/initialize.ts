@@ -4,14 +4,14 @@ import * as vscodeUris from 'vscode-uri';
 import { ConfigFileInfo, getLatestOrdering, progressOnViews, readDotConfig } from '../miscTools/help';
 import { TreeNode } from './outlineTreeProvider';
 import { ChapterNode, ContainerNode, FragmentNode, NodeTypes, ResourceType, RootNode, SnipNode } from './fsNodes';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 
 
 export type InitializeNode<T extends TreeNode> = (data: NodeTypes<T>) => T;
 
 export async function initializeOutline<T extends TreeNode>(viewId: string, init: InitializeNode<T>, dontFail?: boolean): Promise<T> {
     return progressOnViews(viewId, async () => {
-        const dataFolderUri = vscode.Uri.joinPath(extension.rootPath, `data`);
+        const dataFolderUri = vscode.Uri.joinPath(Extension.rootPath, `data`);
         const chaptersContainerUri = vscode.Uri.joinPath(dataFolderUri, `chapters`);
         const workSnipsContainerUri = vscode.Uri.joinPath(dataFolderUri, `snips`);
     
@@ -133,7 +133,7 @@ export async function initializeOutline<T extends TreeNode>(viewId: string, init
                 relativePath: 'data',
                 fileName: '',
                 parentTypeId: 'root',
-                parentUri: vscodeUris.Utils.joinPath(extension.rootPath, 'data'),
+                parentUri: vscodeUris.Utils.joinPath(Extension.rootPath, 'data'),
                 ordering: 0,
             },
             chapters: chapterContainer as T,

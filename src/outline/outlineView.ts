@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 
 
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import * as vscode from 'vscode';
 import { InitializeNode, initializeOutline } from "../outlineProvider/initialize";
 import { OutlineNode, ContainerNode, RootNode } from "./nodes_impl/outlineNode";
@@ -171,7 +171,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 
     
     copyRelativePath (resource: OutlineNode) {
-        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/'));
+        vscode.env.clipboard.writeText(resource.data.ids.uri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/'));
         vscode.window.showInformationMessage(`[INFO] Successfully copied relative path for '${resource.data.ids.display}'`);
     }
 
@@ -187,10 +187,10 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
         if (chose === null) return;
         if (chose.data.ids.type === 'root') return;
         
-        const moveResult = await resource.generalMoveNode(nodeMoveKind, chose, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.outlineView, 0, null, "Insert");
+        const moveResult = await resource.generalMoveNode(nodeMoveKind, chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
         if (moveResult.moveOffset === -1) return;
         const effectedContainers = moveResult.effectedContainers;
-        const outline =  extension.ExtensionGlobals.outlineView;
+        const outline =  Extension.outlineView;
         return outline.refresh(false, effectedContainers);
     }
 
@@ -200,7 +200,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
             return;
         }
         const nodes = result as readonly OutlineNode[];
-        return extension.ExtensionGlobals.outlineView.copy(nodes);
+        return Extension.outlineView.copy(nodes);
     };
     
     async pasteNode () {
@@ -218,7 +218,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
             return null;
         }
         const destinations = result;
-        const outlineView = extension.ExtensionGlobals.outlineView;
+        const outlineView = Extension.outlineView;
         for (const dest of destinations) {
             await outlineView.copy([dest] as readonly OutlineNode[]);
     

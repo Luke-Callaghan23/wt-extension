@@ -4,7 +4,7 @@ import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig, compa
 import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 // import * as console from '../../vsconsole';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { FileAccessManager } from '../../miscTools/fileAccesses';
 
 export const fragmentModeConfig = "wt.editor.fragmentMode";

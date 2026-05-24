@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import * as vsconsole from '../miscTools/vsconsole';
 import { compareFsPath, formatFsPathForCompare, getFsPathKey, getRelativePath, isSubdirectory, RevealOptions, setFsPathKey } from '../miscTools/help';
 import * as search from './../miscTools/searchFiles';
@@ -36,7 +36,7 @@ export class UriBasedView<T extends HasGetUri> {
         //        or opened
         context.subscriptions.push(view.onDidExpandElement((event: vscode.TreeViewExpansionEvent<T>) => {
             const expandedElementUri = event.element.getUri();
-            const usableUri = expandedElementUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
+            const usableUri = expandedElementUri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');
             this.uriToVisibility[usableUri] = true;
             // Also save the state of all collapse and expands to workspace context state
             context.workspaceState.update(`${viewName}.collapseState`, this.uriToVisibility);
@@ -44,7 +44,7 @@ export class UriBasedView<T extends HasGetUri> {
 
         context.subscriptions.push(view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
             const collapsedElementUri = event.element.getUri();
-            const usableUri = collapsedElementUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
+            const usableUri = collapsedElementUri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');
             this.uriToVisibility[usableUri] = false;            
             context.workspaceState.update(`${viewName}.collapseState`, this.uriToVisibility);
         }));
@@ -81,7 +81,7 @@ export class UriBasedView<T extends HasGetUri> {
             return this.rootNodes[0];
         }
         
-        if (!targetUri.fsPath.includes(extension.rootPath.fsPath) && !targetIsBasename) {
+        if (!targetUri.fsPath.includes(Extension.rootPath.fsPath) && !targetIsBasename) {
             return null;
         }
 

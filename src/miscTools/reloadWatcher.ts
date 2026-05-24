@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { createPackageItems, Packageable, Packager } from './../packageable';
 import { FileAccessManager } from './fileAccesses';
 import { loadWorkspaceContext, PositionInfo, TabPositions } from './../workspace/workspace';

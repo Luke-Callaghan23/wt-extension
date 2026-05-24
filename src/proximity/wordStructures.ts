@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Proximity } from './proximity';
 import { Ranks } from './ranks';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 
 export class Word {
     public text: string;
@@ -62,7 +62,7 @@ export class Sentence {
         // (Adding '$' to the word separator regex to match the end of the string breaks everything, so as a 
         //      workaround the extra separator is added)
         sentenceText += ' ';
-        while ((match = extension.wordSeparatorRegex.exec(sentenceText))) {
+        while ((match = Extension.wordSeparatorRegex.exec(sentenceText))) {
             const matched: RegExpExecArray = match;
 
             // Get start and end indeces of the sentence
@@ -129,7 +129,7 @@ export class Paragraph {
         // (Adding '$' to the sentence separator regex to match the end of the string breaks everything, so as a 
         //      workaround the extra separator is added)
         paragraphText += '!';
-        while ((match = extension.sentenceSeparator.exec(paragraphText))) {
+        while ((match = Extension.sentenceSeparator.exec(paragraphText))) {
             const matched: RegExpExecArray = match;
 
             // Get start and end indeces of the sentence

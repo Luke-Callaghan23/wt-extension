@@ -1,6 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { ExportForm } from './exportFormView';
 import { Buff } from '../Buffer/bufferSource';
 import { v4 as uuid } from 'uuid';
@@ -57,7 +57,7 @@ async function stitchFragments (node: ChapterNode, ex: ExportDocumentInfo): Prom
         try {
             // Read the fragment markdown string
             const fragmentBuffer = await vscode.workspace.fs.readFile(fragmentUri);
-            let fragmentText = extension.decoder.decode(fragmentBuffer);
+            let fragmentText = Extension.decoder.decode(fragmentBuffer);
             
             // Do a quick convert from markdown to wt
             if (fragment.data.ids.uri.fsPath.toLocaleLowerCase().endsWith(".md")) {
@@ -469,7 +469,7 @@ async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | Proc
 
     const exportData = async (data: string | Buffer, destination: vscode.Uri, index: number, count: number, title: string) => {
         if (typeof data === 'string') {
-            const result = extension.encoder.encode(data.toString());
+            const result = Extension.encoder.encode(data.toString());
             await vscode.workspace.fs.writeFile(destination, result);
         }
         else {

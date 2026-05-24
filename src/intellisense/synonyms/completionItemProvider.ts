@@ -5,7 +5,7 @@ import { HoverPosition, getHoverMarkdown, getHoveredWord } from '../common';
 import { Capitalization, formatFsPathForCompare, getTextCapitalization, stripDiacritics, transformToCapitalization } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
 import { SynonymError, SynonymSearchResult, Synonyms, SynonymsProvider } from '../synonymsProvider/provideSynonyms';
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 import { TextMatchForNote } from '../../notebook/timedViewUpdate';
 import { __ } from './../../miscTools/help';
 import { nextTick } from 'process';
@@ -135,7 +135,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         }
 
         const uri = formatFsPathForCompare(document.uri);
-        const notebookPanel = ExtensionGlobals.notebookPanel;
+        const notebookPanel = Extension.notebookPanel;
         if (notebookPanel.matchedNotebook && uri in notebookPanel.matchedNotebook) {
             const matches = notebookPanel.matchedNotebook[uri];
             const noteMatch = matches.find(noteMatch => noteMatch.range.contains(hoverRange));
@@ -154,7 +154,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 return finalOptions.map(option => __<vscode.CompletionItem>({
                     label: option,
                     detail: `Alias of '${noteMatch.note.title}'`,
-                    documentation: new vscode.MarkdownString(ExtensionGlobals.notebookPanel.getMarkdownForNote(noteMatch.note)),
+                    documentation: new vscode.MarkdownString(Extension.notebookPanel.getMarkdownForNote(noteMatch.note)),
                     range: noteMatch.range,
                     filterText: filt,
                 }));

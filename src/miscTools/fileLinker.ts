@@ -3,7 +3,7 @@ import { Workspace } from '../workspace/workspaceClass';
 import { statFile } from './help';
 import { FileAccessManager } from './fileAccesses';
 import * as vscodeUri from 'vscode-uri'
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 
 export class FileLinker implements vscode.DefinitionProvider {
     constructor (
@@ -50,8 +50,8 @@ export class FileLinker implements vscode.DefinitionProvider {
         )).replaceAll('"', '');
 
         let uri: vscode.Uri;
-        if (document.uri.toString() === vscode.Uri.joinPath(extension.rootPath, 'data', 'contextValues.json').toString()) {
-            uri = vscode.Uri.joinPath(extension.rootPath, quotedText);
+        if (document.uri.toString() === vscode.Uri.joinPath(Extension.rootPath, 'data', 'contextValues.json').toString()) {
+            uri = vscode.Uri.joinPath(Extension.rootPath, quotedText);
 
             const stat = await statFile(uri);
             if (!stat || stat.type !== vscode.FileType.File) {

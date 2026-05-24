@@ -1,7 +1,7 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import { Workspace } from '../workspace/workspaceClass';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { initializeSnip } from '../outlineProvider/initialize';
 // import { OutlineNode, ResourceType } from '../outline/node';
 import { NodeTypes, ResourceType } from '../outlineProvider/fsNodes';
@@ -45,7 +45,7 @@ implements
     newScratchPadFile = newScratchPadFile;
 
     async renameResource (overrideNode?: OutlineNode, overrideRename?: string) {
-        const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+        const outlineView: OutlineView = Extension.outlineView;
         if (!outlineView) return;
         await outlineView.renameResource(overrideNode || this.view.selection[0]);
         this.refresh(true, []);
@@ -185,7 +185,7 @@ implements
     ) {
         super("Scratch Pad");
         this.view = {} as vscode.TreeView<OutlineNode>;
-        ScratchPadView.scratchPadContainerUri = vscode.Uri.joinPath(extension.rootPath, 'data', 'scratchPad');
+        ScratchPadView.scratchPadContainerUri = vscode.Uri.joinPath(Extension.rootPath, 'data', 'scratchPad');
         ScratchPadView.scratchPadConfigUri = vscode.Uri.joinPath(ScratchPadView.scratchPadContainerUri, '.config')
     }
 
@@ -257,14 +257,14 @@ implements
     }
 
     async manualMove (resource: OutlineNode) {
-        const outline =  extension.ExtensionGlobals.outlineView;
+        const outline =  Extension.outlineView;
         const chose = await outline.selectFile([ (node) => {
             return node.data.ids.type !== 'fragment'
         } ]);
         if (chose === null) return;
         if (chose.data.ids.type === 'root') return;
         
-        const moveResult = await resource.generalMoveNode("scratch", chose, extension.ExtensionGlobals.recyclingBinView, extension.ExtensionGlobals.outlineView, 0, null, "Insert");
+        const moveResult = await resource.generalMoveNode("scratch", chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
         if (moveResult.moveOffset === -1) return;
         const effectedContainers = moveResult.effectedContainers;
         return Promise.all([

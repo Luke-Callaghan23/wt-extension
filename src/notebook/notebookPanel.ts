@@ -12,7 +12,7 @@ import { __, addSingleWorkspaceEdit, compareFsPath, defaultProgress, determineAu
 import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
 import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
-import { ExtensionGlobals } from '../extension';
+import { Extension } from '../extension';
 import { NotebookWebview } from './notebookWebview';
 
 
@@ -333,7 +333,7 @@ implements
 
         // If the notebook was found, then reopen
         if (notebookDocument !== null) {
-            ExtensionGlobals.notebookSerializer.controller.reopenNotebook(notebookDocument);
+            Extension.notebookSerializer.controller.reopenNotebook(notebookDocument);
         }
     }
 
