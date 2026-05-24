@@ -24,7 +24,7 @@ async function getDataDirectoryPaths(): Promise<vscode.Uri[]> {
                 await walkDirectory(filePath);
             } 
             else if (type === vscode.FileType.File && (
-                name.toLocaleLowerCase().endsWith('.wt') || name.toLocaleLowerCase().endsWith('.wtnote') || name.toLocaleLowerCase() === '.config')
+                name.toLocaleLowerCase().endsWith('.wt') || name.toLocaleLowerCase().endsWith('.wtnote')  || name.toLocaleLowerCase().endsWith('.md') || name.toLocaleLowerCase() === '.config')
             ) {
                 found.push(filePath);
             }

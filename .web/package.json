@@ -214,10 +214,19 @@
                     "default": true
                 },
                 "wt.synonyms.apiKey": {
-                    "markdownDescription": "API Key for Merriam-Webster's [Thesaurus API](https://dictionaryapi.com/products/api-collegiate-thesaurus), to get the full use of WTANIWE's Intellisense functionality, I recommend you sign up for this API and provide your key here.\n\nOnce you do, reload your window and you should start seeing results for synonyms in your intellisense and in the Synonyms Panel.  Register [here](https://dictionaryapi.com/register/index).  \n\nNOTE: This cannot be updated while the extension is running.  After updating this value, you need to reload the window for it to take effect.  \n\nOR run command `wt.synonyms.updateApi` (Writing Tool: Update Synonyms API Key for User) to update it on the fly.",
+                    "markdownDescription": "API Key for Merriam-Webster's [Thesaurus API](https://dictionaryapi.com/products/api-collegiate-thesaurus), to get the full use of WTANIWE's Intellisense functionality, I recommend you sign up for this API and provide your key here.\n\nOnce you do, reload your window and you should start seeing results for synonyms in your intellisense and in the Synonyms Panel.  Register [here](https://dictionaryapi.com/register/index).  \n\nNOTE: This cannot be updated while the extension is running.  After updating this value, you need to reload the window for it to take effect.\n\nNOTE: You will recieve two keys, make sure you are using the THESAURUS key, not the dictionary key.\n\nOR run command `wt.synonyms.updateApi` (Writing Tool: Update Synonyms API Key for User) to update it on the fly.",
                     "type": "string",
                     "default": ""
-                }
+                },
+				"wt.editor.fragmentMode": {
+					"description": ".wt (writing tool)",
+					"markdownDescription": "Controls whether the default fragment in WTANIWE is .wt or .md (NOTE: markdown support is still experimental, and may have some bugs).",
+					"enum": [
+						".wt (writing tool)",
+						".md (markdown)"
+					],
+					"default": ".wt (writing tool)"
+				}
             }
         },
         "viewsWelcome": [
@@ -451,6 +460,11 @@
                 "title": "Create New Fragment",
                 "icon": "$(search-new-editor)"
             },
+			{
+				"command": "wt.outline.newFragmentMarkdown",
+				"title": "Create New (Markdown) Fragment",
+				"icon": "$(search-new-editor)"
+			},
             {
                 "command": "wt.outline.removeResource",
                 "title": "Move to Recycling"
@@ -1186,7 +1200,7 @@
                 },
                 {
                     "command": "wt.editor.accent.insertAccent",
-                    "when": "editorLangId == wt || editorLangId == wtNote"
+                    "when": "editorLangId == wt || editorLangId == wtNote || editorLangId == markdown"
                 },
                 {
                     "command": "wt.editor.addQuotes",
@@ -1643,7 +1657,7 @@
             "view/item/context": [
                 {
                     "command": "wt.outline.refresh",
-                    "when": "view == wt.outline && viewItem == dir || viewItem == container",
+                    "when": "view == wt.outline && (viewItem == dir || viewItem == container)",
                     "group": "inline@3"
                 },
                 {
@@ -1656,20 +1670,35 @@
                     "when": "view == wt.outline && viewItem != container",
                     "group": "inline@2"
                 },
+				{
+					"command": "wt.outline.newFragment",
+					"when": "view == wt.outline && viewItem == dir",
+					"group": "000__create@1"
+				},
+				{
+					"command": "wt.outline.newFragmentMarkdown",
+					"when": "view == wt.outline && viewItem == dir",
+					"group": "000__create@2"
+				},
+				{
+					"command": "wt.outline.newSnip",
+					"when": "view == wt.outline && viewItem == dir",
+					"group": "000__create@3"
+				},
                 {
                     "command": "wt.outline.renameFile",
                     "when": "view == wt.outline",
-                    "group": "0_visualdata@1"
+                    "group": "1_visualdata@1"
                 },
                 {
                     "command": "wt.outline.editDescription",
                     "when": "view == wt.outline",
-                    "group": "0_visualdata@2"
+                    "group": "1_visualdata@2"
                 },
                 {
                     "command": "wt.outline.editMarkdownDescription",
                     "when": "view == wt.outline",
-                    "group": "0_visualdata@3"
+                    "group": "1_visualdata@3"
                 },
                 {
                     "command": "wt.outline.manualMove",
@@ -1798,40 +1827,40 @@
             ],
             "editor/title": [
                 {
-                    "command": "wt.editor.save",
-                    "when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showSaveAll",
-                    "group": "navigation@2"
-                },
-                {
-                    "command": "wt.synonyms.searchWord",
-                    "when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showSearchWord",
-                    "group": "navigation@3"
-                },
-                {
-                    "command": "wt.editor.italisize",
-                    "when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showItalisize",
-                    "group": "navigation@3"
-                },
-                {
-                    "command": "wt.editor.bold",
-                    "when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showBold",
-                    "group": "navigation@5"
-                },
-                {
-                    "command": "wt.editor.strikethrough",
-                    "when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showStrikethrough",
-                    "group": "navigation@6"
-                },
-                {
-                    "command": "wt.editor.underline",
-                    "when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showUnderline",
-                    "group": "navigation@7"
-                },
-                {
-                    "command": "wt.editor.remove",
-                    "when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showRemove",
-                    "group": "navigation@9"
-                }
+					"command": "wt.editor.save",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showSaveAll",
+					"group": "navigation@2"
+				},
+				{
+					"command": "wt.synonyms.searchWord",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showSearchWord",
+					"group": "navigation@3"
+				},
+				{
+					"command": "wt.editor.italisize",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showItalisize",
+					"group": "navigation@3"
+				},
+				{
+					"command": "wt.editor.bold",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showBold",
+					"group": "navigation@5"
+				},
+				{
+					"command": "wt.editor.strikethrough",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showStrikethrough",
+					"group": "navigation@6"
+				},
+				{
+					"command": "wt.editor.underline",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showUnderline",
+					"group": "navigation@7"
+				},
+				{
+					"command": "wt.editor.remove",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showRemove",
+					"group": "navigation@9"
+				}
             ],
             "notebook/cell/title": [
                 {
@@ -1893,7 +1922,7 @@
                 "win": "ctrl+alt+shift+g",
                 "linux": "ctrl+alt+shift+g",
                 "mac": "cmd+alt+shift+g",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId === markdown))"
             },
             {
                 "command": "wt.autocorrections.acceptAutocorrect",
@@ -1901,7 +1930,7 @@
                 "win": "alt+enter",
                 "linux": "alt+enter",
                 "mac": "alt+enter",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId === markdown))"
             },
             {
                 "command": "wt.autocorrections.rejectAutocorrect",
@@ -1909,7 +1938,7 @@
                 "win": "alt+x",
                 "linux": "alt+x",
                 "mac": "alt+x",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId === markdown))"
             },
             {
                 "command": "wt.tabLabels.renameActiveTab",
@@ -1917,7 +1946,7 @@
                 "win": "shift+f2",
                 "linux": "shift+f2",
                 "mac": "shift+f2",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.searchFiles",
@@ -1941,7 +1970,7 @@
                 "win": "shift+'",
                 "linux": "shift+'",
                 "mac": "shift+'",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.scratchPad.renameFile",
@@ -1957,7 +1986,7 @@
                 "win": "ctrl+t",
                 "linux": "ctrl+t",
                 "mac": "ctrl+t",
-                "when": "wt.valid && (editorLangId == wt || editorLangId == wtNote)"
+                "when": "wt.valid && (editorLangId == wt || editorLangId == wtNote || editorLangId == markdown)"
             },
             {
                 "command": "wt.scratchPad.permanentlyDelete",
@@ -1997,7 +2026,7 @@
                 "win": "ctrl+shift+f2",
                 "linux": "ctrl+shift+f2",
                 "mac": "ctrl+shift+f2",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.outline.copyItems",
@@ -2045,7 +2074,7 @@
                 "win": "ctrl+alt+f",
                 "linux": "ctrl+alt+f",
                 "mac": "cmd+alt+f",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.save",
@@ -2053,7 +2082,7 @@
                 "win": "ctrl+alt+s",
                 "linux": "ctrl+alt+s",
                 "mac": "cmd+alt+s",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.saveAll",
@@ -2061,7 +2090,7 @@
                 "win": "ctrl+alt+shift+s",
                 "linux": "ctrl+alt+shift+s",
                 "mac": "cmd+alt+shift+s",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.italisize",
@@ -2069,7 +2098,7 @@
                 "win": "ctrl+alt+i",
                 "linux": "ctrl+alt+i",
                 "mac": "cmd+alt+i",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.commasize",
@@ -2077,7 +2106,7 @@
                 "win": "ctrl+alt+,",
                 "linux": "ctrl+alt+,",
                 "mac": "cmd+alt+,",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.bold",
@@ -2087,6 +2116,14 @@
                 "mac": "cmd+alt+b",
                 "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
             },
+			{
+				"command": "wt.editor.boldMarkdown",
+				"key": "-",
+				"win": "ctrl+alt+b",
+				"linux": "ctrl+alt+b",
+				"mac": "cmd+alt+b",
+				"when": "wt.valid && (editorLangId == markdown && editorTextFocus)"
+			},
             {
                 "command": "wt.editor.strikethrough",
                 "key": "-",
@@ -2101,7 +2138,7 @@
                 "win": "ctrl+alt+u",
                 "linux": "ctrl+alt+u",
                 "mac": "cmd+alt+u",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.emdash",
@@ -2109,7 +2146,7 @@
                 "win": "ctrl+alt+-",
                 "linux": "ctrl+alt+-",
                 "mac": "cmd+alt+-",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.emdashes",
@@ -2117,7 +2154,7 @@
                 "win": "ctrl+alt+shift+-",
                 "linux": "ctrl+alt+shift+-",
                 "mac": "cmd+alt+shift+-",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.word.left",
@@ -2125,7 +2162,7 @@
                 "win": "ctrl+left",
                 "linux": "ctrl+left",
                 "mac": "cmd+left",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.word.right",
@@ -2133,7 +2170,7 @@
                 "win": "ctrl+right",
                 "linux": "ctrl+right",
                 "mac": "cmd+right",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.sentence.left",
@@ -2141,7 +2178,7 @@
                 "win": "ctrl+[",
                 "linux": "ctrl+[",
                 "mac": "cmd+[",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.sentence.right",
@@ -2149,7 +2186,7 @@
                 "win": "ctrl+]",
                 "linux": "ctrl+]",
                 "mac": "cmd+]",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.fragment.left",
@@ -2157,7 +2194,7 @@
                 "win": "alt+[",
                 "linux": "alt+[",
                 "mac": "alt+[",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.fragment.right",
@@ -2165,7 +2202,7 @@
                 "win": "alt+]",
                 "linux": "alt+]",
                 "mac": "alt+]",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.paragraph.left",
@@ -2173,7 +2210,7 @@
                 "win": "ctrl+alt+[",
                 "linux": "ctrl+alt+[",
                 "mac": "cmd+alt+[",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.paragraph.right",
@@ -2181,7 +2218,7 @@
                 "win": "ctrl+alt+]",
                 "linux": "ctrl+alt+]",
                 "mac": "cmd+alt+]",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.word.left.shift",
@@ -2189,7 +2226,7 @@
                 "win": "ctrl+shift+left",
                 "linux": "ctrl+shift+left",
                 "mac": "cmd+shift+left",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.word.right.shift",
@@ -2197,7 +2234,7 @@
                 "win": "ctrl+shift+right",
                 "linux": "ctrl+shift+right",
                 "mac": "cmd+shift+right",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.sentence.left.shift",
@@ -2205,7 +2242,7 @@
                 "win": "ctrl+shift+[",
                 "linux": "ctrl+shift+[",
                 "mac": "cmd+shift+[",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.sentence.right.shift",
@@ -2213,7 +2250,7 @@
                 "win": "ctrl+shift+]",
                 "linux": "ctrl+shift+]",
                 "mac": "cmd+shift+]",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.fragment.left.shift",
@@ -2221,7 +2258,7 @@
                 "win": "alt+shift+[",
                 "linux": "alt+shift+[",
                 "mac": "alt+shift+[",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.fragment.right.shift",
@@ -2229,7 +2266,7 @@
                 "win": "alt+shift+]",
                 "linux": "alt+shift+]",
                 "mac": "alt+shift+]",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.paragraph.left.shift",
@@ -2237,7 +2274,7 @@
                 "win": "ctrl+alt+shift+[",
                 "linux": "ctrl+alt+shift+[",
                 "mac": "cmd+alt+shift+[",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.jump.paragraph.right.shift",
@@ -2245,7 +2282,7 @@
                 "win": "ctrl+alt+shift+]",
                 "linux": "ctrl+alt+shift+]",
                 "mac": "cmd+alt+shift+]",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.delete.left",
@@ -2253,7 +2290,7 @@
                 "win": "ctrl+backspace",
                 "linux": "ctrl+backspace",
                 "mac": "cmd+backspace",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.delete.right",
@@ -2261,7 +2298,7 @@
                 "win": "ctrl+delete",
                 "linux": "ctrl+delete",
                 "mac": "cmd+delete",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.intellisense.synonyms.prevDefinition",
@@ -2301,7 +2338,7 @@
                 "win": "ctrl+shift+/",
                 "linux": "ctrl+shift+/",
                 "mac": "cmd+shift+/",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.todo.commentFragment",
@@ -2309,7 +2346,7 @@
                 "win": "alt+shift+/",
                 "linux": "alt+shift+/",
                 "mac": "alt+shift+/",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.todo.commentParagraph",
@@ -2317,7 +2354,7 @@
                 "win": "ctrl+alt+shift+/",
                 "linux": "ctrl+alt+shift+/",
                 "mac": "cmd+alt+shift+/",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.highlightExpand",
@@ -2325,7 +2362,7 @@
                 "win": "ctrl+alt+h",
                 "linux": "ctrl+alt+h",
                 "mac": "cmd+alt+h",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.editor.highlightCollapse",
@@ -2333,7 +2370,7 @@
                 "win": "ctrl+alt+shift+h",
                 "linux": "ctrl+alt+shift+h",
                 "mac": "cmd+alt+shift+h",
-                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote) && editorTextFocus)"
+                "when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && editorTextFocus)"
             },
             {
                 "command": "wt.outline.commandPalette.moveCurrentNode",
@@ -2341,7 +2378,7 @@
                 "win": "shift+f1",
                 "linux": "shift+f1",
                 "mac": "shift+f1",
-                "when": "wt.valid && (editorLangId == wt || editorLangId == wtNote)"
+                "when": "wt.valid && (editorLangId == wt || editorLangId == wtNote || editorLangId == markdown)"
             }
         ],
         "languages": [
@@ -2484,6 +2521,14 @@
                     "wtNote"
                 ]
             },
+			{
+				"language": "markdown",
+				"scopeName": "source.markdown",
+				"path": "./syntaxes/markdown.tmLanguage.json",
+				"injectTo": [
+					"markdown"
+				]
+			},
             {
                 "language": "wt",
                 "scopeName": "source.wt",

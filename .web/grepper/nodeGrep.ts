@@ -112,6 +112,7 @@ export async function nodeGrep (
                 (
                     uri.fsPath.toLocaleLowerCase().endsWith('.wt') 
                     || uri.fsPath.toLocaleLowerCase().endsWith('.wtnote') 
+                    || uri.fsPath.toLocaleLowerCase().endsWith('.md') 
                     || uri.fsPath.toLocaleLowerCase().endsWith('.config')
                 )
                 && 
