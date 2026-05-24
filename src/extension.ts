@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 // import * as console from './vsconsole';
 import { ImportFileSystemView } from './import/importFileSystemView';
-import { WHViewPorvider as WHViewProvider } from './whWebview/whWebview';
+import { WHViewProvider } from './whWebview/whWebview';
 import { CoderModer } from './codeMode/codeMode';
 import { activateSpeak } from './ttsDebugger/tts/tts';
 import { activateDebug } from './ttsDebugger/debugger/debugExtention';
@@ -16,7 +16,7 @@ import { WordWatcher } from './wordWatcher/wordWatcher';
 import { Toolbar } from './editor/toolbar';
 
 import { SynonymViewProvider } from './synonymsWebview/synonymsView';
-import { Workspace } from './workspace/workspaceClass';
+import { DiskContextType, Workspace } from './workspace/workspaceClass';
 import { loadWorkspace, createWorkspace } from './workspace/workspace';
 import { FileAccessManager } from './miscTools/fileAccesses';
 import { Packageable, packageForExport } from './packageable';
@@ -72,9 +72,20 @@ export class Extension {
     private static _scratchPadView: ScratchPadView;
     private static _notebookPanel: NotebookPanel;
     private static _todoView: TODOsView;
+    private static _timedViews: TimedView;
     private static _searchBarView: SearchBarView;
     private static _searchResultsView: SearchResultsView;
     private static _personalDictionary: PersonalDictionary;
+    private static _intellisense: Intellisense;
+    private static _wh: WHViewProvider;
+    private static _wordWatcher: WordWatcher;
+    private static _colorGroups: ColorGroups;
+    private static _codeMode: CoderModer;
+    private static _synonymsWebview: SynonymViewProvider;
+    private static _importFileSystemView: ImportFileSystemView;
+    private static _tabLabels: TabLabels;
+    private static _tabStates: TabStates;
+    private static _statusBarTimer: StatusBarTimer;
     private static _workspace: Workspace;
     private static _context: vscode.ExtensionContext;
     private static _packageableItems: Packageable<any>[];
@@ -116,6 +127,13 @@ export class Extension {
         }
         return this._todoView;
     }
+    static get timedViews () {
+        if (!this._timedViews) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'timedViews' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'timedViews' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._timedViews;
+    }
     static get searchBarView () {
         if (!this._searchBarView) {
             vscode.window.showErrorMessage("[ERROR] Attempted to access 'searchBarView' before initialized.  Only access global data after it's been initialized.");
@@ -136,6 +154,76 @@ export class Extension {
             throw "[ERROR] Attempted to access 'personalDictionary' before initialized.  Only access global data after it's been initialized.";
         }
         return this._personalDictionary;
+    }
+    static get intellisense () {
+        if (!this._intellisense) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'intellisense' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'intellisense' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._intellisense;
+    }
+    static get wh () {
+        if (!this._wh) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'wh' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'wh' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._wh;
+    }
+    static get wordWatcher () {
+        if (!this._wordWatcher) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'wordWatcher' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'wordWatcher' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._wordWatcher;
+    }
+    static get colorGroups () {
+        if (!this._colorGroups) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'colorGroups' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'colorGroups' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._colorGroups;
+    }
+    static get codeMode () {
+        if (!this._codeMode) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'codeMode' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'codeMode' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._codeMode;
+    }
+    static get synonymsWebview () {
+        if (!this._synonymsWebview) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'synonymsWebview' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'synonymsWebview' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._synonymsWebview;
+    }
+    static get importFileSystemView () {
+        if (!this._importFileSystemView) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'importFileSystemView' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'importFileSystemView' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._importFileSystemView;
+    }
+    static get tabLabels () {
+        if (!this._tabLabels) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'tabLabels' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'tabLabels' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._tabLabels;
+    }
+    static get tabStates () {
+        if (!this._tabStates) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'tabStates' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'tabStates' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._tabStates;
+    }
+    static get statusBarTimer () {
+        if (!this._statusBarTimer) {
+            vscode.window.showErrorMessage("[ERROR] Attempted to access 'statusBarTimer' before initialized.  Only access global data after it's been initialized.");
+            throw "[ERROR] Attempted to access 'statusBarTimer' before initialized.  Only access global data after it's been initialized.";
+        }
+        return this._statusBarTimer;
     }
     static get workspace () {
         if (!this._workspace) {
@@ -173,8 +261,8 @@ export class Extension {
         return this._notebookSerializerDispose;
     }
 
-    public static getPackageableItems (): Packageable<any>[] {
-        return this.packageableItems;
+    public static async getPackageableItems (): Promise<DiskContextType> {
+        return packageForExport(this.packageableItems);
     }
 
     public static async activateExtension (context: vscode.ExtensionContext) {
@@ -186,12 +274,8 @@ export class Extension {
         this.rootPath = (vscode.workspace.workspaceFolders && (vscode.workspace.workspaceFolders.length > 0))
             ? vscode.workspace.workspaceFolders[0].uri : vscode.Uri.parse('.');
 
-        context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openIntro", async () => {
-            return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
-        }));
-        context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openImports", async () => {
-            return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.importsWalkthrough`, false);
-        }));
+        context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openIntro", this.openIntro.bind(this)));
+        context.subscriptions.push(vscode.commands.registerCommand("wt.walkthroughs.openImports", this.openImportsIntro.bind(this)));
         context.subscriptions.push(vscode.commands.registerCommand("wt.searchFiles", searchFiles));    
         context.subscriptions.push(vscode.commands.registerCommand('wt.convert', () => convertFileNames()));
 
@@ -248,6 +332,14 @@ export class Extension {
                 }
             });
         }));
+    }
+
+    public static openIntro () {
+        return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
+    }
+
+    public static openImportsIntro () {
+        return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.importsWalkthrough`, false);
     }
 
     private static async loadExtensionWithProgress (context: vscode.ExtensionContext, title: "Starting Integrated Writing Environment" | "Reloading Integrated Writing Environment"): Promise<boolean> {
@@ -315,20 +407,20 @@ export class Extension {
             const spellcheck = new Spellcheck(context, workspace, this.personalDictionary, autocorrection);
             report("Loaded spellchecker");
 
-            const synonymsIntellisense = new Intellisense(context, workspace, this.personalDictionary, true);
-            await synonymsIntellisense.init();
+            this._intellisense = new Intellisense(context, workspace, this.personalDictionary, true);
+            await this.intellisense.init();
             const veryIntellisense = new VeryIntellisense(context, workspace);
-            const colorGroups = new ColorGroups(context);
-            const colorIntellisense = new ColorIntellisense(context, workspace, colorGroups);
+            this._colorGroups = new ColorGroups(context);
+            const colorIntellisense = new ColorIntellisense(context, workspace, this.colorGroups);
             const spacingHighlights = new SpacingHighlights();
             const definitionsPanel = new DefinitionsPanelWebview(context, workspace);
             report("Loaded intellisense");
 
-            const importFS = new ImportFileSystemView(context, workspace);        // wt.import.fileSystem
-            const synonyms = new SynonymViewProvider(context, workspace);        // wt.synonyms
-            const wh = new WHViewProvider(context, workspace);        // wt.synonyms
+            this._importFileSystemView = new ImportFileSystemView(context, workspace);        // wt.import.fileSystem
+            this._synonymsWebview = new SynonymViewProvider(context, workspace);        // wt.synonyms
+            this._wh = new WHViewProvider(context, workspace);        // wt.synonyms
             
-            const wordWatcher = new WordWatcher(context, workspace);            // wt.wordWatcher
+            this._wordWatcher = new WordWatcher(context, workspace);            // wt.wordWatcher
             const proximity = new Proximity(context, workspace);
             const textStyles = new TextStyles(context, workspace);    
             this._recyclingBinView = new RecyclingBinView(context, workspace);        
@@ -343,7 +435,7 @@ export class Extension {
             const fragmentOverview = new FragmentOverviewView(context, workspace);
             report("Loaded fragment overview");
             
-            const tabStates = new TabStates(context, workspace);
+            this._tabStates = new TabStates(context, workspace);
             report("Loaded tab groups");
 
             const notebookWebview = new NotebookWebview(context, workspace);
@@ -360,20 +452,20 @@ export class Extension {
             this.searchResultsView.initialize();
             report("Loaded search bad");
 
-            new CoderModer(context);
+            this._codeMode = new CoderModer(context);
             const wordCountStatus = new WordCount(context);
-            const statusBarTimer = new StatusBarTimer(context);
+            this._statusBarTimer = new StatusBarTimer(context);
             report("Loaded status bar items");
 
             new FileLinker(context, workspace);
             const linker = new DocumentLinker(context);
 
-            const timedViews = new TimedView(context, [
+            this._timedViews = new TimedView(context, [
                 ['wt.notebook.tree', 'notebook', this.notebookPanel],
                 ['wt.todo', 'todo', this.todoView],
                 ['wt.documentLinker', 'documentLinker', linker],
                 ['wt.spellcheck', 'spellcheck', spellcheck],
-                ['wt.wordWatcher', 'wordWatcher', wordWatcher],
+                ['wt.wordWatcher', 'wordWatcher', this.wordWatcher],
                 ['wt.spacingHighlights', 'spacingHighlights', spacingHighlights],
                 // ['wt.proximity', 'proximity', proximity],
                 ['wt.very', 'very', veryIntellisense],  
@@ -384,7 +476,7 @@ export class Extension {
                 ['wt.wtSearch.results', 'searchResults', this.searchResultsView],
             ]);
 
-            const tabLabels = new TabLabels(context);
+            this._tabLabels = new TabLabels(context);
 
             // Register commands for the toolbar (toolbar that appears when editing a .wt file)
             Toolbar.registerCommands(context);
@@ -399,8 +491,8 @@ export class Extension {
             vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
             
             this._packageableItems = [
-                this.outlineView, synonyms, timedViews, new FileAccessManager(),
-                this.personalDictionary, colorGroups, wh, reloadWatcher, tabStates,
+                this.outlineView, this.synonymsWebview, this.timedViews, new FileAccessManager(),
+                this.personalDictionary, this.colorGroups, this.wh, reloadWatcher, this.tabStates,
                 autocorrection, this.searchBarView
             ];
             context.subscriptions.push(vscode.commands.registerCommand('wt.getPackageableItems', () => this.getPackageableItems()));

@@ -24,7 +24,7 @@ type WHWebviewMessage = {
     skipDataPush: boolean | undefined
 };
 
-export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable<'wt.wh.synonyms'> {
+export class WHViewProvider implements vscode.WebviewViewProvider, Packageable<'wt.wh.synonyms'> {
 
     private _view?: vscode.WebviewView;
     private synonyms: string[];
@@ -51,6 +51,14 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable<'
         return {
             'wt.wh.synonyms': this.synonyms
         }
+    }
+
+    public refreshView (newSynonyms: string[]) {
+        this.synonyms = newSynonyms;
+        this._view?.webview.postMessage({
+            type: "refreshSynonyms",
+            terms: newSynonyms
+        });
     }
         
     private registerCommands () {
@@ -113,13 +121,7 @@ export class WHViewPorvider implements vscode.WebviewViewProvider, Packageable<'
             })();
         }));
         
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wh.refresh", (refreshWith: string[]) => {
-            this.synonyms = refreshWith;
-            this._view?.webview.postMessage({
-                type: "refreshSynonyms",
-                terms: refreshWith
-            });
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wh.refresh", this.refreshView.bind(this)));
     }
 
     public resolveWebviewView (

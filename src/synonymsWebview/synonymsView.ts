@@ -3,6 +3,7 @@ import * as console from '../miscTools/vsconsole';
 import { getNonce, stripDiacritics } from '../miscTools/help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
+import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
 
 export class SynonymViewProvider implements vscode.WebviewViewProvider, Packageable<'wt.synonyms.synonyms'> {
 
@@ -26,7 +27,7 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
                 "Update API Key"
             ).then((response) => {
                 if (response === 'Update API Key') {
-                    return vscode.commands.executeCommand("wt.synonyms.updateApiKey");
+                    return SynonymsProvider.updateApiKey();
                 }
             });
         }
@@ -113,22 +114,25 @@ export class SynonymViewProvider implements vscode.WebviewViewProvider, Packagea
             })();
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.synonyms.refresh", (refreshWith: string[]) => {
-            this.synonyms = refreshWith;
-            this._view?.webview.postMessage({
-                type: "refreshSynonyms",
-                terms: refreshWith
-            });
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.synonyms.refresh", this.refresh.bind(this)));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.synonyms.refreshWithKey", this.refreshWithKey.bind(this)));
+    }
 
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.synonyms.refreshWithKey", (apiKey: string) => {
-            this.apiKey = apiKey;
-            this._view?.webview.postMessage({
-                type: 'startupDelivery',
-                dicationatyApi: this.apiKey,
-                synonyms: this.synonyms
-            });
-        }));
+    refresh (newSynonyms: string[]) {
+        this.synonyms = newSynonyms;
+        this._view?.webview.postMessage({
+            type: "refreshSynonyms",
+            terms: newSynonyms
+        });
+    }
+
+    public refreshWithKey (apiKey: string) {
+        this.apiKey = apiKey;
+        this._view?.webview.postMessage({
+            type: 'startupDelivery',
+            dicationatyApi: this.apiKey,
+            synonyms: this.synonyms
+        });
     }
 
     public resolveWebviewView (

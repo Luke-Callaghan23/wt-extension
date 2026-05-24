@@ -55,7 +55,7 @@ async function grep__impl (
     //      objects and yield each one once processed
     const grepResult = await RipGrep.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken, overrideFilter);
     if (grepResult.status === 'error') {
-        vscode.commands.executeCommand('wt.wtSearch.searchError', searchBarValue, grepResult.message);
+        Extension.searchBarView.setSearchBarError(searchBarValue, grepResult.message);
         return null;
     }
 

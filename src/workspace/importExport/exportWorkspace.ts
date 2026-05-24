@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import { Extension } from   './../../extension';
 import * as console from '../../miscTools/vsconsole';
-import { Workspace } from '../workspaceClass';
+import { DiskContextType, Workspace } from '../workspaceClass';
 import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../../outline/outlineView';
 import { ChaptersRecord, FragmentRecord, FragmentsExport, SnipsExport, SnipsRecord, WorkspaceExport as WorkspaceRecord } from './types';
@@ -175,7 +175,7 @@ export async function handleWorkspaceExport (
     
 
     // Get the packageable items to be transported in the workspace
-    const packageableItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
+    const packageableItems: DiskContextType = await Extension.getPackageableItems();
 
     // Create the iwe object
     const iwe: WorkspaceRecord = {

@@ -84,7 +84,7 @@ export class SearchResultsTree
             if (!response) return;
             
             const [ _, __, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
-            await vscode.commands.executeCommand('wt.wtSearch.updateSearchBarValue', response);
+            Extension.searchBarView.updateSearchBarValue(response);
             vscode.commands.executeCommand('workbench.view.Extension.wtSearch');
             return this.searchBarValueWasUpdated(response, useRegex, caseInsensitive, matchTitles, wholeWord, new vscode.CancellationTokenSource().token);
         }));
@@ -96,7 +96,7 @@ export class SearchResultsTree
                 selectedText = editor.document.getText(editor.selection);
                 const [ _, __, wholeWord, useRegex, caseInsensitive, matchTitles ] = await vscode.commands.executeCommand<[string, string, boolean, boolean, boolean, boolean]>('wt.wtSearch.getSearchContext');
                 await vscode.commands.executeCommand('workbench.view.Extension.wtSearch');
-                await vscode.commands.executeCommand('wt.wtSearch.updateSearchBarValue', selectedText);
+                Extension.searchBarView.updateSearchBarValue(selectedText);
                 return this.searchBarValueWasUpdated(selectedText, useRegex, caseInsensitive, matchTitles, wholeWord, new vscode.CancellationTokenSource().token);
             }
             else {
@@ -199,9 +199,10 @@ export class SearchResultsTree
                 if (cancellationToken.isCancellationRequested) return;
             }
             catch (err: any) {
-                vscode.commands.executeCommand('wt.wtSearch.searchError', searchBarValue, `${err}`);
+                Extension.searchBarView.setSearchBarError(searchBarValue, `${err}`);
                 return;
             }
+
             this.results = results;
 
             const searchNodeGenerator = new SearchNodeGenerator();

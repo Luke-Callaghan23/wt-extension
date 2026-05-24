@@ -39,7 +39,7 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs" 
         }));
         
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.reloadWatcher.reloadViews", () => {
-            return ReloadWatcher.changedContextValues(true, true);
+            return ReloadWatcher.reloadViews();
         }));
         ReloadWatcher.updateEnabledStatusFromSettings();
 
@@ -48,6 +48,10 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs" 
             if (!e.affectsConfiguration(ReloadWatcher.enabledSettingName)) return;
             ReloadWatcher.updateEnabledStatusFromSettings();
         }));
+    }
+
+    public static async reloadViews () {
+        return ReloadWatcher.changedContextValues(true, true);
     }
     
     public static enableReloadWatch () {
@@ -115,26 +119,26 @@ export class ReloadWatcher implements Packageable<"wt.reloadWatcher.openedTabs" 
 
         // Using those context values reload all views and timed classes
         return Promise.all([
-            vscode.commands.executeCommand("wt.outline.refresh", contextValues['wt.outline.collapseState']),
-            vscode.commands.executeCommand("wt.recyclingBin.refresh"),
-            vscode.commands.executeCommand("wt.import.fileExplorer.refresh"),
-            vscode.commands.executeCommand("wt.todo.refresh", contextValues['wt.todo.collapseState']),
-            vscode.commands.executeCommand("wt.wordWatcher.refresh", {
+            Extension.outlineView.refreshView(contextValues['wt.outline.collapseState']),
+            Extension.todoView.refresh(true, []),
+            Extension.importFileSystemView.refresh(),
+            Extension.todoView.refreshView(contextValues['wt.todo.collapseState']),
+            Extension.wordWatcher.refreshView({
                 watchedWords: contextValues['wt.wordWatcher.watchedWords'],
                 disabledWatchedWords: contextValues['wt.wordWatcher.disabledWatchedWords'],
                 excludedWords: contextValues['wt.wordWatcher.excludedWords'],
                 rgbaColors: contextValues['wt.wordWatcher.rgbaColors'],
             }),
-            vscode.commands.executeCommand("wt.synonyms.refresh", contextValues['wt.synonyms.synonyms']),
-            vscode.commands.executeCommand("wt.wh.refresh", contextValues['wt.wh.synonyms']),
-            vscode.commands.executeCommand("wt.personalDictionary.refresh", contextValues['wt.personalDictionary']),
-            vscode.commands.executeCommand("wt.colors.refresh", contextValues['wt.colors.extraColors']),
-            vscode.commands.executeCommand("wt.notebook.refresh"),
-            vscode.commands.executeCommand("wt.scratchPad.refresh"),
-            vscode.commands.executeCommand('wt.tabStates.refresh')
+            Extension.synonymsWebview.refresh(contextValues['wt.synonyms.synonyms']),
+            Extension.wh.refreshView(contextValues['wt.wh.synonyms']),
+            Extension.personalDictionary.refresh(contextValues['wt.personalDictionary']),
+            Extension.colorGroups.refresh(contextValues['wt.colors.extraColors']),
+            Extension.notebookPanel.refresh(true),
+            Extension.scratchPadView.refresh(true, []),
+            Extension.tabStates.refresh(),
         ]).then(() => {
             // And trigger a forced timed views update
-            vscode.commands.executeCommand('wt.timedViews.update');
+            return Extension.timedViews.updateTimedViews();
         }).catch((err) => {
             console.log(err);
         });

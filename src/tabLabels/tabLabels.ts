@@ -73,7 +73,7 @@ export class TabLabels {
 
     static async assignNamesForOpenTabs () {
         if (!TabLabels.enabled) return;
-        const codeModeState: CodeModeState = await vscode.commands.executeCommand('wt.codeMode.getMode');
+        const codeModeState: CodeModeState = Extension.codeMode.getCodeModeState();
         if (codeModeState === 'codeMode') return;
 
 

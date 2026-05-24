@@ -241,8 +241,7 @@ implements
             });
 
         if (fragmentDocuments.length === 0) return;
-
-        return vscode.commands.executeCommand("wt.import.fileExplorer.importScratchPadDropped", fragmentDocuments);
+        return Extension.importFileSystemView.handleScratchPadDrop(fragmentDocuments);
     }
     
 

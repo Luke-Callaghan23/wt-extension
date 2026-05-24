@@ -68,7 +68,7 @@ export class ImportForm {
     async handleDocumentRequest () {
 
         // Retrieve chapter uris and names from the outline view
-        const chapterUris: [string, string][] = await vscode.commands.executeCommand('wt.outline.collectChapterUris');
+        const chapterUris: [string, string][] = Extension.outlineView.collectChapterUris();
         const sentDocs = this.documents.map(documentUri => {
 
             const name = vscodeUris.Utils.basename(documentUri);

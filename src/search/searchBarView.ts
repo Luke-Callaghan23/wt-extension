@@ -99,9 +99,7 @@ implements
             if (!e.affectsConfiguration(configuration)) return;
             this.setSlowModeValue();
         }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.searchError', (errorBarValue: string, errorMessage) => {
-            return this.searchBarError(errorBarValue, errorMessage);
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.searchError', this.setSearchBarError.bind(this)));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.getSearchContext', () => {
             return [
                 this.latestSearchBarValue,
@@ -112,15 +110,7 @@ implements
                 this.matchTitles
             ]
         }));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.updateSearchBarValue', async (newSearchBarValue) => {
-            this.latestSearchBarValue = newSearchBarValue;
-            Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
-            this._view?.webview.postMessage({
-                kind: 'updateSearchBar',
-                searchBar: this.latestSearchBarValue,
-                focus: true,
-            });
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.updateSearchBarValue', this.updateSearchBarValue.bind(this)));
     }
 
     private setSlowModeValue () {
@@ -131,7 +121,17 @@ implements
         });
     }
 
-    public searchBarError (errorBarValue: string, errorMessage: string) {
+    public async updateSearchBarValue (newSearchBarValue: string) {
+        this.latestSearchBarValue = newSearchBarValue;
+        Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
+        this._view?.webview.postMessage({
+            kind: 'updateSearchBar',
+            searchBar: this.latestSearchBarValue,
+            focus: true,
+        });
+    }
+
+    public setSearchBarError (errorBarValue: string, errorMessage: string) {
         if (this.latestSearchBarValue !== errorBarValue) return;
         this._view?.webview.postMessage(__<PostMessage>({ 
             kind: 'searchError',

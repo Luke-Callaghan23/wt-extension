@@ -164,7 +164,7 @@ export class Workspace {
         }
 
         // Write context items to the file system before git save
-        const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
+        const contextItems: DiskContextType = await Extension.getPackageableItems();
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
 
         ReloadWatcher.disableReloadWatch();
@@ -195,7 +195,7 @@ export class Workspace {
             await context.globalState.update(key, value);
         }
         const contextUri = extension.ExtensionGlobals.workspace.contextValuesFilePath;
-        const contextItems: DiskContextType = await vscode.commands.executeCommand('wt.getPackageableItems');
+        const contextItems: DiskContextType = await Extension.getPackageableItems();
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
         ReloadWatcher.disableReloadWatch();
         return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));

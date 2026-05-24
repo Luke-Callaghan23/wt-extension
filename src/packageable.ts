@@ -19,14 +19,14 @@ export interface Packageable<T extends keyof DiskContextType> {
 
 export async function packageForExport (
     packageables: Packageable<any>[]
-): Promise<{ [index: string]: any }> {
-    const allPackagedItems: { [index: string]: any } = {};
+): Promise<DiskContextType> {
+    const allPackagedItems: Record<string, any> = {};
     packageables.forEach(packageable => {
         const items = packageable.getPackageItems(createPackageItems);
         Object.entries(items).forEach(([ contextKey, contextValue ]) => {
             allPackagedItems[contextKey] = contextValue;
         });
     });
-    return allPackagedItems;
+    return allPackagedItems as DiskContextType;
 }
 

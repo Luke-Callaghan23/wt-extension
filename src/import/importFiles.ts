@@ -822,7 +822,7 @@ export async function handleImport (docInfo: ImportDocumentInfo, droppedSource: 
         }
     
         // Do the expensive full refresh
-        vscode.commands.executeCommand('wt.outline.refresh');
+        Extension.outlineView.refreshView();
     });
 }
 

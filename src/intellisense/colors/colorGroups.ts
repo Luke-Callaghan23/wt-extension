@@ -561,12 +561,13 @@ export class ColorGroups implements Packageable<'wt.colors.extraColors'> {
         this.context.workspaceState.update('wt.colors.extraColors', this.extraColors);
     }
 
+    public refresh (extraColors: { [index: string]: Colors }) {
+        this.extraColors = extraColors;
+    }
 
     registerCommands () {
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.colors.addColor', () => this.addColor()));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.colors.removeColor', () => this.removeColor()));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.colors.refresh', (refreshWith: { [index: string]: Colors }) => {
-            this.extraColors = refreshWith;
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.colors.refresh', this.refresh.bind(this)));
     }
 }

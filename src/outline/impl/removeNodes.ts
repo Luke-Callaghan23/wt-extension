@@ -313,7 +313,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
     }
     // Refresh the whole tree as it's hard to determine what the deepest root node is
     this.refresh(false, containers);
-    vscode.commands.executeCommand("wt.recyclingBin.refresh");
+    Extension.todoView.refresh(true, []);
 
     setTimeout(() => {
         // Reassign names in case if any of the opened fragments have just been deleted

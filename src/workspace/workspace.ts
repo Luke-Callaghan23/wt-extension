@@ -159,7 +159,7 @@ synonyms/lock.mdb
 
     vscode.window.showInformationMessage(`Successfully initialized the workspace.`);
     await vscode.commands.executeCommand('setContext', 'wt.valid', true);
-    await vscode.commands.executeCommand('wt.walkthroughs.openIntro');
+    Extension.openIntro();
     return workspace;
 }
 

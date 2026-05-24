@@ -67,7 +67,7 @@ export class DefinitionsPanelWebview implements vscode.WebviewViewProvider, vsco
         const hover = getHoveredWord(document, position);
         if (!hover) return;
 
-        const currentProvider: SynonymProviderType = await vscode.commands.executeCommand('wt.intellisense.synonyms.getCurrentProvider');
+        const currentProvider: SynonymProviderType = Extension.intellisense.getCurrentSynonymsProvider();
         const hoverMd = await getHoverMarkdown(hover.text, currentProvider);
         if (!hoverMd) return;
 

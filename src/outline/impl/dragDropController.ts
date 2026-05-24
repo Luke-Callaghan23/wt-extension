@@ -42,7 +42,7 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
 
         // Open the import form with all the dropped entry uris
         const uris = entries.map(({ uri }) => uri);
-        vscode.commands.executeCommand('wt.import.fileExplorer.importFolder', uris, {
+        Extension.importFileSystemView.importDroppedFolder(uris, {
             node: targ,
             namePath: await getNodeNamePath(targ),
             destination: targ.data.ids.type === 'chapter'
@@ -82,10 +82,10 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
             });
 
         if (importableUris.length > 0) {
-            await vscode.commands.executeCommand('wt.import.fileExplorer.importDroppedDocuments', importableUris, target);
+            return Extension.importFileSystemView.importDroppedDocuments(importableUris, target);
         }
         if (fragmentDocuments.length > 0) {
-            await vscode.commands.executeCommand('wt.import.fileExplorer.importDroppedFragmentDocuments', fragmentDocuments, target);
+            await Extension.importFileSystemView.importDroppedFragmentDocuments(fragmentDocuments, target);
         }
     }
 

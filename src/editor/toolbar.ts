@@ -25,16 +25,16 @@ export function remove () {
 
 
 export async function save () {
-    await vscode.commands.executeCommand('wt.tabStates.saveToCurrentTabGroup');
+    Extension.tabStates.saveToCurrentTabGroup();
     await Workspace.forcePackaging();
-    vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
+    Extension.statusBarTimer.resetTimer();
     return gitCommit();
 }
 
 export async function saveAll () {
-    await vscode.commands.executeCommand('wt.tabStates.saveToCurrentTabGroup');
+    Extension.tabStates.saveToCurrentTabGroup();
     await Workspace.forcePackaging();
-    vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
+    Extension.statusBarTimer.resetTimer();
     return gitCommit();
 }
 

@@ -15,28 +15,7 @@ export function registerCommands (this: OutlineView) {
         return showTextDocumentWithPreview(resource, { preserveFocus: true });
     }));
     // Reload command has ambiguous changes and should include a full reload from disk
-    this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.refresh', (resource: OutlineNode | DiskContextType['wt.outline.collapseState'] | undefined | null) => {
-
-        // If every entry in the resouce argument is a string -> boolean mapping then we can assume the resource is the collapse
-        //      state mapping table
-        const argIsCollapseState = resource && Object.entries(resource).every(([ key, val ]) => {
-            return typeof key === 'string' && typeof val === 'boolean';
-        });
-        if (argIsCollapseState) {
-            // Combine current uri visibility with the previous, inserting the old values and then
-            //      the new values (so if there is any collisions the new states override the
-            //      old ones)
-            const collapseState = resource as DiskContextType['wt.outline.collapseState'];
-            this.uriToVisibility = {
-                ...this.uriToVisibility,
-                ...collapseState
-            };
-        }
-
-        
-        this.refresh(true, []);
-        return;
-    }));
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.refresh', this.refreshView.bind(this)));
 
     this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.renameFile', () => {
         if (this.view.selection.length > 1) return;
@@ -197,19 +176,7 @@ export function registerCommands (this: OutlineView) {
         this.removeResource(targets);
     }));
 
-    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.collectChapterUris", () => {
-        const root: RootNode = this.rootNodes[0].data as RootNode;
-        const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
-        const chapterData = chaptersContainer.contents.map(c => {
-            const title = c.data.ids.display;
-            const uri = c.getUri().fsPath.split(Extension.rootPath.fsPath)[1];
-            return { uri, title, ordering: c.data.ids.ordering };
-        });
-
-        chapterData.sort((a, b) => a.ordering - b.ordering);
-
-        return chapterData.map(({ uri, title }) => [ uri, title ])
-    }));
+    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.collectChapterUris", this.collectChapterUris.bind(this)));
 
     this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.help', () => {
         vscode.window.showInformationMessage(`Outline View`, {
@@ -220,26 +187,11 @@ export function registerCommands (this: OutlineView) {
 
     this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.getOutline', () => this));
 
-    this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.copyItems', () => {
-        // Ensure that there are selected items and then call the `copy` method
-        const selected = this.view.selection;
-        if (selected.length === 0) return;
-        this.copy(selected);
-    }));
-
-    this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.pasteItems', async (nameModifier: string | undefined) => {
-        // If there is no selected detination for the paste in the outline
-        //      view, then default to using the tree as the paste destination
-        let selected = this.view.selection;
-        if (selected.length === 0) selected = [ ...this.rootNodes ];
-
-        const destinations: OutlineNode[] = [ ...selected ];
-        return genericPaste(destinations);
-    }));
-
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.copyItems', this.copyItems.bind(this)));
+    this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.pasteItems', this.pasteItems.bind(this)));
     this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.duplicateItems', async () => {
-        await vscode.commands.executeCommand('wt.outline.copyItems');
-        await vscode.commands.executeCommand('wt.outline.pasteItems', 'duplicated');
+        this.copyItems();
+        this.pasteItems('duplicated');
     }));
 
     this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.copyPath', (resource: OutlineNode) => this.copyPath(resource)));

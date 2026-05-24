@@ -14,6 +14,7 @@ import { WTNotebookSerializer } from './notebookApi/notebookSerializer';
 import { capitalize } from '../miscTools/help';
 import { Extension } from '../extension';
 import { NotebookWebview } from './notebookWebview';
+import { ReloadWatcher } from '../miscTools/reloadWatcher';
 
 
 export interface NotebookPanelNote {
@@ -214,11 +215,66 @@ implements
         if (note === undefined) return;
         await this.serializer.writeSingleNote(note);
         await this.refresh(true);
-        return vscode.commands.executeCommand('wt.timedViews.update');
+        return Extension.timedViews.updateTimedViews();
+    }
+
+    public async addNewNote (resource?: NotebookPanelNote | string | undefined) { 
+        return this.executeUpdateNoteAndWrite(() => this.addNote(resource)) 
+    }
+
+    public async openNote (noteId?: string, activeTab?: boolean) {
+        
+        let pickedNote: NotebookPanelNote;
+        if (!noteId) {
+            interface NotePick extends vscode.QuickPickItem {
+                idx: number,
+            }
+            
+            const notes: NotePick[] = this.notebook.map<NotePick>((note, idx) => {
+                const aliasesString = note.aliases.join(', ');
+                const title = note.title;
+
+                const noteTitle = `${title} `;
+                return __<NotePick>({
+                    label: noteTitle,
+                    description: note.aliases.length > 0 
+                        ? `(${aliasesString})`
+                        : undefined,
+                    idx: idx,
+                });
+            });
+
+            const picked = await vscode.window.showQuickPick<NotePick>(notes, {
+                canPickMany: false,
+                ignoreFocusOut: false,
+                matchOnDescription: true,
+                matchOnDetail: true,
+                title: "Select a notebook",
+            });
+            if (picked === undefined || picked === null) return;
+            pickedNote = this.notebook[picked.idx];
+        }
+        else {
+            const noteSearch = this.notebook.find(note => note.noteId === noteId);
+            if (!noteSearch) {
+                vscode.window.showWarningMessage(`[;WARN] Could not find note with id ${noteId}`);
+                return;
+            }
+            pickedNote = noteSearch;
+        }
+
+        const viewColumn = activeTab
+            ? vscode.ViewColumn.Active
+            : await determineAuxViewColumn((uri) => this.getNote(uri));
+
+        const noteDoc = await vscode.workspace.openNotebookDocument(pickedNote.uri);
+        return vscode.window.showNotebookDocument(noteDoc, {
+            viewColumn: viewColumn
+        });
     }
 
     private registerCommands () {
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", (resource: NotebookPanelNote | string | undefined) => { this.executeUpdateNoteAndWrite(() => this.addNote(resource)) }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.addNote", this.addNote.bind(this)));
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.removeNote", (resource: NotebookPanelNote) => { this.executeUpdateNoteAndWrite(() => this.removeNote(resource)) }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.search', (resource: NotebookPanelNote) => { this.searchInSearchPanel(resource) }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.editNote', (resource: NotebookPanelNote | NoteSection | BulletPoint) => { this.editNote(resource) }));
@@ -227,56 +283,7 @@ implements
             return this.refresh(true);
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.openNote", async (noteId?: string, activeTab?: boolean) => {
-            
-            let pickedNote: NotebookPanelNote;
-            if (!noteId) {
-                interface NotePick extends vscode.QuickPickItem {
-                    idx: number,
-                }
-                
-                const notes: NotePick[] = this.notebook.map<NotePick>((note, idx) => {
-                    const aliasesString = note.aliases.join(', ');
-                    const title = note.title;
-    
-                    const noteTitle = `${title} `;
-                    return __<NotePick>({
-                        label: noteTitle,
-                        description: note.aliases.length > 0 
-                            ? `(${aliasesString})`
-                            : undefined,
-                        idx: idx,
-                    });
-                });
-    
-                const picked = await vscode.window.showQuickPick<NotePick>(notes, {
-                    canPickMany: false,
-                    ignoreFocusOut: false,
-                    matchOnDescription: true,
-                    matchOnDetail: true,
-                    title: "Select a notebook",
-                });
-                if (picked === undefined || picked === null) return;
-                pickedNote = this.notebook[picked.idx];
-            }
-            else {
-                const noteSearch = this.notebook.find(note => note.noteId === noteId);
-                if (!noteSearch) {
-                    vscode.window.showWarningMessage(`[;WARN] Could not find note with id ${noteId}`);
-                    return;
-                }
-                pickedNote = noteSearch;
-            }
-
-            const viewColumn = activeTab
-                ? vscode.ViewColumn.Active
-                : await determineAuxViewColumn((uri) => this.getNote(uri));
-
-            const noteDoc = await vscode.workspace.openNotebookDocument(pickedNote.uri);
-            return vscode.window.showNotebookDocument(noteDoc, {
-                viewColumn: viewColumn
-            });
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.notebook.openNote", this.openNote.bind(this)));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.notebook.addAliasToNote', async (aliasText: string | undefined) => {
             const textEditor = vscode.window.activeTextEditor;
@@ -571,7 +578,7 @@ implements
         
         // `onDidRenameFiles` will be called after the edits are applied.  When that happens, we want to reload
         setTimeout(() => {
-            vscode.commands.executeCommand("wt.reloadWatcher.reloadViews");
+            ReloadWatcher.reloadViews();
             vscode.window.showInformationMessage("Finished updating.  If you see some inaccuracies in a wtnote notebook window please just close and re-open.")
         }, 3000);
 

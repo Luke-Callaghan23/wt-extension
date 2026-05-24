@@ -110,15 +110,15 @@ export class StatusBarTimer {
         )
     }
 
-    resetTimer () {
+    public resetTimer () {
         this.activeTimer = 0;
     }
 
-    enteredCodeMode () {
+    public enteredCodeMode () {
         this.isCodeMode = true;
     }
 
-    exitedCodeMode () {
+    public exitedCodeMode () {
         this.isCodeMode = false;
     }
 }

@@ -75,8 +75,8 @@ export class NotebookWebview implements vscode.WebviewViewProvider {
         this.context.subscriptions.push(webviewView.webview.onDidReceiveMessage((data: NotebookWebviewMessage) => {
             switch (data.kind) {
                 case 'updateHtml': this.updateViewForNote(data.noteId); break;
-                case 'openNotebook': vscode.commands.executeCommand("wt.notebook.openNote", this.selectedNoteId, true);
-                case 'newNotebook': vscode.commands.executeCommand("wt.notebook.addNote");
+                case 'openNotebook': Extension.notebookPanel.openNote(this.selectedNoteId || undefined, true);
+                case 'newNotebook': Extension.notebookPanel.addNewNote();
             }
         }));
     }

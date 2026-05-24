@@ -19,5 +19,5 @@ export async function update (
 }
 
 export async function disable(this: TODOsView): Promise<void> {
-    return vscode.commands.executeCommand('wt.todo.refresh', true);
+    return this.refreshView(this.rootNodes[0]);
 }

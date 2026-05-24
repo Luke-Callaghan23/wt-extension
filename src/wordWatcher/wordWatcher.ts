@@ -107,6 +107,34 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
         }, 100);
     }
 
+    public refreshView (updatedState: {
+        watchedWords: string[],
+        disabledWatchedWords: string[],
+        excludedWords: string[],
+        rgbaColors: { [index: string]: string },
+    }) {
+
+        this.watchedWords = updatedState.watchedWords;
+        this.disabledWatchedWords = updatedState.disabledWatchedWords;
+        this.excludedWords = updatedState.excludedWords;
+
+        const contextColors = updatedState.rgbaColors;
+        this.watchedWords.forEach(watched => {
+            const color = contextColors[watched];
+            if (!color) return;
+
+            const decoratorType = createDecorationFromRgbString(color);
+            this.wordColors[watched] = {
+                rgbaString: color,
+                decoratorsIndex: this.allDecorationTypes.length
+            };
+
+            this.allDecorationTypes.push(decoratorType);
+        });
+        
+        this.refresh();
+    }
+
     getChildren = getChildren;
     getTreeItem = getTreeItem;
     getParent = getParent;
@@ -334,33 +362,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
             return this.commonWordsPrompt();
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.refresh", (refreshWith: {
-            watchedWords: string[],
-            disabledWatchedWords: string[],
-            excludedWords: string[],
-            rgbaColors: { [index: string]: string },
-        }) => {
-
-            this.watchedWords = refreshWith.watchedWords;
-            this.disabledWatchedWords = refreshWith.disabledWatchedWords;
-            this.excludedWords = refreshWith.excludedWords;
-
-            const contextColors = refreshWith.rgbaColors;
-            this.watchedWords.forEach(watched => {
-                const color = contextColors[watched];
-                if (!color) return;
-    
-                const decoratorType = createDecorationFromRgbString(color);
-                this.wordColors[watched] = {
-                    rgbaString: color,
-                    decoratorsIndex: this.allDecorationTypes.length
-                };
-    
-                this.allDecorationTypes.push(decoratorType);
-            });
-            
-            this.refresh();
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.wordWatcher.refresh", this.refreshView.bind(this)));
 
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.colorPicker.pick", async () => {
             // this.colorPick('maybe|perhaps', 'maybe')

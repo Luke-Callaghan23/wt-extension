@@ -143,8 +143,12 @@ export class TimedView implements Packageable<any> {
         }, 250);
     }
 
+    public updateTimedViews () {
+        return this.triggerUpdates(true);
+    }
+
     private registerCommands () {
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.timedViews.update', () => this.triggerUpdates(true)));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.timedViews.update', this.updateTimedViews.bind(this)));
     }
     
     getPackageItems(): { [index: string]: any; } {

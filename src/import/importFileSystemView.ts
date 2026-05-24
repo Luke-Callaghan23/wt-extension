@@ -134,7 +134,9 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         this.refresh();
     }
 
-    private async importDroppedDocument (docs: vscode.Uri[], dropped: OutlineNode, copy: boolean = true) {
+    public async importDroppedDocuments (docs: vscode.Uri[], dropped: OutlineNode | undefined, copy: boolean = true) {
+        dropped = dropped || Extension.outlineView.rootNodes[0];
+
         const fileNames: string[] = [];
         const exts = new Set<string>();
         const moves: [ vscode.Uri, vscode.Uri ][] = [];
@@ -192,7 +194,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 
     }
 
-    private async importDroppedFragmentDocument (docs: vscode.Uri[], dropped: OutlineNode | undefined | null) {
+    public async importDroppedFragmentDocuments (docs: vscode.Uri[], dropped: OutlineNode | undefined | null) {
         const outlineView = Extension.outlineView;
         const rootOutlineNode = outlineView.rootNodes[0];
         const rootNode = rootOutlineNode.data as RootNode;
@@ -281,7 +283,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
     }
 
     
-    private async handleScratchPadDrop (docs: vscode.Uri[]) {
+    public async handleScratchPadDrop (docs: vscode.Uri[]) {
         return this.importDroppedFragmentDocumentIntoOutline(
             'ScratchPad', docs, 
             ScratchPadView.scratchPadContainerUri, "snip",
@@ -442,6 +444,18 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         }
     } 
 
+    public importDroppedFolder (folderUris: vscode.Uri | vscode.Uri[], droppedSourceInfo?: DroppedSourceInfo) {
+        const targets: vscode.Uri[] = [];
+        if (!Array.isArray(folderUris)) {
+            folderUris = [ folderUris ];
+        }
+        for (const uri of folderUris) {
+            targets.push(...this.allDocs.filter(file => file.fsPath.includes(uri.fsPath + sep) && file.fsPath !== uri.fsPath));    
+        }
+        if (targets.length === 0) return;
+        new ImportForm(this.context.extensionUri, this.context, targets, droppedSourceInfo);
+    }
+
     registerCommands() {
         
         // Open import form
@@ -453,18 +467,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             new ImportForm(this.context.extensionUri, this.context, [ uri ]);
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importFolder', (folderUris: vscode.Uri | vscode.Uri[], droppedSourceInfo?: DroppedSourceInfo) => {
-            const targets: vscode.Uri[] = [];
-            if (!Array.isArray(folderUris)) {
-                folderUris = [ folderUris ];
-            }
-            for (const uri of folderUris) {
-                targets.push(...this.allDocs.filter(file => file.fsPath.includes(uri.fsPath + sep) && file.fsPath !== uri.fsPath));    
-            }
-            if (targets.length === 0) return;
-            new ImportForm(this.context.extensionUri, this.context, targets, droppedSourceInfo);
-        }));
-
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importFolder', this.importDroppedFolder.bind(this)));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.refresh', () => this.refresh()));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.filter', (resource) => this.filterResource(resource)));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.defilter', (resource) => this.defilterResource(resource)));
@@ -477,7 +480,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         const allowedFullTypes = `${allowedFileTypes}', and '${lastOne}'`;
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.help', () => {
             // vscode.window.showInformationMessage(`Drag '${allowedFullTypes}' files into the /data/imports/ folder at the root of this workspace and hit the 'Import' button on this panel to import them into the workspace.`, { modal: true });
-            vscode.commands.executeCommand('wt.walkthroughs.openImports');
+            Extension.openImportsIntro();
         }));
 
         // // Adding files to the import folder
@@ -499,9 +502,9 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importDroppedDocuments', this.importDroppedDocument.bind(this)));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importDroppedDocuments', this.importDroppedDocuments.bind(this)));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importScratchPadDropped', this.handleScratchPadDrop.bind(this)));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importDroppedFragmentDocuments', this.importDroppedFragmentDocument.bind(this)));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importDroppedFragmentDocuments', this.importDroppedFragmentDocuments.bind(this)));
     }
 
     private importFolder: vscode.Uri;
@@ -547,7 +550,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             const dirname = vscodeUris.Utils.dirname(newDoc);
             const insertedNode = await Extension.outlineView.getTreeElementByUri(dirname);
             if (!insertedNode) return;
-            this.importDroppedDocument([ newDoc ], insertedNode, false);
+            this.importDroppedDocuments([ newDoc ], insertedNode, false);
         });
 
         // Create a file system watcher that watches specifically for fragment file types being dropped into the file tree
@@ -583,7 +586,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             //        to insert the fragment data into that OutlineNode
             const parentNode = await vagueNodeSearch(newDoc);
             if (parentNode.node === null || parentNode.source !== 'outline') return;
-            return this.importDroppedFragmentDocument([ newDoc ], parentNode.node);
+            return this.importDroppedFragmentDocuments([ newDoc ], parentNode.node);
         });
 
 
