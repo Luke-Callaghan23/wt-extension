@@ -331,7 +331,7 @@ export class Proximity implements Timed, Packageable<any> {
 
         this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider ([ 
             { language: 'wt' },
-            { language: 'md' },
+            { language: 'markdown' },
         ], new ProximityCodeActions(context, workspace, this)));
 
         this.registerCommands();

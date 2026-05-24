@@ -5,11 +5,11 @@ import * as extension from '../extension';
 import { initializeSnip } from '../outlineProvider/initialize';
 // import { OutlineNode, ResourceType } from '../outline/node';
 import { NodeTypes, ResourceType } from '../outlineProvider/fsNodes';
-import { ConfigFileInfo, determineAuxViewColumn, showTextDocumentWithPreview } from '../miscTools/help';
+import { __, ConfigFileInfo, determineAuxViewColumn, getLatestOrdering, isSubdirectory, readDotConfig, showTextDocumentWithPreview, writeDotConfig } from '../miscTools/help';
 import { v4 as uuidv4 } from 'uuid';
 import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { deleteNodePermanently } from './deleteNodePermanently';
-import { OutlineNode, SnipNode } from '../outline/nodes_impl/outlineNode';
+import { FragmentNode, OutlineNode, SnipNode } from '../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../outline/outlineView';
 import { TreeNode } from '../outlineProvider/outlineTreeProvider';
 import { Buff } from '../Buffer/bufferSource';
@@ -17,6 +17,9 @@ import { newScratchPadFile } from './createScratchPadFile';
 import { Renamable } from '../recyclingBin/recyclingBinView';
 import * as search from '../miscTools/searchFiles';
 import { handleDragController } from '../outline/impl/dragDropController';
+import * as vscodeUris from 'vscode-uri';
+import { getUsableFileName } from '../outline/impl/createNodes';
+import { ImportFileSystemView } from '../import/importFileSystemView';
 
 export type RecycleLog = {
     oldUri: string,
@@ -65,7 +68,7 @@ implements
 
     async getChildren (element?: OutlineNode): Promise<OutlineNode[]> {
         if (element) return [];
-        return [...this.rootNodes];
+        return [...this.rootNodes].sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
     }
 
     async getTreeItem (element: OutlineNode): Promise<vscode.TreeItem> {
@@ -216,10 +219,32 @@ implements
 
     dropMimeTypes = ['application/vnd.code.tree.outline', 'text/uri-list'];
     dragMimeTypes = ['text/uri-list'];
-
     async handleDrop (target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
-        throw "Drag and drop not available for scratch pad view";
+    
+        // Handle drops from outside file system into Outline Tree
+        // See above comments
+        const importUriData = dataTransfer.get('text/uri-list');
+        if (!importUriData) return;
+
+        const fragmentDocuments = importUriData.value.split('\n')
+            .map((uriString: string) => vscode.Uri.parse(uriString.trim()))
+            .filter((uri: vscode.Uri) => {
+                const ext = vscodeUris.Utils.extname(uri).replace(".", "").toLocaleLowerCase();
+
+                // Only try to import valid file types that come from outside WTANIWE
+                return !(
+                    isSubdirectory(this.workspace.chaptersFolder, uri)
+                    || isSubdirectory(this.workspace.workSnipsFolder, uri)
+                    || isSubdirectory(this.workspace.scratchPadFolder, uri)
+                    || isSubdirectory(this.workspace.recyclingBin, uri)
+                ) && ['md', 'wt', 'wtnote'].includes(ext)
+            });
+
+        if (fragmentDocuments.length === 0) return;
+
+        return vscode.commands.executeCommand("wt.import.fileExplorer.importScratchPadDropped", fragmentDocuments);
     }
+    
 
     dragController = handleDragController;
     async handleDrag (source: OutlineNode[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {

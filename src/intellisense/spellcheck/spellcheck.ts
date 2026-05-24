@@ -10,7 +10,6 @@ import { Autocorrect } from '../../autocorrect/autocorrect';
 import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
 import { ExtensionGlobals } from '../../extension';
 import { DocumentLinker } from '../../miscTools/documentLinker';
-import { notebookDecorations } from '../../notebook/timedViewUpdate';
 
 
 export class Spellcheck implements Timed {

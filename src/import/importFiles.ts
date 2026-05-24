@@ -861,13 +861,16 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
         }
 
 
-        const liFragment = (title: string, text: string): Li => ({
-            name: `(fragment) ${title}`,
-            children: [{
-                name: text,
-                children: []
-            }]
-        });
+        const liFragment = (title: string, text: string): Li => {
+            text = text || "[EMPTY CONTENT]";
+            return {
+                name: `(fragment) ${title}`,
+                children: [{
+                    name: text,
+                    children: []
+                }]
+            };
+        };
 
         const docSplits = splits;
         if (writeInfo.type === 'chapter') {

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as vscodeUris from 'vscode-uri';
 import * as extension from './../extension';
 import { FragmentNode, OutlineNode } from "../outline/nodes_impl/outlineNode";
 import { ScratchPadView } from "./scratchPadView";
@@ -10,6 +11,8 @@ export async function newScratchPadFile (
     this: ScratchPadView, 
 ): Promise<vscode.Uri | null> {
 
+    const newFragmentMode = getNewFragmentMode();
+
     // First scan all existing scratch pad documents
     // If there exists any scratch pad document with all whitespace or an empty file entirely, then
     //      open that document
@@ -17,7 +20,9 @@ export async function newScratchPadFile (
     for (const scratch of this.rootNodes) {
         const buff = await vscode.workspace.fs.readFile(scratch.data.ids.uri);
         const content = extension.decoder.decode(buff);
-        if (/^\s*$/.test(content)) {
+
+        const scratchContentType = vscodeUris.Utils.extname(scratch.data.ids.uri).replace(".", "");
+        if (/^\s*$/.test(content) && scratchContentType === newFragmentMode) {
             replace = scratch.data.ids.uri;
             break;
         }
@@ -26,7 +31,7 @@ export async function newScratchPadFile (
 
     let showUri: vscode.Uri;
     if (!replace) {
-        const fileName = getUsableFileName('fragment', getNewFragmentMode());
+        const fileName = getUsableFileName('fragment', newFragmentMode);
     
         const parentDotConfig = await readDotConfig(ScratchPadView.scratchPadConfigUri);
         if (!parentDotConfig) return null;

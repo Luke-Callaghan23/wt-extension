@@ -7,8 +7,11 @@ import { DroppedSourceInfo, ImportForm } from './importFormView';
 import { ImportDocumentProvider } from './importDropProvider';
 import * as extension from './../extension';
 import {sep} from 'path';
-import { compareFsPath, getNodeNamePath, getDateString, statFile, __ } from '../miscTools/help';
-import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { compareFsPath, getNodeNamePath, getDateString, statFile, __, vagueNodeSearch, readDotConfig, isSubdirectory, writeDotConfig, getLatestOrdering, showTextDocumentWithPreview } from '../miscTools/help';
+import { ChapterNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
+import { ScratchPadView } from '../scratchPad/scratchPadView';
+import { Ids } from '../outlineProvider/fsNodes';
+import { newSnip } from '../outline/impl/createNodes';
 
 export interface Entry {
 	uri: vscode.Uri;
@@ -139,7 +142,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 
 		let destinationFolder: vscode.Uri;
 		if (docs.length > 1) {
-			destinationFolder = vscode.Uri.joinPath(this.importFolder, `Imported ${getDateString()}`);
+			destinationFolder = vscode.Uri.joinPath(this.importFolder, `Dropped (${getDateString()})`);
 			if (!(await statFile(destinationFolder))) {
 				await vscode.workspace.fs.createDirectory(destinationFolder);
 			}
@@ -166,7 +169,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 
 		const response = await vscode.window.showInformationMessage(`Import '${fileNames.join("', '")}' into workspace?`, {
 			modal: true,
-			detail: `We detected ${docs.length} new '${[...exts].join("', '")}' file(s) added to your project at path (${nodeNamePath}).  Would you like to import them into your project as .wt file(s) in the same location?  (This action will move the original document(s) into /data/imports, and open an imports form to complete the rest of the importing)`
+			detail: `${docs.length} new '${[...exts].join("', '")}' file(s) added to your project at path (${nodeNamePath}).  Would you like to import them into your project?  (This action will move the original document(s) into /data/imports, and open an imports form to complete the rest of the importing)`
 		}, 'Import');
 		if (response !== 'Import') return;
 
@@ -188,6 +191,256 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		});
 
 	}
+
+	private async importDroppedFragmentDocument (docs: vscode.Uri[], dropped: OutlineNode | undefined | null) {
+		const outlineView = extension.ExtensionGlobals.outlineView;
+		const rootOutlineNode = outlineView.rootNodes[0];
+		const rootNode = rootOutlineNode.data as RootNode;
+		dropped = dropped || rootOutlineNode;
+
+		const newDirectoryTitle = `Dropped (${getDateString()})`;
+
+		let finalParentNode: SnipNode | ChapterNode;
+		if (dropped.data.ids.type === 'fragment') {
+
+			// If it was dropped onto a fragment, then we just take that fragment's parent as the target
+			// Fragments can only be children of snips or chapters
+
+			const fragmentParent = await outlineView.getTreeElementByUri(dropped.data.ids.parentUri);
+			if (!fragmentParent) return
+			
+			finalParentNode = fragmentParent.data as SnipNode | ChapterNode;
+		}
+		else if (dropped.data.ids.type === 'container') {
+
+			// For chapters container, assume the user is dropping data for creating a new chapter
+			// In which case we can just create a new chapter node and drop the text inside of there
+			if (compareFsPath(dropped.data.ids.uri, this.workspace.chaptersFolder)) {
+				const chapterUri = await outlineView.newChapter(undefined, {
+					skipFragment: true,
+					defaultName: newDirectoryTitle + " (Chapter)",
+					preventRefresh: true,
+				});
+				if (!chapterUri) return;
+
+				const chapter = await outlineView.getTreeElementByUri(chapterUri);
+				if (!chapter) return;
+
+				finalParentNode = chapter.data as ChapterNode;
+			}
+			// The only containers in the project are the chapters container or a snips container
+			// So, if it's not the chapters container, we can create a new snip at the dropped 
+			//		container node and use that as the parent
+			else {
+				const snipUri = await outlineView.newSnip(dropped, {
+					skipFragment: true,
+					defaultName: newDirectoryTitle,
+					preventRefresh: true,
+				});
+				if (!snipUri) return;
+
+				const snip = await outlineView.getTreeElementByUri(snipUri);
+				if (!snip) return;
+
+				finalParentNode = snip.data as SnipNode;
+			}
+		}
+		else if (dropped.data.ids.type === 'root') {
+
+			// If dropped into the root, just create a new snip container in the work snips folder
+			//		for the dropped fragments
+			const workSnips = rootNode.snips;
+			const snipUri = await outlineView.newSnip(workSnips, {
+				skipFragment: true,
+				defaultName: newDirectoryTitle,
+				preventRefresh: true,
+			});
+			if (!snipUri) return;
+
+			const snip = await outlineView.getTreeElementByUri(snipUri);
+			if (!snip) return;
+
+			finalParentNode = snip.data as SnipNode;
+		}
+		else /* dropped.data.ids.type === 'chapter' || dropped.data.ids.type === 'snip' */ {
+			finalParentNode = dropped.data as SnipNode | ChapterNode;
+		}
+
+		let contents: OutlineNode[];
+		if ("contents" in finalParentNode) {
+			contents = finalParentNode.contents;
+		}
+		else {
+			contents = finalParentNode.textData;
+		}
+
+		return this.importDroppedFragmentDocumentIntoOutline(
+			"Outline", docs, 
+			finalParentNode.ids.uri, finalParentNode.ids.type, contents
+		);
+	}
+
+	
+	private async handleScratchPadDrop (docs: vscode.Uri[]) {
+		return this.importDroppedFragmentDocumentIntoOutline(
+			'ScratchPad', docs, 
+			ScratchPadView.scratchPadContainerUri, "snip",
+			extension.ExtensionGlobals.scratchPadView.rootNodes
+		);
+	}
+
+	// Why the parameters of this function are weird:
+	//		This function handles imports for dropped fragment data for both the scratch pad view and the outline view
+	//			but the scratch pad view is strange because you only ever insert data into the `rootNodes` array,
+	//			whereas you NEVER insert data into `rootNodes` for the OutlineView
+	//		So, instead of inserting into an OutlineNode or a rootNode array, just take a generic array of OutlineNodes
+	//			and insert into that
+	//		In the same vein, just take a parent uri and type instead of a parent node 
+	private async importDroppedFragmentDocumentIntoOutline (
+		source: "Outline" | "ScratchPad",
+		docs: vscode.Uri[],
+		parentUri: vscode.Uri,
+		parentType: Ids['type'],
+		parentContents: OutlineNode[],
+	) {
+
+		const fileNames: string[] = [];
+		const exts = new Set<string>();
+
+		for (let index = 0; index < docs.length; index++) {
+			const doc = docs[index];
+			const filename = vscodeUris.Utils.basename(doc);
+			fileNames.push(filename);
+			exts.add(vscodeUris.Utils.extname(doc));
+		}
+
+		const response = await vscode.window.showInformationMessage(`Import '${fileNames.join("', '")}' into workspace?`, {
+			modal: true,
+			detail: `${docs.length} new '${[...exts].join("', '")}' file(s) added to the ${source} folder.  Would you like to import them into your project?`
+		}, 'Import');
+		if (response !== 'Import') return;
+
+		
+		const parentDotConfigUri = vscode.Uri.joinPath(parentUri, '.config');
+		const parentDotConfig = await readDotConfig(parentDotConfigUri);
+		if (!parentDotConfig) return;
+
+		const fsOperations: {
+			operation: "copy" | "move",
+			source: vscode.Uri,
+			dest: vscode.Uri
+		}[] = [];
+
+		const openDocuments: vscode.Uri[] = [];
+
+		for (let idx = 0; idx < docs.length; idx++) {
+			const originalUri = docs[idx];
+			const fileName = fileNames[idx];
+			const ext = vscodeUris.Utils.extname(originalUri);
+
+			let finalUri: vscode.Uri = originalUri;
+
+			// If the document came from a location outside of the parent folder, we need to either copy it or move it to
+			//		the parent folder to keep the Outline integrity intact
+			if (!isSubdirectory(originalUri, parentUri)) {
+
+				// Don't bother gemerating a new file name for this
+				// User will expect dropped / imported document to have the same name as the original
+				finalUri = vscode.Uri.joinPath(
+					parentUri,
+					fileName
+				);
+
+				// If the document is not currently in the destination folder, 
+				// 		BUT it IS under the chapters or snips folder, then we MOVE
+				//		the document from where it is now into the destination folder
+				if (isSubdirectory(originalUri, this.workspace.chaptersFolder) || isSubdirectory(originalUri, this.workspace.workSnipsFolder)
+				) {
+					fsOperations.push({
+						operation: "move",
+						dest: finalUri,
+						source: originalUri,
+					});
+				}
+				// Otherwise, it's coming from outside of WTANIWE's domain, and we don't
+				//		want to bother it.  COPY is from the source to the final folder
+				else {
+					fsOperations.push({
+						operation: "copy",
+						dest: finalUri,
+						source: originalUri,
+					});
+				}
+			}
+
+			// Generate internal data for the added FragmentNode
+			
+			// Get the fragment number for this fragment
+			const latestFragmentNumber = getLatestOrdering(parentDotConfig);
+			const newFragmentNumber = latestFragmentNumber + 1;
+			
+			const title = `${fileName.replace(ext, "")} (Dropped ${getDateString()})`;
+			const fragment: FragmentNode = {
+				ids: {
+					display: title,
+					fileName: fileName,
+					ordering: newFragmentNumber,
+					parentTypeId: parentType,
+					parentUri: parentUri,
+					type: 'fragment',
+					relativePath: '/',
+					uri: finalUri
+				},
+				md: ''
+			};
+		
+			// Add node data to parent container
+			const fragmentNode = new OutlineNode(fragment);
+			parentContents.push(fragmentNode);
+		
+			// Update dot config
+			parentDotConfig[fileName] = {
+				ordering: newFragmentNumber,
+				title: title
+			}
+
+			openDocuments.push(finalUri);
+		}
+
+		
+        if (fsOperations.length > 0) {
+            // Wait until after all the internal rootNodes array is updated before copying the content over
+            // To prevent the file system watcher from triggering again
+            await Promise.all(fsOperations.map(({ operation, source, dest }) => {
+				if (operation === 'move') {
+					return vscode.workspace.fs.rename(source, dest);
+				}
+				else if (operation === 'copy') {
+					return vscode.workspace.fs.copy(source, dest);
+				}
+            }))
+        }
+
+		// Once all the updates have been written to the dot config, we can finally write it to disk
+		await writeDotConfig(parentDotConfigUri, parentDotConfig);
+
+		if (source === 'Outline') {
+
+			// Consequence of generic function, have to requery for the OutlineNode parent so we can refresh it:
+			const outlineView = extension.ExtensionGlobals.outlineView;
+			const parent = await outlineView.getTreeElementByUri(parentUri);
+			if (!parent) return;
+			outlineView.refresh(false, [ parent ]);
+		}
+		else {
+			// Just refresh the whole scratch pad view like normal
+			extension.ExtensionGlobals.scratchPadView.refresh(false, []);
+		}
+
+		for (const openDoc of openDocuments) {
+			await showTextDocumentWithPreview(openDoc);
+		}
+	} 
 
 	registerCommands() {
 		
@@ -247,6 +500,8 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 		}));
 
 		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importDroppedDocuments', this.importDroppedDocument.bind(this)));
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importScratchPadDropped', this.handleScratchPadDrop.bind(this)));
+		this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importDroppedFragmentDocuments', this.importDroppedFragmentDocument.bind(this)));
 	}
 
     private importFolder: vscode.Uri;
@@ -297,19 +552,38 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 
 		// Create a file system watcher that watches specifically for fragment file types being dropped into the file tree
 		const fragmentDropWatcher = vscode.workspace.createFileSystemWatcher(
-			new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips}/**/*.{wt,md}`),
+			new vscode.RelativePattern(extension.rootPath, `data/{chapters,snips,scratchPad}/**/*.{wt,md}`),
 			false, 			// do not ignore create events
 			true,			// ignore change events
 			true, 			// ignore delete events
 		);
 		
 		fragmentDropWatcher.onDidCreate(async (newDoc: vscode.Uri) => {
-			// TODO: detect if this was created by WTANIWE
-			// TODO: if not created by WTANIWE, then import it into the tree as-is
-			//		tab label is the document title
-			//		add it into the folder structure
-			// TODO: simplest way to detect is to check if it exists in the 
-			// 		Outline tree already
+
+			// First, make sure this `onDidCreate` call is not being triggered by a new document being 
+			//		created by WTANIWE itself
+			// The easies way to do so is to just do a vague node search for this uri
+			// If it's tracked by any of the components of WTANIWE, we know it was created by the extension,
+			//		not the user and we can exit early
+			const node = await vagueNodeSearch(newDoc);
+			if (node.source !== null) {
+				return;
+			}
+
+			// The sctatch pad view is a little strange because we insert directly into `rootNodes` array instead
+			//		of into the child of another OutlineNode
+			// So direct all updates to the scratch pad view to a special function
+			const parentUri = vscodeUris.Utils.dirname(newDoc);
+			if (compareFsPath(parentUri, this.workspace.scratchPadFolder)) {
+				return this.handleScratchPadDrop([ newDoc ]);
+			}
+
+			// Otherwise, get the parent node of the new document from the OutlineView (it must be from the outline view
+			//		because the glob pattern above selects only OutlineView + ScratchPadView paths) and attempt
+			//		to insert the fragment data into that OutlineNode
+			const parentNode = await vagueNodeSearch(newDoc);
+			if (parentNode.node === null || parentNode.source !== 'outline') return;
+			return this.importDroppedFragmentDocument([ newDoc ], parentNode.node);
 		});
 
 

@@ -14,8 +14,6 @@ export const markdownFormattedFragmentLinkRegex = /\[(?<description>.*?)\]\((?<l
 
 export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
 
-    
-
     public static documentLinkRanges: vscode.Range[] = [];
 
     enabled: boolean;
@@ -26,14 +24,17 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
         this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider([
             {
                 pattern: "**/*.wt",
+                language: 'wt',
                 scheme: "file"
             },
             {
                 pattern: "**/*.md",
+                language: 'markdown',
                 scheme: "file"
             },
             {
                 pattern: "**/*.wtnote",
+                language: "wtnote"
             }
         ], this));
 

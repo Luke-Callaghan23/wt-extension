@@ -166,7 +166,6 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
 
 	dropController = handleDropController;
 	handleDrop(target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): void | Thenable<void> {
-		if (!target) return;
 		return this.dropController(target, dataTransfer, token);
 	}
 

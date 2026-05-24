@@ -21,7 +21,7 @@ export class SynonymsIntellisense {
     public async init () {
         const wtSelector: readonly vscode.DocumentFilter[] = [ 
             { language: 'wt' },
-            { language: 'md' },
+            { language: 'markdown' },
             { language: 'wtnote' },
         ];
 

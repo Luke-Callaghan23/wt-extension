@@ -121,7 +121,7 @@ export class VeryIntellisense implements Timed {
         this.enabled = true;
         const wtSelector: readonly vscode.DocumentFilter[] = [ 
             { language: 'wt' },
-            { language: 'md' },
+            { language: 'markdown' },
             { language: 'wtnote' },
         ];
         this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider(wtSelector, new VeryActionProvider(context, workspace, this)));

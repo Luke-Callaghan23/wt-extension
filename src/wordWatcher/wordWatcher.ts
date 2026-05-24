@@ -180,7 +180,7 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
         this.view = vscode.window.createTreeView('wt.wordWatcher', { treeDataProvider: this });
         this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider ([ 
             { language: 'wt' },
-            { language: 'md' },
+            { language: 'markdown' },
         ], new WordWatcherCodeActionProvider(this.context, this.workspace, this)));
 		context.subscriptions.push(this.view);
         context.subscriptions.push(defaultWatchedWordDecoration);

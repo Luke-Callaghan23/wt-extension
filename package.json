@@ -1272,7 +1272,7 @@
 				},
 				{
 					"command": "wt.editor.accent.insertAccent",
-					"when": "editorLangId == wt || editorLangId == wtNote"
+					"when": "editorLangId == wt || editorLangId == wtNote || editorLangId == markdown"
 				},
 				{
 					"command": "wt.editor.addQuotes",
@@ -1904,37 +1904,37 @@
 			"editor/title": [
 				{
 					"command": "wt.editor.save",
-					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showSaveAll",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showSaveAll",
 					"group": "navigation@2"
 				},
 				{
 					"command": "wt.synonyms.searchWord",
-					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showSearchWord",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showSearchWord",
 					"group": "navigation@3"
 				},
 				{
 					"command": "wt.editor.italisize",
-					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showItalisize",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showItalisize",
 					"group": "navigation@3"
 				},
 				{
 					"command": "wt.editor.bold",
-					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showBold",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showBold",
 					"group": "navigation@5"
 				},
 				{
 					"command": "wt.editor.strikethrough",
-					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showStrikethrough",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showStrikethrough",
 					"group": "navigation@6"
 				},
 				{
 					"command": "wt.editor.underline",
-					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showUnderline",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showUnderline",
 					"group": "navigation@7"
 				},
 				{
 					"command": "wt.editor.remove",
-					"when": "(editorLangId == wt || editorLangId == wtNote) && config.wt.editor.showRemove",
+					"when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showRemove",
 					"group": "navigation@9"
 				}
 			],
@@ -1998,7 +1998,7 @@
 				"win": "ctrl+alt+shift+g",
 				"linux": "ctrl+alt+shift+g",
 				"mac": "cmd+alt+shift+g",
-				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId === markdown))"
 			},
 			{
 				"command": "wt.autocorrections.acceptAutocorrect",
@@ -2006,7 +2006,7 @@
 				"win": "alt+enter",
 				"linux": "alt+enter",
 				"mac": "alt+enter",
-				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId === markdown))"
 			},
 			{
 				"command": "wt.autocorrections.rejectAutocorrect",
@@ -2014,7 +2014,7 @@
 				"win": "alt+x",
 				"linux": "alt+x",
 				"mac": "alt+x",
-				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote))"
+				"when": "wt.valid && ((editorLangId == wt || editorLangId == wtNote || editorLangId === markdown))"
 			},
 			{
 				"command": "wt.tabLabels.renameActiveTab",
@@ -2062,7 +2062,7 @@
 				"win": "ctrl+t",
 				"linux": "ctrl+t",
 				"mac": "ctrl+t",
-				"when": "wt.valid && (editorLangId == wt || editorLangId == wtNote)"
+				"when": "wt.valid && (editorLangId == wt || editorLangId == wtNote || editorLangId == markdown)"
 			},
 			{
 				"command": "wt.scratchPad.permanentlyDelete",
@@ -2470,7 +2470,7 @@
 				"win": "shift+f1",
 				"linux": "shift+f1",
 				"mac": "shift+f1",
-				"when": "wt.valid && (editorLangId == wt || editorLangId == wtNote)"
+				"when": "wt.valid && (editorLangId == wt || editorLangId == wtNote || editorLangId == markdown)"
 			}
 		],
 		"languages": [
@@ -2690,6 +2690,14 @@
 				"path": "./syntaxes/wtNote.tmLanguage.json",
 				"injectTo": [
 					"wtNote"
+				]
+			},
+			{
+				"language": "markdown",
+				"scopeName": "source.markdown",
+				"path": "./syntaxes/markdown.tmLanguage.json",
+				"injectTo": [
+					"markdown"
 				]
 			},
 			{

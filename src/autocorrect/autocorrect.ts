@@ -384,7 +384,7 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
 
         this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider([ 
             { language: 'wt' },
-            { language: 'md' },
+            { language: 'markdown' },
             { language: 'wtnote' },
         ], this));
 

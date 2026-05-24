@@ -21,7 +21,6 @@ export type DataTransferType =
 
 export async function handleDropController (this: OutlineView, target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
     const targ = target || this.rootNodes[0];
-    if (!targ) throw 'unreachable';
 
     // Handle drops from the import file system view
     // These are handled specially because they do not involve messing with outline trees or internal nodes
@@ -56,18 +55,37 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
     // See above comments
     const importUriData = dataTransfer.get('text/uri-list');
     if (importUriData) {
-        const uris: vscode.Uri[] = importUriData.value.split('\n')
+        const importableUris: vscode.Uri[] = [];
+        const fragmentDocuments: vscode.Uri[] = [];
+        
+        importUriData.value.split('\n')
             .map((uriString: string) => vscode.Uri.parse(uriString.trim()))
-            .filter((uri: vscode.Uri) => {
-                const ext = vscodeUri.Utils.extname(uri).replace(".", "");
+            .forEach((uri: vscode.Uri) => {
+                const ext = vscodeUri.Utils.extname(uri).replace(".", "").toLocaleLowerCase();
 
                 // Only try to import valid file types that come from outside WTANIWE
-                return !(isSubdirectory(this.workspace.chaptersFolder, uri) || isSubdirectory(this.workspace.workSnipsFolder, uri) || isSubdirectory(this.workspace.scratchPadFolder, uri) || isSubdirectory(this.workspace.recyclingBin, uri))
-                    && this.workspace.importFileTypes.includes(ext)
+                let keepGeneral = !(
+                    isSubdirectory(this.workspace.chaptersFolder, uri)
+                    || isSubdirectory(this.workspace.workSnipsFolder, uri)
+                    || isSubdirectory(this.workspace.scratchPadFolder, uri)
+                    || isSubdirectory(this.workspace.recyclingBin, uri)
+                ) && this.workspace.importFileTypes.includes(ext)
+
+                if (!keepGeneral) return;
+
+                if (ext === 'md' || ext === 'wt' || ext === 'wtnote') {
+                    fragmentDocuments.push(uri);
+                }
+                else {
+                    importableUris.push(uri);
+                }
             });
 
-        if (uris.length > 0) {
-            await vscode.commands.executeCommand('wt.import.fileExplorer.importDroppedDocuments', uris, target);
+        if (importableUris.length > 0) {
+            await vscode.commands.executeCommand('wt.import.fileExplorer.importDroppedDocuments', importableUris, target);
+        }
+        if (fragmentDocuments.length > 0) {
+            await vscode.commands.executeCommand('wt.import.fileExplorer.importDroppedFragmentDocuments', fragmentDocuments, target);
         }
     }
 

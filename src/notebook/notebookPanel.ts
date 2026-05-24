@@ -117,25 +117,25 @@ implements
         this.context.subscriptions.push(vscode.languages.registerHoverProvider([
             { language: 'wt', },
             { language: 'wtNote', },
-            { language: 'md', },
+            { language: 'markdown', },
         ], this));
 
         this.context.subscriptions.push(vscode.languages.registerDocumentLinkProvider([
             { language: 'wt', },
             { language: 'wtNote', },
-            { language: 'md', },
+            { language: 'markdown', },
         ], this));
 
         this.context.subscriptions.push(vscode.languages.registerReferenceProvider([
             { language: "wt", },
             { language: "wtNote", },
-            { language: "md", },
+            { language: "markdown", },
         ], this));
 
         this.context.subscriptions.push(vscode.languages.registerRenameProvider([
             { language: "wt", },
             { language: "wtNote", },
-            { language: "md", },
+            { language: "markdown", },
         ], this));
 
         this.context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((ev) => {

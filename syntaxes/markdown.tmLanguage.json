@@ -1,0 +1,14 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "markdown",
+    "scopeName": "source.markdown",
+    "patterns": [
+        { "include": "#urlLink" }
+    ],
+    "repository": {
+        "urlLink": {
+            "match": "(https?|ftp):\\/\\/[^\\s\/$.?#].[^\\s]*",
+            "name": "keyword"
+        }
+    }
+}

@@ -45,11 +45,20 @@ export class QuerySynonyms {
         
             if (typeof json[0] === 'string' || json.length === 0) {
                 const arr: string[] = json;
-                let suggestions = arr.slice(0, -1).map((str: string) => `'*${str}*'`).join(', ');
-                suggestions += (`, or '*${arr[arr.length - 1]}*'`)
+                
+                let suggestions: string;
+                if (arr.length === 0) {
+                    suggestions = 'No suggestions returned by Synonyms API.';
+                }
+                else {
+                    suggestions = arr.slice(0, -1).map((str: string) => `'*${str}*'`).join(', ');
+                    suggestions += (`, or '*${arr[arr.length - 1]}*'`)
+                    suggestions = `Did you mean: \n\n\n${suggestions}?`;
+                }
+                
                 return {
                     type: 'error',
-                    message: `### Word not recognized by dictionary API.\n\n\nDid you mean: \n\n\n${suggestions}?`,
+                    message: `### Word not recognized by dictionary API.\n\n\n${suggestions}`,
                     suggestions: arr,
                 };
             }
