@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { QuerySynonyms } from "./synonymsApi";
-import * as extension from './../../extension';
+import { Extension } from './../../extension';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from './../../miscTools/vsconsole';
 export type SynonymProviderType = 'wh' | 'synonymsApi';
@@ -68,7 +68,7 @@ export class SynonymsProvider {
             // Read cache from disk
             const cachePath = workspace.synonymsCachePath;
             const buff = await vscode.workspace.fs.readFile(cachePath);
-            const cacheJSON = extension.decoder.decode(buff);
+            const cacheJSON = Extension.decoder.decode(buff);
             const cacheObj = JSON.parse(cacheJSON);
             
             // Confirm the cache is correctly formatted
@@ -209,8 +209,8 @@ export class SynonymsProvider {
 
     public static async writeCacheToDisk (useDefaultFS: boolean = false) {
         try {
-            const cachePath = extension.ExtensionGlobals.workspace.synonymsCachePath;
-            const cacheBuffer = extension.encoder.encode(JSON.stringify(this.cache));
+            const cachePath = Extension.workspace.synonymsCachePath;
+            const cacheBuffer = Extension.encoder.encode(JSON.stringify(this.cache));
             
             await vscode.workspace.fs.writeFile(cachePath, cacheBuffer);
             console.log("Saving cache to disk");
@@ -277,30 +277,32 @@ export class SynonymsProvider {
         }
     }
 
-    private static registerCommands () {
-        vscode.commands.registerCommand("wt.synonyms.updateApiKey", async () => {
-            const curKey = this.apiKey || "";
+    public static async updateApiKey () {
+        const curKey = this.apiKey || "";
 
-            const response = await vscode.window.showInputBox({
-                ignoreFocusOut: false,
-                placeHolder: "00000000-0000-0000-0000-000000000000",
-                prompt: "Enter API Key",
-                title: "Enter Merriam-Webster API Key.  This will be stored in your VSCode User Settings.  (No where else).  (Use the THESAURUS key, not the dictionary key).",
-                value: curKey,
-                valueSelection: [ 0, curKey.length ]
-            });
-            if (!response) {
-                vscode.window.showWarningMessage("[WARN] No API Key provided.  Nothing will be updated.");
-                return;
-            }
-
-            const apiKey: string = response;
-
-            // Store the key in global setting, then reset the synonyms API here as well as in the SynonymsView
-            const config = vscode.workspace.getConfiguration();
-            await config.update(this.apiKeyConfigName, apiKey, vscode.ConfigurationTarget.Global);
-            this.synonymsApi = new QuerySynonyms(apiKey);
-            return vscode.commands.executeCommand("wt.synonyms.refreshWithKey", apiKey);
+        const response = await vscode.window.showInputBox({
+            ignoreFocusOut: false,
+            placeHolder: "00000000-0000-0000-0000-000000000000",
+            prompt: "Enter API Key",
+            title: "Enter Merriam-Webster API Key.  This will be stored in your VSCode User Settings.  (No where else).  (Use the THESAURUS key, not the dictionary key).",
+            value: curKey,
+            valueSelection: [ 0, curKey.length ]
         });
+        if (!response) {
+            vscode.window.showWarningMessage("[WARN] No API Key provided.  Nothing will be updated.");
+            return;
+        }
+
+        const apiKey: string = response;
+
+        // Store the key in global setting, then reset the synonyms API here as well as in the SynonymsView
+        const config = vscode.workspace.getConfiguration();
+        await config.update(this.apiKeyConfigName, apiKey, vscode.ConfigurationTarget.Global);
+        this.synonymsApi = new QuerySynonyms(apiKey);
+        return Extension.synonymsWebview.refreshWithKey(apiKey);
+    }
+
+    private static registerCommands () {
+        Extension.context.subscriptions.push(vscode.commands.registerCommand("wt.synonyms.updateApiKey", this.updateApiKey.bind(this)));
     }
 }

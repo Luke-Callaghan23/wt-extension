@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ConfigurationTarget, workspace } from 'vscode';
 import * as console from '../miscTools/vsconsole'
 import { OutlineView } from '../outline/outlineView';
-import * as extension from './../extension';
+import { Extension } from './../extension';
 import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
@@ -35,13 +35,13 @@ export class TabLabels {
             let nodeResult: [ ViewSource, OutlineNode | NotebookPanelNote ]
             try {
                 nodeResult = await Promise.any([
-                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) => extension.ExtensionGlobals.outlineView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.outlineView, node ]) : reject())),
-                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.recyclingBinView, node ]) : reject())),
-                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.scratchPadView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) => Extension.outlineView.getTreeElementByUri(uri).then(node => node ? resolve([ Extension.outlineView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  Extension.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ Extension.recyclingBinView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  Extension.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ Extension.scratchPadView, node ]) : reject())),
                     new Promise<[ ViewSource, NotebookPanelNote ]>((resolve, reject) =>  {
-                        const note = extension.ExtensionGlobals.notebookPanel.getNote(uri);
+                        const note = Extension.notebookPanel.getNote(uri);
                         if (note) {
-                            resolve([ extension.ExtensionGlobals.notebookPanel, note ]);
+                            resolve([ Extension.notebookPanel, note ]);
                         } 
                         else {
                             reject();
@@ -102,7 +102,7 @@ export class TabLabels {
                     nodeOrNote : { data: { ids: { display: nodeOrNote.title } } };
     
                 // Remove the extension root path from the pattern
-                let relativePath = uri.fsPath.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/')
+                let relativePath = uri.fsPath.replaceAll(Extension.rootPath.fsPath, '').replaceAll('\\', '/')
                 if (relativePath.startsWith('/')) {
                     relativePath = relativePath.substring(1);
                 }

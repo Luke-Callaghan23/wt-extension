@@ -365,7 +365,7 @@ export class Extension {
     
     // To be called whenever a workspace is successfully loaded
     // Loads all the content for all the views for the wt extension
-    public static async loadExtensionWorkspace (
+    private static async loadExtensionWorkspace (
         context: vscode.ExtensionContext, 
         workspace: Workspace,
         progress?: vscode.Progress<{ message?: string; increment?: number }>,

@@ -15,6 +15,9 @@ if
     test -f .web/tabLabels.ts && 
     test -f .web/provideSynonyms.ts && 
     test -f .web/workspaceClass.ts &&
+    test -f .web/reloadWatcher.ts &&
+    test -f .web/scratchPadView.ts &&
+    test -f .web/dragDropController.ts &&
     test -d .web/grepper;
 then
     mv src/Buffer/bufferSource.ts .local/bufferSource.ts
@@ -32,6 +35,9 @@ then
     mv src/tabLabels/tabLabels.ts .local/tabLabels.ts
     mv src/intellisense/synonymsProvider/provideSynonyms.ts .local/provideSynonyms.ts
     mv src/miscTools/grepper .local/grepper
+    mv src/outline/impl/dragDropController.ts .local/dragDropController.ts
+    mv src/scratchPad/scratchPadView.ts .local/scratchPadView.ts
+    mv src/miscTools/reloadWatcher.ts .local/reloadWatcher.ts
 
     mv .web/bufferSource.ts src/Buffer/bufferSource.ts
     mv .web/fetchSource.ts src/Fetch/fetchSource.ts
@@ -46,6 +52,9 @@ then
     mv .web/tabLabels.ts src/tabLabels/tabLabels.ts
     mv .web/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
     mv .web/grepper src/miscTools/grepper
+    mv .web/dragDropController.ts src/outline/impl/dragDropController.ts
+    mv .web/scratchPadView.ts src/scratchPad/scratchPadView.ts
+    mv .web/reloadWatcher.ts src/miscTools/reloadWatcher.ts
 
     npm clean-install
 elif 
@@ -78,6 +87,9 @@ elif
     test -f .local/tabLabels.ts && 
     test -f .local/provideSynonyms.ts && 
     test -f .local/workspaceClass.ts &&
+    test -f .local/dragDropController.ts &&
+    test -f .local/scratchPadView.ts &&
+    test -f .local/reloadWatcher.ts &&
     test -d .local/grepper;
 then
     mv src/Buffer/bufferSource.ts .web/bufferSource.ts
@@ -93,6 +105,9 @@ then
     mv src/tabLabels/tabLabels.ts .web/tabLabels.ts
     mv src/intellisense/synonymsProvider/provideSynonyms.ts .web/provideSynonyms.ts
     mv src/miscTools/grepper .web/grepper
+    mv src/outline/impl/dragDropController.ts .web/dragDropController.ts
+    mv src/scratchPad/scratchPadView.ts .web/scratchPadView.ts
+    mv src/miscTools/reloadWatcher.ts .web/reloadWatcher.ts
 
     mv .local/ttsDebugger src/ttsDebugger
     mv .local/bufferSource.ts src/Buffer/bufferSource.ts
@@ -109,6 +124,9 @@ then
     mv .local/tabLabels.ts src/tabLabels/tabLabels.ts
     mv .local/provideSynonyms.ts src/intellisense/synonymsProvider/provideSynonyms.ts 
     mv .local/grepper src/miscTools/grepper
+    mv .local/dragDropController.ts src/outline/impl/dragDropController.ts
+    mv .local/scratchPadView.ts src/scratchPad/scratchPadView.ts
+    mv .local/reloadWatcher.ts src/miscTools/reloadWatcher.ts
 
     npm clean-install
 else 
