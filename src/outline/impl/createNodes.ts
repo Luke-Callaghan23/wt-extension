@@ -51,7 +51,8 @@ export function getUsableFileName (fileTypePrefix: string, fileExt?: boolean | '
 type CreateOptions = {
     preventRefresh?: boolean,
     defaultName?: string,
-    skipFragment?: boolean
+    skipFragment?: boolean,
+    overrideDescription?: string
 };
 
 export async function newChapter (
@@ -110,7 +111,8 @@ export async function newChapter (
     // Store the chapter name and write it to disk
     chaptersContainerDotConfig[chapterFileName] = {
         title: chapterTitle,
-        ordering: chapterNumber
+        ordering: chapterNumber,
+        description: options?.overrideDescription
     };
     const chaptersWriteDotConfigPromise = writeDotConfig(chaptersContainerDotConfigUri, chaptersContainerDotConfig);
 
@@ -147,7 +149,8 @@ export async function newChapter (
             parentUri: chaptersContainerUri,
             relativePath: chapterRelativePath,
             type: 'chapter',
-            uri: chapterUri
+            uri: chapterUri,
+            description: options?.overrideDescription
         },
         snips: snipContainer,
         textData: []
@@ -181,6 +184,7 @@ export async function newChapter (
             fragmentsDotConfig[fragmentFileName] = {
                 title: fragmentTitle,
                 ordering: 0,
+                description: options?.overrideDescription && `${options.overrideDescription} (Fragment)`
             };
 
             // Create internal data to represent this fragment in the outline tree
@@ -193,7 +197,8 @@ export async function newChapter (
                     parentUri: chapterUri,
                     relativePath: `${chapterRelativePath}/${chapterFileName}`,
                     type: 'fragment',
-                    uri: fragmentUri
+                    uri: fragmentUri,
+                    description: options?.overrideDescription && `${options.overrideDescription} (Fragment)`
                 },
                 md: ''
             };
@@ -205,8 +210,8 @@ export async function newChapter (
             // Open the text document in the editor as well
             if (!options?.preventRefresh) {
                 vscode.window.showTextDocument(fragmentUri, {
-                preview: false,
-            });
+                    preview: false,
+                });
             }
         }
         
@@ -391,7 +396,8 @@ export async function newSnip (
     // Create config struct and write it to disk
     parentDotConfig[snipFileName] = {
         title: options?.defaultName ?? `New Snip (${newSnipNumber})`,
-        ordering: newSnipNumber
+        ordering: newSnipNumber,
+        description: options?.overrideDescription
     };
     // Don't await this yet as nothing after this relies on the disk write
     const writeSnipConfigPromise = writeDotConfig(parentDotConfigUri, parentDotConfig);
@@ -420,7 +426,8 @@ export async function newSnip (
             parentUri: parentUri,
             relativePath: `${parentNode.data.ids.relativePath}/${parentNode.data.ids.fileName}`,
             type: 'snip',
-            uri: snipUri
+            uri: snipUri,
+            description: options?.overrideDescription
         },
         contents: []
     };
@@ -452,7 +459,8 @@ export async function newSnip (
                 parentUri: snipUri,
                 relativePath: `${snipNode.ids.relativePath}/${snipFileName}`,
                 type: 'fragment',
-                uri: fragmentUri
+                uri: fragmentUri,
+                description: options?.overrideDescription && `${options.overrideDescription} (Fragment)`
             },
             md: ''
         };
@@ -464,6 +472,7 @@ export async function newSnip (
         snipDotConfig[fragmentFileName] = {
             title: fragmentTitle,
             ordering: 0,
+            description: options?.overrideDescription && `${options.overrideDescription} (Fragment)`
         };
 
         // Open the text document in the editor as well
@@ -637,7 +646,8 @@ export async function newFragment (
             parentUri: parentUri,
             type: 'fragment',
             relativePath: `${parentNode.data.ids.relativePath}/${parentNode.data.ids.fileName}`,
-            uri: fragmentUri
+            uri: fragmentUri,
+            description: options?.overrideDescription
         },
         md: ''
     };
@@ -653,7 +663,8 @@ export async function newFragment (
 
     parentDotConfig[fileName] = {
         ordering: newFragmentNumber,
-        title: title
+        title: title,
+        description: options?.overrideDescription
     }
 
     try {

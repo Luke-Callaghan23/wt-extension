@@ -745,3 +745,10 @@ export function escapeUserTextForRegex (text: string) {
 export function stripDiacritics (text: string): string {
     return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");     // strip diacritics
 }
+
+
+export function getOrdinal(num: number): string {
+    let s = ["th", "st", "nd", "rd"];
+    let v = num % 100;
+    return num + (s[(v - 20) % 10] || s[v] || s[0]);
+}

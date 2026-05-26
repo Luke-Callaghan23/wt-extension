@@ -85,7 +85,7 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
             return Extension.importFileSystemView.importDroppedDocuments(importableUris, target);
         }
         if (fragmentDocuments.length > 0) {
-            await Extension.importFileSystemView.importDroppedFragmentDocuments(fragmentDocuments, target);
+            await Extension.importFileSystemView.importDroppedFragmentDocuments("Outline", fragmentDocuments, target);
         }
     }
 

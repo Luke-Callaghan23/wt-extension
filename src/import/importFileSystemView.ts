@@ -134,13 +134,12 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         this.refresh();
     }
 
-    public async importDroppedDocuments (docs: vscode.Uri[], dropped: OutlineNode | undefined, copy: boolean = true) {
+    public async importDroppedDocuments (docs: vscode.Uri[], dropped: OutlineNode | undefined, skipPrompt: boolean = false) {
         dropped = dropped || Extension.outlineView.rootNodes[0];
 
         const fileNames: string[] = [];
         const exts = new Set<string>();
         const moves: [ vscode.Uri, vscode.Uri ][] = [];
-
 
         let destinationFolder: vscode.Uri;
         if (docs.length > 1) {
@@ -161,24 +160,53 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         
         for (let index = 0; index < docs.length; index++) {
             const doc = docs[index];
-            const filename = vscodeUris.Utils.basename(doc);
-            fileNames.push(filename);
-            exts.add(vscodeUris.Utils.extname(doc));
-
-            const finalLocation = vscode.Uri.joinPath(destinationFolder, filename);
-            moves.push([ doc, finalLocation ]);
+            const ext = vscodeUris.Utils.extname(doc);
+            
+            let fileName = vscodeUris.Utils.basename(doc);
+            let finalUri = vscode.Uri.joinPath(destinationFolder, fileName);
+            
+            // Do not overwrite existing files -- search for an applicable file name
+            const strippedExt = fileName.replace(ext, "");
+            let attempt = 0;
+            while (await statFile(finalUri)) {
+                const newFn = `${strippedExt}_${attempt}${ext}`;
+                finalUri = vscode.Uri.joinPath(destinationFolder, newFn);
+                fileName = newFn;
+                attempt++;
+            }
+            
+            fileNames.push(fileName);
+            exts.add(ext);
+            moves.push([ doc, finalUri ]);
         }
 
-        const response = await vscode.window.showInformationMessage(`Import '${fileNames.join("', '")}' into workspace?`, {
-            modal: true,
-            detail: `${docs.length} new '${[...exts].join("', '")}' file(s) added to your project at path (${nodeNamePath}).  Would you like to import them into your project?  (This action will move the original document(s) into /data/imports, and open an imports form to complete the rest of the importing)`
-        }, 'Import');
-        if (response !== 'Import') return;
+        if (!skipPrompt) {
+            const response = await vscode.window.showInformationMessage(`Import '${fileNames.join("', '")}' into workspace?`, {
+                modal: true,
+                detail: `${docs.length} new '${[...exts].join("', '")}' file(s) added to your project at path (${nodeNamePath}).  Would you like to import them into your project?  (This action will move the original document(s) into /data/imports, and open an imports form to complete the rest of the importing)`
+            }, 'Import');
+            if (response !== 'Import') return;
+        }
 
-        // If the user does want to import the file, then first move the document from its original location and into the imports folder
-        const fsUpdateFunction = copy
-            ? vscode.workspace.fs.copy
-            : vscode.workspace.fs.rename;
+        // Assume all documents come from the same originating source
+        // So we can just use the uri of the first document for comparisons
+        const firstUri = docs[0];
+
+        // If the document is right now in the chapters or work snips folder, then it probably got there by the user
+        //      dropping it into the Explorer View or copying it from a different location 
+        //      (not dropping it into the Outline View)
+        // Since we are importing with the import form we will want that document in the imports folder
+        //      and out of the data folder
+        // So, we want to do a move operation
+        let fsUpdateFunction: (source: vscode.Uri, target: vscode.Uri, options?: { overwrite?: boolean; }) => Thenable<void>;
+        if (isSubdirectory(firstUri, Extension.workspace.chaptersFolder) || isSubdirectory(firstUri, Extension.workspace.workSnipsFolder)) {
+            fsUpdateFunction = vscode.workspace.fs.rename;
+        }
+        // Otherwise, the document is coming from somewhere outside of our control.  We do not want to move the user's data
+        //      around, so just copy it to the imports folder
+        else {
+            fsUpdateFunction = vscode.workspace.fs.copy;
+        }
 
         const movedFiles = await Promise.all(moves.map(([ src, dest ]) => {
             return fsUpdateFunction(src, dest, { overwrite: true }).then(() => {
@@ -191,16 +219,23 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             namePath: nodeNamePath,
             destination: destinationKind
         });
-
     }
 
-    public async importDroppedFragmentDocuments (docs: vscode.Uri[], dropped: OutlineNode | undefined | null) {
+    private async getDocumentParentData (docs: vscode.Uri[], dropped: OutlineNode | undefined | null): Promise<{
+        parentUri: vscode.Uri,
+        parentType: Ids['type'],
+        parentContents: OutlineNode[],
+    } | null> {
         const outlineView = Extension.outlineView;
         const rootOutlineNode = outlineView.rootNodes[0];
         const rootNode = rootOutlineNode.data as RootNode;
         dropped = dropped || rootOutlineNode;
 
-        const newDirectoryTitle = `Dropped (${getDateString()})`;
+        const dateString = getDateString();
+        const newDirectoryTitle = `Dropped (${dateString})`;
+
+        const bullets = docs.map(doc => `${vscodeUris.Utils.basename(doc)} \`(${doc.fsPath})\``).join("\n\n- ");
+        const newDirectoryDescription = `Created from ${docs.length} files dropped into the Outline on ${dateString}\n\n- ${bullets}\n\n---\n\n`;
 
         let finalParentNode: SnipNode | ChapterNode;
         if (dropped.data.ids.type === 'fragment') {
@@ -209,7 +244,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             // Fragments can only be children of snips or chapters
 
             const fragmentParent = await outlineView.getTreeElementByUri(dropped.data.ids.parentUri);
-            if (!fragmentParent) return
+            if (!fragmentParent) return null;
             
             finalParentNode = fragmentParent.data as SnipNode | ChapterNode;
         }
@@ -222,11 +257,12 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
                     skipFragment: true,
                     defaultName: newDirectoryTitle + " (Chapter)",
                     preventRefresh: true,
+                    overrideDescription: newDirectoryDescription
                 });
-                if (!chapterUri) return;
+                if (!chapterUri) return null;
 
                 const chapter = await outlineView.getTreeElementByUri(chapterUri);
-                if (!chapter) return;
+                if (!chapter) return null;
 
                 finalParentNode = chapter.data as ChapterNode;
             }
@@ -238,11 +274,12 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
                     skipFragment: true,
                     defaultName: newDirectoryTitle,
                     preventRefresh: true,
+                    overrideDescription: newDirectoryDescription
                 });
-                if (!snipUri) return;
+                if (!snipUri) return null;
 
                 const snip = await outlineView.getTreeElementByUri(snipUri);
-                if (!snip) return;
+                if (!snip) return null;
 
                 finalParentNode = snip.data as SnipNode;
             }
@@ -256,11 +293,12 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
                 skipFragment: true,
                 defaultName: newDirectoryTitle,
                 preventRefresh: true,
+                overrideDescription: newDirectoryDescription
             });
-            if (!snipUri) return;
+            if (!snipUri) return null;
 
             const snip = await outlineView.getTreeElementByUri(snipUri);
-            if (!snip) return;
+            if (!snip) return null;
 
             finalParentNode = snip.data as SnipNode;
         }
@@ -276,18 +314,17 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             contents = finalParentNode.textData;
         }
 
-        return this.importDroppedFragmentDocumentIntoOutline(
-            "Outline", docs, 
-            finalParentNode.ids.uri, finalParentNode.ids.type, contents
-        );
+        return {
+            parentUri: finalParentNode.ids.uri, 
+            parentType: finalParentNode.ids.type, 
+            parentContents: contents
+        };
     }
 
     
     public async handleScratchPadDrop (docs: vscode.Uri[]) {
-        return this.importDroppedFragmentDocumentIntoOutline(
-            'ScratchPad', docs, 
-            ScratchPadView.scratchPadContainerUri, "snip",
-            Extension.scratchPadView.rootNodes
+        return this.importDroppedFragmentDocuments(
+            'ScratchPad', docs,
         );
     }
 
@@ -298,13 +335,15 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
     //        So, instead of inserting into an OutlineNode or a rootNode array, just take a generic array of OutlineNodes
     //            and insert into that
     //        In the same vein, just take a parent uri and type instead of a parent node 
-    private async importDroppedFragmentDocumentIntoOutline (
+    public async importDroppedFragmentDocuments (
         source: "Outline" | "ScratchPad",
         docs: vscode.Uri[],
-        parentUri: vscode.Uri,
-        parentType: Ids['type'],
-        parentContents: OutlineNode[],
+        dropped?: OutlineNode | null
     ) {
+
+        let parentUri: vscode.Uri;
+        let parentType: Ids['type'];
+        let parentContents: OutlineNode[];
 
         const fileNames: string[] = [];
         const exts = new Set<string>();
@@ -316,12 +355,41 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             exts.add(vscodeUris.Utils.extname(doc));
         }
 
-        const response = await vscode.window.showInformationMessage(`Import '${fileNames.join("', '")}' into workspace?`, {
-            modal: true,
-            detail: `${docs.length} new '${[...exts].join("', '")}' file(s) added to the ${source} folder.  Would you like to import them into your project?`
-        }, 'Import');
-        if (response !== 'Import') return;
+        if (source === 'Outline') {
+            const response = await vscode.window.showInformationMessage(`Import '${fileNames.join("', '")}' into workspace?`, {
+                modal: true,
+                detail: `${docs.length} new '${[...exts].join("', '")}' file(s) added to the ${source} folder.  Would you like to import them into your project as-is at the dropped location, or use the import form to perform splits?`
+            }, 'Import as-is', 'Use Import Form');
 
+            if (!response) return;
+            if (response === 'Use Import Form') {
+                return this.importDroppedDocuments(docs, dropped || undefined, true);
+            }
+        }
+        else {
+            const response = await vscode.window.showInformationMessage(`Import '${fileNames.join("', '")}' into workspace?`, {
+                modal: true,
+                detail: `${docs.length} new '${[...exts].join("', '")}' file(s) added to the ${source} folder.  Would you like to import them into your project?`
+            }, 'Import');
+            if (response !== 'Import') return;
+        }
+
+        if (source === 'ScratchPad') {
+            parentUri = ScratchPadView.scratchPadContainerUri; 
+            parentType = "snip";
+            parentContents = Extension.scratchPadView.rootNodes;
+        }
+        else {
+            const droppedParent = await this.getDocumentParentData(docs, dropped);
+            if (!droppedParent) {
+                vscode.window.showWarningMessage("[WARN] Could not create parent nodes for dropped data.  Please import manually!");
+                return;
+            }
+
+            parentUri = droppedParent.parentUri;
+            parentType = droppedParent.parentType;
+            parentContents = droppedParent.parentContents;
+        }
         
         const parentDotConfigUri = vscode.Uri.joinPath(parentUri, '.config');
         const parentDotConfig = await readDotConfig(parentDotConfigUri);
@@ -333,11 +401,12 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             dest: vscode.Uri
         }[] = [];
 
+        const dateString = getDateString();
         const openDocuments: vscode.Uri[] = [];
 
         for (let idx = 0; idx < docs.length; idx++) {
             const originalUri = docs[idx];
-            const fileName = fileNames[idx];
+            const fileName = vscodeUris.Utils.basename(originalUri);
             const ext = vscodeUris.Utils.extname(originalUri);
 
             let finalUri: vscode.Uri = originalUri;
@@ -353,11 +422,20 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
                     fileName
                 );
 
+                const strippedExt = fileName.replace(ext, "");
+
+                // Do not overwrite existing files -- search for an applicable file name
+                let attempt = 0;
+                while (await statFile(finalUri)) {
+                    const newFn = `${strippedExt}_${attempt}${ext}`;
+                    finalUri = vscode.Uri.joinPath(parentUri, newFn);
+                    attempt++;
+                }
+
                 // If the document is not currently in the destination folder, 
                 //         BUT it IS under the chapters or snips folder, then we MOVE
                 //        the document from where it is now into the destination folder
-                if (isSubdirectory(originalUri, this.workspace.chaptersFolder) || isSubdirectory(originalUri, this.workspace.workSnipsFolder)
-                ) {
+                if (isSubdirectory(originalUri, this.workspace.chaptersFolder) || isSubdirectory(originalUri, this.workspace.workSnipsFolder)) {
                     fsOperations.push({
                         operation: "move",
                         dest: finalUri,
@@ -391,7 +469,8 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
                     parentUri: parentUri,
                     type: 'fragment',
                     relativePath: '/',
-                    uri: finalUri
+                    uri: finalUri,
+                    description: `Dropped into ${source} on ${dateString}.  Original document: ${vscodeUris.Utils.basename(originalUri)} \`(${originalUri.fsPath})\``
                 },
                 md: ''
             };
@@ -411,16 +490,22 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 
         
         if (fsOperations.length > 0) {
-            // Wait until after all the internal rootNodes array is updated before copying the content over
-            // To prevent the file system watcher from triggering again
-            await Promise.all(fsOperations.map(({ operation, source, dest }) => {
-                if (operation === 'move') {
-                    return vscode.workspace.fs.rename(source, dest);
-                }
-                else if (operation === 'copy') {
-                    return vscode.workspace.fs.copy(source, dest);
-                }
-            }))
+            try {
+                // Wait until after all the internal rootNodes array is updated before copying the content over
+                // To prevent the file system watcher from triggering again
+                await Promise.all(fsOperations.map(({ operation, source, dest }) => {
+                    if (operation === 'move') {
+                        return vscode.workspace.fs.rename(source, dest);
+                    }
+                    else if (operation === 'copy') {
+                        return vscode.workspace.fs.copy(source, dest);
+                    }
+                }))
+            }
+            catch (err: any) {
+                vscode.window.showErrorMessage(`[ERROR] Error when copying dropped contents to destination: ${err}`);
+                return;
+            }
         }
 
         // Once all the updates have been written to the dot config, we can finally write it to disk
@@ -501,10 +586,6 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
                 return vscode.commands.executeCommand('remote-wsl.revealInExplorer', tabUri?.uri || this.importFolder);
             }
         }));
-
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importDroppedDocuments', this.importDroppedDocuments.bind(this)));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importScratchPadDropped', this.handleScratchPadDrop.bind(this)));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.importDroppedFragmentDocuments', this.importDroppedFragmentDocuments.bind(this)));
     }
 
     private importFolder: vscode.Uri;
@@ -550,7 +631,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             const dirname = vscodeUris.Utils.dirname(newDoc);
             const insertedNode = await Extension.outlineView.getTreeElementByUri(dirname);
             if (!insertedNode) return;
-            this.importDroppedDocuments([ newDoc ], insertedNode, false);
+            this.importDroppedDocuments([ newDoc ], insertedNode);
         });
 
         // Create a file system watcher that watches specifically for fragment file types being dropped into the file tree
@@ -586,7 +667,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
             //        to insert the fragment data into that OutlineNode
             const parentNode = await vagueNodeSearch(newDoc);
             if (parentNode.node === null || parentNode.source !== 'outline') return;
-            return this.importDroppedFragmentDocuments([ newDoc ], parentNode.node);
+            return this.importDroppedFragmentDocuments("Outline", [ newDoc ], parentNode.node);
         });
 
 
