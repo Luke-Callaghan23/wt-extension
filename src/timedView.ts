@@ -94,11 +94,13 @@ export class TimedView implements Packageable<any> {
     }
 
     private doUpdates (editor: vscode.TextEditor, uncommentedRanges: vscode.Range[]) {
-        // Only do updates on .wt files
+        // Only do updates on supported file type -- wt, wtnote, md
         if (
-            !editor.document.fileName.toLocaleLowerCase().endsWith('.wt') && 
-            !editor.document.fileName.toLocaleLowerCase().endsWith('.wtnote')
+            !editor.document.fileName.toLocaleLowerCase().endsWith('.wt')  
+            && !editor.document.fileName.toLocaleLowerCase().endsWith('.wtnote')  
+            && !editor.document.fileName.toLocaleLowerCase().endsWith('.md')           // added markdown support
         ) return;
+
         // Iterate over all timed views and call their update functions if they're enabled
         this.timedViews.forEach(([ id, viewId, timed ]) => {
             console.log(`UPDATE: ${id} (${timed.enabled ? 'enabled' : 'disabled'})`);
@@ -110,7 +112,7 @@ export class TimedView implements Packageable<any> {
     }
     
     private timeout: NodeJS.Timer | undefined = undefined;
-	private triggerUpdates(throttle: boolean = false) {
+    private triggerUpdates(throttle: boolean = false) {
 
         // Clear timeout if it exists
         // This is the 'throttling' part of the function
@@ -139,10 +141,14 @@ export class TimedView implements Packageable<any> {
                 }
             }
         }, 250);
-	}
+    }
+
+    public updateTimedViews () {
+        return this.triggerUpdates(true);
+    }
 
     private registerCommands () {
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.timedViews.update', () => this.triggerUpdates(true)));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.timedViews.update', this.updateTimedViews.bind(this)));
     }
     
     getPackageItems(): { [index: string]: any; } {

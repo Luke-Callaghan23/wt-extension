@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { Workspace } from '../workspace/workspaceClass';
 import { getHoveredWord } from '../intellisense/common';
 import { __, getTextCapitalization } from '../miscTools/help';
-import { ExtensionGlobals, globalWorkspace } from '../extension';
 import { WordWatcher } from './wordWatcher';
 
 export class WordWatcherCodeActionProvider implements vscode.CodeActionProvider {

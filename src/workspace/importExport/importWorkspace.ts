@@ -1,3 +1,4 @@
+
 /* eslint-disable curly */
 import * as vscode from 'vscode';
 import * as console from '../../miscTools/vsconsole';
@@ -6,7 +7,7 @@ import { Workspace } from './../workspaceClass';
 import { ChaptersRecord, FragmentRecord, FragmentsExport, SnipsExport, SnipsRecord, WorkspaceExport } from './types';
 import { getUsableFileName } from '../../outline/impl/createNodes';
 import { ConfigFileInfo } from '../../miscTools/help';
-import * as extension from './../../extension';
+import { Extension } from   './../../extension';
 import { Buff } from '../../Buffer/bufferSource'
 import { SerializedNote } from '../../notebook/notebookApi/notebookSerializer';
 
@@ -178,7 +179,7 @@ export async function importWorkspace (
     // Read the .iwe file form the disk
     const uri = uris[0];
     const iweRecordBuffer: Uint8Array = await vscode.workspace.fs.readFile(uri);
-    const iweRecord: WorkspaceExport = JSON.parse(extension.decoder.decode(iweRecordBuffer));
+    const iweRecord: WorkspaceExport = JSON.parse(Extension.decoder.decode(iweRecordBuffer));
 
     // Create the workspace
     const workspace = await createWorkspace(context, iweRecord.config);

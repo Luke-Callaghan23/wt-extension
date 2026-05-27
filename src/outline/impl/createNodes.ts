@@ -4,11 +4,39 @@ import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig, compa
 import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 // import * as console from '../../vsconsole';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { FileAccessManager } from '../../miscTools/fileAccesses';
 
-export function getUsableFileName (fileTypePrefix: string, wt?: boolean): string {
-    const fileTypePostfix = wt ? '.wt' : '';
+export const fragmentModeConfig = "wt.editor.fragmentMode";
+export type FragmentModeOptions = ".wt (writing tool)" | ".md (markdown)";
+
+export function getNewFragmentMode (): 'wt' | 'md' {
+    const configuration = vscode.workspace.getConfiguration();
+    const fragmentModeRaw: string | undefined = configuration.get<string>(fragmentModeConfig);
+    const fragmentMode: FragmentModeOptions = fragmentModeRaw ? fragmentModeRaw as FragmentModeOptions : ".wt (writing tool)";
+    const fragmentExtension = fragmentMode === '.wt (writing tool)'
+        ? 'wt'
+        : 'md';
+
+    return fragmentExtension;
+}
+
+export function getUsableFileName (fileTypePrefix: string, fileExt?: boolean | 'wt' | 'md'): string {
+
+    // Default is a folder, no extension
+    let extension = '';
+
+    // Legacy support for `getUsableFileName` that had `wt` as a boolean parameter,
+    //      if `true` is passed into this function then set to default writing tool 
+    //      fragment extension
+    if (fileExt === true) {
+        extension = '.wt';
+    }
+    // Otherwise for string file names, just use the value passed in
+    else if (typeof fileExt === 'string') {
+        extension = "." + fileExt;
+    }
+
     let nano;
     try {
         nano = process.hrtime.bigint();
@@ -17,13 +45,14 @@ export function getUsableFileName (fileTypePrefix: string, wt?: boolean): string
         nano = parseInt(Date.now() + (Math.random() * 10000) + "");
     }
     const nanoB36 = nano.toString(36);
-    return `${fileTypePrefix}-${nanoB36}${fileTypePostfix}`;
+    return `${fileTypePrefix}-${nanoB36}${extension}`;
 }
 
 type CreateOptions = {
     preventRefresh?: boolean,
     defaultName?: string,
-    skipFragment?: boolean
+    skipFragment?: boolean,
+    overrideDescription?: string
 };
 
 export async function newChapter (
@@ -82,7 +111,8 @@ export async function newChapter (
     // Store the chapter name and write it to disk
     chaptersContainerDotConfig[chapterFileName] = {
         title: chapterTitle,
-        ordering: chapterNumber
+        ordering: chapterNumber,
+        description: options?.overrideDescription
     };
     const chaptersWriteDotConfigPromise = writeDotConfig(chaptersContainerDotConfigUri, chaptersContainerDotConfig);
 
@@ -119,7 +149,8 @@ export async function newChapter (
             parentUri: chaptersContainerUri,
             relativePath: chapterRelativePath,
             type: 'chapter',
-            uri: chapterUri
+            uri: chapterUri,
+            description: options?.overrideDescription
         },
         snips: snipContainer,
         textData: []
@@ -142,7 +173,7 @@ export async function newChapter (
             
             
             // New fragment's file name and path
-            const fragmentFileName = getUsableFileName(`fragment`, true);
+            const fragmentFileName = getUsableFileName(`fragment`, getNewFragmentMode());
             const fragmentUri = vscode.Uri.joinPath(chapterUri, fragmentFileName);
             const fragmentTitle = 'New Fragment';
 
@@ -153,6 +184,7 @@ export async function newChapter (
             fragmentsDotConfig[fragmentFileName] = {
                 title: fragmentTitle,
                 ordering: 0,
+                description: options?.overrideDescription && `${options.overrideDescription} (Fragment)`
             };
 
             // Create internal data to represent this fragment in the outline tree
@@ -165,7 +197,8 @@ export async function newChapter (
                     parentUri: chapterUri,
                     relativePath: `${chapterRelativePath}/${chapterFileName}`,
                     type: 'fragment',
-                    uri: fragmentUri
+                    uri: fragmentUri,
+                    description: options?.overrideDescription && `${options.overrideDescription} (Fragment)`
                 },
                 md: ''
             };
@@ -177,8 +210,8 @@ export async function newChapter (
             // Open the text document in the editor as well
             if (!options?.preventRefresh) {
                 vscode.window.showTextDocument(fragmentUri, {
-                preview: false,
-            });
+                    preview: false,
+                });
             }
         }
         
@@ -300,13 +333,13 @@ export async function newSnip (
                     // Need to check the parent node to see where we should add the new snip
                     if (resource.data.ids.parentTypeId === 'root') {
                         // If the parent type is root, we still don't know if the selected item is a chapter container
-                        //		or the work snips
+                        //        or the work snips
                         // Need to check the ids of each of these containers against the id of the resource
                         const rootNode: OutlineNode = await this.getTreeElementByUri(resource.data.ids.parentUri)! as OutlineNode;
                         const root: RootNode = rootNode.data as RootNode;
 
                         // Check the id of the chapters container and the work snips container of the root node against
-                        //		the id of the selected resource
+                        //        the id of the selected resource
                         if (compareFsPath(resource.data.ids.uri, (root.chapters as OutlineNode).data.ids.uri)) {
                             // If the id matches against the chapters container, then there's nothing we can do
                             // Cannot add snips to the chapters container
@@ -363,7 +396,8 @@ export async function newSnip (
     // Create config struct and write it to disk
     parentDotConfig[snipFileName] = {
         title: options?.defaultName ?? `New Snip (${newSnipNumber})`,
-        ordering: newSnipNumber
+        ordering: newSnipNumber,
+        description: options?.overrideDescription
     };
     // Don't await this yet as nothing after this relies on the disk write
     const writeSnipConfigPromise = writeDotConfig(parentDotConfigUri, parentDotConfig);
@@ -392,7 +426,8 @@ export async function newSnip (
             parentUri: parentUri,
             relativePath: `${parentNode.data.ids.relativePath}/${parentNode.data.ids.fileName}`,
             type: 'snip',
-            uri: snipUri
+            uri: snipUri,
+            description: options?.overrideDescription
         },
         contents: []
     };
@@ -401,7 +436,7 @@ export async function newSnip (
     //      new snip
     if (!options?.skipFragment) {
         // Create a new fragment file for this snip
-        const fragmentFileName = getUsableFileName(`fragment`, true);
+        const fragmentFileName = getUsableFileName(`fragment`, getNewFragmentMode());
         const fragmentUri = vscode.Uri.joinPath(snipUri, fragmentFileName);
         const fragmentTitle = 'New Fragment (0)';
     
@@ -424,7 +459,8 @@ export async function newSnip (
                 parentUri: snipUri,
                 relativePath: `${snipNode.ids.relativePath}/${snipFileName}`,
                 type: 'fragment',
-                uri: fragmentUri
+                uri: fragmentUri,
+                description: options?.overrideDescription && `${options.overrideDescription} (Fragment)`
             },
             md: ''
         };
@@ -436,6 +472,7 @@ export async function newSnip (
         snipDotConfig[fragmentFileName] = {
             title: fragmentTitle,
             ordering: 0,
+            description: options?.overrideDescription && `${options.overrideDescription} (Fragment)`
         };
 
         // Open the text document in the editor as well
@@ -471,7 +508,7 @@ export async function newSnip (
 export async function newFragment (
     this: OutlineView, 
     resource: OutlineNode | undefined, 
-    options?: CreateOptions
+    options?: CreateOptions & { markdown?: boolean }
 ): Promise<vscode.Uri | null> {
 
 
@@ -545,7 +582,8 @@ export async function newFragment (
         parentNode = resource;
     }
 
-    const fileName = getUsableFileName('fragment', true);
+    // If the markdown option is sent in, use md extension, but treat is a fragment all the same
+    const fileName = getUsableFileName('fragment', options?.markdown ? 'md' : getNewFragmentMode());
 
     const parentDotConfigUri = vscode.Uri.joinPath(parentUri, `.config`);
     if (!parentDotConfigUri) return null;
@@ -608,7 +646,8 @@ export async function newFragment (
             parentUri: parentUri,
             type: 'fragment',
             relativePath: `${parentNode.data.ids.relativePath}/${parentNode.data.ids.fileName}`,
-            uri: fragmentUri
+            uri: fragmentUri,
+            description: options?.overrideDescription
         },
         md: ''
     };
@@ -624,7 +663,8 @@ export async function newFragment (
 
     parentDotConfig[fileName] = {
         ordering: newFragmentNumber,
-        title: title
+        title: title,
+        description: options?.overrideDescription
     }
 
     try {

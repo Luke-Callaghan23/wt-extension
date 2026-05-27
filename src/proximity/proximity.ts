@@ -132,29 +132,29 @@ export class Proximity implements Timed, Packageable<any> {
 
     private static commonDecorations = {
         borderStyle: 'none none dotted none',
-		borderWidth: '3px',
-		overviewRulerLane: vscode.OverviewRulerLane.Right,
-	};
+        borderWidth: '3px',
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
+    };
 
     private static primary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
         borderColor: 'hsla(279, 60%, 36%, 1)',
-		overviewRulerColor: 'hsla(279, 60%, 36%, 1)',
+        overviewRulerColor: 'hsla(279, 60%, 36%, 1)',
     });
     private static secondary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
         borderColor: 'hsla(218, 42%, 55%, 0.60)',
-		overviewRulerColor: 'hsla(218, 42%, 55%, 0.60)',
+        overviewRulerColor: 'hsla(218, 42%, 55%, 0.60)',
     });
     private static tertiary: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
         borderColor: 'hsla(161, 82%, 27%, 0.30)',
-		overviewRulerColor: 'hsla(161, 82%, 27%, 0.30)',
+        overviewRulerColor: 'hsla(161, 82%, 27%, 0.30)',
     });
     private static fourth: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         ...this.commonDecorations,
         borderColor: 'hsla(51, 82%, 60%, 0.25)',
-		overviewRulerColor: 'hsla(51, 82%, 60%, 0.25)',
+        overviewRulerColor: 'hsla(51, 82%, 60%, 0.25)',
     });
 
     private static decorators: vscode.TextEditorDecorationType[] = [
@@ -329,9 +329,10 @@ export class Proximity implements Timed, Packageable<any> {
             }
         }).flat();
 
-        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider (<vscode.DocumentFilter>{
-            language: 'wt'
-        }, new ProximityCodeActions(context, workspace, this)));
+        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider ([ 
+            { language: 'wt' },
+            { language: 'markdown' },
+        ], new ProximityCodeActions(context, workspace, this)));
 
         this.registerCommands();
     }

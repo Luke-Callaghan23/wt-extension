@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from './../outline/nodes_impl/outlineNode';
 import { OutlineView } from './../outline/outlineView';
 import * as console from './vsconsole';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { Packageable } from './../packageable';
 import { TabLabels } from './../tabLabels/tabLabels';
 import { Workspace } from './../workspace/workspaceClass';
@@ -62,7 +62,7 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
             
             // Traverse upwards
             currentUri = currentNode.data.ids.parentUri;
-            currentNode = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(currentUri);
+            currentNode = await Extension.outlineView.getTreeElementByUri(currentUri);
         }
 
         // Also update the latest file access
@@ -85,8 +85,8 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
             if (!document) return;
 
             const lastUri = document.uri;
-            const usableUri = lastUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
-            if (usableUri.endsWith('.wt') || usableUri.endsWith('.wtnote')) {
+            const usableUri = lastUri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');
+            if (usableUri.endsWith('.wt') || usableUri.endsWith('.wtnote') || usableUri.endsWith('.md')) {
                 FileAccessManager.positions[usableUri] = FileAccessManager.lastEditor.selection;
             }
         }
@@ -169,7 +169,7 @@ export class FileAccessManager implements Packageable<"wt.fileAccesses.positions
         // Call document opened for each of the opened fragments in ascending
         //      order to simulate as if all the documents were opened sequentially
         for (const opened of sortedUris) {
-            await this.documentOpened(opened, extension.ExtensionGlobals.outlineView);
+            await this.documentOpened(opened, Extension.outlineView);
         }
 
         FileAccessManager.positions = {};

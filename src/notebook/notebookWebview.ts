@@ -4,7 +4,7 @@ import { getNonce } from '../miscTools/help';
 import { Packageable } from '../packageable';
 import { Workspace } from '../workspace/workspaceClass';
 import { SerializedNote, WTNotebookSerializer } from './notebookApi/notebookSerializer';
-import { ExtensionGlobals } from '../extension';
+import { Extension } from '../extension';
 import * as MarkdownIt from 'markdown-it';
 import { NotebookPanel, NotebookPanelNote } from './notebookPanel';
 
@@ -75,8 +75,8 @@ export class NotebookWebview implements vscode.WebviewViewProvider {
         this.context.subscriptions.push(webviewView.webview.onDidReceiveMessage((data: NotebookWebviewMessage) => {
             switch (data.kind) {
                 case 'updateHtml': this.updateViewForNote(data.noteId); break;
-                case 'openNotebook': vscode.commands.executeCommand("wt.notebook.openNote", this.selectedNoteId, true);
-                case 'newNotebook': vscode.commands.executeCommand("wt.notebook.addNote");
+                case 'openNotebook': Extension.notebookPanel.openNote(this.selectedNoteId || undefined, true);
+                case 'newNotebook': Extension.notebookPanel.addNewNote();
             }
         }));
     }
@@ -187,7 +187,7 @@ export class NotebookWebview implements vscode.WebviewViewProvider {
                 </style>    
                 <body>
                 
-					<script src="${elementsUri}" nonce="${nonce}" type="module"></script>
+                    <script src="${elementsUri}" nonce="${nonce}" type="module"></script>
                     <script nonce="${nonce}" type="module">
                         (function () {
                             const vscode = acquireVsCodeApi();

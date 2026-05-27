@@ -2,9 +2,11 @@ import * as vscode from 'vscode';
 import { enter } from './enterCodeMode';
 import { exit } from './exitCodeMode';
 import * as console from '../miscTools/vsconsole';
+//@ts-ignore
 import { isText } from 'istextorbinary';
 import { Buff } from '../Buffer/bufferSource';
 import { defaultProgress } from '../miscTools/help';
+import { Extension } from '../extension';
 
 export type CodeModeState = 'codeMode' | 'noCodeMode';
 export class CoderModer {
@@ -57,39 +59,8 @@ export class CoderModer {
         this.previousActiveDocument = null;
         this.previousActiveViewColumn = null
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.codeMode.enterCodeMode', async () => {
-            if (this.state !== 'noCodeMode') {
-                vscode.window.showInformationMessage('[INFO] Cannot enter code mode when already in code mode!');
-                return;
-            }
-            
-            // Make sure there is a valid code repo to pick from
-            const repo = this.repoLocation || context.workspaceState.get<vscode.Uri>('wt.codeMode.codeRepo');
-            if (!repo) {
-                const requestResult = await this.requestRepoLocation();
-                if (!requestResult) return;
-
-                const { repoLocation, repoUris } = requestResult;
-                this.repoLocation = repoLocation;
-                this.repoUris = repoUris;
-
-                // Store the repo location and leaves in global state
-                this.context.workspaceState.update('wt.codeMode.codeRepo', repoLocation);
-                this.context.workspaceState.update('wt.codeMode.repoUris', repoUris);
-            }
-
-            if (!this.repoUris) {
-                this.repoUris = await this.getRepoLeaves(this.repoLocation!);
-                context.workspaceState.update('wt.codeMode.repoUris', this.repoUris);
-                vscode.window.showInformationMessage('[INFO] Loaded Code Mode . . . ');
-            }
-
-            // Enter code mode
-            await this.enter();
-            vscode.window.showInformationMessage(`[INFO] Entered Code Mode`);
-            vscode.commands.executeCommand('wt.statusBarTimer.enteredCodeMode');
-            vscode.commands.executeCommand('wt.tabStates.hideStatusBar');
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.codeMode.enterCodeMode', this.enterCodeMode.bind(this)));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.codeMode.exitCodeMode', this.exitCodeMode.bind(this)));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.codeMode.changeCodeModeRepo', async () => {
             const res = await this.requestRepoLocation();
@@ -105,26 +76,63 @@ export class CoderModer {
             vscode.window.showInformationMessage(`[INFO] Changed Repo`);
         }));
         
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.codeMode.exitCodeMode', async () => {
-            if (this.state !== 'codeMode') return;
-            await this.exit();
-            vscode.window.showInformationMessage(`[INFO] Exited Code Mode`);
-            vscode.commands.executeCommand('wt.statusBarTimer.exitedCodeMode');
-            vscode.commands.executeCommand('wt.tabStates.showStatusBar');
-        }));
         
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.codeMode.swapMode', async () => {
             if (this.state === 'noCodeMode') {
-                await vscode.commands.executeCommand('wt.codeMode.enterCodeMode');
+                await this.enterCodeMode();
             }
             else {
-                await vscode.commands.executeCommand('wt.codeMode.exitCodeMode');
+                await this.exitCodeMode();
             }
             this.swapModeStatus.text = this.state === 'codeMode' ? 'Turn Off Code Mode' : 'Turn On Code Mode';
             this.swapModeStatus.show();
         }));
+    }
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.codeMode.getMode', () => this.state));
+    public async enterCodeMode () {
+        if (this.state !== 'noCodeMode') {
+            vscode.window.showInformationMessage('[INFO] Cannot enter code mode when already in code mode!');
+            return;
+        }
+        
+        // Make sure there is a valid code repo to pick from
+        const repo = this.repoLocation || this.context.workspaceState.get<vscode.Uri>('wt.codeMode.codeRepo');
+        if (!repo) {
+            const requestResult = await this.requestRepoLocation();
+            if (!requestResult) return;
+
+            const { repoLocation, repoUris } = requestResult;
+            this.repoLocation = repoLocation;
+            this.repoUris = repoUris;
+
+            // Store the repo location and leaves in global state
+            this.context.workspaceState.update('wt.codeMode.codeRepo', repoLocation);
+            this.context.workspaceState.update('wt.codeMode.repoUris', repoUris);
+        }
+
+        if (!this.repoUris) {
+            this.repoUris = await this.getRepoLeaves(this.repoLocation!);
+            this.context.workspaceState.update('wt.codeMode.repoUris', this.repoUris);
+            vscode.window.showInformationMessage('[INFO] Loaded Code Mode . . . ');
+        }
+
+        // Enter code mode
+        await this.enter();
+        vscode.window.showInformationMessage(`[INFO] Entered Code Mode`);
+        Extension.statusBarTimer.enteredCodeMode();
+        Extension.tabStates.hideStatusBar();
+    }
+
+    public async exitCodeMode () {
+        if (this.state !== 'codeMode') return;
+        await this.exit();
+        vscode.window.showInformationMessage(`[INFO] Exited Code Mode`);
+        Extension.statusBarTimer.exitedCodeMode();
+        Extension.tabStates.showStatusBar();
+    }
+
+    public getCodeModeState (): CodeModeState {
+        return this.state;
     }
 
     private async requestRepoLocation (): Promise<{

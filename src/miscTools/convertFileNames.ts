@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { OutlineView } from '../outline/outlineView';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
 import { getUsableFileName } from '../outline/impl/createNodes';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { Workspace } from '../workspace/workspaceClass';
 
 
@@ -33,7 +33,17 @@ class ConfigFile {
         const newConfigs: { [index: string]: FileInfo } = {};
         for (const [ fn, cfg ] of Object.entries(this.fileInfo)) {
             const [ ft, ...rdlp ] = fn.split('-');
-            const newname = getUsableFileName(ft, fn.endsWith('.wt'));
+
+            // Get the new extension of the file
+            // If it was markdown or wt, use that ext, otherwise send in `undefined`
+            //      to indicate it being a folder
+            const splt = fn.split('.')
+            const oldExt = splt[splt.length - 1];
+            const newExt = oldExt === 'wt' || oldExt === 'md'
+                ? oldExt
+                : undefined;
+
+            const newname = getUsableFileName(ft, newExt);
             const fullOld = vscode.Uri.joinPath(this.parent, fn)
             const fullNew = vscode.Uri.joinPath(this.parent, newname);
             
@@ -51,7 +61,7 @@ class ConfigFile {
         this.fileInfo = newConfigs;
         await Promise.all(awaitables);
 
-        return vscode.workspace.fs.writeFile(this.cfgPath, extension.encoder.encode(
+        return vscode.workspace.fs.writeFile(this.cfgPath, Extension.encoder.encode(
             JSON.stringify(this.fileInfo)
         ));
     }
@@ -87,7 +97,7 @@ class ConfigFile {
         }
 
         const cfgObject = new ConfigFile(path);
-        const cfgJson: { [index: string]: FileInfo } = JSON.parse(extension.decoder.decode(
+        const cfgJson: { [index: string]: FileInfo } = JSON.parse(Extension.decoder.decode(
             await vscode.workspace.fs.readFile(configPath)
         ));
 
@@ -144,9 +154,9 @@ files as you were before the rename.`
         return;
     }
 
-    const chaptersDir = vscode.Uri.joinPath(extension.rootPath, 'data', 'chapters');
-    const snipsDir = vscode.Uri.joinPath(extension.rootPath, 'data', 'snips');
-    const scratchPadDir = vscode.Uri.joinPath(extension.rootPath, 'data', 'scratchPad');
+    const chaptersDir = vscode.Uri.joinPath(Extension.rootPath, 'data', 'chapters');
+    const snipsDir = vscode.Uri.joinPath(Extension.rootPath, 'data', 'snips');
+    const scratchPadDir = vscode.Uri.joinPath(Extension.rootPath, 'data', 'scratchPad');
 
     const configs: ConfigFile[] = [];
     const q: vscode.Uri[] = [ chaptersDir, snipsDir, scratchPadDir ];
@@ -184,18 +194,18 @@ files as you were before the rename.`
     });
 
 
-    const contextValuesPath = vscode.Uri.joinPath(extension.rootPath, `data/contextValues.json`);
-    let contextValuesStr = extension.decoder.decode(
+    const contextValuesPath = vscode.Uri.joinPath(Extension.rootPath, `data/contextValues.json`);
+    let contextValuesStr = Extension.decoder.decode(
         await vscode.workspace.fs.readFile(contextValuesPath)
     );
 
     // Change all old paths to new paths in the context values file
     for (const [ oldUri, newUri ] of ConfigFile.renames) {
-        const oldRel = oldUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
-        const newRel = newUri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
+        const oldRel = oldUri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');
+        const newRel = newUri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');
         contextValuesStr = contextValuesStr.replaceAll(oldRel, newRel);
     }
-    await vscode.workspace.fs.writeFile(contextValuesPath, extension.encoder.encode(
+    await vscode.workspace.fs.writeFile(contextValuesPath, Extension.encoder.encode(
         contextValuesStr
     ));
 

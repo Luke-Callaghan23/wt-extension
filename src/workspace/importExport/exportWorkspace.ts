@@ -1,8 +1,8 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as extension from './../../extension';
+import { Extension } from   './../../extension';
 import * as console from '../../miscTools/vsconsole';
-import { Workspace } from '../workspaceClass';
+import { DiskContextType, Workspace } from '../workspaceClass';
 import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../../outline/outlineView';
 import { ChaptersRecord, FragmentRecord, FragmentsExport, SnipsExport, SnipsRecord, WorkspaceExport as WorkspaceRecord } from './types';
@@ -44,7 +44,7 @@ async function recordSnipData (node: SnipNode): Promise<SnipsExport> {
                     resolve({
                         title: op.title,
                         description: op.description,
-                        markdown: extension.decoder.decode(mdArray)
+                        markdown: Extension.decoder.decode(mdArray)
                     });
                 });
             }
@@ -80,7 +80,7 @@ async function recordFragmentContainer (fragments: OutlineNode[]): Promise<Fragm
         record.push({
             title: fragment.data.ids.display,
             description: fragment.data.ids.description,
-            markdown: extension.decoder.decode(markdown)
+            markdown: Extension.decoder.decode(markdown)
         });
     }
 
@@ -170,12 +170,12 @@ export async function handleWorkspaceExport (
     // Record the chapters and snips containers
     const chaptersRecord: ChaptersRecord = await recordChaptersContainer(chaptersContainer);
     const snipsRecord: SnipsRecord = await recordSnipsContainer(snipsContainer);
-    const scratchPadRecord: FragmentRecord = await recordFragmentContainer(extension.ExtensionGlobals.scratchPadView.rootNodes);
-    const serializedNotebook = await extension.ExtensionGlobals.notebookSerializer.readSerializedNotebookPanel(workspace.notebookFolder);
+    const scratchPadRecord: FragmentRecord = await recordFragmentContainer(Extension.scratchPadView.rootNodes);
+    const serializedNotebook = await Extension.notebookSerializer.readSerializedNotebookPanel(workspace.notebookFolder);
     
 
     // Get the packageable items to be transported in the workspace
-    const packageableItems: { [index: string]: any } = await vscode.commands.executeCommand('wt.getPackageableItems');
+    const packageableItems: DiskContextType = await Extension.getPackageableItems();
 
     // Create the iwe object
     const iwe: WorkspaceRecord = {

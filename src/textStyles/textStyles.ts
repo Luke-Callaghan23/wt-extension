@@ -4,7 +4,7 @@ import { Workspace } from '../workspace/workspaceClass';
 import * as console from '../miscTools/vsconsole';
 import { Packageable } from '../packageable';
 import { Timed } from '../timedView';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { update, disable, italicsDecoration, boldDecoration, underlineDecoration, strikethroughDecoration  } from './timer';
 import { hexToRgb } from '../miscTools/help';
 
@@ -13,7 +13,7 @@ export class TextStyles implements Timed {
     update = update;
     disable = disable;
     public wasUpdated: boolean = true;
-	constructor(
+    constructor(
         public context: vscode.ExtensionContext,
         public workspace: Workspace,
     ) {
@@ -24,7 +24,7 @@ export class TextStyles implements Timed {
         this.context.subscriptions.push(boldDecoration);
         this.context.subscriptions.push(underlineDecoration);
         this.context.subscriptions.push(strikethroughDecoration);
-	}
+    }
 
     getUpdatesAreVisible(): boolean {
         return true;
@@ -32,5 +32,5 @@ export class TextStyles implements Timed {
 
     registerCommands () {
 
-	}
+    }
 }

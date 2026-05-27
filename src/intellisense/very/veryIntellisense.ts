@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as console from '../../miscTools/vsconsole';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { WordRange, getHoverMarkdown, getHoveredWord } from '../common';
 import { capitalize } from '../../miscTools/help';
 import { Workspace } from '../../workspace/workspaceClass';
@@ -13,10 +13,10 @@ export class VeryIntellisense implements Timed {
     
     private static VeryMarker: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         borderStyle: 'none none solid none',
-		borderWidth: '3px',
-		overviewRulerLane: vscode.OverviewRulerLane.Right,
+        borderWidth: '3px',
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
         borderColor: '#34c3eb',
-		overviewRulerColor: '#34c3eb',
+        overviewRulerColor: '#34c3eb',
     });
 
 
@@ -119,9 +119,11 @@ export class VeryIntellisense implements Timed {
         workspace: Workspace,
     ) {
         this.enabled = true;
-        const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
-            language: 'wt'
-        };
+        const wtSelector: readonly vscode.DocumentFilter[] = [ 
+            { language: 'wt' },
+            { language: 'markdown' },
+            { language: 'wtnote' },
+        ];
         this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider(wtSelector, new VeryActionProvider(context, workspace, this)));
         this.context.subscriptions.push(VeryIntellisense.VeryMarker);
     }

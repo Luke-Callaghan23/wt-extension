@@ -1,6 +1,6 @@
 
 import * as vscode from 'vscode';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import * as console from '../miscTools/vsconsole';
 import { WordEntry, WordWatcher } from './wordWatcher';
 import { clamp, hexToRgb } from '../miscTools/help';
@@ -64,12 +64,12 @@ export function getWordWatcherRegexInfo (this: WordWatcher): WatchedWordRegexInf
             // Create the regex string from the still-enabled watched words
             // Join all the enabled watched words by a string like `wordSeparator` + `|` + `wordSeparator
             //      to add explicit 'OR' to all of the watched words ('|' semantically means OR)
-            const mainRegex = watchedAndEnabled.join(`${extension.wordSeparator}|${extension.wordSeparator}`);
+            const mainRegex = watchedAndEnabled.join(`${Extension.wordSeparator}|${Extension.wordSeparator}`);
             // Bookend the main regex with word separators
-            regexString = extension.wordSeparator + mainRegex + extension.wordSeparator;
+            regexString = Extension.wordSeparator + mainRegex + Extension.wordSeparator;
             regex = new RegExp(regexString, 'gi');
-            excludedRegeces = this.excludedWords.map(excluded => new RegExp(`${extension.wordSeparator}${excluded}${extension.wordSeparator}`, 'i'));
-            watchedRegeces = this.watchedWords.map(watched => ({ uri: watched, reg: new RegExp(`${extension.wordSeparator}${watched}${extension.wordSeparator}`, 'i') }));
+            excludedRegeces = this.excludedWords.map(excluded => new RegExp(`${Extension.wordSeparator}${excluded}${Extension.wordSeparator}`, 'i'));
+            watchedRegeces = this.watchedWords.map(watched => ({ uri: watched, reg: new RegExp(`${Extension.wordSeparator}${watched}${Extension.wordSeparator}`, 'i') }));
     
             this.lastCalculatedRegeces = {
                 watchedAndEnabled,

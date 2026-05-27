@@ -3,22 +3,23 @@ import { Workspace } from '../workspace/workspaceClass';
 import { statFile } from './help';
 import { FileAccessManager } from './fileAccesses';
 import * as vscodeUri from 'vscode-uri'
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 
 export class FileLinker implements vscode.DefinitionProvider {
     constructor (
         private context: vscode.ExtensionContext,
         private workspace: Workspace
     ) {
-        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider({
-            pattern: "**/.config",
-            scheme: "file"
-        }, this));
-
-        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider({
-            pattern: "**/contextValues.json",
-            scheme: "file"
-        }, this));
+        this.context.subscriptions.push(vscode.languages.registerDefinitionProvider([
+            {
+                pattern: "**/.config",
+                scheme: "file"
+            },
+            {
+                pattern: "**/contextValues.json",
+                scheme: "file"
+            }
+        ], this));
     }
 
     async provideDefinition(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.Definition | vscode.DefinitionLink[]> {
@@ -49,8 +50,8 @@ export class FileLinker implements vscode.DefinitionProvider {
         )).replaceAll('"', '');
 
         let uri: vscode.Uri;
-        if (document.uri.toString() === vscode.Uri.joinPath(extension.rootPath, 'data', 'contextValues.json').toString()) {
-            uri = vscode.Uri.joinPath(extension.rootPath, quotedText);
+        if (document.uri.toString() === vscode.Uri.joinPath(Extension.rootPath, 'data', 'contextValues.json').toString()) {
+            uri = vscode.Uri.joinPath(Extension.rootPath, quotedText);
 
             const stat = await statFile(uri);
             if (!stat || stat.type !== vscode.FileType.File) {

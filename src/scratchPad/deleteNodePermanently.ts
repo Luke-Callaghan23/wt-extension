@@ -1,4 +1,4 @@
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import * as vscode from 'vscode';
 import { RecycleLog, ScratchPadView } from "./scratchPadView";
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from '../outline/nodes_impl/outlineNode';

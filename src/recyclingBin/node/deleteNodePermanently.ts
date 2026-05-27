@@ -1,4 +1,4 @@
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import * as vscode from 'vscode';
 import { RecycleLog, RecyclingBinView } from "../recyclingBinView";
 import { ChapterNode, ContainerNode, OutlineNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
@@ -120,7 +120,7 @@ export async function deleteNodePermanently (this: RecyclingBinView, targets: Ou
         }
         else if (target.data.ids.type === 'container') {
             // When removing items in a container, we want to clear all the directory entries in that
-            //		container in the file system, but not remove the container itself
+            //        container in the file system, but not remove the container itself
             // No need to shift items
 
             // Get the abs path of the container

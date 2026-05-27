@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as console from '../../miscTools/vsconsole';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { WordRange, getHoverMarkdown, getHoveredWord } from '../common';
 import { capitalize, stripDiacritics } from '../../miscTools/help';
 import { Workspace } from '../../workspace/workspaceClass';
@@ -20,10 +20,10 @@ export class ColorIntellisense implements Timed {
     
     private static ColorMarker: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         borderStyle: 'none none solid none',
-		borderWidth: '3px',
-		overviewRulerLane: vscode.OverviewRulerLane.Right,
+        borderWidth: '3px',
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
         borderColor: '#a8325a',
-		overviewRulerColor: '#a8325a',
+        overviewRulerColor: '#a8325a',
     });
 
 
@@ -110,9 +110,11 @@ export class ColorIntellisense implements Timed {
         private colorGroups: ColorGroups
     ) {
         this.enabled = true;
-        const wtSelector: vscode.DocumentFilter = <vscode.DocumentFilter>{
-            language: 'wt'
-        };
+        const wtSelector: readonly vscode.DocumentFilter[] = [ 
+            { language: 'wt' },
+            { language: 'markdown' },
+            { language: 'wtnote' },
+        ];
         this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider(wtSelector, new ColorActionProvider(context, workspace, this)));
         this.context.subscriptions.push(ColorIntellisense.ColorMarker);
     }

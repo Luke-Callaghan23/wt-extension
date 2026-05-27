@@ -4,7 +4,7 @@ import { compareFsPath, ConfigFileInfo, getLatestOrdering, isSubdirectory, readD
 import { OutlineTreeProvider, TreeNode } from "../../../outlineProvider/outlineTreeProvider";
 import { ChapterNode, ContainerNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../outlineNode";
 import { OutlineView } from '../../outlineView';
-import * as extension from '../../../extension';
+import { Extension } from   '../../../extension';
 import { Workspace } from '../../../workspace/workspaceClass';
 import { DestinationResult, MoveNodeResult, allowedMoves } from './common';
 import { handleInternalContainerReorder } from './handleInternalReorder';

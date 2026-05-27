@@ -272,26 +272,35 @@ export const wtToHtml = (wt: string, options: {
         finalHtml = finalHtml.replaceAll(replaceKey, replaceWith);
     }
 
-    const fullHtml = `<html><style>
-        p { 
-            font-size: 18px; 
-            line-height: 1.35; 
-            position: relative; 
-            top: -.5em; 
-            text-align: justify;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        }
+    return exportHtmlHeader(finalHtml);
+}
 
-        h3 { 
-            font-size: 27px;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        }
-        @page { 
-            margin-left: 0.75in; 
-            margin-right: 0.75in; 
-            margin-top: 0.75in; 
-            margin-bottom: 0.75in; 
-        }
-        </style><body style="text-align: justify;">${finalHtml}</body></html>`
-    return fullHtml;
+
+export function exportHtmlHeader (body: string) {
+    return `<html>
+        <style>
+            p { 
+                font-size: 18px; 
+                line-height: 1.35; 
+                position: relative; 
+                top: -.5em; 
+                text-align: justify;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            }
+
+            h3 { 
+                font-size: 27px;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            }
+            @page { 
+                margin-left: 0.75in; 
+                margin-right: 0.75in; 
+                margin-top: 0.75in; 
+                margin-bottom: 0.75in; 
+            }
+        </style>
+        <body style="text-align: justify;">
+            ${body}
+        </body>
+    </html>`;
 }

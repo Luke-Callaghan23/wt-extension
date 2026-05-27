@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as childProcess from 'child_process';
 import * as extension from '../../extension';
-import { wordSeparator } from '../../extension';
+import { Extension } from '../../extension';
 import * as readline from 'readline';
 import { glob } from 'glob';
 import {promisify} from 'util'
@@ -24,14 +24,14 @@ async function getDataDirectoryPaths(): Promise<vscode.Uri[]> {
                 await walkDirectory(filePath);
             } 
             else if (type === vscode.FileType.File && (
-                name.toLocaleLowerCase().endsWith('.wt') || name.toLocaleLowerCase().endsWith('.wtnote') || name.toLocaleLowerCase() === '.config')
+                name.toLocaleLowerCase().endsWith('.wt') || name.toLocaleLowerCase().endsWith('.wtnote')  || name.toLocaleLowerCase().endsWith('.md') || name.toLocaleLowerCase() === '.config')
             ) {
                 found.push(filePath);
             }
         }
     }
 
-    await walkDirectory(vscode.Uri.joinPath(extension.rootPath, 'data'));
+    await walkDirectory(vscode.Uri.joinPath(Extension.rootPath, 'data'));
     return found;
 }
 
@@ -72,7 +72,7 @@ export async function grepExtensionDirectory (
 
     let inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${inlineSource})`, flags);
     if (wholeWord) {
-        inlineSearchRegex = new RegExp(`${extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${extension.wordSeparator}`, flags);
+        inlineSearchRegex = new RegExp(`${Extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${Extension.wordSeparator}`, flags);
     }
 
     const output: [ vscode.Location, string ][] = [];
@@ -102,7 +102,7 @@ export async function grepExtensionDirectory (
     }
     catch (err: any) {
         console.log(err);
-        vscode.commands.executeCommand('wt.wtSearch.searchError', searchBarValue, `${err}`);
+        Extension.searchBarView.setSearchBarError(searchBarValue, `${err}`);
         return [];
     }
 

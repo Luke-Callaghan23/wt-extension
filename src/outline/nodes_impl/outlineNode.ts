@@ -6,7 +6,7 @@ import { OutlineTreeProvider, TreeNode } from '../../outlineProvider/outlineTree
 import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../miscTools/help';
 import { OutlineView } from '../outlineView';
 import * as fsNodes from '../../outlineProvider/fsNodes';
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import { getChildren } from './getChildren';
 import { shiftTrailingNodesDown } from './shiftTrailingNodes';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';
@@ -33,8 +33,8 @@ export class OutlineNode extends TreeNode {
 
     // Assumes this is a 'snip' or a 'fragment'
     // Traverses up the parent tree until a 'chapter' or 'root' element is found
-	async getContainerParent (provider: OutlineTreeProvider<TreeNode>, searches: ResourceType[] = ['root']): Promise<OutlineNode> {
-		// Traverse upwards until we find a 'chapter' or 'root' node
+    async getContainerParent (provider: OutlineTreeProvider<TreeNode>, searches: ResourceType[] = ['root']): Promise<OutlineNode> {
+        // Traverse upwards until we find a 'chapter' or 'root' node
         // Both of these node types have a snips container within them that we can then use to store the new node
         let foundParent: OutlineNode;
         let parentUri = this.data.ids.parentUri;
@@ -48,7 +48,7 @@ export class OutlineNode extends TreeNode {
 
         // Convert the root or chapter parent to a more declarative type, and return the snips container
         return foundParent;
-	}
+    }
 
     getParentUri(): vscode.Uri {
         return this.data.ids.parentUri;

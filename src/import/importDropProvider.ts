@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import { Utils } from 'vscode-uri';
-import { rootPath } from '../extension';
 import { Workspace } from '../workspace/workspaceClass';
 import * as console from '../miscTools/vsconsole';
 import { Entry, ImportFileSystemView } from './importFileSystemView';
@@ -16,15 +15,15 @@ export class ImportDocumentProvider implements vscode.DocumentDropEditProvider, 
     }
 
     dropMimeTypes = ['text/uri-list'];
-	dragMimeTypes = ['application/vnd.code.tree.import.fileexplorer'];
+    dragMimeTypes = ['application/vnd.code.tree.import.fileexplorer'];
 
     
     public async handleDrop(target: Entry | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
         const targ = target;    
         const transferItem = dataTransfer.get('text/uri-list');
-		if (!transferItem) {
-			return;
-		}
+        if (!transferItem) {
+            return;
+        }
 
         // Get the destination of the copy, depending on where the drop occurred
         let dest: vscode.Uri;
@@ -81,7 +80,7 @@ export class ImportDocumentProvider implements vscode.DocumentDropEditProvider, 
         // Combine all collected uris into a single string
         const sourceUriList = uriStrings.join('\r\n');
         treeDataTransfer.set('text/uri-list', new vscode.DataTransferItem(sourceUriList));
-	}
+    }
 
 
     provideDocumentDropEdits (

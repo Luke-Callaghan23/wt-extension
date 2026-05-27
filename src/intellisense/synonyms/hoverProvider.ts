@@ -4,7 +4,7 @@ import * as console from '../../miscTools/vsconsole';
 import { getHoverMarkdown, getHoveredWord } from '../common';
 import { capitalize } from '../../miscTools/help';
 import { compareFsPath, formatFsPathForCompare } from '../../miscTools/help';
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 
 export class HoverProvider implements vscode.HoverProvider {
     constructor (
@@ -17,7 +17,7 @@ export class HoverProvider implements vscode.HoverProvider {
         if (!hoverPosition) return new vscode.Hover('');
 
         // Don't give hover on words that have a matched notebook panel Note
-        const notebookPanel = ExtensionGlobals.notebookPanel;
+        const notebookPanel = Extension.notebookPanel;
         if (notebookPanel) {
             if (notebookPanel.matchedNotebook) {
                 const matches = notebookPanel.matchedNotebook[formatFsPathForCompare(document.uri)];

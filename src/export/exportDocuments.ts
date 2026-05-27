@@ -1,8 +1,9 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { ExportForm } from './exportFormView';
 import { Buff } from '../Buffer/bufferSource';
+import { v4 as uuid } from 'uuid';
 
 // Converts html to docx
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -56,7 +57,18 @@ async function stitchFragments (node: ChapterNode, ex: ExportDocumentInfo): Prom
         try {
             // Read the fragment markdown string
             const fragmentBuffer = await vscode.workspace.fs.readFile(fragmentUri);
-            fragmentsData.push(extension.decoder.decode(fragmentBuffer));
+            let fragmentText = Extension.decoder.decode(fragmentBuffer);
+            
+            // Do a quick convert from markdown to wt
+            if (fragment.data.ids.uri.fsPath.toLocaleLowerCase().endsWith(".md")) {
+                const tmpString = uuid();
+                fragmentText = fragmentText
+                    .replaceAll("~~~", tmpString)
+                    .replaceAll("**", "^")
+                    .replaceAll("~~", "~")
+                    .replaceAll(tmpString, "~~~");
+            }
+            fragmentsData.push();
         }
         catch (e) {
             vscode.window.showErrorMessage(`ERROR: an error occurred while reading the contents of fragment '${fragment.data.ids.display}' with path '${fragmentUri}': ${e}`);
@@ -457,7 +469,7 @@ async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | Proc
 
     const exportData = async (data: string | Buffer, destination: vscode.Uri, index: number, count: number, title: string) => {
         if (typeof data === 'string') {
-            const result = extension.encoder.encode(data.toString());
+            const result = Extension.encoder.encode(data.toString());
             await vscode.workspace.fs.writeFile(destination, result);
         }
         else {
@@ -489,9 +501,6 @@ async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | Proc
 
 // Exporting a txt file is simply treated the same as exporting an md file, which is the same as a generic export
 const exportMd = async (fullyProcessed: ProcessedMd) => {
-    
-    
-
     if (fullyProcessed.type === 'multiple') {
         for (const cci of fullyProcessed.cleanedChapterInfo) {
             const dataStr = cci.data.toString();

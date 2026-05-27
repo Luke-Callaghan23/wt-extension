@@ -8,9 +8,8 @@ import { NotebookPanel } from '../../notebook/notebookPanel';
 import { compareFsPath, formatFsPathForCompare, stripDiacritics } from '../../miscTools/help';
 import { Autocorrect } from '../../autocorrect/autocorrect';
 import { SynonymsProvider } from '../synonymsProvider/provideSynonyms';
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 import { DocumentLinker } from '../../miscTools/documentLinker';
-import { notebookDecorations } from '../../notebook/timedViewUpdate';
 
 
 export class Spellcheck implements Timed {
@@ -19,8 +18,8 @@ export class Spellcheck implements Timed {
     static currentMisspelledWordRanges: vscode.Range[] = [];
 
     private static RedUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-		overviewRulerLane: vscode.OverviewRulerLane.Right,
-		overviewRulerColor: new vscode.ThemeColor('errorForeground'),
+        overviewRulerLane: vscode.OverviewRulerLane.Right,
+        overviewRulerColor: new vscode.ThemeColor('errorForeground'),
         textDecoration: 'underline wavy',
         color: new vscode.ThemeColor('errorForeground'),
         borderColor: new vscode.ThemeColor('errorForeground'),
@@ -108,7 +107,7 @@ export class Spellcheck implements Timed {
                 }
 
                 // Do not add red decorations to words that have been matched by notebook
-                const notebookPanel = ExtensionGlobals.notebookPanel;
+                const notebookPanel = Extension.notebookPanel;
                 if (notebookPanel) {
                     if (notebookPanel.matchedNotebook) {
                         const matches = notebookPanel.matchedNotebook[formatFsPathForCompare(document.uri)];

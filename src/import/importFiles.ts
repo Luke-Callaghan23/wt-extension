@@ -1,15 +1,16 @@
 /* eslint-disable curly */
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
-import { __, compareFsPath, ConfigFileInfo, getNodeNamePath, getSectionedProgressReporter, getDateString, readDotConfig } from '../miscTools/help';
-import { getUsableFileName, newSnip } from '../outline/impl/createNodes';
+import { __, compareFsPath, ConfigFileInfo, getNodeNamePath, getSectionedProgressReporter, getDateString, readDotConfig, getOrdinal } from '../miscTools/help';
+import { getNewFragmentMode, getUsableFileName, newSnip } from '../outline/impl/createNodes';
 import { OutlineView } from '../outline/outlineView';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { DroppedSourceInfo, ImportForm, Li } from './importFormView';
 import { ChapterNode, OutlineNode, RootNode, ContainerNode } from '../outline/nodes_impl/outlineNode';
 import * as mammoth from 'mammoth';
 import { v4 as uuid } from 'uuid';
 import * as TurndownService from 'turndown';
+import * as vscodeUri from 'vscode-uri';
 
 const libreofficeConvert = require('libreoffice-convert');
 const util = require('util');
@@ -40,6 +41,7 @@ TurndownService.prototype.escape = function (string: string) {
 
 import { Buff } from '../Buffer/bufferSource';
 import { commonReplacements } from '../autocorrect/autocorrect';
+import { multiSplitChapterDescription, multiSplitSnipContainerDescription, mutliSplitSnipDescription, noSplitChapterDescription, noSplitSnipDescription, singleSplitChapterDescription, singleSplitSnipDescription } from './importDescriptions';
 
 export type DocInfo = {
     skip: boolean,
@@ -63,7 +65,8 @@ export type ImportDocumentInfo = {
     [index: string]: DocInfo
 };
 
-type NoSplit = {
+export type NoSplit = {
+    source: vscode.Uri,
     type: 'none',
     data: string
 };
@@ -78,12 +81,14 @@ type NamedSnipSplit = {
     data: NamedSingleSplit[];
 }
 
-type SingleSplit = {
+export type SingleSplit = {
+    source: vscode.Uri,
     type: 'single',
     data: NamedSingleSplit[];
 };
 
-type MultiSplit = {
+export type MultiSplit = {
+    source: vscode.Uri,
     type: 'multi',
     data: NamedSnipSplit[],
 };
@@ -96,7 +101,7 @@ type SplitInfo = {
     outerSplitRegex: RegExp | undefined
 };
 
-function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
+function splitWt (source: vscode.Uri, content: string, split: SplitInfo): DocSplit | undefined {
 
     const processTitledSplit = (splitter: RegExp, text: string, outerTitle: string | null): NamedSingleSplit[] => {
         
@@ -165,43 +170,48 @@ function splitWt (content: string, split: SplitInfo): DocSplit | undefined {
                 const fragmentsSplit = processTitledSplit(fragmentSplitter, data, snipTitle);
                 return {
                     title: snipTitle,
-                    data: fragmentsSplit
+                    data: fragmentsSplit,
+                    source: source
                 }
             });
 
             // Return the multisplit
-            return {
+            return __<MultiSplit>({
                 type: 'multi',
-                data: fullSplit
-            } as MultiSplit;
+                data: fullSplit,
+                source: source
+            });
         }
         else {
             // Document split, but no snipSplit -> return a Single split
             const singleSplits = processTitledSplit(split.fragmentSplitRegex, content, null);
 
-            return {
+            return __<SingleSplit>({
                 type: 'single',
-                data: singleSplits
-            } as SingleSplit;
+                data: singleSplits,
+                source: source
+            });
         }
     }
     else {
         // No document split -> return a NoSplit
-        return {
+        return __<NoSplit>({
             type: 'none',
-            data: content
-        } as NoSplit;
+            data: content,
+            source: source
+        });
     }
 }
 
 
 async function readAndSplitWt (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
     // Get the full file path and read the content of that file
-    const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+    const fileUri = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
     const fileContent = (await vscode.workspace.fs.readFile(fileUri)).toString();
 
     // Split the content with the split rules provided in `split`
-    const splits = splitWt(fileContent, split);
+    const source = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
+    const splits = splitWt(source, fileContent, split);
     if (!splits) {
         vscode.window.showErrorMessage(`Error ocurred when splitting markdown document`);
         throw new Error(`Error ocurred when splitting markdown document`);
@@ -211,18 +221,28 @@ async function readAndSplitWt (split: SplitInfo, fileRelativePath: string): Prom
 
 async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Promise<DocSplit> {
     // Get the full file path and read the content of that file
-    const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+    const fileUri = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
     const fileContent = (await vscode.workspace.fs.readFile(fileUri)).toString();
 
-    const tmpString = uuid()
-    const final = fileContent
-        .replaceAll("~~~", tmpString)
-        .replaceAll("**", "^")
-        .replaceAll("~~", "~")
-        .replaceAll(tmpString, "~~~");
+    let final: string;
+
+    if (getNewFragmentMode() === 'wt') {
+        // Do simple conversions from markdown to wt files
+        const tmpString = uuid();
+        final = fileContent
+            .replaceAll("~~~", tmpString)
+            .replaceAll("**", "^")
+            .replaceAll("~~", "~")
+            .replaceAll(tmpString, "~~~");
+    }
+    else {
+        // If we're outputing markdown, there's nothing to convert
+        final = fileContent;
+    }
 
     // Split the content with the split rules provided in `split`
-    const splits = splitWt(final, split);
+    const source = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
+    const splits = splitWt(source, final, split);
     if (!splits) {
         vscode.window.showErrorMessage(`Error ocurred when splitting markdown document`);
         throw new Error(`Error ocurred when splitting markdown document`);
@@ -232,8 +252,9 @@ async function readAndSplitMd (split: SplitInfo, fileRelativePath: string): Prom
 
 const readAndSplitTxt = readAndSplitWt;
 
-async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<DocSplit | null> {
+async function doHtmlSplits (fileRelativePath: string, split: SplitInfo, htmlContent: string): Promise<DocSplit | null> {
     // Create a converter for turning the provided html into md
+    // @ts-ignore
     const turndownService = new TurndownService({ 
         bulletListMarker: '-',
         hr: '~~~',
@@ -243,27 +264,58 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
         }
     });
 
-    turndownService.addRule('strikethrough', {
-        //@ts-ignore
-        filter: ['del', 's', 'strike' ],
-        replacement: function (content: string) {
-            return '~' + content + '~'
-        }
-    });
+    // wt files support strikethroughs, use a different bold character, and use _ for underlines (NOT italics)
+    if (getNewFragmentMode() === 'wt') {
+        turndownService.addRule('strikethrough', {
+            //@ts-ignore
+            filter: ['del', 's', 'strike' ],
+            replacement: function (content: string) {
+                return '~' + content + '~'
+            }
+        });
+    
+        turndownService.addRule('bold', {
+            filter: [ 'b', 'strong' ],
+            replacement: function (content: string) {
+                return '^' + content + '^'
+            }
+        });
+    
+        turndownService.addRule('underline', {
+            filter: [ 'u' ],
+            replacement: function (content: string) {
+                return '_' + content + '_'
+            }
+        });
+    }
+    // md files don't support strikethrough or underline, and use ** for bold
+    else {
+    
+        // Bold will be surrounded by ** on both sides
+        turndownService.addRule('bold', {
+            filter: [ 'b', 'strong' ],
+            replacement: function (content: string) {
+                return '**' + content + '**'
+            }
+        });
 
-    turndownService.addRule('bold', {
-        filter: [ 'b', 'strong' ],
-        replacement: function (content: string) {
-            return '^' + content + '^'
-        }
-    });
+        // Not supported in markdown -- just clear the tags
+        turndownService.addRule('strikethrough', {
+            //@ts-ignore
+            filter: ['del', 's', 'strike' ],
+            replacement: function (content: string) {
+                return content;
+            }
+        });
+    
+        turndownService.addRule('underline', {
+            filter: [ 'u' ],
+            replacement: function (content: string) {
+                return content;
+            }
+        });
+    }
 
-    turndownService.addRule('underline', {
-        filter: [ 'u' ],
-        replacement: function (content: string) {
-            return '_' + content + '_'
-        }
-    });
 
     // Convert the html to markdown
     const convertedMd = turndownService.turndown(htmlContent);
@@ -271,8 +323,10 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
     // Showdown escapes all tildes ... we don't like that so, we take out all the escape characters
     const withoutEscapedTildes = convertedMd.replaceAll('\\~', '~');
 
+    const source = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
+
     // Split the content with the split rules provided in `split`
-    const splits = splitWt(withoutEscapedTildes, split);
+    const splits = splitWt(source, withoutEscapedTildes, split);
     if (!splits) {
         vscode.window.showErrorMessage(`Error ocurred when splitting markdown document`);
         throw new Error(`Error ocurred when splitting markdown document`);
@@ -281,16 +335,16 @@ async function doHtmlSplits (split: SplitInfo, htmlContent: string): Promise<Doc
 }
 
 async function readAndSplitHtml (split: SplitInfo, fileRelativePath: string): Promise<DocSplit | null> {
-    const fileUri = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+    const fileUri = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
     const fileContent: string = (await vscode.workspace.fs.readFile(fileUri)).toString();
-    return doHtmlSplits(split, fileContent);
+    return doHtmlSplits(fileRelativePath, split, fileContent);
 }
 
 async function readAndSplitDocx (split: SplitInfo, fileRelativePath: string): Promise<DocSplit | null> {
     let html: string;
     try {
         // Use mammoth to convert the docx to html
-        const fullFilePath = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+        const fullFilePath = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
         const result = await mammoth.convertToHtml({
             path: fullFilePath.fsPath
         }, {
@@ -313,13 +367,13 @@ async function readAndSplitDocx (split: SplitInfo, fileRelativePath: string): Pr
     }
 
     // Then do splits on the html
-    return doHtmlSplits(split, html);
+    return doHtmlSplits(fileRelativePath, split, html);
 }
 
 async function readAndSplitOdt (split: SplitInfo, fileRelativePath: string): Promise<DocSplit | null> {
     let html: string;
     try {
-        const fullFilePath = vscode.Uri.joinPath(extension.rootPath, fileRelativePath);
+        const fullFilePath = vscode.Uri.joinPath(Extension.rootPath, fileRelativePath);
         const odtArr = await vscode.workspace.fs.readFile(fullFilePath);
         const odtBuf = Buffer.from(odtArr);
         const result: Buffer = await libreofficeConvert.convertAsync(odtBuf, "html", "");
@@ -329,7 +383,7 @@ async function readAndSplitOdt (split: SplitInfo, fileRelativePath: string): Pro
         vscode.window.showErrorMessage(`Error ocurred when parsing html from source odt '${fileRelativePath}': ${e}`);
         throw e;
     }
-    return doHtmlSplits(split, html);
+    return doHtmlSplits(fileRelativePath, split, html);
 }
 
 function getSplitInfo (doc: DocInfo): SplitInfo {
@@ -369,7 +423,7 @@ function getSplitInfo (doc: DocInfo): SplitInfo {
 }
 
 // Info for importing snip(s) from a document
-type SnipInfo = {
+export type SnipInfo = {
     type: 'snip',
     outputSnipName: string,
     elideSingleFragmentSnips: boolean,
@@ -419,6 +473,7 @@ function getWriteInfo (docInfo: DocInfo): WriteInfo {
 }
 
 async function createFragmentFromSource (
+    source: vscode.Uri,
     containerUri: vscode.Uri, 
     title: string | null,
     content: string,
@@ -426,37 +481,44 @@ async function createFragmentFromSource (
     ordering: number,
 ): Promise<string> {
     // Create the fragment file
-    const fragmentFileName = getUsableFileName('fragment', true);
+    const fragmentFileName = getUsableFileName('fragment', getNewFragmentMode());
     const fragmentUri = vscode.Uri.joinPath(containerUri, fragmentFileName);
     await vscode.workspace.fs.writeFile(fragmentUri, Buff.from(content, 'utf-8'));
 
     // Add the record for this fragment to the config map
     config[fragmentFileName] = {
         title: title && title.length !== 0 ? title : `Imported Fragment (${ordering})`,
-        ordering: ordering
+        ordering: ordering,
+        description: `Imported from ${vscodeUri.Utils.basename(source)} on ${getDateString()}\n\n---\n\nSource document: ${source.fsPath}\n\n---\n\n`
     };
 
     return fragmentFileName;
 }
 
-async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
+async function writeChapter (
+    docSplits: DocSplit, 
+    chapterInfo: ChapterInfo,
+    idx?: number,
+) {
 
     if (docSplits.type === 'multi') {
-        // If there are multiple splits, then call write snip to write the new snips into the chapter
+        // If there are multiple splits, just divide the multi split into instances of single splits and 
+        //      recurse into `writeChapter` for each one
 
-        // First create snip info
+        // Iterate over all of the initial splits
         for (let index = 0; index < docSplits.data.length; index++) {
             const { title: chapterName, data } = docSplits.data[index];
+
             const currentChapter: ChapterInfo = {
                 type: 'chapter',
                 outputChapterName: chapterName && chapterName.length !== 0
                     ? chapterName
                     : `${chapterInfo.outputChapterName} ${index}`
             };
-
             const currentChapterFragments: DocSplit = {
                 type: 'single',
                 data: data,
+                source: docSplits.source,
             };
             await writeChapter(currentChapterFragments, currentChapter);
 
@@ -464,11 +526,28 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
         return;
     }
 
-    const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+    const dateString = getDateString();
+
+    let chapterDescription: string;
+    if (idx === undefined) {
+        if (docSplits.type === 'none') {
+            chapterDescription = noSplitChapterDescription(dateString, docSplits);
+        }
+        else {
+            chapterDescription = singleSplitChapterDescription(dateString, docSplits);
+        }
+    }
+    else {
+        if (docSplits.type !== 'single') throw 'uncreachable';
+        chapterDescription = multiSplitChapterDescription(dateString, docSplits, idx);
+    }
+
+    const outlineView: OutlineView = Extension.outlineView;
     const chapterUri: vscode.Uri | null = await outlineView.newChapter(undefined, {
         preventRefresh: false, 
         defaultName: chapterInfo.outputChapterName,
-        skipFragment: true
+        skipFragment: true,
+        overrideDescription: chapterDescription
     });
     if (!chapterUri) return;
 
@@ -476,16 +555,13 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
 
     if (docSplits.type === 'none') {
         // Create the single snip and store their config data inside of the dotConfig created above
-        await createFragmentFromSource(chapterUri, null, docSplits.data, dotConfig, 0);
+        await createFragmentFromSource(docSplits.source, chapterUri, null, docSplits.data, dotConfig, 0);
     }
     else if (docSplits.type === 'single') {
         // Create all snips and store their config data inside of the dotConfig created above
-        let ordering = 0;
-        await Promise.all(docSplits.data.map(split => {
+        await Promise.all(docSplits.data.map((split, idx) => {
             const { title, data: content } = split;
-            const promise = createFragmentFromSource(chapterUri, title, content, dotConfig, ordering);
-            ordering++;
-            return promise;
+            return createFragmentFromSource(docSplits.source, chapterUri, title, content, dotConfig, idx);
         }));
     }
 
@@ -496,7 +572,7 @@ async function writeChapter (docSplits: DocSplit, chapterInfo: ChapterInfo) {
 }
 
 async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource: DroppedSourceInfo | null) {
-    const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+    const outlineView: OutlineView = Extension.outlineView;
     
     // Get the parent node where the new snip(s) should be inserted
     let parentNode: OutlineNode | undefined;
@@ -506,7 +582,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
         parentNode = droppedSource.node;
     }
     else if (output.dest === 'snip') {
-        const snipUri = vscode.Uri.joinPath(extension.rootPath, output.outputSnipPath);
+        const snipUri = vscode.Uri.joinPath(Extension.rootPath, output.outputSnipPath);
         const snipNode: OutlineNode | null = await outlineView.getTreeElementByUri(snipUri);
         if (!snipNode) return;
         // dest = 'snip' -> inserted snips are work snips
@@ -515,23 +591,26 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
     else if (output.dest === 'chapter') {
         // dest = 'chapter' -> inserted snips are inserted into the specified chapter
         // Find the chapter by its uri and use that as the parent node
-        const chapterUri = vscode.Uri.joinPath(extension.rootPath, output.outputChapter);
+        const chapterUri = vscode.Uri.joinPath(Extension.rootPath, output.outputChapter);
         const chapterNode: OutlineNode | null = await outlineView.getTreeElementByUri(chapterUri);
         if (!chapterNode) return;
         parentNode = chapterNode;
     }
 
-    // Make a date string for the new snip aggregate
-    const dateStr = getDateString();
+    
+    const dateString = getDateString();
 
     // If this is a multi split, then we want to store all splits in a newly created snip container in the `parentNode` calculated above
     if (docSplits.type === 'multi') {
-    
+
+        const containerSnipDescription = multiSplitSnipContainerDescription(dateString, docSplits, snipInfo);
+
         // Create the new snip
         const importedSnipSnipUri = await outlineView.newSnip(parentNode, {
-            defaultName: `${snipInfo.outputSnipName} ${dateStr}`,
+            defaultName: `${snipInfo.outputSnipName} ${dateString}`,
             preventRefresh: true,
             skipFragment: true,
+            overrideDescription: containerSnipDescription
         });
         if (importedSnipSnipUri !== null) {
             // Get the snip from the outline tree and assign it as the destination for imports
@@ -554,7 +633,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
         let ordering = 0;
         await Promise.all(splits.map(split => {
             const { title, data: content } = split;
-            const promise = createFragmentFromSource(snipUri, title, content, dotConfig, ordering);
+            const promise = createFragmentFromSource(docSplits.source, snipUri, title, content, dotConfig, ordering);
             ordering++;
             return promise;
         }));
@@ -571,6 +650,8 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
 
             const snipName = snipTitle && snipTitle.length !== 0 ? snipTitle : `${snipInfo.outputSnipName} (${snipOrdering})`;
 
+            const snipDescription = mutliSplitSnipDescription(dateString, docSplits, snipOrdering);
+
             if (snipInfo.elideSingleFragmentSnips && fragmentContent.length === 1 && parentNode && parentNode.data.ids.type === 'snip') {
                 fragmentContent[0].title = snipName;
                 await fragmentUpload(fragmentContent, parentNode.data.ids.uri);
@@ -580,7 +661,8 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
                 const snipUri: vscode.Uri | null = await outlineView.newSnip(parentNode, {
                     preventRefresh: true, 
                     defaultName: snipName,
-                    skipFragment: true
+                    skipFragment: true,
+                    overrideDescription: snipDescription
                 });
                 if (!snipUri) return;
                 
@@ -592,8 +674,11 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
     }
     else {
 
+        let snipDescription: string;
         let contents: NamedSingleSplit[];
         if (docSplits.type === 'none') {
+            snipDescription = noSplitSnipDescription(dateString, docSplits);
+
             // If there are no splits, put the single content item in an array
             contents = [ {
                 title: null,
@@ -601,9 +686,12 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
             } ];
         }
         else {
+            snipDescription = singleSplitSnipDescription(dateString, docSplits);
+
             // Otherwise, use the data array from single split
             contents = docSplits.data;
         }
+
 
         let parentUri: vscode.Uri;
         if (snipInfo.elideSingleFragmentSnips && contents.length === 1 && parentNode && parentNode.data.ids.type === 'snip') {
@@ -614,7 +702,8 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
             const snipUri: vscode.Uri | null = await outlineView.newSnip(parentNode, {
                 preventRefresh: true, 
                 defaultName: snipInfo.outputSnipName,
-                skipFragment: true
+                skipFragment: true,
+                overrideDescription: snipDescription
             });
             if (!snipUri) return;
             parentUri = snipUri;
@@ -639,6 +728,7 @@ function postProcessSplits (splits: DocSplit): DocSplit {
     if (splits.type === 'multi' && splits.data.length === 1 && splits.data[0].title === null) {
         splits = {
             type: "single",
+            source: splits.source,
             data: splits.data[0].data
         }
     }
@@ -713,7 +803,7 @@ export async function handleImport (docInfo: ImportDocumentInfo, droppedSource: 
         
         // Assign modified dates to each of the doc names provided by called
         for (const docName of docNames) {
-            const doc = vscode.Uri.joinPath(extension.rootPath, docName);
+            const doc = vscode.Uri.joinPath(Extension.rootPath, docName);
             const stat = await vscode.workspace.fs.stat(doc);
             docLastModified.push({
                 name: docName,
@@ -732,12 +822,13 @@ export async function handleImport (docInfo: ImportDocumentInfo, droppedSource: 
             progress.report({ message: "Creating containers" });
             
             // If there is more than one work snip account to import, then make a parent container to insert all work snips into
-            const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+            const outlineView: OutlineView = Extension.outlineView;
             const workSnipsContainer = (outlineView.rootNodes[0].data as RootNode).snips;
             const snipUri = await outlineView.newSnip(workSnipsContainer, {
                 defaultName: `Imported ${getDateString()}`,
                 preventRefresh: true,
                 skipFragment: true,
+                overrideDescription: `Created as container for ${Object.keys(docInfo).length} imported snips on ${getDateString()}\n\n---\n\n`
             });
             await outlineView.refresh(true, []);
             if (snipUri) {
@@ -781,7 +872,7 @@ export async function handleImport (docInfo: ImportDocumentInfo, droppedSource: 
         }
     
         // Do the expensive full refresh
-        vscode.commands.executeCommand('wt.outline.refresh');
+        Extension.outlineView.refreshView();
     });
 }
 
@@ -820,13 +911,16 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
         }
 
 
-        const liFragment = (title: string, text: string): Li => ({
-            name: `(fragment) ${title}`,
-            children: [{
-                name: text,
-                children: []
-            }]
-        });
+        const liFragment = (title: string, text: string): Li => {
+            text = text || "[EMPTY CONTENT]";
+            return {
+                name: `(fragment) ${title}`,
+                children: [{
+                    name: text,
+                    children: []
+                }]
+            };
+        };
 
         const docSplits = splits;
         if (writeInfo.type === 'chapter') {
@@ -857,6 +951,7 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
                     const chapterContent = transcribeChapter({
                         type: 'single',
                         data: data,
+                        source: docSplits.source,
                     });
 
                     return {
@@ -866,7 +961,7 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
                 });
             }
             else {
-                const chapterNumber = ((extension.ExtensionGlobals.outlineView.rootNodes[0].data as RootNode).chapters.data as ContainerNode).contents.length;
+                const chapterNumber = ((Extension.outlineView.rootNodes[0].data as RootNode).chapters.data as ContainerNode).contents.length;
                 const chapterName = `(chapter) New Chapter (${chapterNumber})`;
                 chapters = [{
                     name: chapterName,
@@ -875,28 +970,28 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
             }
 
             return __<Li>({ 
-                name: `${extension.ExtensionGlobals.workspace.config.title}/Chapters`,
+                name: `${Extension.workspace.config.title}/Chapters`,
                 children: chapters
             });
         }
         else {
             const snipInfo = writeInfo;
-            const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+            const outlineView: OutlineView = Extension.outlineView;
 
             // Get the parent node where the new snip(s) should be inserted
-            let parentNodeDisplayName: string = `${extension.ExtensionGlobals.workspace.config.title}/Work Snips/Imported Snips`;
+            let parentNodeDisplayName: string = `${Extension.workspace.config.title}/Work Snips/Imported Snips`;
             const output = snipInfo.output;
             if (singleDoc.outputIntoDroppedSource && droppedSource) {
                 parentNodeDisplayName = droppedSource.namePath;
             }
             else if (output.dest === 'snip') {
                 if (output.outputSnipPath.endsWith(workSnipAdditionalPathName)) {
-                    const snipUri = vscode.Uri.joinPath(extension.rootPath, output.outputSnipPath.replace(`/${workSnipAdditionalPathName}`, ''));
+                    const snipUri = vscode.Uri.joinPath(Extension.rootPath, output.outputSnipPath.replace(`/${workSnipAdditionalPathName}`, ''));
                     const snipNode: OutlineNode = await outlineView.getTreeElementByUri(snipUri) || outlineView.rootNodes[0];
                     parentNodeDisplayName = await getNodeNamePath(snipNode) + '/' + workSnipsParentName;
                 }
                 else {
-                    const snipUri = vscode.Uri.joinPath(extension.rootPath, output.outputSnipPath);
+                    const snipUri = vscode.Uri.joinPath(Extension.rootPath, output.outputSnipPath);
                     const parent: OutlineNode = await outlineView.getTreeElementByUri(snipUri) || outlineView.rootNodes[0];
                     parentNodeDisplayName = await getNodeNamePath(parent);
                 }
@@ -904,7 +999,7 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
             else if (output.dest === 'chapter') {
                 // dest = 'chapter' -> inserted snips are inserted into the specified chapter
                 // Find the chapter by its uri and use that as the parent node
-                const chapterUri = vscode.Uri.joinPath(extension.rootPath, output.outputChapter);
+                const chapterUri = vscode.Uri.joinPath(Extension.rootPath, output.outputChapter);
                 let parent: OutlineNode = await outlineView.getTreeElementByUri(chapterUri) || outlineView.rootNodes[0];
                 if (parent.data.ids.type === 'chapter') {
                     const chapter = parent.data as ChapterNode

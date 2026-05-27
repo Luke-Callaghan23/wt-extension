@@ -3,7 +3,7 @@ import * as console from '../../miscTools/vsconsole';
 import { getNonce } from '../../miscTools/help';
 import { Packageable } from '../../packageable';
 import { Workspace } from '../../workspace/workspaceClass';
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 import * as MarkdownIt from 'markdown-it';
 import { HoverProvider } from '../synonyms/hoverProvider';
 import { getHoveredWord, getHoverMarkdown } from '../common';
@@ -20,12 +20,11 @@ export class DefinitionsPanelWebview implements vscode.WebviewViewProvider, vsco
     ) { 
         this._extensionUri = context.extensionUri;
         this.context.subscriptions.push(vscode.window.registerWebviewViewProvider('wt.definitions', this));
-        this.context.subscriptions.push(vscode.languages.registerHoverProvider({
-            language: 'wt',
-        }, this));
-        this.context.subscriptions.push(vscode.languages.registerHoverProvider({
-            language: 'wtNote',
-        }, this));
+        this.context.subscriptions.push(vscode.languages.registerHoverProvider([ 
+            { language: 'wt' },
+            { language: 'markdown' },
+            { language: 'wtnote' },
+        ], this));
         this.registerCommands();
     }
 
@@ -68,7 +67,7 @@ export class DefinitionsPanelWebview implements vscode.WebviewViewProvider, vsco
         const hover = getHoveredWord(document, position);
         if (!hover) return;
 
-        const currentProvider: SynonymProviderType = await vscode.commands.executeCommand('wt.intellisense.synonyms.getCurrentProvider');
+        const currentProvider: SynonymProviderType = Extension.intellisense.getCurrentSynonymsProvider();
         const hoverMd = await getHoverMarkdown(hover.text, currentProvider);
         if (!hoverMd) return;
 

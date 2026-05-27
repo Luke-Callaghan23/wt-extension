@@ -4,7 +4,7 @@ import { NotebookPanel } from '../notebookPanel';
 import { __, compareFsPath } from '../../miscTools/help';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { NotebookCellMetadata, NotebookCellOutputMetadata, NotebookMetadata, WTNotebookSerializer } from './notebookSerializer';
-import { ExtensionGlobals,  } from '../../extension';
+import { Extension,  } from '../../extension';
 
 type ExecutionCommand = 'editHeader' | 'editTitle' | 'editCell' | 'convertToHeader';
 

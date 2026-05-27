@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { Packageable } from '../../packageable';
 import { Workspace } from '../../workspace/workspaceClass';
 import { Dict } from './dictionary';
+import { Extension } from '../../extension';
 
 export class PersonalDictionary implements Packageable<'wt.personalDictionary'> {
     private dict: Dict;
@@ -52,7 +53,7 @@ export class PersonalDictionary implements Packageable<'wt.personalDictionary'> 
         
         // Add the word
         this.dict[word] = 1;
-        vscode.commands.executeCommand('wt.timedViews.update');
+        Extension.timedViews.updateTimedViews();
         Workspace.forcePackaging(this.context, 'wt.personalDictionary', this.dict);
     }
 
@@ -76,12 +77,14 @@ export class PersonalDictionary implements Packageable<'wt.personalDictionary'> 
         Workspace.forcePackaging(this.context, 'wt.personalDictionary', this.dict);
     }
 
+    public refresh (dict: { [index: string]: 1 }) {
+        this.dict = dict;
+    }
+
 
     registerCommands () {
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.personalDictionary.add', (word: string | undefined | null) => this.addWordCommand(word)));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.personalDictionary.remove', () => this.removeWordCommand()));
-        this.context.subscriptions.push(vscode.commands.registerCommand("wt.personalDictionary.refresh", (refreshWith: { [index: string]: 1 }) => {
-            this.dict = refreshWith;
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand("wt.personalDictionary.refresh", this.refresh.bind(this)));
     }
 }

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { WordWatcher } from './wordWatcher';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { getUsableFileName } from '../outline/impl/createNodes';
 import { compareFsPath } from '../miscTools/help';
 
@@ -35,21 +35,21 @@ NOTE: please don't edit anything in this document besides the color.  You'll pro
 }`;
 
 
-    const tmpFolder = vscode.Uri.joinPath(extension.rootPath, 'tmp');
+    const tmpFolder = vscode.Uri.joinPath(Extension.rootPath, 'tmp');
     try {
         await vscode.workspace.fs.createDirectory(tmpFolder);
     }
     catch (err: any) {}
 
     const colorPickFN = `${getUsableFileName('colorPick')}.css`;
-    const colorPickerDocUri = vscode.Uri.joinPath(extension.rootPath, 'tmp', colorPickFN);
-    const contentBuff = extension.encoder.encode(colorPickContent);
+    const colorPickerDocUri = vscode.Uri.joinPath(Extension.rootPath, 'tmp', colorPickFN);
+    const contentBuff = Extension.encoder.encode(colorPickContent);
     await vscode.workspace.fs.writeFile(colorPickerDocUri, contentBuff);
 
     const exampleSentence = `Here is an example sentence with your example word ${exampleWord} inside of it so you can see how ${exampleWord} would look in normal text.  Wow!`
-    const exampleSentenceFN = `${getUsableFileName('exampleSentence')}.wt`;
-    const exampleSentenceUri = vscode.Uri.joinPath(extension.rootPath, 'tmp', exampleSentenceFN);
-    const exampleSentenceBuff = extension.encoder.encode(exampleSentence);
+    const exampleSentenceFN = getUsableFileName('exampleSentence', 'wt');
+    const exampleSentenceUri = vscode.Uri.joinPath(Extension.rootPath, 'tmp', exampleSentenceFN);
+    const exampleSentenceBuff = Extension.encoder.encode(exampleSentence);
     await vscode.workspace.fs.writeFile(exampleSentenceUri, exampleSentenceBuff);
 
     await vscode.window.showTextDocument(exampleSentenceUri, {
@@ -110,7 +110,7 @@ NOTE: please don't edit anything in this document besides the color.  You'll pro
                 dispose();
 
                 const buf = await vscode.workspace.fs.readFile(colorPickerDocUri);
-                const content = extension.decoder.decode(buf);
+                const content = Extension.decoder.decode(buf);
                 const color = parseForColor(content);
                 stop = true;
                 if (!color) {
@@ -136,7 +136,7 @@ NOTE: please don't edit anything in this document besides the color.  You'll pro
                 const uri = e.uri.fsPath.replaceAll(".git", "");
                 if (uri !== colorPickerDocUri.fsPath) return;
                 const buf = await vscode.workspace.fs.readFile(colorPickerDocUri);
-                const content = extension.decoder.decode(buf);
+                const content = Extension.decoder.decode(buf);
                 const color = parseForColor(content);
                 if (!color) {
                     vscode.window.showErrorMessage("Could not parse color from text file.  Please try again (don't edit the css file too much, please).");

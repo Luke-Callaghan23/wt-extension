@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { OutlineView } from '../outline/outlineView';
 import * as vscodeUri from 'vscode-uri';
 import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../outline/nodes_impl/outlineNode';
@@ -84,7 +84,7 @@ export class WordCount {
             const uri = fragment.ids.uri;
             const name = fragment.ids.display;
             const textBuffer = await vscode.workspace.fs.readFile(uri);
-            const text = extension.decoder.decode(textBuffer);
+            const text = Extension.decoder.decode(textBuffer);
             const wordCount = this.countWordsInText(text);
             return { uri, name, wordCount };
         }
@@ -153,10 +153,10 @@ export class WordCount {
             const snipsMD = snipsDisplay.map(processContainerMD).join('\n');
     
             const md = `# Total Word Count: ${totalWordCount}\n- Chapters Word Count: ${chaptersWordCount}\n${chaptersMD}\n- Work Snips Word Count: ${snipsWordCount}\n${snipsMD}`;
-            const mdBuffer = extension.encoder.encode(md);
+            const mdBuffer = Extension.encoder.encode(md);
     
             // Create a 'tmp' folder for storing the markdown
-            const tmpFolderPath = vscodeUri.Utils.joinPath(extension.rootPath, 'tmp');
+            const tmpFolderPath = vscodeUri.Utils.joinPath(Extension.rootPath, 'tmp');
             await vscode.workspace.fs.createDirectory(tmpFolderPath);
     
             // Create a file with the markdown data inside of it
@@ -180,7 +180,7 @@ export class WordCount {
             )
         }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wordCount.showFullWordCounts', async () => {
-            const outlineView: OutlineView = extension.ExtensionGlobals.outlineView;
+            const outlineView: OutlineView = Extension.outlineView;
             this.getFullWordCounts(outlineView);
         }));
     } 

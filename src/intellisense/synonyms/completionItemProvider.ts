@@ -5,10 +5,11 @@ import { HoverPosition, getHoverMarkdown, getHoveredWord } from '../common';
 import { Capitalization, formatFsPathForCompare, getTextCapitalization, stripDiacritics, transformToCapitalization } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
 import { SynonymError, SynonymSearchResult, Synonyms, SynonymsProvider } from '../synonymsProvider/provideSynonyms';
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 import { TextMatchForNote } from '../../notebook/timedViewUpdate';
 import { __ } from './../../miscTools/help';
 import { nextTick } from 'process';
+import { SynonymsIntellisense } from '../intellisense';
 
 const NUMBER_COMPLETES = 20;
 
@@ -33,17 +34,15 @@ type ActivationState = {
 export class CompletionItemProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
     private activationState?: ActivationState;
 
-    private isWordHippo;
     private allCompletionItems: vscode.CompletionItem[] = [];
     private forceSelectIndex: boolean = false;
 
     constructor (
         private context: vscode.ExtensionContext,
         private workspace: Workspace,
-        useWordHippo: boolean,
+        private intellisense: SynonymsIntellisense
     ) { 
         this.registerCommands();
-        this.isWordHippo = useWordHippo;
     }
 
     private debounce: NodeJS.Timeout | null = null;
@@ -85,7 +84,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             else {
 
                 const selection = vscode.window.activeTextEditor?.selection;
-                if (this.isWordHippo && selection && !selection.isEmpty) {
+                if (this.intellisense.isWordHippo() && selection && !selection.isEmpty) {
                     // If we're using word hippo and the selection is not empty then call get hovered position on both the start
                     //      and end of the selection to get the full range of selected text
                     const start = getHoveredWord(document, selection.start);
@@ -135,7 +134,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         }
 
         const uri = formatFsPathForCompare(document.uri);
-        const notebookPanel = ExtensionGlobals.notebookPanel;
+        const notebookPanel = Extension.notebookPanel;
         if (notebookPanel.matchedNotebook && uri in notebookPanel.matchedNotebook) {
             const matches = notebookPanel.matchedNotebook[uri];
             const noteMatch = matches.find(noteMatch => noteMatch.range.contains(hoverRange));
@@ -154,7 +153,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 return finalOptions.map(option => __<vscode.CompletionItem>({
                     label: option,
                     detail: `Alias of '${noteMatch.note.title}'`,
-                    documentation: new vscode.MarkdownString(ExtensionGlobals.notebookPanel.getMarkdownForNote(noteMatch.note)),
+                    documentation: new vscode.MarkdownString(Extension.notebookPanel.getMarkdownForNote(noteMatch.note)),
                     range: noteMatch.range,
                     filterText: filt,
                 }));
@@ -166,7 +165,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         let response: Synonyms;
 
         // Query the dictionary api for the selected word
-        const res = await SynonymsProvider.provideSynonyms(strippedText, this.isWordHippo ? 'wh' : 'synonymsApi');
+        const res = await SynonymsProvider.provideSynonyms(strippedText, this.intellisense.getCurrentSynonymsProvider());
         if (res.type === 'error') {
             // Pass unstripped text in here because users will see it
             // All the options come from the stripped query above
@@ -328,7 +327,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         
         const wordCapitalization: Capitalization = getTextCapitalization(strippedWord);
 
-        const synonyms = await SynonymsProvider.provideSynonyms(strippedWord, this.isWordHippo ? 'wh' : 'synonymsApi');
+        const synonyms = await SynonymsProvider.provideSynonyms(strippedWord, this.intellisense.getCurrentSynonymsProvider());
         if (!synonyms || synonyms.type === 'error') {
             return getMisspellCorrections(null, hoverRange, word);
         }
@@ -429,18 +428,17 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.intellisense.synonyms.shiftMode', () => {
             // Reset word hippo status, activation state, and cache
-            this.isWordHippo = !this.isWordHippo;
+            const provider = this.intellisense.toggleProvider();
+
             this.activationState = undefined;
 
-            const using = this.isWordHippo
+            const using = provider === 'wh'
                 ? 'Word Hippo'
                 : 'Dictionary API'
             vscode.window.showInformationMessage(`[INFO] Synonyms intellisense is now using ${using} for completion`);
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.intellisense.synonyms.getCurrentProvider', () => {
-            return this.isWordHippo ? 'wh' : 'synonymsApi';
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.intellisense.synonyms.getCurrentProvider', () => this.intellisense.getCurrentSynonymsProvider()));
 
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.intellisense.synonyms.prevSelection", async () => {
             if (!this.activationState) return vscode.commands.executeCommand('selectPrevSuggestion');

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
 import { OutlineNode } from '../nodes_impl/outlineNode';
 import { vagueNodeSearch } from '../../miscTools/help';
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 import { NotebookPanelNote } from '../../notebook/notebookPanel';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';
@@ -10,7 +10,7 @@ import { UriBasedView } from '../../outlineProvider/UriBasedView';
 
 // Is called whenever there is a change in the active document in vscode
 // Simply selects (but does not focus) the node in the outline view that corresponds
-//		to the new active document (if it exists in the outline)
+//        to the new active document (if it exists in the outline)
 export async function selectActiveDocument (this: OutlineView, editor: vscode.TextEditor | undefined): Promise<void> {
     if (!editor) return;
     if (!editor.document) return;
@@ -33,10 +33,10 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
                 view = this;
             } break;
             case 'recycle': {
-                view = ExtensionGlobals.recyclingBinView;
+                view = Extension.recyclingBinView;
             } break;
             case 'scratch': {
-                view = ExtensionGlobals.scratchPadView;
+                view = Extension.scratchPadView;
             } break;
         }
 
@@ -49,7 +49,7 @@ export async function selectActiveDocument (this: OutlineView, editor: vscode.Te
     }
     else {
         const note = nodeOrNote as NotebookPanelNote;
-        ExtensionGlobals.notebookPanel.webview.reveal(note);
+        Extension.notebookPanel.webview.reveal(note);
     }
 
     TabLabels.assignNamesForOpenTabs();

@@ -1,6 +1,6 @@
 
 import * as vscode from 'vscode';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import * as console from '../miscTools/vsconsole';
 import { TextStyles } from './textStyles';
 

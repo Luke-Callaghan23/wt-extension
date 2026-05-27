@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { QuerySynonyms } from "./synonymsApi";
-import * as extension from './../../extension';
+import { Extension } from   './../../extension';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
 import * as fs from 'fs';
@@ -66,79 +66,25 @@ export class SynonymsProvider {
         let cacheUri: vscode.Uri;
         if (!synonymsCacheLocation) {
             vscode.window.showWarningMessage('[WARN] Configuration for Synonyms Cache Location is missing. Using default ./synonyms instead');
-            cacheUri = vscode.Uri.joinPath(extension.rootPath, 'synonyms');
+            cacheUri = vscode.Uri.joinPath(Extension.rootPath, 'synonyms');
         }
         else {
             if (synonymsCacheLocation.startsWith('/') || synonymsCacheLocation.startsWith('\\') || /^[a-zA-Z]:[\\/]/.test(synonymsCacheLocation)) {
                 cacheUri = vscode.Uri.file(synonymsCacheLocation);
             }
             else {
-                cacheUri = vscode.Uri.joinPath(extension.rootPath, synonymsCacheLocation);
+                cacheUri = vscode.Uri.joinPath(Extension.rootPath, synonymsCacheLocation);
             }
 
             const stat = await statFile(cacheUri);
             if (stat === null) {
                 vscode.window.showWarningMessage(`[WARN] Could not open Synonyms Cache at ${synonymsCacheLocation}.  Using default ./synonyms instead.`);
-                cacheUri = vscode.Uri.joinPath(extension.rootPath, 'synonyms');
+                cacheUri = vscode.Uri.joinPath(Extension.rootPath, 'synonyms');
             }
         }
         this.cacheLocation = cacheUri;
         return cacheUri;
     }
-
-    private static registerCommands () {
-        vscode.commands.registerCommand("wt.synonyms.updateApiKey", async () => {
-            const curKey = this.apiKey || "";
-
-            const response = await vscode.window.showInputBox({
-                ignoreFocusOut: false,
-                placeHolder: "00000000-0000-0000-0000-000000000000",
-                prompt: "Enter API Key",
-                title: "Enter Merriam-Webster API Key.  This will be stored in your VSCode User Settings.  (No where else).  (Use the THESAURUS key, not the dictionary key).",
-                value: curKey,
-                valueSelection: [ 0, curKey.length ]
-            });
-            if (!response) {
-                vscode.window.showWarningMessage("[WARN] No API Key provided.  Nothing will be updated.");
-                return;
-            }
-
-            const apiKey: string = response;
-
-            // Store the key in global setting, then reset the synonyms API here as well as in the SynonymsView
-            const config = vscode.workspace.getConfiguration();
-            await config.update(this.apiKeyConfigName, apiKey, vscode.ConfigurationTarget.Global);
-            this.synonymsApi = new QuerySynonyms(apiKey);
-            return vscode.commands.executeCommand("wt.synonyms.refreshWithKey", apiKey);
-        });
-
-        vscode.commands.registerCommand("wt.synonyms.updateCachePath", async () => {
-            
-            const response = await vscode.window.showOpenDialog({
-                title: "Enter location to use for synonyms cache.",
-                canSelectFiles: false,
-                canSelectFolders: true,
-                canSelectMany: false,
-                defaultUri: this.cacheLocation || undefined,
-            });
-            if (!response) {
-                vscode.window.showWarningMessage("[WARN] Cache location selected.  Nothing will be updated.");
-                return;
-            }
-
-            const [ updatedLocation ] = response;
-            this.cacheLocation = updatedLocation;
-
-            // Store the key in global setting, then reset the synonyms API here as well as in the SynonymsView
-            const config = vscode.workspace.getConfiguration();
-            await config.update(this.cacheLocationConfigName, updatedLocation.fsPath, vscode.ConfigurationTarget.Workspace);
-            
-            await this.closeCacheDb();
-            await this.openDB(updatedLocation);
-        });
-
-    }
-
 
     private static async openDB (cacheUri: vscode.Uri) {
         try {
@@ -292,5 +238,58 @@ export class SynonymsProvider {
             // this.cache[provider][word] = result;
             return result;
         }
+    }
+
+    public static async updateApiKey () {
+        const curKey = this.apiKey || "";
+
+        const response = await vscode.window.showInputBox({
+            ignoreFocusOut: false,
+            placeHolder: "00000000-0000-0000-0000-000000000000",
+            prompt: "Enter API Key",
+            title: "Enter Merriam-Webster API Key.  This will be stored in your VSCode User Settings.  (No where else).  (Use the THESAURUS key, not the dictionary key).",
+            value: curKey,
+            valueSelection: [ 0, curKey.length ]
+        });
+        if (!response) {
+            vscode.window.showWarningMessage("[WARN] No API Key provided.  Nothing will be updated.");
+            return;
+        }
+
+        const apiKey: string = response;
+
+        // Store the key in global setting, then reset the synonyms API here as well as in the SynonymsView
+        const config = vscode.workspace.getConfiguration();
+        await config.update(this.apiKeyConfigName, apiKey, vscode.ConfigurationTarget.Global);
+        this.synonymsApi = new QuerySynonyms(apiKey);
+        return Extension.synonymsWebview.refreshWithKey(apiKey);
+    }
+
+    private static registerCommands () {
+        Extension.context.subscriptions.push(vscode.commands.registerCommand("wt.synonyms.updateApiKey", this.updateApiKey.bind(this)));
+        Extension.context.subscriptions.push(vscode.commands.registerCommand("wt.synonyms.updateCachePath", async () => {
+            
+            const response = await vscode.window.showOpenDialog({
+                title: "Enter location to use for synonyms cache.",
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false,
+                defaultUri: this.cacheLocation || undefined,
+            });
+            if (!response) {
+                vscode.window.showWarningMessage("[WARN] Cache location selected.  Nothing will be updated.");
+                return;
+            }
+
+            const [ updatedLocation ] = response;
+            this.cacheLocation = updatedLocation;
+
+            // Store the key in global setting, then reset the synonyms API here as well as in the SynonymsView
+            const config = vscode.workspace.getConfiguration();
+            await config.update(this.cacheLocationConfigName, updatedLocation.fsPath, vscode.ConfigurationTarget.Workspace);
+            
+            await this.closeCacheDb();
+            await this.openDB(updatedLocation);
+        }));
     }
 }

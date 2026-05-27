@@ -1,4 +1,4 @@
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import { BulletPoint, NotebookPanelNote, NotebookPanel, NoteSection } from '../notebookPanel';
@@ -274,7 +274,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
                 header: capitalize(section.headerText.trim()),
                 bullets: this.sectionCellsToBulletPoints(serializedNote.noteId, index, section.cells),
             })),
-            uri: vscode.Uri.joinPath(extension.globalWorkspace!.notebookFolder, `${serializedNote.noteId}.wtnote`),
+            uri: vscode.Uri.joinPath(Extension.workspace.notebookFolder, `${serializedNote.noteId}.wtnote`),
         };
     }
 
@@ -307,7 +307,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
     async readSerializedNote (buffer: Uint8Array): Promise<SerializedNote | null> {
         try {
-            const text = extension.decoder.decode(buffer);
+            const text = Extension.decoder.decode(buffer);
             const serializedNote: SerializedNote = JSON.parse(text);
             return serializedNote;
         }
@@ -447,7 +447,7 @@ export class WTNotebookSerializer implements vscode.NotebookSerializer {
 
             // First check to see if it is a URL link
             let markdownLink: string;
-            if (extension.urlRegex.test(link)) {
+            if (Extension.urlRegex.test(link)) {
                 markdownLink = link;
             }
             // Otherwise, search for a fragment node

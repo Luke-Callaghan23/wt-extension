@@ -1,18 +1,32 @@
 import { ChapterNode, ContainerNode, OutlineNode, ResourceType, SnipNode } from "../nodes_impl/outlineNode";
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
-import * as extension from '../../extension';
+import { Extension } from   '../../extension';
 import * as console from '../../miscTools/vsconsole';
 import { Buff } from "../../Buffer/bufferSource";
 import { compareFsPath, getSectionedProgressReporter, progressOnViews, writeDotConfig } from "../../miscTools/help";
 import { RecycleLog, RecyclingBinView } from "../../recyclingBin/recyclingBinView";
 import { TabLabels } from "../../tabLabels/tabLabels";
+import * as vscodeUri from 'vscode-uri';
 
-export function getUsableDeleteFileName (type: ResourceType, wt?: boolean) {
-    const useWt = wt !== undefined && wt === true;
-    const wtStr = useWt ? '.wt' : '';
+export function getUsableDeleteFileName (type: ResourceType, fileExt?: boolean | 'wt' | 'md'): string {
+
+    // Default is a folder, no extension
+    let extension = '';
+
+    // Legacy support for `getUsableFileName` that had `wt` as a boolean parameter,
+    //      if `true` is passed into this function then set to default writing tool 
+    //      fragment extension
+    if (fileExt === true) {
+        extension = '.wt';
+    }
+    // Otherwise for string file names, just use the value passed in
+    else if (typeof fileExt === 'string') {
+        extension = "." + fileExt;
+    }
+    
     const timestamp = Date.now();
-    return `deleted-${type}-${timestamp}-${parseInt(Math.random() * 10000 + '')}${wtStr}`
+    return `deleted-${type}-${timestamp}-${parseInt(Math.random() * 10000 + '')}${extension}`
 }
 
 async function shouldPermanentlyDelete(target: OutlineNode) {
@@ -112,9 +126,21 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
                 }
 
                 if (moveToRecycling) {
-                    const recycleBinName = getUsableDeleteFileName(target.data.ids.type, true);
+                    const ext = vscodeUri.Utils.extname(target.data.ids.uri);
+                    let deleteExtension: 'wt' | 'md' | undefined; 
+                    if (ext.includes('wt')) {
+                        deleteExtension = 'wt';
+                    }
+                    else if (ext.includes('md')) {
+                        deleteExtension = 'md';
+                    }
+                    else {
+                        deleteExtension = undefined;
+                    }
+
+                    const recycleBinName = getUsableDeleteFileName(target.data.ids.type, deleteExtension);
                     try {
-                        const newLocationUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
+                        const newLocationUri = vscode.Uri.joinPath(Extension.rootPath, `data/recycling/${recycleBinName}`);
                         await vscode.workspace.fs.rename(removedFragmentUri, newLocationUri);
                     }
                     catch (e) {
@@ -163,7 +189,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
                 const removedNodeAbsPath = target.getUri();
                 const recycleBinName = getUsableDeleteFileName(target.data.ids.type);
                 try {
-                    const moveToPath = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
+                    const moveToPath = vscode.Uri.joinPath(Extension.rootPath, `data/recycling/${recycleBinName}`);
                     await vscode.workspace.fs.rename(removedNodeAbsPath, moveToPath);
                 }
                 catch (e) {
@@ -197,7 +223,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
             }
             else if (target.data.ids.type === 'container') {
                 // When removing items in a container, we want to clear all the directory entries in that
-                //		container in the file system, but not remove the container itself
+                //        container in the file system, but not remove the container itself
                 // No need to shift items
 
                 // Get the abs path of the container
@@ -223,7 +249,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
 
                 for (const name of clearedEntries) {
                     const recycleBinName = getUsableDeleteFileName(target.data.ids.type);
-                    const recyclingUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/${recycleBinName}`);
+                    const recyclingUri = vscode.Uri.joinPath(Extension.rootPath, `data/recycling/${recycleBinName}`);
                     const removedNodeUri = vscode.Uri.joinPath(clearedContainerUri, name);
 
                     // All entries in a container are folders, so remove them as dirs
@@ -260,11 +286,11 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
     });
     
     // Read the current recycling log
-    const recyclingLogUri = vscode.Uri.joinPath(extension.rootPath, `data/recycling/.log`);
+    const recyclingLogUri = vscode.Uri.joinPath(Extension.rootPath, `data/recycling/.log`);
 
     let recyclingLog: RecycleLog[];
     try {
-        const recyclingLogJSON = extension.decoder.decode(await vscode.workspace.fs.readFile(recyclingLogUri));
+        const recyclingLogJSON = Extension.decoder.decode(await vscode.workspace.fs.readFile(recyclingLogUri));
         if (recyclingLogJSON === '') {
             recyclingLog = [];
         }
@@ -287,7 +313,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
     }
     // Refresh the whole tree as it's hard to determine what the deepest root node is
     this.refresh(false, containers);
-    vscode.commands.executeCommand("wt.recyclingBin.refresh");
+    Extension.todoView.refresh(true, []);
 
     setTimeout(() => {
         // Reassign names in case if any of the opened fragments have just been deleted

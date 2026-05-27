@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as extension from './../extension';
+import { Extension } from   './../extension';
 import { WordWatcher } from "./wordWatcher";
 import { OutlineView } from '../outline/outlineView';
 import { WordCount } from '../wordCounts/wordCount';
@@ -73,7 +73,7 @@ export async function readAndCollectCommonWords (paths: string[]): Promise<Insta
     const allWords = (await Promise.all(paths.map(fragment => {
         const fragmentUri = vscode.Uri.file(fragment)
         return vscode.workspace.fs.readFile(fragmentUri).then(buffer => {
-            const text = extension.decoder.decode(buffer);
+            const text = Extension.decoder.decode(buffer);
             const words = text.split(WordCount.nonAlphanumeric)
                 .filter(str => str.length !== 0)
                 .filter(str => (/\s*/.test(str)))
@@ -132,7 +132,7 @@ export async function gatherPaths (this: WordWatcher): Promise<string[] | null> 
         qp.show();
         this.context.subscriptions.push(qp);
         
-        const outlineView: OutlineView = extension.ExtensionGlobals.outlineView
+        const outlineView: OutlineView = Extension.outlineView
         const { options, currentNode, currentPick } = getFilesQPOptions(outlineView.rootNodes, false, "");
         
         qp.busy = false;

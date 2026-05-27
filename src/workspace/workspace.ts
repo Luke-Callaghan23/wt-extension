@@ -1,8 +1,9 @@
+
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
 import { defaultProgress, getSectionedProgressReporter, prompt, statFile } from '../miscTools/help';
 import * as vsconsole from '../miscTools/vsconsole';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { gitiniter } from '../gitTransactions';
 import { Buff } from '../Buffer/bufferSource';
 import { DiskContextType, Workspace } from './workspaceClass';
@@ -68,11 +69,11 @@ export async function createWorkspace (
         }
 
         // Create the data container
-        const dataUri = vscode.Uri.joinPath(extension.rootPath, `data`);
+        const dataUri = vscode.Uri.joinPath(Extension.rootPath, `data`);
         await vscode.workspace.fs.createDirectory(dataUri);
 
-        const contextValuesJsonUri = vscode.Uri.joinPath(extension.rootPath, 'data', 'contextValues.json');
-        await vscode.workspace.fs.writeFile(contextValuesJsonUri, extension.encoder.encode(JSON.stringify({
+        const contextValuesJsonUri = vscode.Uri.joinPath(Extension.rootPath, 'data', 'contextValues.json');
+        await vscode.workspace.fs.writeFile(contextValuesJsonUri, Extension.encoder.encode(JSON.stringify({
             "wt.colors.enabled": true,
             "wt.colors.extraColors": {},
             "wt.fileAccesses.positions": {},
@@ -97,7 +98,7 @@ export async function createWorkspace (
             "wt.notebook.tree.enabled": false,
         }, undefined, 2)));
 
-        const gitignoreUri = vscode.Uri.joinPath(extension.rootPath, '.gitignore');
+        const gitignoreUri = vscode.Uri.joinPath(Extension.rootPath, '.gitignore');
         await vscode.workspace.fs.writeFile(gitignoreUri, Buff.from(`
 tmp/
 tmp/**
@@ -136,9 +137,9 @@ synonyms/lock.mdb
         const settingsJSON = JSON.stringify(settings);
 
 
-        const dotVscodeUri = vscode.Uri.joinPath(extension.rootPath, `.vscode`);
+        const dotVscodeUri = vscode.Uri.joinPath(Extension.rootPath, `.vscode`);
         await vscode.workspace.fs.createDirectory(dotVscodeUri);
-        const settingsUri = vscode.Uri.joinPath(extension.rootPath, `.vscode/settings.json`);
+        const settingsUri = vscode.Uri.joinPath(Extension.rootPath, `.vscode/settings.json`);
         await vscode.workspace.fs.writeFile(settingsUri, Buff.from(settingsJSON, 'utf-8'));
         await vscode.workspace.fs.createDirectory(workspace.notebookFolder);
     }
@@ -158,7 +159,7 @@ synonyms/lock.mdb
 
     vscode.window.showInformationMessage(`Successfully initialized the workspace.`);
     await vscode.commands.executeCommand('setContext', 'wt.valid', true);
-    await vscode.commands.executeCommand('wt.walkthroughs.openIntro');
+    Extension.openIntro();
     return workspace;
 }
 
@@ -176,7 +177,7 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
         // Try to read the /.wtconfig file
         const wtConfigUri = workspace.dotWtconfigPath;
         const wtconfigJSON = await vscode.workspace.fs.readFile(wtConfigUri);
-        const wtconfig = JSON.parse(extension.decoder.decode(wtconfigJSON));
+        const wtconfig = JSON.parse(Extension.decoder.decode(wtconfigJSON));
 
         // Read config info
         const config: Config = {
@@ -296,7 +297,7 @@ export async function loadWorkspaceContext (
     // Attempt to read context values from the context values file on disk
     // Context values file may not exist, so allow a crash to happen
     const contextValuesBuffer = await vscode.workspace.fs.readFile(contextLocation);
-    const contextValuesJSON = extension.decoder.decode(contextValuesBuffer);
+    const contextValuesJSON = Extension.decoder.decode(contextValuesBuffer);
     const contextValues: DiskContextType = JSON.parse(contextValuesJSON);
     await Promise.all(Object.entries(contextValues).map(([ contextKey, contextValue ]) => {
         return [

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ExtensionGlobals, rootPath } from '../extension';
+import { Extension } from '../extension';
 import { DiskContextType } from '../workspace/workspaceClass';
 import { __ } from './help';
 import { resolve } from 'path';
@@ -59,7 +59,7 @@ export async function importContextValuesFromFile () {
         canSelectFiles: true,
         canSelectFolders: false,
         canSelectMany: false,
-        defaultUri: vscode.Uri.joinPath(rootPath, '..', 'fotbb/data/contextValues.json'),
+        defaultUri: vscode.Uri.joinPath(Extension.rootPath, '..', 'fotbb/data/contextValues.json'),
         title: "Select a contextValues.json file to import from",
         openLabel: "Import",
         filters: {
@@ -69,7 +69,7 @@ export async function importContextValuesFromFile () {
     if (!otherCvPath) return;
 
     // Read the current and importing context values json file
-    const currentCvUri = ExtensionGlobals.workspace.contextValuesFilePath;
+    const currentCvUri = Extension.workspace.contextValuesFilePath;
     const [ otherCvUri ] = otherCvPath;
     let currentCv: DiskContextType;
     let otherCv: DiskContextType;
@@ -125,7 +125,7 @@ export async function importContextValuesFromFile () {
     
             //@ts-ignore
             currentCv[contextKey] = contextValue;
-            await ExtensionGlobals.context.globalState.update(contextKey, contextValue);
+            await Extension.context.globalState.update(contextKey, contextValue);
             resolve();
         })
     }));

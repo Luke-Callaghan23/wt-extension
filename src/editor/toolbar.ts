@@ -3,13 +3,13 @@ import * as vscode from 'vscode';
 import { gitCommit, gitiniter } from '../gitTransactions';
 import { Workspace } from '../workspace/workspaceClass';
 import { JumpType, defaultJumpFragmentOptions, getJumpWordSelection, jumpParagraph, jumpSentence, jumpWord } from './jumps';
-import { bold, commasize, emDash, emDashes, italisize, strikethrough, underline } from './surroundSelection';
+import { bold, boldMarkdown, commasize, emDash, emDashes, italisize, strikethrough, underline } from './surroundSelection';
 import { commentFragment, commentParagraph, commentSentence } from './comment';
 import { highlightExpand } from './highlights';
 import { addQuotes } from './addQuotes';
 import { Accents } from './accents';
 import { OutlineView } from '../outline/outlineView';
-import { ExtensionGlobals } from '../extension';
+import { Extension } from '../extension';
 import { vagueNodeSearch } from '../miscTools/help';
 import { importContextValuesFromFile } from '../miscTools/importContextValues';
 
@@ -25,16 +25,16 @@ export function remove () {
 
 
 export async function save () {
-    await vscode.commands.executeCommand('wt.tabStates.saveToCurrentTabGroup');
+    Extension.tabStates.saveToCurrentTabGroup();
     await Workspace.forcePackaging();
-    vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
+    Extension.statusBarTimer.resetTimer();
     return gitCommit();
 }
 
 export async function saveAll () {
-    await vscode.commands.executeCommand('wt.tabStates.saveToCurrentTabGroup');
+    Extension.tabStates.saveToCurrentTabGroup();
     await Workspace.forcePackaging();
-    vscode.commands.executeCommand('wt.statusBarTimer.resetTimer');
+    Extension.statusBarTimer.resetTimer();
     return gitCommit();
 }
 
@@ -71,6 +71,7 @@ export class Toolbar {
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.saveAll', saveAll));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.italisize', italisize));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.bold', bold));
+        context.subscriptions.push(vscode.commands.registerCommand('wt.editor.boldMarkdown', boldMarkdown));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.strikethrough', strikethrough));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.commasize', commasize));
         context.subscriptions.push(vscode.commands.registerCommand('wt.editor.underline', underline));
@@ -117,19 +118,19 @@ export class Toolbar {
                 return vscode.window.showErrorMessage(`[ERROR] Unable to find Outline fragment for uri '${tabUri.fsPath}'`);
             }
             switch (searchResult.source) {
-                case 'outline': return ExtensionGlobals.outlineView.expandAndRevealOutlineNode(searchResult.node, {
+                case 'outline': return Extension.outlineView.expandAndRevealOutlineNode(searchResult.node, {
                     expand: true,
                     select: true,
                 });
-                case 'recycle': return ExtensionGlobals.recyclingBinView.expandAndRevealOutlineNode(searchResult.node, {
+                case 'recycle': return Extension.recyclingBinView.expandAndRevealOutlineNode(searchResult.node, {
                     expand: true,
                     select: true,
                 });
-                case 'scratch': return ExtensionGlobals.scratchPadView.expandAndRevealOutlineNode(searchResult.node, {
+                case 'scratch': return Extension.scratchPadView.expandAndRevealOutlineNode(searchResult.node, {
                     expand: true,
                     select: true,
                 });
-                case 'notebook': return ExtensionGlobals.notebookPanel.webview.reveal(searchResult.node);
+                case 'notebook': return Extension.notebookPanel.webview.reveal(searchResult.node);
             }
         }));
         context.subscriptions.push(vscode.commands.registerCommand("wt.editor.revealFileExplorer", (tabUri: vscode.Uri) => {
@@ -144,7 +145,7 @@ export class Toolbar {
         // Misc commands
         context.subscriptions.push(vscode.commands.registerCommand('wt.misc.importContextValues', importContextValuesFromFile));
         context.subscriptions.push(vscode.commands.registerCommand('wt.misc.openContextValues', () => {
-            return vscode.window.showTextDocument(ExtensionGlobals.workspace.contextValuesFilePath, {
+            return vscode.window.showTextDocument(Extension.workspace.contextValuesFilePath, {
                 preserveFocus: false,
                 preview: false,
                 viewColumn: vscode.ViewColumn.Active

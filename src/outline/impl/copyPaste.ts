@@ -2,9 +2,8 @@ import * as vscode from 'vscode';
 import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 import { FileAccessManager } from '../../miscTools/fileAccesses';
-import { getUsableFileName } from './createNodes';
 import { ConfigFileInfo, getFsPathKey, getLatestOrdering, readDotConfig, setFsPathKey, writeDotConfig } from '../../miscTools/help';
-import * as extension from './../../extension';
+import { Extension } from   './../../extension';
 
 export type CopiedSelection = {
     count: number;
@@ -99,8 +98,8 @@ export async function pasteNew (
         const moveResult = await copiedNode.generalMoveNode(
             'paste', 
             destination,
-            extension.ExtensionGlobals.recyclingBinView,
-            extension.ExtensionGlobals.outlineView,
+            Extension.recyclingBinView,
+            Extension.outlineView,
             0, null, 'Insert'
         );
         if (moveResult.moveOffset === -1) return;
@@ -109,8 +108,8 @@ export async function pasteNew (
 
 export async function genericPaste (destinations: OutlineNode[]) {
     
-    const context = extension.ExtensionGlobals.context;
-    const outlineView = extension.ExtensionGlobals.outlineView;
+    const context = Extension.context;
+    const outlineView = Extension.outlineView;
 
     // Ensure that there are items to paste currently stored in workspace state
     const copied: CopiedSelection | undefined = context.workspaceState.get<CopiedSelection>('copied');

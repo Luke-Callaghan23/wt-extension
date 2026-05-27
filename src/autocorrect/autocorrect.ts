@@ -5,7 +5,7 @@ import { DiskContextType, Workspace } from '../workspace/workspaceClass';
 import { PersonalDictionary } from '../intellisense/spellcheck/personalDictionary';
 import { Packageable } from '../packageable';
 import { getAllIndices, getTextCapitalization, stripDiacritics, transformToCapitalization, vagueNodeSearch } from '../miscTools/help';
-import { ExtensionGlobals } from '../extension';
+import { Extension } from '../extension';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { report } from 'process';
 export const commonReplacements = {
@@ -382,11 +382,11 @@ export class Autocorrect implements Timed, Packageable<"wt.autocorrections.exclu
         this.exclusions = this.context.workspaceState.get<DiskContextType['wt.autocorrections.exclusions']>('wt.autocorrections.exclusions') || {};
         this.registerCommands();
 
-        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider(
-            <vscode.DocumentFilter>{
-                language: 'wt'
-            }, this
-        ));
+        this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider([ 
+            { language: 'wt' },
+            { language: 'markdown' },
+            { language: 'wtnote' },
+        ], this));
 
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection("stuff");
         this.specialCharactersSearch = new RegExp(`(${Object.keys(commonReplacements).join("|")})`, 'g');

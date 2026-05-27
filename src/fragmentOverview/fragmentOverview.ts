@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { Timed } from '../timedView';
 import { Workspace } from '../workspace/workspaceClass';
 import { compareFsPath, getSurroundingTextInRange } from '../miscTools/help';

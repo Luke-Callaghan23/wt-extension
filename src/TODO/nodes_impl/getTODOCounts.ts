@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { ChapterNode, ContainerNode, FragmentNode, RootNode, SnipNode, TODONode } from "../node";
 import { TODOsView, Validation } from "../TODOsView";
 import { scanFragment } from "../impl/scanFragment";
-import { ExtensionGlobals } from '../../extension';
+import { Extension } from '../../extension';
 import { getFsPathKey, setFsPathKey } from '../../miscTools/help';
 
 export async function getTODOCounts (
@@ -17,7 +17,7 @@ export async function getTODOCounts (
         return 1;
     }
 
-    const todosView: TODOsView = ExtensionGlobals.todoView;
+    const todosView: TODOsView = Extension.todoView;
 
     const uri = this.getUri();
     if (!todosView.isInvalidated(uri)) {

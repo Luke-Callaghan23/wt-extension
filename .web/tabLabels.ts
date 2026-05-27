@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ConfigurationTarget, workspace } from 'vscode';
 import * as console from '../miscTools/vsconsole'
 import { OutlineView } from '../outline/outlineView';
-import * as extension from './../extension';
+import { Extension } from './../extension';
 import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
@@ -35,13 +35,13 @@ export class TabLabels {
             let nodeResult: [ ViewSource, OutlineNode | NotebookPanelNote ]
             try {
                 nodeResult = await Promise.any([
-                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) => extension.ExtensionGlobals.outlineView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.outlineView, node ]) : reject())),
-                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.recyclingBinView, node ]) : reject())),
-                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ extension.ExtensionGlobals.scratchPadView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) => Extension.outlineView.getTreeElementByUri(uri).then(node => node ? resolve([ Extension.outlineView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  Extension.recyclingBinView.getTreeElementByUri(uri).then(node => node ? resolve([ Extension.recyclingBinView, node ]) : reject())),
+                    new Promise<[ ViewSource, OutlineNode ]>((resolve, reject) =>  Extension.scratchPadView.getTreeElementByUri(uri).then(node => node ? resolve([ Extension.scratchPadView, node ]) : reject())),
                     new Promise<[ ViewSource, NotebookPanelNote ]>((resolve, reject) =>  {
-                        const note = extension.ExtensionGlobals.notebookPanel.getNote(uri);
+                        const note = Extension.notebookPanel.getNote(uri);
                         if (note) {
-                            resolve([ extension.ExtensionGlobals.notebookPanel, note ]);
+                            resolve([ Extension.notebookPanel, note ]);
                         } 
                         else {
                             reject();
@@ -82,8 +82,15 @@ export class TabLabels {
             for (const tab of group.tabs) {
                 if (!(tab.input instanceof vscode.TabInputText) && !(tab.input instanceof vscode.TabInputNotebook)) continue;
     
+                // Do not label non-wt, wtnote, or md files
                 const uri = tab.input.uri;
-                if (!(uri.fsPath.endsWith('.wt') || uri.fsPath.endsWith('.wtnote'))) continue;
+                if (!uri.fsPath.endsWith('.wt') 
+                    && !uri.fsPath.endsWith('.wtnote')
+                    && !uri.fsPath.endsWith('.md')
+                ) {
+                    console.log(`[WARN] Skipping tab labels for '${uri.fsPath}' for mismatched extension type.  Can only label .wt, .wtnote, or .md`);
+                    continue;
+                }
 
                 console.log(`Tab labels: inspecting ${uri.fsPath}`);
     
@@ -95,7 +102,7 @@ export class TabLabels {
                     nodeOrNote : { data: { ids: { display: nodeOrNote.title } } };
     
                 // Remove the extension root path from the pattern
-                let relativePath = uri.fsPath.replaceAll(extension.rootPath.fsPath, '').replaceAll('\\', '/')
+                let relativePath = uri.fsPath.replaceAll(Extension.rootPath.fsPath, '').replaceAll('\\', '/')
                 if (relativePath.startsWith('/')) {
                     relativePath = relativePath.substring(1);
                 }
@@ -167,12 +174,11 @@ export class TabLabels {
     static async clearNamesForAllTabs () {
         const configuration = workspace.getConfiguration();
         configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
-    
         
         const oldPatterns: { [index: string]: string } = await configuration.get('workbench.editor.customLabels.patterns') || {};
         const filteredPatterns: { [index: string]: string } = {};
         for (const [ pattern, value ] of Object.entries(oldPatterns)) {
-            if (pattern.endsWith('.wt')) continue;
+            if (pattern.endsWith('.wt') || pattern.endsWith('.md')) continue;
             filteredPatterns[pattern] = value;
         }
     

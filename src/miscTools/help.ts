@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as extension from '../extension';
+import { Extension } from   '../extension';
 import { Buff } from '../Buffer/bufferSource';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { NotebookPanelNote, NotebookPanel } from '../notebook/notebookPanel';
@@ -29,11 +29,11 @@ export type QuickPickOptions = {
 };
 
 export async function quickPickPrompt (options: QuickPickOptions): Promise<string> {
-	const result = await vscode.window.showQuickPick(options.options, {
-		placeHolder: options.placeholder,
+    const result = await vscode.window.showQuickPick(options.options, {
+        placeHolder: options.placeholder,
         ignoreFocusOut: true,
         title: options.prompt,
-	});
+    });
 
     if (!result) {
         throw new Error("Not possible.");
@@ -69,7 +69,7 @@ export function getLatestOrdering (configData: { [index: string]: ConfigFileInfo
 
 export async function readDotConfig (path: vscode.Uri): Promise<{ [index: string]: ConfigFileInfo } | null> {
     try {
-        const dotConfigJSON = extension.decoder.decode(await vscode.workspace.fs.readFile(path));
+        const dotConfigJSON = Extension.decoder.decode(await vscode.workspace.fs.readFile(path));
         const dotConfig: { [index: string]: ConfigFileInfo } = JSON.parse(dotConfigJSON);
         return dotConfig;
     }
@@ -92,12 +92,12 @@ export async function writeDotConfig (path: vscode.Uri, dotConfig: { [index: str
 
 
 export function getNonce () {
-	let text = '';
-	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	for (let i = 0; i < 32; i++) {
-		text += possible.charAt(Math.floor(Math.random() * possible.length));
-	}
-	return text;
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
 }
 
 export function hexToRgb (hex: string): null | { r: number, g: number, b: number } {
@@ -134,33 +134,34 @@ export async function vagueNodeSearch (
     target: vscode.Uri,
     targetIsBasename?: boolean
 ): Promise<VagueNodeSearchResult> {
-    const relative = target.fsPath.replaceAll(extension.rootPath.fsPath, "");
+    const relative = target.fsPath.replaceAll(Extension.rootPath.fsPath, "");
         
     
     if (!(
-        relative.endsWith("wt") 
-        || relative.endsWith("wtnote")
+        relative.endsWith(".wt") 
+        || relative.endsWith(".wtnote")
+        || relative.endsWith(".md")
         || relative !== target.fsPath
     )) return { node:null, source:null };
     if (relative.includes("tmp/") || relative.includes("tmp\\")) return { node:null, source:null };
 
 
     if (relative.includes("recycling")) {
-        const node = await extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(target, undefined, targetIsBasename);
+        const node = await Extension.recyclingBinView.getTreeElementByUri(target, undefined, targetIsBasename);
         if (node) return {
             node: node,
             source: 'recycle'
         }
     }
     else if (relative.includes("scratchPad")) {
-        const node = await extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(target, undefined, targetIsBasename);
+        const node = await Extension.scratchPadView.getTreeElementByUri(target, undefined, targetIsBasename);
         if (node) return {
             node: node,
             source: 'scratch',
         }
     }
     else if (relative.endsWith(".wtnote")) {
-        const note = extension.ExtensionGlobals.notebookPanel.getNote(target);
+        const note = Extension.notebookPanel.getNote(target);
         if (note) return {
             source: 'notebook',
             node: note
@@ -170,24 +171,24 @@ export async function vagueNodeSearch (
         // If none of the previous paths worked, brute force search for all locations
 
         // Most likely it is in the outline, so search there first
-        let node = await extension.ExtensionGlobals.outlineView.getTreeElementByUri(target, undefined, targetIsBasename);
+        let node = await Extension.outlineView.getTreeElementByUri(target, undefined, targetIsBasename);
         if (node) return {
             source: 'outline',
             node: node,
         }
 
-        node = await extension.ExtensionGlobals.recyclingBinView.getTreeElementByUri(target, undefined, targetIsBasename);
+        node = await Extension.recyclingBinView.getTreeElementByUri(target, undefined, targetIsBasename);
         if (node) return {
             node: node,
             source: 'recycle'
         }
-        node = await extension.ExtensionGlobals.scratchPadView.getTreeElementByUri(target, undefined, targetIsBasename);
+        node = await Extension.scratchPadView.getTreeElementByUri(target, undefined, targetIsBasename);
         if (node) return {
             node: node,
             source: 'scratch',
         }
         
-        const note = extension.ExtensionGlobals.notebookPanel.getNote(target);
+        const note = Extension.notebookPanel.getNote(target);
         if (note) return {
             source: 'notebook',
             node: note
@@ -269,7 +270,7 @@ export const setFsPathKey = <T>(path: vscode.Uri, value: T, obj: { [index: strin
 
 export const isSubdirectory = (sub: vscode.Uri, full: vscode.Uri): boolean => {
 
-    const normalizedRoot = extension.rootPath.fsPath.toLowerCase().replaceAll("\\", "/").replaceAll(/\/+/g, '/');
+    const normalizedRoot = Extension.rootPath.fsPath.toLowerCase().replaceAll("\\", "/").replaceAll(/\/+/g, '/');
 
     const subPath = sub.fsPath;
     const fullPath = full.fsPath;
@@ -310,7 +311,7 @@ export async function statFile (uri: vscode.Uri): Promise<vscode.FileStat | null
 }
 
 export function getRelativePath (uri: vscode.Uri): string {
-    return uri.fsPath.replace(extension.rootPath.fsPath, '').replaceAll("\\", '/');
+    return uri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');
 }
 
 
@@ -679,10 +680,10 @@ export async function showTextDocumentWithPreview (docOrUri: vscode.Uri | vscode
 
 
 export const getNodeNamePath = async (parentNode: OutlineNode): Promise<string> => {
-    if (compareFsPath(parentNode.data.ids.uri, extension.ExtensionGlobals.outlineView.rootNodes[0].data.ids.uri)) {
-        return extension.ExtensionGlobals.workspace.config.title;
+    if (compareFsPath(parentNode.data.ids.uri, Extension.outlineView.rootNodes[0].data.ids.uri)) {
+        return Extension.workspace.config.title;
     }
-    return (await getNodeNamePath(await extension.ExtensionGlobals.outlineView.getTreeElementByUri(parentNode.data.ids.parentUri) || extension.ExtensionGlobals.outlineView.rootNodes[0])) + "/" + parentNode.data.ids.display;
+    return (await getNodeNamePath(await Extension.outlineView.getTreeElementByUri(parentNode.data.ids.parentUri) || Extension.outlineView.rootNodes[0])) + "/" + parentNode.data.ids.display;
 }
 
 
@@ -712,7 +713,7 @@ export type RevealOptions = {
 
 
 export async function addSingleWorkspaceEdit (edits: vscode.WorkspaceEdit, location: vscode.Location, replaceString: string): Promise<void> {
-    if (location.uri.fsPath.endsWith('.wt')) {
+    if (location.uri.fsPath.endsWith('.wt') || location.uri.fsPath.endsWith('.md')) {
         edits.replace(location.uri, location.range, replaceString);
     }
     else if (location.uri.fsPath.endsWith('.wtnote') || location.uri.fsPath.endsWith('.config')) {
@@ -743,4 +744,11 @@ export function escapeUserTextForRegex (text: string) {
 
 export function stripDiacritics (text: string): string {
     return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");     // strip diacritics
+}
+
+
+export function getOrdinal(num: number): string {
+    let s = ["th", "st", "nd", "rd"];
+    let v = num % 100;
+    return num + (s[(v - 20) % 10] || s[v] || s[0]);
 }

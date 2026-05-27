@@ -1,5 +1,5 @@
 import { __, isSubdirectory } from '../help';
-import * as extension from './../../extension'
+import { Extension } from   './../../extension'
 import * as vscode from 'vscode';
 
 export async function nodeGrep (
@@ -9,7 +9,6 @@ export async function nodeGrep (
     caseInsensitive: boolean, 
     wholeWord: boolean,
     useNodeDescriptions: boolean,
-    useIgnoreStyleCharacters: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[ vscode.Location, string ][] | null>;
 
@@ -27,7 +26,6 @@ export async function nodeGrep (
     useCaseInsensitive?: boolean, 
     useWholeWord?: boolean,
     useNodeDescriptions?: boolean,
-    useIgnoreStyleCharacters?: boolean,
     cancellationToken?: vscode.CancellationToken
 ): Promise<[ vscode.Location, string ][] | null> {
     let inlineSearchRegex: RegExp;
@@ -55,16 +53,12 @@ export async function nodeGrep (
 
         inlineSearchRegex = new RegExp(`(?<${captureGroupId}>${inlineSource})`, flags);
         if (useWholeWord) {
-            inlineSearchRegex = new RegExp(`${extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${extension.wordSeparator}`, flags);
+            inlineSearchRegex = new RegExp(`${Extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${Extension.wordSeparator}`, flags);
         }
     }
     else {
         inlineSearchRegex = searchBarValueOrInlineSearchRegex as RegExp;
         cancellationToken = useRegexOrCancelationToken as vscode.CancellationToken;
-    }
-
-    if (useIgnoreStyleCharacters) {
-
     }
 
     const captureGroupId = 'searchResult';
@@ -106,14 +100,15 @@ export async function nodeGrep (
                 (
                     uri.fsPath.toLocaleLowerCase().endsWith('.wt') 
                     || uri.fsPath.toLocaleLowerCase().endsWith('.wtnote') 
+                    || uri.fsPath.toLocaleLowerCase().endsWith('.md') 
                     || uri.fsPath.toLocaleLowerCase().endsWith('.config')
                 )
                 && 
                 (
-                    isSubdirectory(extension.ExtensionGlobals.workspace.chaptersFolder, uri)
-                    || isSubdirectory(extension.ExtensionGlobals.workspace.workSnipsFolder, uri)
-                    || isSubdirectory(extension.ExtensionGlobals.workspace.notebookFolder, uri)
-                    || isSubdirectory(extension.ExtensionGlobals.workspace.scratchPadFolder, uri)
+                    isSubdirectory(Extension.workspace.chaptersFolder, uri)
+                    || isSubdirectory(Extension.workspace.workSnipsFolder, uri)
+                    || isSubdirectory(Extension.workspace.notebookFolder, uri)
+                    || isSubdirectory(Extension.workspace.scratchPadFolder, uri)
                 )
             ) {
                 // Finally, finally, finally yield the result

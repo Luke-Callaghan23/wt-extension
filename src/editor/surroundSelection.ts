@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { wordSeparator, wordSeparatorRegex } from '../extension';
+import { Extension } from '../extension';
 
 // Function for surrounding selected text with a specified string
 export async function surroundSelectionWith (startRanges: (string | null) | (string | null)[], endRanges?: (string | null) | (string | null)[], overrideSelections?: vscode.Selection[], insertSpaceOnRemoval?: boolean) {
@@ -119,14 +119,14 @@ export async function surroundSelectionWith (startRanges: (string | null) | (str
                     // When insertSpaceOnRemoval is set, we need to confirm whether or not the characters surrounding the removed text (`before` and `after` are word separators)
                     // If, after removing `before` and `after`, there are no word separators on either side of the content, then we need to add a space there instead of just deleting
 
-                    if (!wordSeparatorRegex.test(beforeBefore) && !wordSeparatorRegex.test(afterBefore)) {
+                    if (!Extension.wordSeparatorRegex.test(beforeBefore) && !Extension.wordSeparatorRegex.test(afterBefore)) {
                         editBuilder.replace(before, " ");
                     }
                     else {
                         editBuilder.delete(before);
                     }
 
-                    if (!wordSeparatorRegex.test(beforeAfter) && !wordSeparatorRegex.test(afterAfter)) {
+                    if (!Extension.wordSeparatorRegex.test(beforeAfter) && !Extension.wordSeparatorRegex.test(afterAfter)) {
                         editBuilder.replace(after, " ");
                     }
                     else {
@@ -190,6 +190,10 @@ export function italisize () {
 
 export function bold () {
     return surroundSelectionWith('^');
+}
+
+export function boldMarkdown () {
+    return surroundSelectionWith('**');
 }
 
 export function strikethrough () {
