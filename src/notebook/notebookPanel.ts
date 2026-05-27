@@ -555,7 +555,7 @@ implements
             const subsetTitlesAndAliasesRegex = this.getTitlesAndAliasesRegex(false, false, [ matchedNote.note ]);
 
             try {
-                const results = await grepExtensionDirectory(subsetTitlesAndAliasesRegex.source, true, true, true, token);
+                const results = await grepExtensionDirectory(subsetTitlesAndAliasesRegex.source, true, true, true, false, token);
                 return !results ? null : results.map(([ loc, _ ]) => loc);
             }
             catch (err: any) {
@@ -590,7 +590,7 @@ implements
         const aliasRegex = new RegExp(aliasRegexString, 'gi');
         
         const locations: [ vscode.Location, string ][] | null= await defaultProgress(`Collecting references for '${notePanelNote.title}'`, async () => {
-            return grepExtensionDirectory(aliasRegexString, true, true, true, cancellationToken); 
+            return grepExtensionDirectory(aliasRegexString, true, true, true, false, cancellationToken); 
         });
         if (!locations) return null;
 

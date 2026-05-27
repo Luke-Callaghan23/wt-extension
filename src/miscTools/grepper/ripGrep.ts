@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import * as console from '../vsconsole';
 import * as childProcess from 'child_process';
 import { Extension } from   '../../extension';
-import { getBinPath } from "vscode-ripgrep-utils";
+import { getBinPath, binName } from "vscode-ripgrep-utils";
+import { buildMarkdownIgnoringRegex } from './common';
 
 
 export type GrepResult = {
@@ -13,15 +14,66 @@ export type GrepResult = {
     message: string
 };
 
-export class RipGrep {
 
-    private static createRegex (searchBarValue: string, useRegex: boolean, wholeWord: boolean): RegExp {
-        let regexSource = searchBarValue;
-        if (!useRegex) {
-            regexSource = regexSource.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+let finalRgPath: string | null = null;
+getBinPath(vscode.env.appRoot).then(async (rgBinPath) => {
+    if (rgBinPath) {
+        finalRgPath = rgBinPath;
+    }
+
+    // ripgrep bin seems to have moved, and `vscode-ripgrep-utils` hasn't been updated yet
+    // Search manually
+    // Still keep `vscode-ripgrep-utils` around for legacy support :)
+    if (!rgBinPath) {
+        const ripgrepUniversal = vscode.Uri.joinPath (
+            vscode.Uri.file(vscode.env.appRoot),
+            "node_modules/@vscode/ripgrep-universal/bin"
+        );
+    
+        // Recursive search for `binName` file
+        async function searchPath (path: vscode.Uri): Promise<vscode.Uri | null> {
+            const promises: Promise<vscode.Uri | null>[] = [];
+            for (const [ fn, fileType ] of await vscode.workspace.fs.readDirectory(path)) {
+                const next = vscode.Uri.joinPath(path, fn);
+                if (fileType === vscode.FileType.File) {
+                    if (fn === binName) {
+                        return next;
+                    }
+                }
+                else if (fileType === vscode.FileType.Directory) {
+                    promises.push(searchPath(next));
+                }
+            }
+
+            const searches = await Promise.all(promises);
+            for (const result of searches) {
+                if (result === null) continue;
+                return result;
+            }
+            return null;
         }
 
-        if (wholeWord) {
+        const searched = await searchPath(ripgrepUniversal);
+        if (searched !== null) {
+            finalRgPath = searched.fsPath;
+        }
+    }
+})
+
+export class RipGrep {
+
+    private static createRegex (searchBarValue: string, useRegex: boolean, useWholeWord: boolean, useIgnoreStyleCharacters: boolean): RegExp {
+        let regexSource = searchBarValue;
+        if (!useRegex) {
+            if (useIgnoreStyleCharacters) {
+                regexSource = buildMarkdownIgnoringRegex(regexSource);
+            }
+            else {
+                regexSource = regexSource.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+        }
+
+        if (useWholeWord) {
             const shellWordSeparatorStart = '(^|\\s|-|[.?:;,()!&"\'^_*~])';
             const shellWordSeparatorEnd = '(\\s|-|[.?:;,()!&"\'^_*~]|$)';
             regexSource = `${shellWordSeparatorStart}${regexSource}${shellWordSeparatorEnd}`;
@@ -38,8 +90,9 @@ export class RipGrep {
     public static async query (
         searchBarValue: string, 
         useRegex: boolean, 
-        caseInsensitive: boolean, 
-        wholeWord: boolean, 
+        useCaseInsensitive: boolean, 
+        useWholeWord: boolean, 
+        useIgnoreStyleCharacters: boolean,
         cancellationToken: vscode.CancellationToken,
         overrideFilter?: string,
     ): Promise<GrepResult> {
@@ -50,21 +103,22 @@ export class RipGrep {
         // This function mainly exists to process the raw output of a git grep command output and 
         //      transform it into vscode.Location so it can be used elsewhere in the writing environment
     
-        const regex = RipGrep.createRegex(searchBarValue, useRegex, wholeWord);
+        const regex = RipGrep.createRegex(searchBarValue, useRegex, useWholeWord, useIgnoreStyleCharacters);
         try {
             // Call git grep
 
             let flags = '-n';
-            if (caseInsensitive) {
+            if (useCaseInsensitive) {
                 flags += 'i';
             }
-            const command = ['--no-heading', '--with-filename', '-.', flags, searchBarValue, overrideFilter || './'];
+            const command = ['--no-heading', '--with-filename', '-.', flags, regex.source, overrideFilter || './'];
             
             console.log(`[INFO] Running grep command 'rg' with args: "${command.join('" "')}"`)
             
-            const rgBinPath = await getBinPath(vscode.env.appRoot);
-            if (!rgBinPath) throw "Error executing 'rg'";
-            const ps = childProcess.spawnSync(rgBinPath, command, {
+            if (!finalRgPath) {
+                throw "Could not find ripgrep!";
+            }
+            const ps = childProcess.spawnSync(finalRgPath, command, {
                 cwd: Extension.rootPath.fsPath,
                 maxBuffer: 1024 * 1024 * 50                 // 50 MB max buffer
             });

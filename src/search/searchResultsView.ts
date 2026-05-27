@@ -80,12 +80,13 @@ implements
     public async searchBarValueWasUpdated (
         searchBarValue: string, 
         useRegex: boolean, 
-        caseInsensitive: boolean, 
-        matchTitles: boolean, 
-        wholeWord: boolean,
+        useCaseInsensitive: boolean, 
+        useMatchTitles: boolean, 
+        useWholeWord: boolean,
+        useIgnoreStyleCharacters: boolean,
         cancellationToken: vscode.CancellationToken
     ) {
-        return this.searchTree.searchBarValueWasUpdated(searchBarValue, useRegex, caseInsensitive, matchTitles, wholeWord, cancellationToken);
+        return this.searchTree.searchBarValueWasUpdated(searchBarValue, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, useIgnoreStyleCharacters, cancellationToken);
     }
     
 
@@ -96,9 +97,6 @@ implements
     public async searchCleared () {
         this.searchTree.searchCleared();
     }
-    
-
-    // /home/lcallaghan/wtenvs/fotbb/data/chapters/chapter-b80dzv110/snips/snip-b83x1tgy0
 
     enabled: boolean;
     getUpdatesAreVisible(): boolean {
@@ -130,9 +128,11 @@ implements
         const { 
             latestSearchBarValue, 
             useWholeWord, useRegex, 
-            useCaseInsensitive, useMatchTitles,
-            useNodeDescriptions, useIgnoreStyleCharacters
-        } = await vscode.commands.executeCommand<SearchContext>('wt.wtSearch.getSearchContext');
+            useCaseInsensitive, 
+            useMatchTitles,
+            useNodeDescriptions,
+            useIgnoreStyleCharacters
+        } = Extension.searchBarView.getSearchContext();
 
         if (latestSearchBarValue === '') {
             return;
@@ -183,8 +183,8 @@ implements
         }
         
         const fileResults = 'uri' in updated
-            ? await nodeGrep(updated, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, useNodeDescriptions, cancellationToken)
-            : await grepSingleFile(updatedUri, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, cancellationToken);
+            ? await nodeGrep(updated, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, useNodeDescriptions, useIgnoreStyleCharacters, cancellationToken)
+            : await grepSingleFile(updatedUri, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, useIgnoreStyleCharacters, cancellationToken);
 
         
         if (!fileResults) return;

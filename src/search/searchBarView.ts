@@ -121,19 +121,21 @@ implements
             this.setSlowModeValue();
         }));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.searchError', this.setSearchBarError.bind(this)));
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.getSearchContext', () => {
-            return __<SearchContext>({
-                latestSearchBarValue: this.latestSearchBarValue,
-                latestReplaceBarValue: this.latestReplaceBarValue,
-                useWholeWord: this.useWholeWord,
-                useRegex: this.useRegex,
-                useCaseInsensitive: this.useCaseInsensitive,
-                useMatchTitles: this.useMatchTitles,
-                useNodeDescriptions: this.useNodeDescriptions,
-                useIgnoreStyleCharacters: this.useIgnoreStyleCharacters
-            });
-        }));
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.getSearchContext', this.getSearchContext.bind(this)));
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.updateSearchBarValue', this.updateSearchBarValue.bind(this)));
+    }
+
+    public getSearchContext (): SearchContext {
+        return {
+            latestSearchBarValue: this.latestSearchBarValue,
+            latestReplaceBarValue: this.latestReplaceBarValue,
+            useWholeWord: this.useWholeWord,
+            useRegex: this.useRegex,
+            useCaseInsensitive: this.useCaseInsensitive,
+            useMatchTitles: this.useMatchTitles,
+            useNodeDescriptions: this.useNodeDescriptions,
+            useIgnoreStyleCharacters: this.useIgnoreStyleCharacters
+        };
     }
 
     private setSlowModeValue () {
@@ -164,7 +166,15 @@ implements
 
     protected debouncedUpdate(cancellationToken: vscode.CancellationToken, searchBarValue: string): Promise<void> {
         Workspace.forcePackaging(this.context, 'wt.wtSearch.search.latestSearchBarValue', this.latestSearchBarValue);
-        return this.searchResults.searchBarValueWasUpdated(searchBarValue, this.useRegex, this.useCaseInsensitive, this.useMatchTitles, this.useWholeWord, cancellationToken);
+        return this.searchResults.searchBarValueWasUpdated (
+            searchBarValue, 
+            this.useRegex, 
+            this.useCaseInsensitive, 
+            this.useMatchTitles, 
+            this.useWholeWord, 
+            this.useIgnoreStyleCharacters,
+            cancellationToken
+        );
     }
 
 
@@ -283,6 +293,7 @@ implements
                                     <div class="tooltip">
                                         <input class="color-input" type="text" placeholder="Search . . ." id="search-bar" value="${this.latestSearchBarValue}">
                                         <span id="error-tooltip" class="tooltiptext"></span>
+                                        <span id="warning-tooltip" class="tooltiptext"></span>
                                     </div>
                                     <div class="icon" id="search-icon"><i class="codicon codicon-search"></i></div>
                                 </div>
@@ -294,6 +305,7 @@ implements
                                     <div class="tooltip">
                                         <input class="color-input" type="text" placeholder="Replace" id="replace-bar">
                                         <span id="error-tooltip" class="tooltiptext"></span>
+                                        <span id="warning-tooltip" class="tooltiptext"></span>
                                     </div>
                                     <div class="icon" id="replace-icon"><i class="codicon codicon-replace-all"></i></div>
                                 </div>
@@ -304,6 +316,7 @@ implements
                                         label="Whole Word"
                                         id="checkbox-whole-word" 
                                         name="whole-word" 
+                                        title="Search text cannot be substring of a larger word. Will only search strings that are bookended with word stops: . ? : ; , ( ) ! & + - \\n \\ / &quot; ' ^ _ * ~ [ ], whitespace, BOF, and EOF."
                                         ${this.useWholeWord ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
@@ -314,6 +327,7 @@ implements
                                         label="Regex"
                                         id="checkbox-regex" 
                                         name="regex" 
+                                        title="Convert search string into a regex and search with that (NOTE: this option is incompatable with the &quot;Ignore Style Characters&quot; option)"
                                         ${this.useRegex ? "checked" : ""}
                                         class="checkbox"
                                         tooltip=""
@@ -326,6 +340,7 @@ implements
                                         label="Case Insensitive"
                                         id="checkbox-case-insensitive" 
                                         name="case-insensitive" 
+                                        title="Latin alphabet characters upper/lower case will be ignored in search"
                                         ${this.useCaseInsensitive ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
@@ -336,6 +351,7 @@ implements
                                         label="Match Titles"
                                         id="checkbox-match-titles" 
                                         name="match-titles" 
+                                        title="Nodes in the Outline Tree with titles that match search string will also be shown in results"
                                         ${this.useMatchTitles ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
@@ -346,6 +362,7 @@ implements
                                         label="Node Descriptions"
                                         id="checkbox-node-descriptions" 
                                         name="node-descriptions" 
+                                        title="Nodes in the Outline Tree with node descriptions that match the search string will also be shown in results"
                                         ${this.useNodeDescriptions ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
@@ -356,6 +373,7 @@ implements
                                         label="Ignore Style Characters"
                                         id="checkbox-ignore-style-characters" 
                                         name="ignore-style-characters" 
+                                        title="Search string will ignore markdown/writing tool style characters when searching. So search='hello' will match text='hello' as well as text='h**e_l^l*o'. (NOTE: this option is incompatable with the &quot;Regex&quot; option)"
                                         ${this.useIgnoreStyleCharacters ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>

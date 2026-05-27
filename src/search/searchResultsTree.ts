@@ -88,11 +88,12 @@ export class SearchResultsTree
                 useWholeWord, 
                 useRegex, 
                 useCaseInsensitive, 
-                useMatchTitles 
-            } = await vscode.commands.executeCommand<SearchContext>('wt.wtSearch.getSearchContext');
+                useMatchTitles,
+                useIgnoreStyleCharacters,
+            } = Extension.searchBarView.getSearchContext();
             Extension.searchBarView.updateSearchBarValue(response);
             vscode.commands.executeCommand('workbench.view.extension.wtSearch');
-            return this.searchBarValueWasUpdated(response, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, new vscode.CancellationTokenSource().token);
+            return this.searchBarValueWasUpdated(response, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, useIgnoreStyleCharacters, new vscode.CancellationTokenSource().token);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.openSearch', async () => {
@@ -104,11 +105,12 @@ export class SearchResultsTree
                     useWholeWord, 
                     useRegex, 
                     useCaseInsensitive, 
-                    useMatchTitles 
-                } = await vscode.commands.executeCommand<SearchContext>('wt.wtSearch.getSearchContext');
+                    useMatchTitles,
+                    useIgnoreStyleCharacters,
+                } = Extension.searchBarView.getSearchContext();
                 await vscode.commands.executeCommand('workbench.view.Extension.wtSearch');
                 Extension.searchBarView.updateSearchBarValue(selectedText);
-                return this.searchBarValueWasUpdated(selectedText, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, new vscode.CancellationTokenSource().token);
+                return this.searchBarValueWasUpdated(selectedText, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, useIgnoreStyleCharacters, new vscode.CancellationTokenSource().token);
             }
             else {
                 return vscode.commands.executeCommand('workbench.view.Extension.wtSearch');
@@ -190,9 +192,10 @@ export class SearchResultsTree
     public async searchBarValueWasUpdated (
         searchBarValue: string, 
         useRegex: boolean, 
-        caseInsensitive: boolean, 
-        matchTitles: boolean, 
-        wholeWord: boolean,
+        useCaseInsensitive: boolean, 
+        useMatchTitles: boolean, 
+        useWholeWord: boolean,
+        useIgnoreStyleCharacters: boolean,
         cancellationToken: vscode.CancellationToken
     ) {
 
@@ -205,7 +208,7 @@ export class SearchResultsTree
             
             let results: [vscode.Location, string][] | null;
             try {
-                results = await grepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+                results = await grepExtensionDirectory(searchBarValue, useRegex, useCaseInsensitive, useWholeWord, useIgnoreStyleCharacters, cancellationToken);
                 if (results === null || results.length === 0) return this.searchCleared();
                 if (cancellationToken.isCancellationRequested) return;
             }
@@ -227,7 +230,7 @@ export class SearchResultsTree
                     if (cancellationToken.isCancellationRequested) return;
 
                     // Iteratively insert every result in this chunk into the search result generator
-                    currentTree = await searchNodeGenerator.insertResult(result[0], matchTitles, cancellationToken);
+                    currentTree = await searchNodeGenerator.insertResult(result[0], useMatchTitles, cancellationToken);
                 }
                 // At the end of every chunk, refresh the tree
                 currentTree && this.refresh(currentTree);

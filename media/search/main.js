@@ -21,8 +21,9 @@
             });
         }
     };
-    
 
+    const errorTooltip = document.getElementById('error-tooltip');
+    const warningTooltip = document.getElementById('warning-tooltip');
     
     const searchBar = document.getElementById('search-bar');
     const searchIcon = document.getElementById("search-icon");
@@ -86,14 +87,66 @@
     }
 
 
-    wholeWordCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'wholeWord'));
-    regexCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'regex'));
-    caseInsensitiveCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'caseInsensitive'));
-    matchTitlesCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'matchTitles'));
-    nodeDescriptionsCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'nodeDescriptions'));
-    ignoreStyleCharactersCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'ignoreStyleCharacters'));
+    wholeWordCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'useWholeWord'));
+    caseInsensitiveCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'useCaseInsensitive'));
+    matchTitlesCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'useMatchTitles'));
+    nodeDescriptionsCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'useNodeDescriptions'));
+    ignoreStyleCharactersCheckbox.addEventListener('click', (event) => checkboxValueChanged(event.target.checked, 'useIgnoreStyleCharacters'));
+    
+    let timeout = null;
 
-    const errorTooltip = document.getElementById('error-tooltip');
+    // Used to show a tooltip when a user attempt to select both "Regex" and "Ignore Style Characters" checkboxes at the same time
+    // These two options are incompatible with each other, and we have to turn off the other when the one is turned on
+    function showRegexAndIgnoreStyleCharacterIncompatibilityText (ignoreStyleTurnedOn) {
+        let tooltip;
+        if (ignoreStyleTurnedOn) {
+            tooltip = `"Ignore Style Characters" option is incompatible with "Regex" option.  Switching "Regex" off for now.`
+        }
+        else {
+            tooltip = `"Regex" option is incompatible with "Ignore Style Characters" option.  Switching "Ignore Style Characters" off for now.`
+        }
+        searchBar.classList.add('search-warning');
+        warningTooltip.innerHTML = tooltip;
+
+        // Set a timer to hide the tooltip in 5 seconds
+        if (timeout !== null) {
+            clearTimeout(timeout);
+        }
+
+        timeout = setTimeout(() => {
+            hideRegexAndIgnoreStyleCharacterIncompatibilityText();
+            timeout = null;
+        }, 15000);
+    }
+
+    function hideRegexAndIgnoreStyleCharacterIncompatibilityText () {
+        // Remove the tooltip (this will be called 5 seconds from when the show function is called)
+        searchBar.classList.remove('search-warning');
+        warningTooltip.innerHTML = ``;
+    }
+
+    // regex and ignoreStyleCharacters checkmarks need to turn each other off when one is turned on
+    // And also show a warning message when one is toggled on or off due to this incompatability
+    ignoreStyleCharactersCheckbox.addEventListener('click', (event) => {
+        const on = event.target.checked;
+        if (on && regexCheckbox.checked) {
+            regexCheckbox.checked = false;
+            showRegexAndIgnoreStyleCharacterIncompatibilityText(true);
+            checkboxValueChanged(false, 'useRegex');
+        }
+        checkboxValueChanged(on, 'useIgnoreStyleCharacters');
+    });
+
+    regexCheckbox.addEventListener('click', (event) => {
+        const on = event.target.checked;
+        if (on && ignoreStyleCharactersCheckbox.checked) {
+            ignoreStyleCharactersCheckbox.checked = false;
+            showRegexAndIgnoreStyleCharacterIncompatibilityText(false);
+            checkboxValueChanged(false, 'useIgnoreStyleCharacters');
+        }
+        checkboxValueChanged(on, 'useRegex')
+    });
+
     function updateError () {
         if (regexCheckbox.checked) {
             try {
@@ -112,7 +165,6 @@
         searchBar.classList.remove('search-error');
         return true;
     }
-
 
     {
         // Handle messages sent from the extension to the webview

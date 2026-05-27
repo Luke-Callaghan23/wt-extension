@@ -2,35 +2,39 @@ import * as vscode from 'vscode';
 import { Extension } from   '../../extension';
 import { getRelativePath, isSubdirectory } from '../help';
 import { RipGrep } from './ripGrep';
+import { buildMarkdownIgnoringRegex } from './common';
 
 export async function grepSingleFile (
     uri: vscode.Uri,
     searchBarValue: string, 
     useRegex: boolean, 
-    caseInsensitive: boolean, 
-    wholeWord: boolean,
+    useCaseInsensitive: boolean, 
+    useWholeWord: boolean,
+    useIgnoreStyleCharacters: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[vscode.Location, string][] | null> {
     const fmtUri = './' + getRelativePath(uri);
-    return grep__impl(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken, fmtUri);
+    return grep__impl(searchBarValue, useRegex, useCaseInsensitive, useWholeWord, useIgnoreStyleCharacters, cancellationToken, fmtUri);
 }
 
 export async function grepExtensionDirectory (
     searchBarValue: string, 
     useRegex: boolean, 
-    caseInsensitive: boolean, 
-    wholeWord: boolean,
+    useCaseInsensitive: boolean, 
+    useWholeWord: boolean,
+    useIgnoreStyleCharacters: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[vscode.Location, string][] | null>  {
-    return grep__impl(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+    return grep__impl(searchBarValue, useRegex, useCaseInsensitive, useWholeWord, useIgnoreStyleCharacters, cancellationToken);
 }
 
 
 async function grep__impl (
     searchBarValue: string, 
     useRegex: boolean, 
-    caseInsensitive: boolean, 
-    wholeWord: boolean,
+    useCaseInsensitive: boolean, 
+    useWholeWord: boolean,
+    useIgnoreStyleCharacters: boolean,
     cancellationToken: vscode.CancellationToken,
     overrideFilter?: string,
 ): Promise<[vscode.Location, string][] | null>  {
@@ -41,11 +45,16 @@ async function grep__impl (
     //      to do additional searches inside of CONTENTS_OF_LINE for the actual matched text
     let inlineSource = searchBarValue;
     if (!useRegex) {
-        inlineSource = inlineSource.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (useIgnoreStyleCharacters) {
+            inlineSource = buildMarkdownIgnoringRegex(inlineSource);
+        }
+        else {
+            inlineSource = inlineSource.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
     }
 
     let inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${inlineSource})`, 'gi');
-    if (wholeWord) {
+    if (useWholeWord) {
         inlineSearchRegex = new RegExp(`${Extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${Extension.wordSeparator}`, 'gi');
     }
 
@@ -53,7 +62,7 @@ async function grep__impl (
 
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
-    const grepResult = await RipGrep.query(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken, overrideFilter);
+    const grepResult = await RipGrep.query(searchBarValue, useRegex, useCaseInsensitive, useWholeWord, useIgnoreStyleCharacters, cancellationToken, overrideFilter);
     if (grepResult.status === 'error') {
         Extension.searchBarView.setSearchBarError(searchBarValue, grepResult.message);
         return null;

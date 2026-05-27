@@ -1,14 +1,16 @@
 import { __, isSubdirectory } from '../help';
 import { Extension } from   './../../extension'
 import * as vscode from 'vscode';
+import { buildMarkdownIgnoringRegex } from './common';
 
 export async function nodeGrep (
     document: vscode.TextDocument,
     searchBarValue: string, 
     useRegex: boolean, 
-    caseInsensitive: boolean, 
-    wholeWord: boolean,
+    useCaseInsensitive: boolean, 
+    useWholeWord: boolean,
     useNodeDescriptions: boolean,
+    useIgnoreStyleCharacters: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[ vscode.Location, string ][] | null>;
 
@@ -26,6 +28,7 @@ export async function nodeGrep (
     useCaseInsensitive?: boolean, 
     useWholeWord?: boolean,
     useNodeDescriptions?: boolean,
+    useIgnoreStyleCharacters?: boolean,
     cancellationToken?: vscode.CancellationToken
 ): Promise<[ vscode.Location, string ][] | null> {
     let inlineSearchRegex: RegExp;
@@ -48,7 +51,7 @@ export async function nodeGrep (
         //      to do additional searches inside of CONTENTS_OF_LINE for the actual matched text
         let inlineSource = searchBarValue;
         if (!useRegex) {
-            inlineSource = inlineSource.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            inlineSource = buildMarkdownIgnoringRegex(inlineSource);
         }
 
         inlineSearchRegex = new RegExp(`(?<${captureGroupId}>${inlineSource})`, flags);
