@@ -320,13 +320,13 @@ export type SurroundingTextResult = {
     highlight: [ number, number ]
 };
 
-export function applyHighlightToMarkdownString (surroundingText: string, highlights: [number, number]) {
+function applySingleHighlightToMarkdown__impl (surroundingText: string, highlight: [number, number]) {
     // Split on the highlights for the larger surrounding text
     const splits = [
-        surroundingText.substring(0, highlights[0]),
-        surroundingText.substring(highlights[0], highlights[1]),
-        surroundingText.substring(highlights[1])
-    ]
+        surroundingText.substring(0, highlight[0]),
+        surroundingText.substring(highlight[0], highlight[1]),
+        surroundingText.substring(highlight[1])
+    ];
     
     // Clean all the markings from the three sections 
     // (Need to do cleaning here or else the `highlights` indices might get messed up)
@@ -334,7 +334,33 @@ export function applyHighlightToMarkdownString (surroundingText: string, highlig
     
     const joined = cleaned[0] + '<mark>' + cleaned[1] + '</mark>' + cleaned[2];
     const finalMarkdown = joined.replaceAll(/\n/g, '\n\n');
+    return finalMarkdown;
+}
+
+export function applyHighlightToMarkdownString (surroundingText: string, highlight: [number, number]) {
+    const finalMarkdown = applySingleHighlightToMarkdown__impl(surroundingText, highlight);
     
+    // Create md and mark it as supporting HTML
+    const md = new vscode.MarkdownString(finalMarkdown);
+    md.supportHtml = true;
+    return md;
+}
+
+export function applyMultiHighlightToMarkdownString (surroundingText: string, highlights: [number, number][]) {
+    // Since each highlight involves adding text to the full string, we cannot iterate forwards through the text
+    //      because each subsequent highlight will be incorrect
+    // So, first ensure the highligts are in reverse order where h[n].start > h[n-1].start for each n
+    const reverseOrderedHighlights = highlights.sort(([aStart, _], [ bStart, __]) => {
+        // Descending sort on start
+        return bStart - aStart;
+    })
+    
+    // Repeatedly apply highlights to the markdown
+    let finalMarkdown = surroundingText;
+    for (const highlight of reverseOrderedHighlights) {
+        finalMarkdown = applySingleHighlightToMarkdown__impl(finalMarkdown, highlight);
+    }
+
     // Create md and mark it as supporting HTML
     const md = new vscode.MarkdownString(finalMarkdown);
     md.supportHtml = true;

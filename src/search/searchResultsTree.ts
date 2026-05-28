@@ -4,7 +4,7 @@ import { Workspace } from '../workspace/workspaceClass';
 import { Extension } from   '../extension';
 import { v4 as uuid } from 'uuid';
 import { grepExtensionDirectory, grepSingleFile } from '../miscTools/grepper/grepExtensionDirectory';
-import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
+import { FileResultLocationNode, FileResultNode, MatchedMetadataNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, getFsPathKey, isSubdirectory, setFsPathKey, showTextDocumentWithPreview, UriFsPathFormatted, vagueNodeSearch } from '../miscTools/help';
 import { CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
@@ -135,7 +135,7 @@ export class SearchResultsTree
             return editor.revealRange(location.range);
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.showNode', async (node: SearchNode<MatchedTitleNode>) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.showNode', async (node: SearchNode<MatchedMetadataNode>) => {
             // Called when a MatchedTitleNode is clicked in the outline tree,
             // When the matched title is the title of a fragment, opens that in the editor
             // Otherwise, reveals that node in the Outline / Scratch Pad / Recycling Bin / Notebook view
@@ -230,7 +230,7 @@ export class SearchResultsTree
                     if (cancellationToken.isCancellationRequested) return;
 
                     // Iteratively insert every result in this chunk into the search result generator
-                    currentTree = await searchNodeGenerator.insertResult(result[0], useMatchTitles, cancellationToken);
+                    currentTree = await searchNodeGenerator.insertResult(result[0], useMatchTitles, useIgnoreStyleCharacters, cancellationToken);
                 }
                 // At the end of every chunk, refresh the tree
                 currentTree && this.refresh(currentTree);
@@ -239,7 +239,7 @@ export class SearchResultsTree
 
             // Once the entire tree for this search is completed, start creating 'title' nodes
             //      to display any matches within the title of snips/chapters/fragments
-            currentTree = await searchNodeGenerator.createTitleNodes(cancellationToken);
+            currentTree = await searchNodeGenerator.createMetadataNodes(cancellationToken);
             currentTree && this.refresh(currentTree);
             this.searchResultsView.updateDecoationsIfViewIsVisible();
         });
@@ -364,7 +364,7 @@ WARNING: For best results.  Save ALL open .wtnote notebook files before doing th
                 }
             }
         }
-        else if (element.node.kind === 'matchedTitle') {
+        else if (element.node.kind === 'matchedMetadata') {
             let icon: vscode.ThemeIcon;
             if (element.node.linkNode.source === 'notebook' || element.node.linkNode.node.data.ids.type === 'fragment') {
                 icon = new vscode.ThemeIcon('edit');

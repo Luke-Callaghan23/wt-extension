@@ -241,8 +241,9 @@ export class Extension {
     }
     static get packageableItems () {
         if (!this._packageableItems) {
-            vscode.window.showErrorMessage("[ERROR] Attempted to access 'packageableItems' before initialized.  Only access global data after it's been initialized.");
-            throw "[ERROR] Attempted to access 'packageableItems' before initialized.  Only access global data after it's been initialized.";
+            // Don't throw an error for this one
+            // This can be called during startup and we don't want it crashing before `this._packageableItems` is initialized
+            return [];
         }
         return this._packageableItems;
     }
@@ -434,7 +435,7 @@ export class Extension {
 
             const fragmentOverview = new FragmentOverviewView(context, workspace);
             report("Loaded fragment overview");
-            
+
             this._tabStates = new TabStates(context, workspace);
             report("Loaded tab groups");
 

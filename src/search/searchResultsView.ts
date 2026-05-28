@@ -4,7 +4,7 @@ import { Workspace } from '../workspace/workspaceClass';
 import { Extension } from   '../extension';
 import { v4 as uuid } from 'uuid';
 import { grepExtensionDirectory, grepSingleFile } from '../miscTools/grepper/grepExtensionDirectory';
-import { FileResultLocationNode, FileResultNode, MatchedTitleNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
+import { FileResultLocationNode, FileResultNode, MatchedMetadataNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, getFsPathKey, isSubdirectory, setFsPathKey, showTextDocumentWithPreview, UriFsPathFormatted, vagueNodeSearch } from '../miscTools/help';
 import { CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
@@ -28,7 +28,7 @@ export type SearchNodeKind =
     | FileResultNode
     | FileResultLocationNode
     | SearchNodeTemporaryText
-    | MatchedTitleNode;
+    | MatchedMetadataNode;
 
 export class SearchResultsView 
 extends 
@@ -185,7 +185,6 @@ implements
         const fileResults = 'uri' in updated
             ? await nodeGrep(updated, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, useNodeDescriptions, useIgnoreStyleCharacters, cancellationToken)
             : await grepSingleFile(updatedUri, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, useIgnoreStyleCharacters, cancellationToken);
-
         
         if (!fileResults) return;
         
@@ -197,12 +196,12 @@ implements
             if (cancellationToken.isCancellationRequested) return;
 
             // Iteratively insert every result in this chunk into the search result generator
-            currentTree = await searchNodeGenerator.insertResult(result[0], useMatchTitles, cancellationToken);
+            currentTree = await searchNodeGenerator.insertResult(result[0], useMatchTitles, useIgnoreStyleCharacters, cancellationToken);
         }
 
         // Once the entire tree for this search is completed, start creating 'title' nodes
         //      to display any matches within the title of snips/chapters/fragments
-        currentTree = await searchNodeGenerator.createTitleNodes(cancellationToken);
+        currentTree = await searchNodeGenerator.createMetadataNodes(cancellationToken);
         if (currentTree) {
             this.searchTree.refresh(currentTree, newFilteredUris);
             this.searchTree.results.push(...fileResults);
