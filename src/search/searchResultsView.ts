@@ -7,10 +7,10 @@ import { grepExtensionDirectory, grepSingleFile } from '../miscTools/grepper/gre
 import { FileResultLocationNode, FileResultNode, MatchedMetadataNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, getFsPathKey, isSubdirectory, setFsPathKey, showTextDocumentWithPreview, UriFsPathFormatted, vagueNodeSearch } from '../miscTools/help';
-import { CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
+import { ConfigNodeInfo, CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
 import { Timed } from '../timedView';
 import { BounceOnIt } from '../miscTools/bounceOnIt';
-import { SearchResultsTree } from './searchResultsTree';
+import { ResultInfo, SearchResultsTree } from './searchResultsTree';
 import { nodeGrep } from '../miscTools/grepper/nodeGrep';
 import { SearchContext } from './searchBarView';
 
@@ -36,7 +36,7 @@ extends
 implements 
     Timed
 {
-    private searchTree: SearchResultsTree
+    private searchTree: SearchResultsTree;
     constructor (
         protected workspace: Workspace,
         protected context: vscode.ExtensionContext
@@ -44,6 +44,10 @@ implements
         super();
         this.searchTree = new SearchResultsTree(this.workspace, this.context, this);
         this.enabled = true;
+    }
+
+    private async getTreeElementByUri (uri: vscode.Uri): Promise<SearchNode<FileResultNode | SearchContainerNode | FileResultLocationNode | SearchNodeTemporaryText | MatchedMetadataNode> | null> {
+        return this.searchTree.getTreeElementByUri(uri);
     }
 
     public async initialize ()  {
@@ -83,10 +87,11 @@ implements
         useCaseInsensitive: boolean, 
         useMatchTitles: boolean, 
         useWholeWord: boolean,
+        useMatchNodeDescriptions: boolean,
         useIgnoreStyleCharacters: boolean,
         cancellationToken: vscode.CancellationToken
     ) {
-        return this.searchTree.searchBarValueWasUpdated(searchBarValue, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, useIgnoreStyleCharacters, cancellationToken);
+        return this.searchTree.searchBarValueWasUpdated(searchBarValue, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, useMatchNodeDescriptions, useIgnoreStyleCharacters, cancellationToken);
     }
     
 
@@ -187,26 +192,56 @@ implements
             : await grepSingleFile(updatedUri, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, useIgnoreStyleCharacters, cancellationToken);
         
         if (!fileResults) return;
+
+        const uri = 'uri' in updated ? updated.uri : updated;
+        const existingNode = await this.getTreeElementByUri(uri);
         
+        let existingConfigInfo: ConfigNodeInfo | undefined;
+        if (existingNode?.node 
+            && (existingNode.node.kind === 'file' || existingNode.node.kind === 'searchContainer') 
+            && existingNode.node.pairedMatchedMetadataNode
+        ) {
+            existingConfigInfo = existingNode.node.pairedMatchedMetadataNode.node;
+        }
+        else if (existingNode?.node && existingNode.node.kind === 'matchedMetadata') { 
+            existingConfigInfo = existingNode.node;
+        }
+
         // Create a search node generator -- with the current root data as seed information
         const searchNodeGenerator = new SearchNodeGenerator(this.searchTree.rootNodes as SearchNode<SearchContainerNode>[]);
-
-        let currentTree: SearchNode<SearchContainerNode>[] | null = null;
-        for (const result of fileResults) {
-            if (cancellationToken.isCancellationRequested) return;
-
-            // Iteratively insert every result in this chunk into the search result generator
-            currentTree = await searchNodeGenerator.insertResult(result[0], useMatchTitles, useIgnoreStyleCharacters, cancellationToken);
+        
+        let resultInfo: ResultInfo;
+        if (fileResults.length === 0 && existingConfigInfo) {
+            resultInfo = {
+                kind: 'metadata',
+                uri: uri,
+                configResults: existingConfigInfo,
+            };
         }
+        else {
+            // Since we know all results will just be for one document, we can recreate a ResultInfo object manually here
+            resultInfo = {
+                kind: 'regular',
+                uri: uri,
+                results: fileResults.map(([res, _]) => {
+                    return res.range;
+                }),
+                configResults: existingConfigInfo
+            };
+        }
+
+        // Iteratively insert every result in this chunk into the search result generator
+        const currentTree = await searchNodeGenerator.insertResult(resultInfo, cancellationToken);
 
         // Once the entire tree for this search is completed, start creating 'title' nodes
         //      to display any matches within the title of snips/chapters/fragments
-        currentTree = await searchNodeGenerator.createMetadataNodes(cancellationToken);
         if (currentTree) {
             this.searchTree.refresh(currentTree, newFilteredUris);
             this.searchTree.results.push(...fileResults);
             this.updateDecoationsIfViewIsVisible();
         }
+
+
     }
 
     public clearDecorations () {

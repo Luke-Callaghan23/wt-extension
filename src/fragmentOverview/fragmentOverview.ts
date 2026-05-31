@@ -62,6 +62,7 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
         }));
 
         this.context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection(async (event) => {
+            if (!this.view.visible) return;
             if (!this.activeDocumentUri || !compareFsPath(event.textEditor.document.uri, this.activeDocumentUri)) {
                 return;
             }
@@ -74,15 +75,13 @@ export class FragmentOverviewView implements vscode.TreeDataProvider<FragmentOve
                     }
                 }
             }
-            if (lines.length > 0) {
-                if (this.view.visible) {
-                    return this.view.reveal(lines[lines.length - 1], {
-                        expand: true,
-                        focus: false,
-                        select: true
-                    });
-                }
-            }
+            if (lines.length === 0) return;
+
+            return this.view.reveal(lines[lines.length - 1], {
+                expand: true,
+                focus: false,
+                select: true
+            });
         }));
 
         this.context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(event => {

@@ -6,11 +6,31 @@ import { v4 as uuid } from 'uuid';
 import { grepExtensionDirectory, grepSingleFile } from '../miscTools/grepper/grepExtensionDirectory';
 import { FileResultLocationNode, FileResultNode, MatchedMetadataNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
-import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, getFsPathKey, isSubdirectory, setFsPathKey, showTextDocumentWithPreview, UriFsPathFormatted, vagueNodeSearch } from '../miscTools/help';
-import { CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
+import { __, addSingleWorkspaceEdit, capitalize, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, getFsPathKey, getFullJSONStringFromLocation, getJSONContext, isSubdirectory, JSONContextInfo, setFsPathKey, showTextDocumentWithPreview, UriFsPathFormatted, vagueNodeSearch } from '../miscTools/help';
+import { ConfigDocMatchInfo, ConfigNodeInfo, FileName, CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
 import { Timed } from '../timedView';
 import { SearchNodeKind, SearchResultsView } from './searchResultsView';
 import { SearchContext } from './searchBarView';
+import * as vscodeUri from 'vscode-uri';
+
+export type ResultInfo = {
+    kind: 'regular',
+    uri: vscode.Uri,
+    results: vscode.Range[],
+    configResults?: ConfigNodeInfo,
+} | {
+    kind: 'paired',
+    uri: vscode.Uri,
+    configResults: ConfigNodeInfo,
+}| {
+    // Used when there is a match in a .wtnote "title" property, 
+    //      OR in a .config "title" or "description" property
+    // AND when there are NO matches in the corresponding
+    //      fragment or .wtnote regular text areas
+    kind: 'metadata',
+    uri: vscode.Uri,
+    configResults: ConfigNodeInfo,
+}
 
 export class SearchResultsTree 
     extends UriBasedView<SearchNode<SearchNodeKind>>
@@ -20,6 +40,7 @@ export class SearchResultsTree
     private static viewId = 'wt.wtSearch.results';
     public filteredUris: (vscode.Uri | vscode.Location)[];
     public results: [vscode.Location, string][];
+    public groupedResults: ResultInfo[];
     public editorVersions: Record<UriFsPathFormatted, number> = {};
 
     constructor (
@@ -31,6 +52,7 @@ export class SearchResultsTree
         this.rootNodes = [];
         this.filteredUris = [];
         this.results = [];
+        this.groupedResults = [];
     }
 
     
@@ -60,15 +82,13 @@ export class SearchResultsTree
     }
 
     async refresh(updatedNodes?: SearchNode<SearchContainerNode>[], filteredUris?: (vscode.Uri | vscode.Location)[]): Promise<void> {
-        if (updatedNodes) {
-            this.rootNodes = updatedNodes;
-            this.filteredUris = filteredUris || [];
-            this.editorVersions = {};
-            if (updatedNodes.length === 0) {
-                this.results = [];
-            }
-            this.searchResultsView.updateDecoationsIfViewIsVisible();
+        this.rootNodes = updatedNodes || [];
+        this.filteredUris = filteredUris || [];
+        this.editorVersions = {};
+        if (this.rootNodes.length === 0) {
+            this.results = [];
         }
+        this.searchResultsView.updateDecoationsIfViewIsVisible();
         this._onDidChangeTreeData.fire(undefined);
     }
 
@@ -90,10 +110,11 @@ export class SearchResultsTree
                 useCaseInsensitive, 
                 useMatchTitles,
                 useIgnoreStyleCharacters,
+                useNodeDescriptions,
             } = Extension.searchBarView.getSearchContext();
             Extension.searchBarView.updateSearchBarValue(response);
             vscode.commands.executeCommand('workbench.view.extension.wtSearch');
-            return this.searchBarValueWasUpdated(response, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, useIgnoreStyleCharacters, new vscode.CancellationTokenSource().token);
+            return this.searchBarValueWasUpdated(response, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, useNodeDescriptions, useIgnoreStyleCharacters, new vscode.CancellationTokenSource().token);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.wtSearch.results.openSearch', async () => {
@@ -107,10 +128,11 @@ export class SearchResultsTree
                     useCaseInsensitive, 
                     useMatchTitles,
                     useIgnoreStyleCharacters,
+                    useNodeDescriptions,
                 } = Extension.searchBarView.getSearchContext();
                 await vscode.commands.executeCommand('workbench.view.Extension.wtSearch');
                 Extension.searchBarView.updateSearchBarValue(selectedText);
-                return this.searchBarValueWasUpdated(selectedText, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, useIgnoreStyleCharacters, new vscode.CancellationTokenSource().token);
+                return this.searchBarValueWasUpdated(selectedText, useRegex, useCaseInsensitive, useMatchTitles, useWholeWord, useNodeDescriptions, useIgnoreStyleCharacters, new vscode.CancellationTokenSource().token);
             }
             else {
                 return vscode.commands.executeCommand('workbench.view.Extension.wtSearch');
@@ -189,12 +211,327 @@ export class SearchResultsTree
 
     }
 
+    private async groupResults (results: [vscode.Location, string][], createTitleNodes: boolean, createNodeDescriptionNodes: boolean): Promise<ResultInfo[]> {
+
+        const groupedResults: Record<UriFsPathFormatted, ResultInfo> = {};
+
+        const allResultUris: Record<UriFsPathFormatted, vscode.Uri> = {};
+        results.forEach(res => allResultUris[res[0].uri.fsPath] = res[0].uri);
+
+        // Matches inside the text of raw text files can be handled easily since we know all the info we need to know
+        //      about the match just from the URI itself
+        const groupedFragmentUris: Record<UriFsPathFormatted, {
+            uri: vscode.Uri,
+            ranges: vscode.Range[]
+        }> = {};
+
+        // Matches inside of JSON formatted files need to be handled differently than raw text matches
+        // Because a match in the JSON needs to be explored further to find the context within the JSON
+        //      structure of that match in order to (1) link it to a OutlineNode (if the match is in a 
+        //      .config file) and to (2) display the match correctly in the search results tree
+        type JSONMatchInfo = {
+            jsonDocumentUri: vscode.Uri,
+            jsonDocumentParentUri: vscode.Uri,
+            jsonDocument: vscode.TextDocument,
+            ranges: vscode.Range[],
+        };
+        const groupedConfigUris: Record<UriFsPathFormatted, JSONMatchInfo> = {};
+        const groupedNoteUris: Record<UriFsPathFormatted, JSONMatchInfo> = {};
+
+        for (const [ matchedLocation, _ ] of results) {
+            const fmtUri = formatFsPathForCompare(matchedLocation.uri);
+
+            const fileName = vscodeUri.Utils.basename(matchedLocation.uri).toLocaleLowerCase();
+            const extension = vscodeUri.Utils.extname(matchedLocation.uri).toLocaleLowerCase();
+            if (fileName === '.config' || extension === '.wtnote') {
+                if (fmtUri in groupedConfigUris) {
+                    groupedConfigUris[fmtUri].ranges.push(matchedLocation.range);
+                }
+                else {
+
+                    const jsonMatchInfo: JSONMatchInfo = {
+                        jsonDocumentUri: matchedLocation.uri,
+                        jsonDocumentParentUri: vscodeUri.Utils.dirname(matchedLocation.uri),
+                        jsonDocument: await vscode.workspace.openTextDocument(matchedLocation.uri),
+                        ranges: [ matchedLocation.range ]
+                    };
+
+                    if (fileName === '.config') {
+                        groupedConfigUris[fmtUri] = jsonMatchInfo;
+                    }
+                    else if (extension === '.wtnote') {
+                        groupedNoteUris[fmtUri] = jsonMatchInfo;
+                    }
+                }
+            }
+            else {
+                if (fmtUri in groupedFragmentUris) {
+                    groupedFragmentUris[fmtUri].ranges.push(matchedLocation.range);
+                }
+                else {
+                    groupedFragmentUris[fmtUri] = {
+                        uri: matchedLocation.uri,
+                        ranges: [ matchedLocation.range ],
+                    };
+                }
+            }
+        }
+
+        // Simple to group results for fragment files -- can be inserted into the grouped results, per uri,
+        //      right away because fragment files do not have any metadata to look at besides the uri itself
+        for (const [ fmtUri, fragmentResults ] of Object.entries(groupedFragmentUris)) {
+            groupedResults[fmtUri] = {
+                kind: 'regular',
+                uri: fragmentResults.uri,
+                results: fragmentResults.ranges,
+            };
+        }
+
+        // Now, for dealing with .config and .wtnote JSON-formatted files
+        // A much more complicated issue simply because we need to understand the *context* of where the result came from the JSON
+
+        
+        // Iterate over the grouped entries for config files
+        for (const [ _, configInfo ] of Object.entries(groupedConfigUris)) {
+            
+            // PROBLEM: ripgrep searches of JSON files will return a line number and character index of the line where it found the match
+            //      in the JSON, but NOT any other meta information about *where* structurally that result came from
+            // We have information about the matched data but we need to somehow link that to an actual OutlineNode in the Outline / Recycling Bin
+            //      / Scratch Pad views.  To do that, we need to construct a URI
+            // (NOTE: we have the URI of the .config file, obviously, coming from ripgrep itself, and from that we can obviously figure out the
+            //      parent of the OutlineNode in question, but but what we need is the fileName that the matched string in the config file comes from
+            // Rhe format of a .config file is:
+            // So... if a .config file looks like this:
+            //      { "fragment.wt": { 
+            //          "title": "Some ||matched text||",
+            //          "description": "Some other ||matched text|| and then even some more ||matched text||",
+            //          ...etc
+            //      } }
+            // )
+            // We may know the start and end offset of <"Some other ||matched text|| and then even some more ||matched text||">
+            //      or  <"Some ||matched text||"> JSON strings inside of the full document text
+            // ... but, what we need is the key of the surrounding object (we need "fragment.wt")
+            // Solution: helper function `getFullJSONStringFromLocation` will 
+            //      1) confirm that the matched location is in fact inside of a JSON string in the file, not some
+            //          structural characters
+            //      2) return information about the start and end of the complete string where the matched text
+            //          was found
+            // helper function `getJSONContext` takes information from an index in a JSON document and returns
+            //      basic structural information about where that index is situated in the JSON stucture.  
+            // Namely, for VALUEs of JSON objects (not keys), it will return:
+            //      1) The key property name that maps it to the object it's in
+            //      2) The start and end locations of the object it exists inside
+            // From this, we can go from the string value what was matched to the object that surrounds it
+            //      (So, using the example above, if we use getFullJSONStringFromLocation on ||matched text||,
+            //          we get the start offset of the "Some ||matched text||" string, and calling getJSONContext
+            //          on that we get the object key ("title") as well as the start and end of the INNER
+            //          object { "title": "Some ||matched text||", "description": "Some other ||matched text|| and then even some more ||matched text||"}
+            //      We can then repeat the process calling getJSONContext on the start index of the inner object we found above to get the 
+            //          key that maps THAT object ("fragment.wt") as well as the start and end indexes of the OUTER object (BOF and EOF))
+            
+            const configUri = configInfo.jsonDocumentUri;
+            const parentUri = configInfo.jsonDocumentParentUri;
+            
+            const configDoc = configInfo.jsonDocument;
+            const fullText = configDoc.getText();
+            
+            // Currently, we have indexes into the .config files themself, but what we need is to re-group them
+            //      grouped by the fileName itself
+            // To do that, we need to extract the file name:
+            const configResults: Record<FileName, ConfigNodeInfo> = {};
+            for (const matchedRange of configInfo.ranges) {
+                
+                    // From the matched text search outwards for the JSON string that surrounds it
+                    const location = new vscode.Location(configUri, matchedRange);
+                    const originalMatchedJSONStringInfo = getFullJSONStringFromLocation(configDoc, fullText, location);
+
+                    // getFullJSONStringFromLocation returns null if the index into the file does not point to a JSON string
+                    if (originalMatchedJSONStringInfo === null) continue;
+                    
+                    // Now, search outwards from the surrounding string to find the JSON config entry
+                    const context = getJSONContext(configDoc, fullText, originalMatchedJSONStringInfo.startOff - 1);
+                    if (context === null) continue;
+
+                    // The matched text must be inside of a mapped value inside of a JSON object
+                    if (context.kind !== 'objectPropertyValue') continue;
+                    
+                    // The key property name of the matched text's string must be title or description
+                    // (And we need to be matching on title or description, obviously)
+                    if (!(context.keyName === 'title' && createTitleNodes) && !(context.keyName === 'description' && createNodeDescriptionNodes)) {
+                        continue;
+                    }
+            
+                    // Get the JSON context of the starting character of the config entry, this will find the key name of the 
+                    //      property that the config is mapped to -- which is the file name of the document
+                    const configEntryStartOffset = configDoc.offsetAt(context.objectRange.start);
+                    const configContext = getJSONContext(configDoc, fullText, configEntryStartOffset);
+                    if (configContext === null) continue;
+                    if (configContext.kind !== 'objectPropertyValue') continue;
+            
+                    // Finally, as long as the getJSONContext call returned a objectProperty value, the key of that value will 
+                    //      be the the file name for the matched node
+                    const fileName = configContext.keyName;
+                    const childUri = vscode.Uri.joinPath(parentUri, fileName);
+                    
+                    // If the child node has not been inserted into the nodeInfo record of the config file record, then we insert it here
+                    // (Since we are looping over multiple results within a single .config file, there may be more results than one )
+                    if (!(fileName in configResults)) {
+                        const childNodeSearch = await vagueNodeSearch(childUri);
+                        if (childNodeSearch.node === null || childNodeSearch.source === 'notebook') continue;
+                        
+                        const prefix = capitalize(childNodeSearch.node.data.ids.type); 
+                        const title = childNodeSearch.node.data.ids.display;
+                        const description = childNodeSearch.node.data.ids.description;
+                        const ordering = childNodeSearch.node.data.ids.ordering;
+            
+                        configResults[fileName] = {
+                            uri: childUri,
+                            linkNode: childNodeSearch,
+                            title: title,
+                            prefix: prefix,
+                            description: description,
+                            ordering: ordering,
+                            descriptionHighlightInfo: [],
+                            titleHighlightInfo: [],
+                        }
+                    }
+            
+                    // The location of the highlighted text is right now indexed starting at the beginning of .config
+                    //      file, but the highlights in the search view tree must be indexed starting at 0
+                    // Shift the highlights in location.range backwards by the start of the JSON string in which they
+                    //      originated
+            
+                    // Get range document indexed
+                    const highlightJSONRange   = location.range;
+                    const highlightJSONStart   = configDoc.offsetAt(highlightJSONRange.start);
+                    const highlightJSONEnd     = configDoc.offsetAt(highlightJSONRange.end);
+            
+                    // Get the offset that needs to be shifted back
+                    const jsonStringOffset     = originalMatchedJSONStringInfo.startOff;
+            
+                    // Reconstruct highlights
+                    const highlightZeroIndexed: [ number, number ] = [
+                        highlightJSONStart - jsonStringOffset,
+                        highlightJSONEnd - jsonStringOffset,
+                    ];
+            
+                    // Add data to the existing match
+                    if (context.keyName === 'title' && createTitleNodes) {
+                        configResults[fileName].titleHighlightInfo.push(highlightZeroIndexed);
+                    }
+                    else if (context.keyName === 'description' && createNodeDescriptionNodes) {
+                        configResults[fileName].descriptionHighlightInfo.push(highlightZeroIndexed);
+                    }
+                
+    
+            }
+
+            // Now that we have all our results for this .config file grouped by file name, we need to insert them into
+            //      the final groupedResults record
+            // That involves either 
+            //      (1) pairing the result to an exising `ResultInfo` object if one exists for the 
+            //              matched URI 
+            //      (2) creating a new `metadata` type `ResultInfo` object just for this lone
+            //              metadata entry, not for any text matches, 
+            //      (3) pairing the result to a not-yet-existing `ResultInfo` object for cases where
+            //              where the paired not doesn't have any matches but a CHILD of that node
+            //              DOES have matches
+            //          This covers a corner case when constructing the result tree where a matched metadata
+            //              node cannot have children, but they do need to have children in the case
+            //              where there are matches further down the lone
+            for (const [ _, nodeInfo ] of Object.entries(configResults)) {
+                const nodeUri = nodeInfo.uri;
+
+                // If there is an existing fragment uri result for this uri already, then pair this
+                //      nodeInfo with that result (case 1 above)
+                const fmtUri = formatFsPathForCompare(nodeUri);
+                if (fmtUri in groupedResults) {
+                    groupedResults[fmtUri].configResults = nodeInfo;
+                    continue;
+                }
+
+                // Otherwise, search for any node that is a subdirectory of this (see case 3 above)
+                const substringNode = Object.values(allResultUris).find(resultInfo => {
+                    return isSubdirectory(nodeUri, resultInfo);
+                });
+
+                if (substringNode) {
+                    groupedResults[fmtUri] = {
+                        kind: 'paired',
+                        uri: nodeUri,
+                        configResults: nodeInfo
+                    };
+                }
+                // Or create a new metadata node (case 2 above)
+                else {
+                    groupedResults[fmtUri] = {
+                        kind: 'metadata',
+                        uri: nodeUri,
+                        configResults: nodeInfo
+                    };
+                }
+            }
+        }
+
+        // Now, handle .wtnote files
+        // Altogether simple than .config files because we don't need to search the context of the document as much
+        //      because we already know the URI of the file we're searching for (the .wtnote file itself)
+
+        for (const [ noteUri, noteInfo ] of Object.entries(groupedNoteUris)) {
+            // Follow the same logic above to retrieve the key property name of the matched text's surrounding string
+
+            const configUri = noteInfo.jsonDocumentUri;
+            const configDoc = noteInfo.jsonDocument;
+            const fullText = configDoc.getText();
+
+            const results: vscode.Range[] = [];
+            for (const matchedRange of noteInfo.ranges) {
+                // From the matched text search outwards for the JSON string that surrounds it
+                const location = new vscode.Location(configUri, matchedRange);
+                const originalMatchedJSONStringInfo = getFullJSONStringFromLocation(configDoc, fullText, location);
+
+                // getFullJSONStringFromLocation returns null if the index into the file does not point to a JSON string
+                if (originalMatchedJSONStringInfo === null) continue;
+                
+                // Now, search outwards from the surrounding string to find the JSON config entry
+                const context = getJSONContext(configDoc, fullText, originalMatchedJSONStringInfo.startOff - 1);
+                if (context === null) continue;
+
+                // The matched text must be inside of a mapped value inside of a JSON object
+                if (context.kind !== 'objectPropertyValue') continue;
+
+                // All data (at least all data that we're searching for) comes from JSON strings mapped by a "text"
+                //      key name, so if the key name of the matched text is not "text", we can ignore this match
+                if (context.keyName !== 'text') {
+                    continue;
+                }
+
+                // No other information is needed for now
+                // TOOD: maybe eventually add more structure to the results for WTNotes (like the subheading and what not)
+                // TODO: maybe add a new result type specifically for the note files so the "surroundingText" stuff is cleaner
+                //      in the search results tree
+                results.push(matchedRange);
+            }
+
+            groupedResults[noteUri] = {
+                kind: 'regular',
+                uri: noteInfo.jsonDocumentUri,
+                results: results
+            };
+        }
+
+        return Object.values(groupedResults).sort((a, b) => {
+            return formatFsPathForCompare(a.uri).localeCompare(formatFsPathForCompare(b.uri));
+        });
+    }
+
     public async searchBarValueWasUpdated (
         searchBarValue: string, 
         useRegex: boolean, 
         useCaseInsensitive: boolean, 
         useMatchTitles: boolean, 
         useWholeWord: boolean,
+        useMatchNodeDescriptions: boolean,
         useIgnoreStyleCharacters: boolean,
         cancellationToken: vscode.CancellationToken
     ) {
@@ -218,11 +555,12 @@ export class SearchResultsTree
             }
 
             this.results = results;
+            this.groupedResults = await this.groupResults(this.results, useMatchTitles, useMatchNodeDescriptions);
 
             const searchNodeGenerator = new SearchNodeGenerator();
             let currentTree: SearchNode<SearchContainerNode>[] | null = null;
 
-            const chunkedResults = chunkArray(results, 25);
+            const chunkedResults = chunkArray(this.groupedResults, 25);
             for (const chunk of chunkedResults) {
                 if (cancellationToken.isCancellationRequested) return;
 
@@ -230,7 +568,7 @@ export class SearchResultsTree
                     if (cancellationToken.isCancellationRequested) return;
 
                     // Iteratively insert every result in this chunk into the search result generator
-                    currentTree = await searchNodeGenerator.insertResult(result[0], useMatchTitles, useIgnoreStyleCharacters, cancellationToken);
+                    currentTree = await searchNodeGenerator.insertResult(result, cancellationToken);
                 }
                 // At the end of every chunk, refresh the tree
                 currentTree && this.refresh(currentTree);
@@ -239,10 +577,9 @@ export class SearchResultsTree
 
             // Once the entire tree for this search is completed, start creating 'title' nodes
             //      to display any matches within the title of snips/chapters/fragments
-            currentTree = await searchNodeGenerator.createMetadataNodes(cancellationToken);
-            currentTree && this.refresh(currentTree);
+            this.refresh(currentTree || undefined);
             this.searchResultsView.updateDecoationsIfViewIsVisible();
-        });
+        4});
     }
 
 

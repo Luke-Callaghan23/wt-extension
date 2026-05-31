@@ -172,6 +172,7 @@ implements
             this.useCaseInsensitive, 
             this.useMatchTitles, 
             this.useWholeWord, 
+            this.useNodeDescriptions,
             this.useIgnoreStyleCharacters,
             cancellationToken
         );
@@ -312,16 +313,17 @@ implements
                             </div>
                             <div id="checks">
                                 <div>
+                                    
                                     <vscode-checkbox 
-                                        label="Whole Word"
-                                        id="checkbox-whole-word" 
-                                        name="whole-word" 
-                                        title="Search text cannot be substring of a larger word. Will only search strings that are bookended with word stops: . ? : ; , ( ) ! & + - \\n \\ / &quot; ' ^ _ * ~ [ ], whitespace, BOF, and EOF."
-                                        ${this.useWholeWord ? "checked" : ""}
+                                        label="Ignore Style Characters"
+                                        id="checkbox-ignore-style-characters" 
+                                        name="ignore-style-characters" 
+                                        title="Search string will ignore markdown/writing tool style characters when searching. So search='hello' will match text='hello' as well as text='h**e_l^l*o'. (NOTE: this option is incompatable with the &quot;Regex&quot; option)"
+                                        ${this.useIgnoreStyleCharacters ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
                                 
-                                    &nbsp; &nbsp; &nbsp; &nbsp; 
+                                    &nbsp; &nbsp; 
                                     
                                     <vscode-checkbox 
                                         label="Regex"
@@ -345,16 +347,17 @@ implements
                                         class="checkbox"
                                     ></vscode-checkbox>
 
-                                    &nbsp; &nbsp; 
+                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
 
                                     <vscode-checkbox 
-                                        label="Match Titles"
-                                        id="checkbox-match-titles" 
-                                        name="match-titles" 
-                                        title="Nodes in the Outline Tree with titles that match search string will also be shown in results"
-                                        ${this.useMatchTitles ? "checked" : ""}
+                                        label="Whole Word"
+                                        id="checkbox-whole-word" 
+                                        name="whole-word" 
+                                        title="Search text cannot be substring of a larger word. Will only search strings that are bookended with word stops: . ? : ; , ( ) ! & + - \\n \\ / &quot; ' ^ _ * ~ [ ], whitespace, BOF, and EOF."
+                                        ${this.useWholeWord ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
+
                                 </div>
 
                                 <div>
@@ -367,16 +370,17 @@ implements
                                         class="checkbox"
                                     ></vscode-checkbox>
 
-                                    &nbsp; &nbsp; 
+                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
 
                                     <vscode-checkbox 
-                                        label="Ignore Style Characters"
-                                        id="checkbox-ignore-style-characters" 
-                                        name="ignore-style-characters" 
-                                        title="Search string will ignore markdown/writing tool style characters when searching. So search='hello' will match text='hello' as well as text='h**e_l^l*o'. (NOTE: this option is incompatable with the &quot;Regex&quot; option)"
-                                        ${this.useIgnoreStyleCharacters ? "checked" : ""}
+                                        label="Match Titles"
+                                        id="checkbox-match-titles" 
+                                        name="match-titles" 
+                                        title="Nodes in the Outline Tree with titles that match search string will also be shown in results"
+                                        ${this.useMatchTitles ? "checked" : ""}
                                         class="checkbox"
                                     ></vscode-checkbox>
+
                                 </div>
                             </div>
                         </div>

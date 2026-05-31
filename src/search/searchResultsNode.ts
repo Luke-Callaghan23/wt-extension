@@ -52,9 +52,9 @@ export type MatchedMetadataNode = {
     parentLabels: string[];
     title: string;
     prefix: string;
-    labelHighlights: [number, number][];
+    titleHighlightInfo: [number, number][];
     description?: string;
-    descriptionHighlights: [number, number][];
+    descriptionHighlightInfo: [number, number][];
     linkNode: Exclude<VagueNodeSearchResult, { node: null, source: null}>;
     ordering: number;
 };
@@ -121,8 +121,8 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
             // If this is a matched title or a node with a paired matched title, then store the indeces to highlight
             //      for below
             const highlightIndeces = this.node.kind === 'matchedMetadata' 
-                ? this.node.labelHighlights
-                : this.node.pairedMatchedMetadataNode?.node.labelHighlights;
+                ? this.node.titleHighlightInfo
+                : this.node.pairedMatchedMetadataNode?.node.titleHighlightInfo;
 
             if (highlightIndeces) {
                 // Map the highlights by movinf all of them over by the length of the prefix
@@ -164,18 +164,25 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
             let treeStructure = description + createLabelFromTitleAndPrefix(this.node.title, this.node.prefix);
 
             // If there is no node description to add onto the tooltip, exit with just the constructed tree structure
-            if (this.node.kind !== 'file' && this.node.kind !== 'searchContainer') return treeStructure;
             if (!this.node.description) return treeStructure;
 
             treeStructure = treeStructure.replace("\n", "\n\n");
             const preDescription = `${treeStructure}\n\n---\n\n`;
             const withDescription = preDescription + `${this.node.description}`;
 
-            // If there is no paired metadata, we can just return early with just tree + description.  No highlights to apply.
-            if (!this.node.pairedMatchedMetadataNode) return new vscode.MarkdownString(withDescription);
+            let metadataNode: MatchedMetadataNode | undefined;
+            if (this.node.kind === 'file' || this.node.kind === 'searchContainer') {
+                metadataNode = this.node.pairedMatchedMetadataNode?.node;
+            }
+            else {
+                metadataNode = this.node;
+            }
+
+            if (!metadataNode) return new vscode.MarkdownString(withDescription);
+
 
             // Same if there is no highlights specifically for the description
-            const descriptionHighlights = (this.node.pairedMatchedMetadataNode.node as MatchedMetadataNode).descriptionHighlights;
+            const descriptionHighlights = metadataNode.descriptionHighlightInfo;
             if (descriptionHighlights.length === 0) return new vscode.MarkdownString(withDescription);
 
             // Apply highlights to tooltip

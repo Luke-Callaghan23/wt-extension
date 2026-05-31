@@ -90,6 +90,8 @@ export class WordWatcher implements vscode.TreeDataProvider<WordEntry>, Packagea
         this.tree = this.initializeTree();
         this._onDidChangeTreeData.fire(undefined);
 
+        if (!this.view.visible) return;
+
         // If the refresh function was provided an excluded word to reveal
         //      then iterate over every word and its exclusions and reveal
         //      any exclusion whose text matches the provided exclusion

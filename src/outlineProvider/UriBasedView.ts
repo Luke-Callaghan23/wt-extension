@@ -137,6 +137,8 @@ export class UriBasedView<T extends HasGetUri> {
     }
 
     async expandAndRevealOutlineNode (node: T, options?: RevealOptions, recursion?: boolean) {
+        if (this.view.visible) return;
+
         const nodeUri = node.getUri();
         const relativePath = getRelativePath(nodeUri);
         const segments = relativePath.split('/');
