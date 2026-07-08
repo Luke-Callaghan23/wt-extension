@@ -10,7 +10,7 @@ import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxView
 import { ConfigNodeInfo, CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
 import { Timed } from '../timedView';
 import { BounceOnIt } from '../miscTools/bounceOnIt';
-import { ResultInfo, SearchResultsTree } from './searchResultsTree';
+import { SearchResultsTree } from './searchResultsTree';
 import { nodeGrep } from '../miscTools/grepper/nodeGrep';
 import { SearchContext } from './searchBarView';
 
@@ -195,53 +195,14 @@ implements
 
         const uri = 'uri' in updated ? updated.uri : updated;
         const existingNode = await this.getTreeElementByUri(uri);
-        
-        let existingConfigInfo: ConfigNodeInfo | undefined;
-        if (existingNode?.node 
-            && (existingNode.node.kind === 'file' || existingNode.node.kind === 'searchContainer') 
-            && existingNode.node.pairedMatchedMetadataNode
-        ) {
-            existingConfigInfo = existingNode.node.pairedMatchedMetadataNode.node;
-        }
-        else if (existingNode?.node && existingNode.node.kind === 'matchedMetadata') { 
-            existingConfigInfo = existingNode.node;
-        }
 
-        // Create a search node generator -- with the current root data as seed information
         const searchNodeGenerator = new SearchNodeGenerator(this.searchTree.rootNodes as SearchNode<SearchContainerNode>[]);
+        const updatedTree = await searchNodeGenerator.updateFileResults(uri, fileResults, existingNode, cancellationToken);
+        if (!updatedTree) return;
         
-        let resultInfo: ResultInfo;
-        if (fileResults.length === 0 && existingConfigInfo) {
-            resultInfo = {
-                kind: 'metadata',
-                uri: uri,
-                configResults: existingConfigInfo,
-            };
-        }
-        else {
-            // Since we know all results will just be for one document, we can recreate a ResultInfo object manually here
-            resultInfo = {
-                kind: 'regular',
-                uri: uri,
-                results: fileResults.map(([res, _]) => {
-                    return res.range;
-                }),
-                configResults: existingConfigInfo
-            };
-        }
-
-        // Iteratively insert every result in this chunk into the search result generator
-        const currentTree = await searchNodeGenerator.insertResult(resultInfo, cancellationToken);
-
-        // Once the entire tree for this search is completed, start creating 'title' nodes
-        //      to display any matches within the title of snips/chapters/fragments
-        if (currentTree) {
-            this.searchTree.refresh(currentTree, newFilteredUris);
-            this.searchTree.results.push(...fileResults);
-            this.updateDecoationsIfViewIsVisible();
-        }
-
-
+        this.searchTree.refresh(updatedTree, newFilteredUris);
+        this.searchTree.results.push(...fileResults);
+        this.updateDecoationsIfViewIsVisible();
     }
 
     public clearDecorations () {

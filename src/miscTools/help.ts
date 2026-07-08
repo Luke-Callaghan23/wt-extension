@@ -135,7 +135,6 @@ export async function vagueNodeSearch (
     targetIsBasename?: boolean
 ): Promise<VagueNodeSearchResult> {
     const relative = target.fsPath.replaceAll(Extension.rootPath.fsPath, "");
-        
     
     if (!(
         relative.endsWith(".wt") 
@@ -194,8 +193,6 @@ export async function vagueNodeSearch (
             node: note
         }
     } 
-
-
 
     return {
         source: null,
@@ -422,10 +419,16 @@ export type JSONStringInfo = {
     endOff: number
 };
 
-export type JSONContextInfo = {
-    kind: 'key'
+export type JSONContextInfo =  {
+    kind: 'string',
+    stringRange: vscode.Range,
 } | {
     kind: 'arrayMember'
+    arrayRange: vscode.Range,
+} | {
+    kind: 'objectPropertyKey',
+    keyName: string,
+    objectRange: vscode.Range,
 } | {
     kind: 'objectPropertyValue',
     keyName: string,
@@ -466,128 +469,217 @@ export const getFullJSONStringFromLocation = (document: vscode.TextDocument, ful
 }
 
 
-// Same as getFullJSONStringFromLocation, except it first confirms that the JSON string that it is returning is NOT inside of a JSON member key name
-// Return null if inside of a key
-export const getJSONContext = (document: vscode.TextDocument, fullText: string, idx: number): JSONContextInfo | null => {
-    // Search for the next non-whitespace character in the JSON document, following the target string
-    let nextNonWhitespaceOff = idx + 1;
-    while (/\s/.test(fullText[nextNonWhitespaceOff])) {
-        nextNonWhitespaceOff++;
+export const getJSONContext = (document: vscode.TextDocument, fullText: string, offset: number): JSONContextInfo | null => {
+    // First determine if we are inside of a string
+    // Search starting from the beginning all the way up until the idx parameter for all non-escaped double quotes
+    let inString: boolean = false;
+    for (let idx = 0; idx < offset; idx++) {
+        if (fullText[idx] === '\\') {
+            idx++;
+            continue;
+        }
+
+        if (fullText[idx] === '"') {
+            inString = !inString;
+        }
+    }
+
+    let backwardsCursorStart: number;
+    let forwardsCursorStart: number;
+
+    let jsonstring: JSONStringInfo | null = null;
+    let isPropertyKey: boolean = false;
+    let isPropertyValue: boolean = false;
+    if (inString) {
+        jsonstring = getFullJSONStringFromLocation(document, fullText, new vscode.Location(document.uri, new vscode.Range(
+            document.positionAt(offset),
+            document.positionAt(offset + 1)
+        )));
+        // return {
+        //     kind: 'string',
+        //     stringRange: new vscode.Range(
+        //         document.positionAt(jsonstring.startOff), 
+        //         document.positionAt(jsonstring.endOff)
+        //     )
+        // };
+
+        // Search for the next non-whitespace character in the JSON document, following the 
+        let nextNonWhitespaceOff = jsonstring.endOff + 2;
+        while (/\s/.test(fullText[nextNonWhitespaceOff])) {
+            nextNonWhitespaceOff++;
+        }
+    
+        if (fullText[nextNonWhitespaceOff] === ':') {
+            isPropertyKey = true;
+        }
+
+        backwardsCursorStart = jsonstring.startOff - 2;
+        forwardsCursorStart = nextNonWhitespaceOff + 1;
+    }
+    else {
+
+        // Search previous
+
+        // Search backwards for any non-structural character 
+        let prevCharCursor = offset - 1;
+        while (!(/[{}\[\]:,"]/.test(fullText[prevCharCursor]))) {
+            prevCharCursor--;
+        }
+
+        if (fullText[prevCharCursor] === ':') {
+            isPropertyValue = true;
+
+            jsonstring = getFullJSONStringFromLocation(document, fullText, new vscode.Location(document.uri, new vscode.Range(
+                document.positionAt(prevCharCursor - 1),
+                document.positionAt(prevCharCursor)
+            )));
+
+            backwardsCursorStart = jsonstring.startOff - 2;
+            forwardsCursorStart = offset + 1;
+        }
+        else {
+            backwardsCursorStart = offset - 1;
+            forwardsCursorStart = offset + 1;
+        }
     }
     
-    // If that character is a colon ':', then we know the target string is a key in some object in the 
-    //      JSON document
-    if (fullText[nextNonWhitespaceOff] === ':') {
-        return { kind: 'key' };
-    }
+    // Now, to get the bounds of the object itself, search for the previous (unclosed) opening curly brace
+    //      in the reverse direction
+    // And the next (unopened) closing curly brace in the forward direction
+    let enclosingStart: number | null = null;
+    let enclosingEnd: number | null = null;
 
-    // Now, search for previous non-whitespace character in the JSON document, preceeding the target string
-    let prevNonWhitespaceOff = idx - 1;
-    while (/\s/.test(fullText[prevNonWhitespaceOff])) {
-        prevNonWhitespaceOff--;
-    }
+    let enclosingIsCurly = false;
 
-    // If that character is an opening square bracket or a comma, then we know the target string is the member of an array
-    if (fullText[prevNonWhitespaceOff] === '[' || fullText[prevNonWhitespaceOff] === ',') { 
-        return { kind: 'arrayMember' };
-    }
+    // Search backwards for object start
+    let cursor = backwardsCursorStart;
 
-    // If the PRECEDING character is a colon, then we know the target string is the value of a key value pair in
-    //      some JSON object
-    // Retrieve the name of the key
-    if (fullText[prevNonWhitespaceOff] === ':') {
-        // Get the last position within the key string -- then call getfullJSONStringFromLocation again to retrieve the key string
-        const keyStringPosition = document.positionAt(prevNonWhitespaceOff - 2)
-        const keyStringLocation = new vscode.Location(document.uri, keyStringPosition);
-        const keyStringSurrounding = getFullJSONStringFromLocation(document, fullText, keyStringLocation);
-        const keyName = keyStringSurrounding.jsonString;
-
-        // Now, to get the bounds of the object itself, search for the previous (unclosed) opening curly brace
-        //      in the reverse direction
-        // And the next (unopened) closing curly brace in the forward direction
-        let objectStart: number | null = null;
-        let objectEnd: number | null = null;
-
-        // Search backwards for object start
-        let idx = keyStringSurrounding.startOff - 2;
-        let curlyStack = 0;
-        while (idx >= 0) {
-            // Skip over any strings
-            if (fullText[idx] === '"') {
-                const skipme = getFullJSONStringFromLocation(document, fullText, new vscode.Location(
-                    document.uri, 
-                    new vscode.Range(
-                        document.positionAt(idx),
-                        document.positionAt(idx)
-                    )
-                ));
-                idx = skipme.startOff - 2;
-                continue;
-            }
-
-            if (fullText[idx] === '}') {
-                curlyStack++;
-            }
-
-            if (fullText[idx] === '{') {
-                if (curlyStack === 0) {
-                    objectStart = idx;
-                    break;
-                }
-                else {
-                    curlyStack--;
-                }
-            }
-
-            idx--;
+    let curlyStack = 0;
+    let squareStack = 0;
+    while (cursor >= 0) {
+        // Skip over any strings
+        if (fullText[cursor] === '"') {
+            const skipme = getFullJSONStringFromLocation(document, fullText, new vscode.Location(
+                document.uri, 
+                new vscode.Range(
+                    document.positionAt(cursor),
+                    document.positionAt(cursor)
+                )
+            ));
+            cursor = skipme.startOff - 2;
+            continue;
         }
 
-        // Search forwards for object end
-        idx = keyStringSurrounding.endOff + 1;
-        curlyStack = 0;
-        while (idx < fullText.length) {
-            // Skip over any strings
-            if (fullText[idx] === '"') {
-                const skipme = getFullJSONStringFromLocation(document, fullText, new vscode.Location(
-                    document.uri, 
-                    new vscode.Range(
-                        document.positionAt(idx+1),
-                        document.positionAt(idx+1)
-                    )
-                ));
-                idx = skipme.endOff + 1;
-                continue;
-            }
-
-            if (fullText[idx] === '{') {
-                curlyStack++;
-            }
-
-            if (fullText[idx] === '}') {
-                if (curlyStack === 0) {
-                    objectEnd = idx;
-                    break;
-                }
-                else {
-                    curlyStack--;
-                }
-            }
-
-            idx++;
+        if (fullText[cursor] === '}') {
+            curlyStack++;
         }
 
-        if (objectStart === null || objectEnd === null) {
-            throw "Uh oh!!"
+        if (fullText[cursor] === '{') {
+            if (curlyStack === 0) {
+                enclosingStart = cursor;
+                enclosingIsCurly = true;
+                break;
+            }
+            else {
+                curlyStack--;
+            }
         }
 
-        return { 
-            kind: 'objectPropertyValue',
-            keyName: keyName,
-            objectRange: new vscode.Range(
-                document.positionAt(objectStart), 
-                document.positionAt(objectEnd + 1)
-            )
-        };
+        if (fullText[cursor] === ']') {
+            squareStack++;
+        }
+
+        if (fullText[cursor] === '[') {
+            if (squareStack === 0) {
+                enclosingStart = cursor;
+                enclosingIsCurly = false;
+                break;
+            }
+            else {
+                squareStack--;
+            }
+        }
+
+        cursor--;
+    }
+
+    let searchEnclosingStart: string;
+    let searchEnclosingEnd: string;
+    if (enclosingIsCurly) {
+        searchEnclosingStart = '{';
+        searchEnclosingEnd = '}';
+    }
+    else {
+        searchEnclosingStart = '[';
+        searchEnclosingEnd = ']';
+    }
+
+    // Search forwards for object end
+    cursor = forwardsCursorStart;
+
+    let enclosingStack = 0;
+    while (cursor < fullText.length) {
+        // Skip over any strings
+        if (fullText[cursor] === '"') {
+            const skipme = getFullJSONStringFromLocation(document, fullText, new vscode.Location(
+                document.uri, 
+                new vscode.Range(
+                    document.positionAt(cursor+1),
+                    document.positionAt(cursor+1)
+                )
+            ));
+            cursor = skipme.endOff + 1;
+            continue;
+        }
+
+        if (fullText[cursor] === searchEnclosingStart) {
+            enclosingStack++;
+        }
+
+        if (fullText[cursor] === searchEnclosingEnd) {
+            if (enclosingStack === 0) {
+                enclosingEnd = cursor;
+                break;
+            }
+            else {
+                enclosingStack--;
+            }
+        }
+
+        cursor++;
+    }
+
+    if (enclosingStart === null || enclosingEnd === null) {
+        return null;
+    }
+
+    const enclosingRange = new vscode.Range (
+        document.positionAt(enclosingStart), 
+        document.positionAt(enclosingEnd + 1)
+    );
+
+    if (enclosingIsCurly) {
+
+        if (isPropertyKey && jsonstring) {
+            return {
+                kind: 'objectPropertyKey',
+                keyName: jsonstring.jsonString,
+                objectRange: enclosingRange
+            };
+        }
+        else if (isPropertyValue && jsonstring) {
+            return {
+                kind: 'objectPropertyValue',
+                keyName: jsonstring.jsonString,
+                objectRange: enclosingRange
+            }
+        }
+    }
+    else {
+        return {
+            kind: 'arrayMember',
+            arrayRange: enclosingRange
+        }
     }
 
     return null;
