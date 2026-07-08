@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { capitalize, chunkArray, ConfigFileInfo, formatFsPathForCompare, getFullJSONStringFromLocation, getJSONContext, getRelativePath, getSurroundingTextInRange, isSubdirectory, JSONStringInfo, readDotConfig, UriFsPathFormatted, vagueNodeSearch, VagueNodeSearchResult, VagueSearchSource } from '../miscTools/help';
+import { __, capitalize, chunkArray, ConfigFileInfo, formatFsPathForCompare, getFullJSONStringFromLocation, getJSONContext, getRelativePath, getSurroundingTextInRange, isSubdirectory, JSONStringInfo, readDotConfig, UriFsPathFormatted, vagueNodeSearch, VagueNodeSearchResult, VagueSearchSource } from '../miscTools/help';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Extension } from   '../extension';
 import * as vscodeUri from 'vscode-uri';
@@ -9,7 +9,7 @@ import { UriBasedView } from '../outlineProvider/UriBasedView';
 import { SearchNodeKind } from './searchResultsView';
 import { assert } from 'console';
 import { grepExtensionDirectory } from '../miscTools/grepper/grepExtensionDirectory';
-import { NotebookCellMetadata, SerializedHeader } from '../notebook/notebookApi/notebookSerializer';
+import { NotebookCellMetadata, SerializedHeader, SerializedNote } from '../notebook/notebookApi/notebookSerializer';
 
 export type FileSystemFormat = {
     results: number,
@@ -78,6 +78,17 @@ export type ConfigNodeInfo = {
     descriptionHighlightInfo: [ number, number ][]
 };
 
+export type WTNoteCellMatchInfo = {
+    ordering: number,
+    cellText: string,
+    cellTextHighlightInfo: [ number, number ][],
+};
+
+export type WTNoteHeaderMatchInfo = {
+    ordering: number,
+    headerText: string, 
+    results: WTNoteCellMatchInfo[],
+};
 
 export type ResultInfo = {
     kind: 'regular',
@@ -89,13 +100,16 @@ export type ResultInfo = {
     uri: vscode.Uri,
     configResults: ConfigNodeInfo,
 } | {
-    // Used when there is a match in a .wtnote "title" property, 
-    //      OR in a .config "title" or "description" property
-    // AND when there are NO matches in the corresponding
-    //      fragment or .wtnote regular text areas
+    // Used when there is a match in a .wtnote "title" property, OR in a .config "title" or "description" property
+    // AND when there are NO matches in the corresponding fragment or .wtnote regular text areas
     kind: 'metadata',
     uri: vscode.Uri,
     configResults: ConfigNodeInfo,
+} | {
+    kind: 'wtnote',
+    uri: vscode.Uri,
+    noteTitle: string,
+    headerMatches: WTNoteHeaderMatchInfo[]
 };
 
 export class CreateSearchResults {
@@ -300,6 +314,9 @@ export class CreateSearchResults {
             if (fileName === '.config' || extension === '.wtnote') {
                 if (fmtUri in groupedConfigUris) {
                     groupedConfigUris[fmtUri].ranges.push(matchedLocation.range);
+                }
+                else if (fmtUri in groupedNoteUris) {
+                    groupedNoteUris[fmtUri].ranges.push(matchedLocation.range);
                 }
                 else {
 
@@ -506,7 +523,7 @@ export class CreateSearchResults {
                 // If there is an existing fragment uri result for this uri already, then pair this
                 //      nodeInfo with that result (case 1 above)
                 const fmtUri = formatFsPathForCompare(nodeUri);
-                if (fmtUri in groupedResults) {
+                if (fmtUri in groupedResults && groupedResults[fmtUri].kind !== 'wtnote') {
                     groupedResults[fmtUri].configResults = nodeInfo;
                     continue;
                 }
@@ -547,7 +564,7 @@ export class CreateSearchResults {
             const configDoc = noteInfo.jsonDocument;
             const fullText = configDoc.getText();
 
-            const results: vscode.Range[] = [];
+            const resultsByHeader: Record<string, WTNoteHeaderMatchInfo> = {};
             for (const matchedRange of noteInfo.ranges) {
                 // From the matched text search outwards for the JSON string that surrounds it
                 const location = new vscode.Location(configUri, matchedRange);
@@ -570,7 +587,6 @@ export class CreateSearchResults {
                 if (context.keyName !== 'text') {
                     continue;
                 }
-
                 
                 // Get the JSON context of the starting character of the config entry, this will find the key name of the 
                 //      property that the config is mapped to -- which is the file name of the document
@@ -579,28 +595,69 @@ export class CreateSearchResults {
 
                 if (cellContext?.kind !== 'arrayMember') continue;
 
-                const cellsArrayContext = getJSONContext(configDoc, fullText, configDoc.offsetAt(cellContext.arrayRange.start));
+                const arrayStartOff = configDoc.offsetAt(cellContext.arrayRange.start);
+                const cellsArrayContext = getJSONContext(configDoc, fullText, arrayStartOff);
                 if (cellsArrayContext?.kind !== 'objectPropertyValue') continue;
                 if (cellsArrayContext.keyName !== 'cells') continue;
 
                 const headerObjJSON = configDoc.getText(cellsArrayContext.objectRange);
                 const header: SerializedHeader = JSON.parse(headerObjJSON);
 
-                const headerText = header.headerText;
-                
-                
+                const cellIdx = header.cells.findIndex(({ text }) => text === originalMatchedJSONStringInfo.jsonString);
 
-                // No other information is needed for now
-                // TOOD: maybe eventually add more structure to the results for WTNotes (like the subheading and what not)
-                // TODO: maybe add a new result type specifically for the note files so the "surroundingText" stuff is cleaner
-                //      in the search results tree
-                results.push(matchedRange);
+                // The location of the highlighted text is right now indexed starting at the beginning of .config
+                //      file, but the highlights in the search view tree must be indexed starting at 0
+                // Shift the highlights in location.range backwards by the start of the JSON string in which they
+                //      originated
+        
+                // Get range document indexed
+                const highlightJSONRange   = location.range;
+                const highlightJSONStart   = configDoc.offsetAt(highlightJSONRange.start);
+                const highlightJSONEnd     = configDoc.offsetAt(highlightJSONRange.end);
+                
+                // Get the offset that needs to be shifted back
+                const jsonStringOffset     = originalMatchedJSONStringInfo.startOff;
+                
+                // Reconstruct highlights
+                const highlightZeroIndexed: [ number, number ] = [
+                    highlightJSONStart - jsonStringOffset,
+                    highlightJSONEnd - jsonStringOffset,
+                ];
+                
+                const headerText = header.headerText;
+
+                if (!(headerText in resultsByHeader)) {
+                    resultsByHeader[headerText] = {
+                        headerText: headerText,
+                        ordering: header.headerOrder,
+                        results: [ {
+                            ordering: cellIdx,
+                            cellText: originalMatchedJSONStringInfo.jsonString,
+                            cellTextHighlightInfo: [ highlightZeroIndexed ]
+                        } ]
+                    };
+                }
+                else {
+                    const foundTarget = resultsByHeader[headerText].results.find(({ cellText }) => cellText === originalMatchedJSONStringInfo.jsonString);
+                    if (foundTarget) {
+                        foundTarget.cellTextHighlightInfo.push(highlightZeroIndexed)
+                    }
+                    else {
+                        resultsByHeader[headerText].results.push({
+                            ordering: cellIdx,
+                            cellText: originalMatchedJSONStringInfo.jsonString,
+                            cellTextHighlightInfo: [ highlightZeroIndexed ]
+                        });
+                    }
+                }
             }
 
+            const serializedNote: SerializedNote = JSON.parse(noteInfo.jsonDocument.getText());
             groupedResults[noteUri] = {
-                kind: 'regular',
+                kind: 'wtnote',
                 uri: noteInfo.jsonDocumentUri,
-                results: results
+                noteTitle: serializedNote.title.text,
+                headerMatches: Object.values(resultsByHeader)
             };
         }
         if (cancellationToken?.isCancellationRequested) return null;
@@ -810,6 +867,61 @@ export class CreateSearchResults {
         result: ResultInfo,
         cancellationToken?: vscode.CancellationToken
     ): Promise<SearchNode<SearchContainerNode>[] | null> {
+
+        if (result.kind === 'wtnote') {
+
+            const notebookCategory = this.rootCategoryNodes['notebook'];
+            const notebook = Extension.notebookPanel.getNote(result.uri);
+            if (!notebook) return this.cleanNodeTree();
+            
+            const noteContainer: SearchContainerNode = {
+                kind: 'searchContainer',
+                uri: result.uri,
+                ordering: Object.entries(notebookCategory.node.contents).length,
+                contents: {},
+                parentUri: notebookCategory.node.uri,
+                parentLabels: [ notebookCategory.node.title ],
+                prefix: 'Note',
+                results: 0,
+                title: result.noteTitle,
+            };
+
+            for (const header of result.headerMatches) {
+                const headerNode: SearchContainerNode = {
+                    kind: "searchContainer",
+                    uri: result.uri,
+                    ordering: header.ordering,
+                    contents: {},
+                    parentLabels: [ notebookCategory.node.title, result.noteTitle ],
+                    parentUri: result.uri,
+                    prefix: "",
+                    results: 0,
+                    title: header.headerText
+                };
+
+                for (const cell of header.results) {
+                    const cellNode: MatchedMetadataNode = {
+                        kind: 'matchedMetadata',
+                        linkNode: {
+                            node: notebook,
+                            source: 'notebook'
+                        },
+                        descriptionHighlightInfo: [],
+                        prefix: "",
+                        ordering: cell.ordering,
+                        parentLabels: [ notebookCategory.node.title, result.noteTitle, header.headerText ],
+                        parentUri: result.uri,
+                        title: cell.cellText,
+                        titleHighlightInfo: cell.cellTextHighlightInfo,
+                        uri: result.uri,
+                    };
+                    headerNode.contents[cell.cellText] = new SearchNode(cellNode);
+                }
+                noteContainer.contents[header.headerText] = new SearchNode(headerNode);
+            }
+            notebookCategory.node.contents[formatFsPathForCompare(result.uri)] = new SearchNode(noteContainer);
+            return this.cleanNodeTree();
+        }
 
         // All search locations besides 'notebook' use a UriBasedView with an OutlineNode as the Node
         //      so for all three of these we can use the same function to extract labels

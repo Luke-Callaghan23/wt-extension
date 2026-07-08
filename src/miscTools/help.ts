@@ -432,6 +432,7 @@ export type JSONContextInfo =  {
 } | {
     kind: 'objectPropertyValue',
     keyName: string,
+    valueString?: string,
     objectRange: vscode.Range,
 }
 
@@ -447,12 +448,18 @@ export const getFullJSONStringFromLocation = (document: vscode.TextDocument, ful
     const endOff = document.offsetAt(location.range.end);
 
     let stringStartOff;
-    for (stringStartOff = startOff - 1; stringStartOff >= 0; stringStartOff--) {
-        if (fullText[stringStartOff] === '"' && fullText[stringStartOff - 1] !== '\\') {
-            stringStartOff++;
-            break;
+    if (fullText[startOff] === '"') {
+        stringStartOff = startOff + 1;
+    }
+    else {
+        for (stringStartOff = startOff - 1; stringStartOff >= 0; stringStartOff--) {
+            if (fullText[stringStartOff] === '"' && fullText[stringStartOff - 1] !== '\\') {
+                stringStartOff++;
+                break;
+            }
         }
     }
+
 
     let stringEndOff;
     for (stringEndOff = endOff; stringEndOff < fullText.length; stringEndOff++) {
@@ -473,7 +480,7 @@ export const getJSONContext = (document: vscode.TextDocument, fullText: string, 
     // First determine if we are inside of a string
     // Search starting from the beginning all the way up until the idx parameter for all non-escaped double quotes
     let inString: boolean = false;
-    for (let idx = 0; idx < offset; idx++) {
+    for (let idx = 0; idx <= offset; idx++) {
         if (fullText[idx] === '\\') {
             idx++;
             continue;
@@ -487,6 +494,7 @@ export const getJSONContext = (document: vscode.TextDocument, fullText: string, 
     let backwardsCursorStart: number;
     let forwardsCursorStart: number;
 
+    let keystring: JSONStringInfo | null = null;
     let jsonstring: JSONStringInfo | null = null;
     let isPropertyKey: boolean = false;
     let isPropertyValue: boolean = false;
@@ -495,14 +503,7 @@ export const getJSONContext = (document: vscode.TextDocument, fullText: string, 
             document.positionAt(offset),
             document.positionAt(offset + 1)
         )));
-        // return {
-        //     kind: 'string',
-        //     stringRange: new vscode.Range(
-        //         document.positionAt(jsonstring.startOff), 
-        //         document.positionAt(jsonstring.endOff)
-        //     )
-        // };
-
+        
         // Search for the next non-whitespace character in the JSON document, following the 
         let nextNonWhitespaceOff = jsonstring.endOff + 2;
         while (/\s/.test(fullText[nextNonWhitespaceOff])) {
@@ -514,7 +515,36 @@ export const getJSONContext = (document: vscode.TextDocument, fullText: string, 
         }
 
         backwardsCursorStart = jsonstring.startOff - 2;
-        forwardsCursorStart = nextNonWhitespaceOff + 1;
+        forwardsCursorStart = nextNonWhitespaceOff;
+
+        // Search for the previous non-whitespace character, to see if the 
+        //      matched JSON string was the value of an object property
+        let prevNonWhitespaceOff = backwardsCursorStart;
+        while (/\s/.test(fullText[prevNonWhitespaceOff])) {
+            prevNonWhitespaceOff--;
+        }
+
+        if (fullText[prevNonWhitespaceOff] === ':') {
+            
+            // If this is the value of an object property, get the text value of the property key
+            // Move the cursor back until you find the start of the property key JSON string
+            while (fullText[prevNonWhitespaceOff] !== '"') {
+                prevNonWhitespaceOff--;
+            }
+            // Move the cursor back once again to move into the JSON string itself
+            prevNonWhitespaceOff--;
+
+            keystring = getFullJSONStringFromLocation(document, fullText, new vscode.Location(
+                document.uri, 
+                new vscode.Range(
+                    document.positionAt(prevNonWhitespaceOff),
+                    document.positionAt(prevNonWhitespaceOff)
+                )
+            ));
+            isPropertyValue = true;
+        }
+    
+
     }
     else {
 
@@ -529,12 +559,20 @@ export const getJSONContext = (document: vscode.TextDocument, fullText: string, 
         if (fullText[prevCharCursor] === ':') {
             isPropertyValue = true;
 
-            jsonstring = getFullJSONStringFromLocation(document, fullText, new vscode.Location(document.uri, new vscode.Range(
-                document.positionAt(prevCharCursor - 1),
+            // If this is the value of an object property, get the text value of the property key
+            // Move the cursor back until you find the start of the property key JSON string
+            while (fullText[prevCharCursor] !== '"') {
+                prevCharCursor--;
+            }
+            // Move the cursor back once again to move into the JSON string itself
+            prevCharCursor--;
+
+            keystring = getFullJSONStringFromLocation(document, fullText, new vscode.Location(document.uri, new vscode.Range(
+                document.positionAt(prevCharCursor),
                 document.positionAt(prevCharCursor)
             )));
 
-            backwardsCursorStart = jsonstring.startOff - 2;
+            backwardsCursorStart = keystring.startOff - 2;
             forwardsCursorStart = offset + 1;
         }
         else {
@@ -667,12 +705,13 @@ export const getJSONContext = (document: vscode.TextDocument, fullText: string, 
                 objectRange: enclosingRange
             };
         }
-        else if (isPropertyValue && jsonstring) {
+        else if (isPropertyValue && keystring) {
             return {
                 kind: 'objectPropertyValue',
-                keyName: jsonstring.jsonString,
+                keyName: keystring.jsonString,
+                valueString: jsonstring?.jsonString,
                 objectRange: enclosingRange
-            }
+            };
         }
     }
     else {

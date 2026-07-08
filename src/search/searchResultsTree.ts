@@ -142,14 +142,20 @@ export class SearchResultsTree
             // When the matched title is the title of a fragment, opens that in the editor
             // Otherwise, reveals that node in the Outline / Scratch Pad / Recycling Bin / Notebook view
             
-            // Notebook or scratch pad or fragment: open in editor
+            // Scratch pad or fragment: open in editor as text
             if (
-                node.node.linkNode.source === 'notebook' || 
                 node.node.linkNode.source === 'scratch' || 
-                node.node.linkNode.node.data.ids.type === 'fragment'
+                (
+                    (node.node.linkNode.source === 'outline' || node.node.linkNode.source === 'recycle')
+                    && node.node.linkNode.node.data.ids.type === 'fragment'
+                )
             ) {
                 const doc = await vscode.workspace.openTextDocument(node.getUri());
                 return showTextDocumentWithPreview(doc);
+            }
+            else if (node.node.linkNode.source === 'notebook') {
+                const doc = await vscode.workspace.openNotebookDocument(node.getUri());
+                return vscode.window.showNotebookDocument(doc);
             }
 
             // Outline or Recycling (when type is not fragment), then reveal the node 

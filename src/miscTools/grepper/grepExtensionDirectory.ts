@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Extension } from   '../../extension';
-import { getRelativePath, isSubdirectory } from '../help';
+import { formatFsPathForCompare, getRelativePath, isSubdirectory } from '../help';
 import { RipGrep } from './ripGrep';
 import { buildMarkdownIgnoringRegex } from './common';
 
@@ -39,26 +39,7 @@ async function grep__impl (
     overrideFilter?: string,
 ): Promise<[vscode.Location, string][] | null>  {
     
-    const captureGroupId = 'searchResult';
-
-    // inline search regex is a secondary regex which makes use of NodeJS's regex capture groups
-    //      to do additional searches inside of CONTENTS_OF_LINE for the actual matched text
-    let inlineSource = searchBarValue;
-    if (!useRegex) {
-        if (useIgnoreStyleCharacters) {
-            inlineSource = buildMarkdownIgnoringRegex(inlineSource);
-        }
-        else {
-            inlineSource = inlineSource.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-    }
-
-    let inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${inlineSource})`, 'gi');
-    if (useWholeWord) {
-        inlineSearchRegex = new RegExp(`${Extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${Extension.wordSeparator}`, 'gi');
-    }
-
-    const parseOutput: RegExp = /(?<path>.+):(?<lineOneIndexed>\d+):(?<lineContents>.+)/;
+    const parseOutput: RegExp = /(?<path>.+):(?<lineOneIndexed>\d+):(?<characterOneIndexed>\d+):(?<matchedText>.+)/;
 
     // Iterate over all items yielded by the grep generator to parse into vscode.Location
     //      objects and yield each one once processed
@@ -75,59 +56,52 @@ async function grep__impl (
         // If `grep` returns null, then something went wrong with the search, and the whole thing should be treated as null
         if (cancellationToken.isCancellationRequested) return null;
 
+        // Parse path, line, character, and matched text from ripgrep output
         const match = parseOutput.exec(result);
         if (!match || match.length === 0 || !match.groups) continue;
 
-        const captureGroup = match.groups as { path: string, lineOneIndexed: string, lineContents: string };
-        const { path, lineContents, lineOneIndexed } = captureGroup;
-        const line = parseInt(lineOneIndexed) - 1;
+        const captureGroup = match.groups as { path: string, lineOneIndexed: string, matchedText: string, characterOneIndexed: string };
+        const { path, matchedText, lineOneIndexed, characterOneIndexed } = captureGroup;
 
-        let lineMatch: RegExpExecArray | null;
+        if (!path || !matchedText || !lineOneIndexed || !characterOneIndexed) {
+            console.log(`[WARN] Skipped search result '${result}' from ripgrep because not all match groups were found: ${JSON.stringify({ path: path || null, matchedText: matchedText || null, lineOneIndexed: lineOneIndexed || null, characterOneIndexed: characterOneIndexed || null })}`)
+            continue;
+        }
 
-        // Since there can be multiple matched values for the search regex inside of CONTENTS_OF_LINE
-        //      we need to continually apply the inlineSearchRegex to CONTENTS_OF_LINE until all matches 
-        //      run out
-        while ((lineMatch = inlineSearchRegex.exec(lineContents)) !== null) {
-            let characterStart = lineMatch.index;
+        // Shift 1-indexed line and character to VSCode 0-indexed numbers and create a vscode.Range object
+        const lineIdx = parseInt(lineOneIndexed) - 1;
+        const characterIdx = parseInt(characterOneIndexed) - 1;
 
-            // Using the captureGroupId we baked into the inlineSearchRegex, we can isolate just the current 
-            //      matched text from the whole line
-            const actualMatchedText = lineMatch.groups?.[captureGroupId] || lineMatch[lineMatch.length - 1];
+        if (isNaN(lineIdx) || isNaN(characterIdx)) {
+            console.log(`[WARN] Skipped search result '${result}' from ripgrep because of invalid number formats for line or character: ${JSON.stringify({ lineOneIndexed: lineOneIndexed || null, characterOneIndexed: characterOneIndexed || null })}`);
+            continue;
+        }
+        
+        const matchedRange = new vscode.Range(
+            new vscode.Position(lineIdx, characterIdx),
+            new vscode.Position(lineIdx, characterIdx + matchedText.length),
+        );
 
-            // In lined search results are also off-by-one
-            if (inlineSearchRegex) {
-                characterStart += lineMatch[0].indexOf(actualMatchedText);
-            }
-            
-            // Index of the ending character of the vscode Location is derived by getting the starting character of the 
-            //      of the grep result + the length of the searchedText
-            const characterEnd = characterStart + actualMatchedText.length;
-
-            // Create positions and ranges for the Location
-            const startPosition = new vscode.Position(line, characterStart);
-            const endPosition = new vscode.Position(line, characterEnd);
-            const foundRange = new vscode.Selection(startPosition, endPosition);
-    
-            // As long as the Uri belongs to this vscode workspace then yield this location
-            const uri = vscode.Uri.joinPath(Extension.rootPath, path);
-            if (
-                (
-                    uri.fsPath.toLocaleLowerCase().endsWith('.wt') 
-                    || uri.fsPath.toLocaleLowerCase().endsWith('.wtnote') 
-                    || uri.fsPath.toLocaleLowerCase().endsWith('.md') 
-                    || uri.fsPath.toLocaleLowerCase().endsWith('.config')
-                )
-                && 
-                (
-                    isSubdirectory(Extension.workspace.chaptersFolder, uri)
-                    || isSubdirectory(Extension.workspace.workSnipsFolder, uri)
-                    || isSubdirectory(Extension.workspace.notebookFolder, uri)
-                    || isSubdirectory(Extension.workspace.scratchPadFolder, uri)
-                )
-            ) {
-                // Finally, finally, finally yield the result
-                output.push([ new vscode.Location(uri, foundRange), actualMatchedText ]);
-            }
+        // As long as the Uri belongs to this vscode workspace then yield this location
+        const uri = vscode.Uri.joinPath(Extension.rootPath, path);
+        if (
+            (
+                uri.fsPath.toLocaleLowerCase().endsWith('.wt') 
+                || uri.fsPath.toLocaleLowerCase().endsWith('.wtnote') 
+                || uri.fsPath.toLocaleLowerCase().endsWith('.md') 
+                || uri.fsPath.toLocaleLowerCase().endsWith('.config')
+            )
+            && 
+            (
+                isSubdirectory(Extension.workspace.chaptersFolder, uri)
+                || isSubdirectory(Extension.workspace.workSnipsFolder, uri)
+                || isSubdirectory(Extension.workspace.notebookFolder, uri)
+                || isSubdirectory(Extension.workspace.scratchPadFolder, uri)
+            )
+        ) {
+            // Finally, finally, finally yield the result
+            console.log(`[INFO] Search result: ${matchedText} in ${formatFsPathForCompare(uri)}, line ${matchedRange.start.line} char ${matchedRange.start.character}"`);
+            output.push([ new vscode.Location(uri, matchedRange), matchedText ]);
         }
     }
     return output;

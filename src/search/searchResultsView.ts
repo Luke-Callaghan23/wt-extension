@@ -130,6 +130,12 @@ implements
     private async recalculateDocumentResults (cancellationToken: vscode.CancellationToken, updated: vscode.Uri | vscode.TextDocument): Promise<void> {
         const updatedUri = 'uri' in updated ? updated.uri : updated;
         
+        // Adhoc regeneration of wtnote results is very involved
+        // May take up in the future, but it's not a worthwhile use case to handle right now
+        if (updatedUri.fsPath.toLocaleLowerCase().endsWith('.wtnote')) {
+            return;
+        }
+
         const { 
             latestSearchBarValue, 
             useWholeWord, useRegex, 
@@ -158,10 +164,6 @@ implements
         
         const newFilteredUris = this.searchTree.filteredUris.filter(shouldRetainLocation);
         this.searchTree.results = this.searchTree.results.filter(result => shouldRetainLocation(result[0]));
-
-        // TODO: if we remove a filter for a parent uri, should we add back filters for all other 
-        //      children that are not in a direct line to this document???
-        // TODO: very niche case
 
         this.searchTree.nodeMap = {};
 

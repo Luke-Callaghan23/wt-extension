@@ -107,13 +107,17 @@ export class RipGrep {
         try {
             // Call git grep
 
-            let flags = '-n';
+            let caseFlag: string;
             if (useCaseInsensitive) {
-                flags += 'i';
+                caseFlag = '-i';
             }
-            const command = ['--no-heading', '--with-filename', '-.', flags, regex.source, overrideFilter || './'];
+            else {
+                caseFlag = '-s';
+            }
+
+            const command = ['--only-matching', '--column', '--no-heading', '--with-filename', '-.', '-n', caseFlag, regex.source, overrideFilter || './'];
             
-            console.log(`[INFO] Running grep command 'rg' with args: "${command.join('" "')}"`)
+            console.log(`[INFO] Running grep command 'rg' with args: "${command.join('" "')}"`);
             
             if (!finalRgPath) {
                 throw "Could not find ripgrep!";
