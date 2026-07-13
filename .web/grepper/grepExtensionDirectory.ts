@@ -16,21 +16,24 @@ export async function grepSingleFile (
     uri: vscode.Uri,
     searchBarValue: string, 
     useRegex: boolean, 
-    caseInsensitive: boolean, 
-    wholeWord: boolean,
+    useCaseInsensitive: boolean, 
+    useWholeWord: boolean,
+    useNodeDescriptions: boolean,
+    useIgnoreStyleCharacters: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[vscode.Location, string][] | null> {
     const document = await vscode.workspace.openTextDocument(uri);
-    return nodeGrep(document, searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+    return nodeGrep(document, searchBarValue, useRegex, useCaseInsensitive, useWholeWord, useNodeDescriptions, useIgnoreStyleCharacters, cancellationToken);
 }
 
 
 export async function grepExtensionDirectory (
     searchBarValue: string, 
     useRegex: boolean, 
-    caseInsensitive: boolean, 
-    wholeWord: boolean,
+    useCaseInsensitive: boolean, 
+    useWholeWord: boolean,
+    useIgnoreStyleCharacters: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[ vscode.Location, string ][] | null>  {
-    return nodeGrepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
+    return nodeGrepExtensionDirectory(searchBarValue, useRegex, useCaseInsensitive, useWholeWord, cancellationToken);
 }

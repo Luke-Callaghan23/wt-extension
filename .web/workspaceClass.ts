@@ -56,10 +56,12 @@ export type DiskContextType = {
     "wt.autocorrections.exclusions": Autocorrect["exclusions"];
     "wt.wtSearch.search.latestSearchBarValue": SearchBarView["latestSearchBarValue"];
     "wt.wtSearch.search.latestReplaceBarValue": SearchBarView["latestReplaceBarValue"];
-    "wt.wtSearch.search.wholeWord": SearchBarView["wholeWord"];
-    "wt.wtSearch.search.regex": SearchBarView["regex"];
-    "wt.wtSearch.search.caseInsensitive": SearchBarView["caseInsensitive"];
-    "wt.wtSearch.search.matchTitles": SearchBarView["matchTitles"];
+    "wt.wtSearch.search.wholeWord": SearchBarView["useWholeWord"];
+    "wt.wtSearch.search.regex": SearchBarView["useRegex"];
+    "wt.wtSearch.search.caseInsensitive": SearchBarView["useCaseInsensitive"];
+    "wt.wtSearch.search.matchTitles": SearchBarView["useMatchTitles"];
+    "wt.wtSearch.search.nodeDescriptions": SearchBarView["useNodeDescriptions"];
+    "wt.wtSearch.search.ignoreStyleCharacters": SearchBarView["useIgnoreStyleCharacters"];
 }
 
 export class Workspace {
@@ -148,7 +150,7 @@ export class Workspace {
     ];
 
     static lastWriteTimestamp: number | null = null;
-    static async packageContextItems (useDefaultFS: boolean = false) {
+    static async packageContextItems (shuttingDown: boolean = false) {
         const contextUri = Extension.workspace.contextValuesFilePath;
 
         // 
@@ -168,7 +170,7 @@ export class Workspace {
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
 
         ReloadWatcher.disableReloadWatch();
-        await vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+        await vscode.workspace.fs.writeFile(contextUri, new Uint8Array(Buff.from(contextJSON, 'utf-8')));
 
         setTimeout(() => {
             ReloadWatcher.enableReloadWatch();
@@ -182,7 +184,7 @@ export class Workspace {
         ReloadWatcher.disableReloadWatch();
         await vscode.workspace.fs.writeFile(
             Extension.workspace.contextValuesFilePath, 
-            Buff.from(JSON.stringify(contextValues), 'utf-8')
+            new Uint8Array(Buff.from(JSON.stringify(contextValues), 'utf-8'))
         );
         setTimeout(ReloadWatcher.enableReloadWatch, 1000);
     }
@@ -198,7 +200,7 @@ export class Workspace {
         const contextItems: DiskContextType = await Extension.getPackageableItems();
         const contextJSON = JSON.stringify(contextItems, undefined, 2);
         ReloadWatcher.disableReloadWatch();
-        return vscode.workspace.fs.writeFile(contextUri, Buff.from(contextJSON, 'utf-8'));
+        return vscode.workspace.fs.writeFile(contextUri, new Uint8Array(Buff.from(contextJSON, 'utf-8')));
     }
 
     static async updateContext <K extends keyof DiskContextType> (context: vscode.ExtensionContext, key: K, value: DiskContextType[K], options?: { isSetting: boolean }) {

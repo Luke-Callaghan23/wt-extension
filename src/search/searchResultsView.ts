@@ -191,7 +191,7 @@ implements
         
         const fileResults = 'uri' in updated
             ? await nodeGrep(updated, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, useNodeDescriptions, useIgnoreStyleCharacters, cancellationToken)
-            : await grepSingleFile(updatedUri, latestSearchBarValue, useRegex, useCaseInsensitive, useWholeWord, useIgnoreStyleCharacters, cancellationToken);
+            : await grepSingleFile(updatedUri, latestSearchBarValue, useRegex, useCaseInsensitive, useNodeDescriptions, useWholeWord, useIgnoreStyleCharacters, cancellationToken);
         
         if (!fileResults) return;
 

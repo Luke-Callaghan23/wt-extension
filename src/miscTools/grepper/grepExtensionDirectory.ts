@@ -10,6 +10,7 @@ export async function grepSingleFile (
     useRegex: boolean, 
     useCaseInsensitive: boolean, 
     useWholeWord: boolean,
+    useNodeDescriptions: boolean,
     useIgnoreStyleCharacters: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[vscode.Location, string][] | null> {
