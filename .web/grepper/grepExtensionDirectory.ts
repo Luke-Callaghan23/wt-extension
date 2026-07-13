@@ -6,34 +6,11 @@ import * as readline from 'readline';
 import { glob } from 'glob';
 import {promisify} from 'util'
 import { isSubdirectory } from '../help';
-import { nodeGrep } from './nodeGrep';
+import { nodeGrep, nodeGrepExtensionDirectory } from './nodeGrep';
 
 export const captureGroupId = 'searchResult';
 
 
-async function getDataDirectoryPaths(): Promise<vscode.Uri[]> {
-    const found: vscode.Uri[] = [];
-    async function walkDirectory(directory: vscode.Uri) {
-        
-        const files = await vscode.workspace.fs.readDirectory(directory);
-        for (const [name, type] of files) {
-            const filePath = vscode.Uri.joinPath(directory, name);
-
-            if (type === vscode.FileType.Directory) {
-                // Recursively walk subdirectories
-                await walkDirectory(filePath);
-            } 
-            else if (type === vscode.FileType.File && (
-                name.toLocaleLowerCase().endsWith('.wt') || name.toLocaleLowerCase().endsWith('.wtnote')  || name.toLocaleLowerCase().endsWith('.md') || name.toLocaleLowerCase() === '.config')
-            ) {
-                found.push(filePath);
-            }
-        }
-    }
-
-    await walkDirectory(vscode.Uri.joinPath(Extension.rootPath, 'data'));
-    return found;
-}
 
 export async function grepSingleFile (
     uri: vscode.Uri,
@@ -55,55 +32,5 @@ export async function grepExtensionDirectory (
     wholeWord: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[ vscode.Location, string ][] | null>  {
-
-    const captureGroupId = 'searchResult';
-
-    let flags = 'g';
-    if (caseInsensitive) {
-        flags += 'i';
-    }
-
-    // inline search regex is a secondary regex which makes use of NodeJS's regex capture groups
-    //      to do additional searches inside of CONTENTS_OF_LINE for the actual matched text
-    let inlineSource = searchBarValue;
-    if (!useRegex) {
-        inlineSource = inlineSource.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
-    let inlineSearchRegex: RegExp = new RegExp(`(?<${captureGroupId}>${inlineSource})`, flags);
-    if (wholeWord) {
-        inlineSearchRegex = new RegExp(`${Extension.wordSeparator}(?<${captureGroupId}>${inlineSource})${Extension.wordSeparator}`, flags);
-    }
-
-    const output: [ vscode.Location, string ][] = [];
-    try {
-        const applicableUris = await getDataDirectoryPaths();
-
-        const documentPromises: Thenable<vscode.TextDocument>[] = applicableUris
-            .map(uri => vscode.workspace.openTextDocument(uri));
-
-        const documents: vscode.TextDocument[] = [];
-
-        const totalCount = documentPromises.length;
-        let completedFilesCount = 0;
-        while (completedFilesCount < totalCount) {
-            const [ openedDoc, index ] = await Promise.any<[vscode.TextDocument, number]>(documentPromises
-                .map((p, i) => p.then(v => [v, i] as [vscode.TextDocument, number]))
-            );
-
-            const grepResults = await nodeGrep(openedDoc, inlineSearchRegex, cancellationToken);
-            grepResults && output.push(...grepResults);
-            
-            completedFilesCount++;
-            documentPromises.splice(index, 1);
-            documents.push(openedDoc);
-        }
-        return output;
-    }
-    catch (err: any) {
-        console.log(err);
-        Extension.searchBarView.setSearchBarError(searchBarValue, `${err}`);
-        return [];
-    }
-
+    return nodeGrepExtensionDirectory(searchBarValue, useRegex, caseInsensitive, wholeWord, cancellationToken);
 }

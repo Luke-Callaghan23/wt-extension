@@ -52,6 +52,7 @@ import * as console from './miscTools/vsconsole';
 import { SpacingHighlights } from './miscTools/spacingHighlights';
 import { NotebookWebview } from './notebook/notebookWebview';
 import { DefinitionsPanelWebview } from './intellisense/synonymsProvider/definitionPanel';
+import { getRipGrepBinarySearchPromise, RipGrep } from './miscTools/grepper/ripGrep';
 
 
 export class Extension {
@@ -505,7 +506,28 @@ export class Extension {
 
             // Setting to make writing dialogue easier -- always skip past closing dialogue quotes
             const configuration = vscode.workspace.getConfiguration();
-            configuration.update("editor.autoClosingOvertype", "always", vscode.ConfigurationTarget.Workspace)
+            configuration.update("editor.autoClosingOvertype", "always", vscode.ConfigurationTarget.Workspace);
+
+            // Add command for setting ripgrep location
+            // Command must go here because the web extension cannot use ripgrep and it's annoying to add it into the existing search controller code
+            this.context.subscriptions.push(vscode.commands.registerCommand("wt.wtSearch.setRipGrepLocation", async () => {
+                const configuration = vscode.workspace.getConfiguration();
+                const oldLocation: string | undefined = configuration.get<string>('wt.wtSearch.ripGrepLocation');
+    
+                const newLocation = await vscode.window.showOpenDialog({
+                    canSelectFiles: true,
+                    canSelectFolders: false,
+                    canSelectMany: false,
+                    defaultUri: oldLocation ? vscode.Uri.file(oldLocation) : undefined,
+                    openLabel: "Select",
+                    title: "Select 'rg' binary to use for WTANIWE searches",
+                });
+                if (!newLocation) return;
+
+                const newPath = newLocation[0].fsPath;
+                await configuration.update('wt.wtSearch.ripGrepLocation', newPath, vscode.ConfigurationTarget.Workspace);
+                RipGrep.rgPath = getRipGrepBinarySearchPromise();
+            }));
 
             await TabLabels.assignNamesForOpenTabs();
             report("Loaded tab labels");

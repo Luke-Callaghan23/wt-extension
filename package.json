@@ -244,6 +244,9 @@
                         ".md (markdown)"
                     ],
                     "default": ".wt (writing tool)"
+                },
+                "wt.wtSearch.ripGrepLocation": {
+                    "markdownDescription": "Location on disk for a RipGrep binary to use when running searches. Your VSCode distribution should come with a rg binary compatible with your system, and WTANIWE searches for that binary at start up, but it can be slow, especially when Microsoft keeps moving the binary around.\n\nIf you know where your rg path is located, or if you have an external version of rg you wish to use, you can enter the file path here and WTANIWE won't have to search at startup each time.\n\nNOTE: This cannot be updated while the extension is running.  After updating this value, you need to reload the window for it to take effect.\n\nOR run command `wt.wtSearch.setRipGrepLocation` (Writing Tool: Set RipGrep Location) to update it on the fly."
                 }
             }
         },
@@ -1220,6 +1223,10 @@
             {
                 "title": "Writing Tool: Open Workspace Context Values",
                 "command": "wt.misc.openContextValues"
+            },
+            {
+                "title": "Writing Tool: Set RipGrep Location",
+                "command": "wt.wtSearch.setRipGrepLocation"
             }
         ],
         "menus": {

@@ -524,6 +524,7 @@ export class CreateSearchResults {
                 //      nodeInfo with that result (case 1 above)
                 const fmtUri = formatFsPathForCompare(nodeUri);
                 if (fmtUri in groupedResults && groupedResults[fmtUri].kind !== 'wtnote') {
+                    //@ts-ignore
                     groupedResults[fmtUri].configResults = nodeInfo;
                     continue;
                 }
