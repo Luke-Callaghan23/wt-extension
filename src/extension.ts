@@ -396,6 +396,8 @@ export class Extension {
             this._workspace = workspace;
             this._context = context;
 
+            RipGrep.init(context);
+
             this._outlineView = new OutlineView(context, workspace);                // wt.outline
             await this._outlineView.init();
             report("Loaded outline");
@@ -526,7 +528,9 @@ export class Extension {
 
                 const newPath = newLocation[0].fsPath;
                 await configuration.update('wt.wtSearch.ripGrepLocation', newPath, vscode.ConfigurationTarget.Workspace);
-                RipGrep.rgPath = getRipGrepBinarySearchPromise();
+                RipGrep.rgPath = getRipGrepBinarySearchPromise(context);
+
+                vscode.window.showInformationMessage("[INFO] Successfully updated 'rg' path for WTANIWE searches!")
             }));
 
             await TabLabels.assignNamesForOpenTabs();

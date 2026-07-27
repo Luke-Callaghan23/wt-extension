@@ -48,59 +48,114 @@ function makeQueryablePromise <T> (promise: Promise<T>): StateQueryablePromise<T
 }
 
 
-export function getRipGrepBinarySearchPromise (): StateQueryablePromise<string> {
-    return makeQueryablePromise(getBinPath(vscode.env.appRoot).then(async (rgBinPath) => {
+export function getRipGrepBinarySearchPromise (context: vscode.ExtensionContext): StateQueryablePromise<string> {
 
-        // First, see if the user has provided a 'rg' binary location in the configuration 'wt.wtSearch.ripGrepLocation'
-        const configuration = vscode.workspace.getConfiguration();
-        const configRipGrep: string | undefined = configuration.get<string>('wt.wtSearch.ripGrepLocation');
-        if (configRipGrep) {
-            const statResult = await statFile(vscode.Uri.file(configRipGrep));
+
+    async function confirmRgPath (path: string | undefined): Promise<string | null> {
+        if (path) {
+            const statResult = await statFile(vscode.Uri.file(path));
 
             // Check exists
             if (!statResult) {
-                vscode.window.showWarningMessage(`[WARN] RipGrep location specified in [settings](command:workbench.action.openSettings?%22wt.wtSearch.ripGrepLocation%22) '${configRipGrep}' could not be found.  Searching for rg binary in VSCode distribution instead.`);
+                vscode.window.showWarningMessage(`[WARN] RipGrep location specified in [settings](command:workbench.action.openSettings?%22wt.wtSearch.ripGrepLocation%22) '${path}' could not be found.  Searching for rg binary in VSCode distribution instead.`);
             }
             // Check if it's a file
             else if (statResult.type !== vscode.FileType.File) {
-                vscode.window.showWarningMessage(`[WARN] RipGrep location specified in [settings](command:workbench.action.openSettings?%22wt.wtSearch.ripGrepLocation%22) '${configRipGrep}' could was not a static file.  Searching for rg binary in VSCode distribution instead..`);
+                vscode.window.showWarningMessage(`[WARN] RipGrep location specified in [settings](command:workbench.action.openSettings?%22wt.wtSearch.ripGrepLocation%22) '${path}' could was not a static file.  Searching for rg binary in VSCode distribution instead..`);
             }
             // Do a basic sanity check on the binary to make sure that the --version command returns the text "ripgrep" somewhere in its result
             else {
                 // Run --version command
-                const ps = new Promise<void>((resolve, reject) => childProcess.exec(configRipGrep + " --version", (error, stdout, stderr) => {
-                    if (error) {
-                        reject(error);
+                const versionResult = new Promise<void>((resolve, reject) => {
+                    const ps = childProcess.spawnSync(path, ["--version"]);
+
+                    if (!ps.output || ps.error) {
+                        const stderr = ps.stderr.toString();
+                        const error = ps.error?.message;
+
+                        let message;
+                        if (stderr && error) {
+                            message = `${error} -- ${stderr}`
+                        }
+                        else if (stderr) {
+                            message = stderr;
+                        }
+                        else if (error) {
+                            message = error;
+                        }
+                        else {
+                            message = 'Unknown error';
+                        }
+                        reject(message);
+                        return;
                     }
 
-                    // Check stdout for 'ripgrep' substring.  If we find it, then it's okay to use this binary
-                    if (stdout.toLocaleLowerCase().includes('ripgrep')) {
+                    const containsString = ps.output
+                        .filter(data=>data && data.length)
+                        .toString()
+                        .toLocaleLowerCase()
+                        .includes('ripgrep');
+
+                    if (containsString) {
                         resolve();
                     }
                     else {
-                        reject(`Output did not include the text 'ripgrep'.  Output was stdout='${stdout}', stderr='${stderr}'`);
+                        reject(`Output did not include the text 'ripgrep'.  Output was stdout='${ps.output}', stderr='${ps.error}'`);
                     }
-                }));
+                });
 
                 try {
                     // Await the execution of the process above.  If it is not rejected, then the rg binary appears to be okay.  We can use the path.
-                    await ps;
-                    return configRipGrep;
+                    await versionResult;
+                    return path;
                 }
                 catch (err) {
-                    vscode.window.showWarningMessage(`[WARN] RipGrep location specified in [settings](command:workbench.action.openSettings?%22wt.wtSearch.ripGrepLocation%22) '${configRipGrep}' did not return expected output.  Message: ${err}`);
+                    vscode.window.showWarningMessage(`[WARN] RipGrep location specified in [settings](command:workbench.action.openSettings?%22wt.wtSearch.ripGrepLocation%22) '${path}' did not return expected output.  Message: ${err}`);
                 }
-            }
-
-            // If there is already a query for rip grep running, return the running query
-            // @ts-ignore
-            if (RipGrep.rgPath) {
-                return RipGrep.rgPath;
             }
         }
 
+        return null;
+    }
+    
+    const rgBinPromise = (async (): Promise<string> => {
+        
+        console.log("[RG SEARCH] ================================");
+        console.log("[RG SEARCH] Starting rg bin search")
+
+        // First, see if the user has provided a 'rg' binary location in the configuration 'wt.wtSearch.ripGrepLocation'
+        const configuration = vscode.workspace.getConfiguration();
+        const configRipGrep: string | undefined = configuration.get<string>('wt.wtSearch.ripGrepLocation');
+
+        console.log(`[RG SEARCH] configRipGrep: ${configRipGrep}`);
+
+        const crg = await confirmRgPath(configRipGrep);
+
+        console.log(`[RG SEARCH] result: ${crg}`);
+
+        if (crg) {
+            return crg;
+        }
+        
+        // Second, check if there is a cached ripgrep location in the workspace state
+        const workspaceStateRg: string | undefined = context.workspaceState.get<string>("wt.wtSearch.ripGrepLocation");
+
+        console.log(`[RG SEARCH] workspaceStateRg: ${workspaceStateRg}`);
+
+        const wsrg = await confirmRgPath(workspaceStateRg);
+        console.log(`[RG SEARCH] result: ${wsrg}`);
+
+        if (wsrg) {
+            return wsrg;
+        }
+
+        console.log(`[RG SEARCH] searching getBinPath`);
+
+        // If none of the above cached paths work, use the vscode-ripgrep-utils module to automatically search the VS Code distributable for rg 
+        //      in a few set locations
+        const rgBinPath = await getBinPath(vscode.env.appRoot);
         if (rgBinPath) {
-            console.log(`Found rg at '${rgBinPath}'!`);
+            console.log(`[RG SEARCH] Found rg at '${rgBinPath}'!`);
             return rgBinPath;
         }
 
@@ -127,6 +182,8 @@ export function getRipGrepBinarySearchPromise (): StateQueryablePromise<string> 
             return null;
         }
 
+        // If the set loctions returned nothing, do a broader search of the VS Code distribution folder
+
         // First do a targeted search at the last known MS distribution path for rg
         
         // ripgrep bin seems to have moved, and `vscode-ripgrep-utils` hasn't been updated yet
@@ -137,31 +194,60 @@ export function getRipGrepBinarySearchPromise (): StateQueryablePromise<string> 
             "node_modules/@vscode/ripgrep-universal/bin"
         );
 
-        const targetedSearch = await searchPath(ripgrepUniversal);
-        if (targetedSearch !== null) {
-            console.log(`Found rg at '${targetedSearch.fsPath}'!`);
-            return targetedSearch.fsPath;
+        if (await statFile(ripgrepUniversal)) {
+            console.log(`[RG SEARCH] searching ${ripgrepUniversal}`);
+    
+            const targetedSearch = await searchPath(ripgrepUniversal);
+            if (targetedSearch !== null) {
+                console.log(`[RG SEARCH] Found rg at '${targetedSearch.fsPath}'!`);
+                return targetedSearch.fsPath;
+            }
+        }
+
+
+        // Do another targeted search inside of node_modules.asar.unpacked
+        const asarUnpacked = vscode.Uri.joinPath (
+            vscode.Uri.file(vscode.env.appRoot),
+            "node_modules.asar.unpacked/@vscode/ripgrep-universal/bin"
+        );
+
+        if (await statFile(asarUnpacked)) {
+            console.log(`[RG SEARCH] searching ${asarUnpacked}`);
+    
+            const asarUnpackedSearch = await searchPath(asarUnpacked);
+            if (asarUnpackedSearch !== null) {
+                console.log(`[RG SEARCH] Found rg at '${asarUnpacked.fsPath}'!`);
+                return asarUnpackedSearch.fsPath;
+            }
         }
 
         // Otherwise, do a long search on the entire node_modules directory
-        const nodeModules = vscode.Uri.joinPath (
-            vscode.Uri.file(vscode.env.appRoot),
-            "node_modules"
-        );
+        const nodeModules = vscode.Uri.file(vscode.env.appRoot);
         
-        const nodeModuleSearch = await searchPath(nodeModules);
-        if (nodeModuleSearch !== null) {
-            console.log(`Found rg at '${nodeModuleSearch.fsPath}'!`);
-            return nodeModuleSearch.fsPath;
+        if (await statFile(nodeModules)) {
+            console.log(`[RG SEARCH] searching ${nodeModules}`);
+            
+            const nodeModuleSearch = await searchPath(nodeModules);
+            if (nodeModuleSearch !== null) {
+                console.log(`[RG SEARCH] Found rg at '${nodeModuleSearch.fsPath}'!`);
+                return nodeModuleSearch.fsPath;
+            }
         }
 
+        console.log("[RG SEARCH] Could not find path!!!");
         throw "Could not find ripgrep!";
-    }));
-}
+    })()
+    .then((result) => {
+        console.log(`[RG SEARCH] Found path '${result}'`);
+        if (result !== null && !context.workspaceState.get("wt.wtSearch.ripGrepLocation")) {
+            vscode.window.showInformationMessage(`[INFO] Storing 'rg' location '${result}' in workspace state.`)
+            context.workspaceState.update("wt.wtSearch.ripGrepLocation", result);
+        }
+        return result;
+    });
 
-// Start a search right away -- not sure when the RipGrep class static properties are initialized
-//      but we might as well start a search right away
-const initialRgPathSearch: StateQueryablePromise<string> = getRipGrepBinarySearchPromise();
+    return makeQueryablePromise(rgBinPromise);
+}
 
 export class RipGrep {
 
@@ -190,7 +276,7 @@ export class RipGrep {
     }
 
     // Use the initial rg search
-    public static rgPath: StateQueryablePromise<string> = initialRgPathSearch;
+    public static rgPath: StateQueryablePromise<string>;
 
     static runningGreps: Record<number, childProcess.ChildProcessWithoutNullStreams> = [];
     public static async query (
@@ -227,7 +313,7 @@ export class RipGrep {
 
             const status = RipGrep.rgPath.status();
             if (status === 'rejected') {
-                vscode.window.showWarningMessage("[WARN] Could not find RipGrep binary location in VSCode distribution. You can also manually set the RipGrep location in [settings](command:workbench.action.openSettings?%22wt.wtSearch.ripGrepLocation%22) or by running [this command](command:wt.search.setRipGrepLocation). For now, a slower search will be performed using the VSCode API");
+                vscode.window.showWarningMessage("[WARN] Could not find RipGrep binary location in VSCode distribution. You can also manually set the RipGrep location in [settings](command:workbench.action.openSettings?%22wt.wtSearch.ripGrepLocation%22) or by running [this command](command:wt.wtSearch.setRipGrepLocation). For now, a slower search will be performed using the VSCode API");
                 return nodeGrepExtensionDirectory(searchBarValue, useRegex, useCaseInsensitive, useWholeWord, cancellationToken).then(res => {
                     if (!res) {
                         return {
@@ -247,7 +333,7 @@ export class RipGrep {
                 });
             }
             else if (status === 'pending') {
-                vscode.window.showWarningMessage("[WARN] Still searing for RipGrep binary location in vscode distribution folder! Search will continue after it is located. You can also manually set the RipGrep location in [settings](command:workbench.action.openSettings?%22wt.wtSearch.ripGrepLocation%22) or by running [this command](command:wt.search.setRipGrepLocation).");
+                vscode.window.showWarningMessage("[WARN] Still searching for RipGrep binary location in vscode distribution folder! Search will continue after it is located. You can also manually set the RipGrep location in [settings](command:workbench.action.openSettings?%22wt.wtSearch.ripGrepLocation%22) or by running [this command](command:wt.wtSearch.setRipGrepLocation).");
             }
 
             const rgPath = await RipGrep.rgPath;
@@ -296,5 +382,9 @@ export class RipGrep {
                 message: `Unable to search because an error occured while running 'rg': ${err}`
             };
         }
+    }
+
+    static async init (context: vscode.ExtensionContext) {
+        RipGrep.rgPath = getRipGrepBinarySearchPromise(context);
     }
 }
