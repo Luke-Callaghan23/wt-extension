@@ -25,14 +25,14 @@ export function remove () {
 
 
 export async function save () {
-    Extension.tabStates.saveToCurrentTabGroup();
+    await Extension.tabStates.saveToCurrentTabGroup();
     await Workspace.forcePackaging();
     Extension.statusBarTimer.resetTimer();
     return gitCommit();
 }
 
 export async function saveAll () {
-    Extension.tabStates.saveToCurrentTabGroup();
+    await Extension.tabStates.saveToCurrentTabGroup();
     await Workspace.forcePackaging();
     Extension.statusBarTimer.resetTimer();
     return gitCommit();

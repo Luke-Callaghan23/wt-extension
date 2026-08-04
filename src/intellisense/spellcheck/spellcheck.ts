@@ -29,7 +29,7 @@ export class Spellcheck implements Timed {
     async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
         Spellcheck.currentMisspelledWordRanges = [];
 
-        const stops = /[\^\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_#]/g;
+        const stops = /[\^\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_#~]/g;
 
         const document = editor.document;
         if (!document) return;
