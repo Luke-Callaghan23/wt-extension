@@ -176,8 +176,6 @@ export function registerCommands (this: OutlineView) {
         this.removeResource(targets);
     }));
 
-    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.collectChapterUris", this.collectChapterUris.bind(this)));
-
     this.context.subscriptions.push(vscode.commands.registerCommand('wt.outline.help', () => {
         vscode.window.showInformationMessage(`Outline View`, {
             modal: true,

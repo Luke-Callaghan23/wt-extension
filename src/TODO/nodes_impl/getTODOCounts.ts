@@ -46,7 +46,7 @@ export async function getTODOCounts (
     switch (this.data.ids.type) {
         case 'root': {
             const root: RootNode = this.data as RootNode;
-            const chaptersContainer: TODONode = root.chapters;
+            const chaptersContainer: TODONode[] = root.chapterGroups;
             const snipsContainer: TODONode = root.snips;
 
             // If calculating TODOs for the root node, simply recurse into this function for each of
@@ -58,11 +58,13 @@ export async function getTODOCounts (
             //     snipsContainer.getTODOCounts()
             // ]);
 
-            const chaptersTODOs = await chaptersContainer.getTODOCounts()
+            const chapterGroupsTODOs = (
+                await Promise.all(root.chapterGroups.map(chapters => chapters.getTODOCounts()))
+            ).reduce((acc, count) => acc + count, 0);
             const snipsTODOs = await snipsContainer.getTODOCounts()
 
             // Add the counts for each to get the new count of TODOs for the root
-            const rootTODOs = chaptersTODOs + snipsTODOs;
+            const rootTODOs = chapterGroupsTODOs + snipsTODOs;
 
             // Set the count for the root node in the todo tree and return the new count
             setFsPathKey<Validation>(uri, {

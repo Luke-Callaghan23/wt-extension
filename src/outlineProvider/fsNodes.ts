@@ -39,6 +39,6 @@ export type SnipNode<N extends TreeNode> = {
 
 export type RootNode<N extends TreeNode> = {
     ids: Ids,
-    chapters: N,
+    chapterGroups: N[],
     snips: N,
 };

@@ -28,7 +28,7 @@ export abstract class TreeNode {
         moveOffset: number,
         overrideDestination: TreeNode | null,
         rememberedMoveDecision: 'Reorder' | 'Insert' | null
-    ): Promise<MoveNodeResult>;
+    ): Promise<MoveNodeResult | null>;
 }
 
 

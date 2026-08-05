@@ -477,7 +477,7 @@ async function createFragmentFromSource (
     containerUri: vscode.Uri, 
     title: string | null,
     content: string,
-    config: { [index: string]: ConfigFileInfo },
+    config: Record<string, ConfigFileInfo>,
     ordering: number,
 ): Promise<string> {
     // Create the fragment file
@@ -551,7 +551,7 @@ async function writeChapter (
     });
     if (!chapterUri) return;
 
-    const dotConfig: { [index: string]: ConfigFileInfo } = {};
+    const dotConfig: Record<string, ConfigFileInfo> = {};
 
     if (docSplits.type === 'none') {
         // Create the single snip and store their config data inside of the dotConfig created above
@@ -628,7 +628,7 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
     const fragmentUpload = async (splits: NamedSingleSplit[], snipUri: vscode.Uri) => {
         
         const dotConfigUri = vscode.Uri.joinPath(snipUri, `.config`);
-        const dotConfig: { [index: string]: ConfigFileInfo } = await readDotConfig(dotConfigUri) || {};
+        const dotConfig: Record<string, ConfigFileInfo> = await readDotConfig(dotConfigUri) || {};
 
         let ordering = 0;
         await Promise.all(splits.map(split => {

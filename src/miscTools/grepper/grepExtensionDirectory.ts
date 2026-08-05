@@ -94,7 +94,8 @@ async function grep__impl (
             )
             && 
             (
-                isSubdirectory(Extension.workspace.chaptersFolder, uri)
+                isSubdirectory(Extension.workspace.mainChaptersFolder, uri)
+                || isSubdirectory(Extension.workspace.chapterGroupsFolder, uri)
                 || isSubdirectory(Extension.workspace.workSnipsFolder, uri)
                 || isSubdirectory(Extension.workspace.notebookFolder, uri)
                 || isSubdirectory(Extension.workspace.scratchPadFolder, uri)

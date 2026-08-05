@@ -9,6 +9,7 @@ import { Buff } from '../Buffer/bufferSource';
 import { DiskContextType, Workspace } from './workspaceClass';
 import { Autocorrect } from '../autocorrect/autocorrect';
 import { wbToNb } from '../miscTools/workBibleToNotebook';
+import { getUsableFileName } from '../outline/impl/createNodes';
 
 
 export type Config = {
@@ -114,13 +115,21 @@ synonyms/lock.mdb
             await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(folder, '.gitkeep'), new Uint8Array());
         }
 
-        // Create the .config files for chapters, snips, and scratchPad
-        const chaptersDotConfig = vscode.Uri.joinPath(workspace.chaptersFolder, `.config`);
+        // Create the .config files for chapters groups, work snips, and scratchPad
+        const chapterGroupsDotConfig = vscode.Uri.joinPath(workspace.chapterGroupsFolder, `.config`);
         const snipsDotConfig = vscode.Uri.joinPath(workspace.workSnipsFolder, `.config`);
         const scratchPadConfig = vscode.Uri.joinPath(workspace.scratchPadFolder, `.config`);
-        await vscode.workspace.fs.writeFile(chaptersDotConfig, Buff.from('{}', 'utf-8'));
+        await vscode.workspace.fs.writeFile(chapterGroupsDotConfig, Buff.from('{}', 'utf-8'));
         await vscode.workspace.fs.writeFile(snipsDotConfig, Buff.from('{}', 'utf-8'));
         await vscode.workspace.fs.writeFile(scratchPadConfig, Buff.from('{}', 'utf-8'));
+
+        // Also create the first chapter group
+        const firstChapterGroupFN = getUsableFileName("chaptergroup");
+        const firstChapterGroupFolder = vscode.Uri.joinPath(workspace.chapterGroupsFolder, firstChapterGroupFN);
+        await vscode.workspace.fs.createDirectory(firstChapterGroupFolder);
+
+        const firstChapterGroupDotConfig = vscode.Uri.joinPath(firstChapterGroupFolder, `.config`);
+        await vscode.workspace.fs.writeFile(firstChapterGroupDotConfig, Buff.from('{}', 'utf-8'));
         
         // Creating the log of the recyclng bin
         const recycleBinLog = vscode.Uri.joinPath(workspace.recyclingBin, `.log`);
@@ -135,7 +144,6 @@ synonyms/lock.mdb
             "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:\",.<>/?",
         };
         const settingsJSON = JSON.stringify(settings);
-
 
         const dotVscodeUri = vscode.Uri.joinPath(Extension.rootPath, `.vscode`);
         await vscode.workspace.fs.createDirectory(dotVscodeUri);

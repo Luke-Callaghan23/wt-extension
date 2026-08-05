@@ -26,6 +26,14 @@ import { NodeMoveKind } from './nodes_impl/handleMovement/generalMoveNode';
 import { defaultProgress, getRelativePath, RevealOptions } from '../miscTools/help';
 import { CopiedSelection, genericPaste } from './impl/copyPaste';
 
+export interface ChapterGroupUris {
+    groupName: string,
+    orderedChapterData: {
+        title: string,
+        relativePath: string
+    }[]
+}
+
 export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Renamable<OutlineNode> {
     // Deleting nodes
     removeResource = removeFunctions.removeResource;
@@ -218,18 +226,28 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
         return;
     }
 
-    public collectChapterUris (): [ string, string ][] {
+    public collectChapterUris (): ChapterGroupUris[] {
         const root: RootNode = this.rootNodes[0].data as RootNode;
-        const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
-        const chapterData = chaptersContainer.contents.map(c => {
-            const title = c.data.ids.display;
-            const uri = c.getUri().fsPath.split(Extension.rootPath.fsPath)[1];
-            return { uri, title, ordering: c.data.ids.ordering };
-        });
 
-        chapterData.sort((a, b) => a.ordering - b.ordering);
-
-        return chapterData.map(({ uri, title }) => [ uri, title ])
+        const chapterGroupUris: ChapterGroupUris[] = [];
+        for (const chapterGroup of root.chapterGroups) {
+            const chaptersContainer = chapterGroup.data as ContainerNode;
+            const chapterData = chaptersContainer.contents.map(c => {
+                const title = c.data.ids.display;
+                const relativePath = c.getUri().fsPath.split(Extension.rootPath.fsPath)[1];
+                return { relativePath, title, ordering: c.data.ids.ordering };
+            });
+            chapterData.sort((a, b) => a.ordering - b.ordering);
+    
+            chapterGroupUris.push({
+                groupName: chapterGroup.data.ids.display,
+                orderedChapterData: chapterData.map(cd => ({
+                    relativePath: cd.relativePath,
+                    title: cd.title
+                }))
+            });
+        }
+        return chapterGroupUris;
     }
     
     public async copyItems () {

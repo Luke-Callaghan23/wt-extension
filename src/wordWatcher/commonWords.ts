@@ -18,9 +18,12 @@ export interface IButton extends vscode.QuickInputButton {
 export async function producePaths (isFilteringSnips: boolean, selected: readonly IFragmentPick[]): Promise<string[]> {
     const collectPathsRoot = (rootNode: OutlineNode): string[] => {
         const root = rootNode.data as RootNode;
+        const snips = collectPathsContainer(root.snips);
+        const chapters: string[] = [];
+        root.chapterGroups.forEach(cg => chapters.push(...collectPathsContainer(cg)));
         return [
-            ...collectPathsContainer(root.chapters),
-            ...collectPathsContainer(root.snips)
+            ...chapters,
+            ...snips
         ];
     };
     const collectPathsContainer = (containerNode: OutlineNode): string[] => {

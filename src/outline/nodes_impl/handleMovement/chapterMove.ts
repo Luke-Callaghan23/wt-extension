@@ -5,82 +5,22 @@ import { ChapterMoveResult, MoveNodeResult } from "./common";
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
 import { newSnip } from '../../impl/createNodes';
 import { OutlineView } from '../../outlineView';
+import { compareFsPath, isSubdirectory } from '../../../miscTools/help';
+import { Extension } from '../../../extension';
 
-
-
-
-export async function chapterMove (
+async function convertChapterToSnip (
     operation: 'move' | 'recover' | 'paste',
     node: OutlineNode,
     recycleView: UriBasedView<OutlineNode>,
     outlineView: OutlineTreeProvider<TreeNode>,
-    newParentType: ResourceType,
-    newParent: OutlineNode, 
     off: number,
-    rememberedMoveDecision: 'Reorder' | 'Insert' | null
-): Promise<ChapterMoveResult> {
-
-    let destinationParent: OutlineNode | undefined;
-    let destinationContents: OutlineNode[] | undefined;
-    
-    if (newParentType === 'container') {
-        const grandparentTypeId = newParent.data.ids.parentTypeId; 
-        if (grandparentTypeId === 'root') {
-            return {
-                kind: 'destination',
-                result: {
-                    destinationContainer: ((outlineView.rootNodes[0] as OutlineNode).data as RootNode).chapters,
-                    newOverride: null,
-                    rememberedMoveDecision: rememberedMoveDecision,
-                }
-            };
-        }
-        else if (grandparentTypeId === 'chapter') {
-            const newGrandparentUri = newParent.data.ids.parentUri;
-            const newGrandparent: OutlineNode = await outlineView.getTreeElementByUri(newGrandparentUri)! as OutlineNode;
-            destinationParent = (newGrandparent.data as ChapterNode).snips;
-            destinationContents = ((newGrandparent.data as ChapterNode).snips.data as ContainerNode).contents;
-        }
-        else throw `Unexpected parent-parent type: ${grandparentTypeId}`;
-    }
-    else if (newParentType === 'chapter') {
-        return {
-            kind: 'destination',
-            result: {
-                destinationContainer: ((outlineView.rootNodes[0] as OutlineNode).data as RootNode).chapters,
-                newOverride: null,
-                rememberedMoveDecision: rememberedMoveDecision,
-            }
-        } 
-    }
-    else if (newParentType === 'snip') {
-        destinationParent = newParent;
-        destinationContents = (newParent.data as SnipNode).contents;
-    }
-    else if (newParentType === 'fragment') {
-        const newGrandparentUri = newParent.data.ids.parentUri;
-        const newGrandparent: OutlineNode = await outlineView.getTreeElementByUri(newGrandparentUri)! as OutlineNode;
-        if (newParent.data.ids.parentTypeId === 'chapter') {
-            destinationParent = (newGrandparent.data as ChapterNode).snips;
-            destinationContents = ((newGrandparent.data as ChapterNode).snips.data as ContainerNode).contents;
-        }
-        else if (newParent.data.ids.parentTypeId === 'snip') {
-            destinationParent = newGrandparent;
-            destinationContents = (newGrandparent.data as SnipNode).contents;
-        }
-        else throw `Unexpected parent parent type: ${newParent.data.ids.parentTypeId}`;
-    }
-    else throw `Unexpected parent type: ${newParentType}`;
-
-    if (destinationParent === undefined || destinationContents === undefined) {
-        throw `Could not find destination contents`;
-    }
-
-    
+    rememberedMoveDecision: 'Reorder' | 'Insert' | null,
+    destinationParent: OutlineNode,
+) {
     const chapterNode = node.data as ChapterNode;    
     const result = await vscode.window.showInformationMessage(`Are you sure you want to convert chapter '${chapterNode.ids.display}' into a snip?  This is an irreversible operation.  (And it takes quite a while).`, { modal: true }, "Yes", "No");
     if (result === 'No' || result === undefined) {
-        return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
+        return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
     }
     
     // To convert the above content into a snip, we need to make a new snip to represent the chapter
@@ -89,7 +29,7 @@ export async function chapterMove (
         preventRefresh: true,
         skipFragment: true,
     });
-    if (chapterSnipUri === null) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
+    if (chapterSnipUri === null) return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
     const chapterSnip = await outlineView.getTreeElementByUri(chapterSnipUri)! as OutlineNode;
     
     
@@ -103,7 +43,7 @@ export async function chapterMove (
             off, null,
             rememberedMoveDecision,
         );
-        if (moveOffset === -1) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
+        if (moveOffset === -1) return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
     }
 
     // Then create a snip inside of the newly created snip to represent the snips container of the moved chapter
@@ -112,7 +52,7 @@ export async function chapterMove (
         preventRefresh: true,
         skipFragment: true,
     });
-    if (chapterSnipContainerUri === null) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
+    if (chapterSnipContainerUri === null) return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
     const chapterSnipContainer = await outlineView.getTreeElementByUri(chapterSnipContainerUri)! as OutlineNode;
 
     // Then move every single snip from the moved chapter into the converted snip's snip container
@@ -124,7 +64,7 @@ export async function chapterMove (
             recycleView, outlineView, 
             off, null, rememberedMoveDecision
         );
-        if (moveOffset === -1) return { kind: 'move', result: { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null } };
+        if (moveOffset === -1) return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
     }
 
     if (operation !== 'paste') {
@@ -139,8 +79,66 @@ export async function chapterMove (
         });
     }
 
-    return { 
-        kind: 'move',
-        result: { moveOffset: acc, createdDestination: null, effectedContainers: [ (outlineView.rootNodes[0] as OutlineNode) ], rememberedMoveDecision }
-    };
+    return { moveOffset: acc, createdDestination: null, effectedContainers: [ (outlineView.rootNodes[0] as OutlineNode) ], rememberedMoveDecision };
+}
+
+// Three essential kinds of chapter moves:
+//      1) Moving the chapter within its own chapter group
+//          - simple to deal with, just change the ordering values in .config and outline provider structure
+//      2) Moving the chapter from one chapter group into another
+//          - relatively simple, just change delete/add entries in each .config, update internal structure, and rename the folders
+//      3) Converting the chapter into a snip
+//          - complicated, requires creating all new files for each file within the chapter
+export async function chapterMove (
+    operation: 'move' | 'recover' | 'paste',
+    node: OutlineNode,
+    recycleView: UriBasedView<OutlineNode>,
+    outlineView: OutlineTreeProvider<TreeNode>,
+    newParentType: ResourceType,
+    newParent: OutlineNode, 
+    off: number,
+    rememberedMoveDecision: 'Reorder' | 'Insert' | null
+): Promise<MoveNodeResult> {
+
+    // Scenario 1: reorder the chapters within the same chapter group
+
+
+    // Scenario 2: move chapter from one chapter group to another
+
+
+    // Scenario 3: convert chapter to snip
+    // First, find the actual destination location where the chapter will end up
+
+    let destinationParent: OutlineNode | undefined;
+    if (newParentType === 'container') {
+        const grandparentTypeId = newParent.data.ids.parentTypeId; 
+        if (grandparentTypeId === 'chapter') {
+            const newGrandparentUri = newParent.data.ids.parentUri;
+            const newGrandparent: OutlineNode = await outlineView.getTreeElementByUri(newGrandparentUri)! as OutlineNode;
+            destinationParent = (newGrandparent.data as ChapterNode).snips;
+        }
+        else throw `Unexpected parent-parent type: ${grandparentTypeId}`;
+    }
+    else if (newParentType === 'snip') {
+        destinationParent = newParent;
+    }
+    else if (newParentType === 'fragment') {
+        const newGrandparentUri = newParent.data.ids.parentUri;
+        const newGrandparent: OutlineNode = await outlineView.getTreeElementByUri(newGrandparentUri)! as OutlineNode;
+        if (newParent.data.ids.parentTypeId === 'chapter') {
+            destinationParent = (newGrandparent.data as ChapterNode).snips;
+        }
+        else if (newParent.data.ids.parentTypeId === 'snip') {
+            destinationParent = newGrandparent;
+        }
+        else throw `Unexpected parent parent type: ${newParent.data.ids.parentTypeId}`;
+    }
+    else throw `Unexpected parent type: ${newParentType}`;
+
+    if (destinationParent === undefined) {
+        throw `Could not find destination contents`;
+    }
+
+    // Do all the fs operations / internal structure updates to recreate the chapter as a snip
+    return convertChapterToSnip(operation, node, recycleView, outlineView, off, rememberedMoveDecision, destinationParent);
 };

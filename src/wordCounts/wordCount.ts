@@ -110,11 +110,13 @@ export class WordCount {
             const root: RootNode = outlineView.rootNodes[0].data as RootNode;
             
             // Create promises to collect display data for all existing chapters
-            const chapters: ContainerNode = root.chapters.data as ContainerNode;
-            for (const chapterWrapper of chapters.contents) {
-                const chapter = chapterWrapper.data as ChapterNode;
-                const fragments: FragmentNode[] = chapter.textData.map(fragmentWrapper => fragmentWrapper.data as FragmentNode);
-                promises.push(processContainer('chapter', chapter.ids.display, chapter.ids.uri, fragments));
+            for (const chapterGroup of root.chapterGroups) {
+                const chapters = chapterGroup.data as ContainerNode;
+                for (const chapterWrapper of chapters.contents) {
+                    const chapter = chapterWrapper.data as ChapterNode;
+                    const fragments: FragmentNode[] = chapter.textData.map(fragmentWrapper => fragmentWrapper.data as FragmentNode);
+                    promises.push(processContainer('chapter', chapter.ids.display, chapter.ids.uri, fragments));
+                }
             }
             
             // Create promises to collect display data for all existing work snips

@@ -250,26 +250,33 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
 
         // =========================== CHAPTERS SECTION =========================== 
         /* Chapters Folder */
-        const qpItemChaptersFolder: IFragmentPick = {
-            label: "$(folder) Chapters:",
-            description: `(${prefix})`,
-            node: root.chapters,
-            // alwaysShow: true,
-            detail: root.chapters.data.ids.description && `${root.chapters.data.ids.description}`,
-        }; 
-        if (!predicateFilters || predicateFilters.every(p => p(root.chapters, qpItemChaptersFolder))) {
-            options.push(qpItemChaptersFolder);
-            // Sort and create options for chapters 
-            const chapters = (root.chapters.data as ContainerNode).contents;
-            chapters.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
-            chapters.forEach((chapter, chapterIndex) => {
-                processChapter(
-                    chapter, 
-                    prefix.length > 0 ? `${prefix}/Chapters` : "Chapters",
-                    [ chapterIndex === chapters.length - 1 ]
-                );
-            });
+
+        const orderedChapterGroups = root.chapterGroups.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+        for (const chapterGroup of orderedChapterGroups) {
+
+            const qpItemChapterGroup: IFragmentPick = {
+                label: `$(folder) Chapter Group: ${chapterGroup.data.ids.display}:`,
+                description: `(${prefix})`,
+                node: chapterGroup,
+                // alwaysShow: true,
+                detail: chapterGroup.data.ids.description && `${chapterGroup.data.ids.description}`,
+            }; 
+
+            if (!predicateFilters || predicateFilters.every(p => p(chapterGroup, qpItemChapterGroup))) {
+                options.push(qpItemChapterGroup);
+                // Sort and create options for chapters 
+                const chapters = (chapterGroup.data as ContainerNode).contents;
+                chapters.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+                chapters.forEach((chapter, chapterIndex) => {
+                    processChapter(
+                        chapter, 
+                        prefix.length > 0 ? `${prefix}/Chapters` : "Chapters",
+                        [ chapterIndex === chapters.length - 1 ]
+                    );
+                });
+            }
         }
+
         
         // =========================== WORK SNIPS SECTIONS =========================== 
         /* Work Snips Folder */

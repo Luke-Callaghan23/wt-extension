@@ -56,7 +56,9 @@ export type ConfigFileInfo = {
     ordering: number
 };
 
-export function getLatestOrdering (configData: { [index: string]: ConfigFileInfo }): number {
+export type DotConfig = Record<string, ConfigFileInfo>;
+
+export function getLatestOrdering (configData: Record<string, ConfigFileInfo>): number {
     let max = -1;
     Object.getOwnPropertyNames(configData).filter(name => name !== 'self').forEach(name => {
         const info = configData[name];
@@ -67,10 +69,10 @@ export function getLatestOrdering (configData: { [index: string]: ConfigFileInfo
     return max;
 }
 
-export async function readDotConfig (path: vscode.Uri): Promise<{ [index: string]: ConfigFileInfo } | null> {
+export async function readDotConfig (path: vscode.Uri): Promise<Record<string, ConfigFileInfo> | null> {
     try {
         const dotConfigJSON = Extension.decoder.decode(await vscode.workspace.fs.readFile(path));
-        const dotConfig: { [index: string]: ConfigFileInfo } = JSON.parse(dotConfigJSON);
+        const dotConfig: Record<string, ConfigFileInfo> = JSON.parse(dotConfigJSON);
         return dotConfig;
     }
     catch (e) {
@@ -79,7 +81,7 @@ export async function readDotConfig (path: vscode.Uri): Promise<{ [index: string
     }
 }
 
-export async function writeDotConfig (path: vscode.Uri, dotConfig: { [index: string]: ConfigFileInfo }) {
+export async function writeDotConfig (path: vscode.Uri, dotConfig: Record<string, ConfigFileInfo>) {
     try {
         const dotConfigJSON = JSON.stringify(dotConfig);
         await vscode.workspace.fs.writeFile(path, Buff.from(dotConfigJSON, 'utf-8'));

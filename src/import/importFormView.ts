@@ -38,7 +38,7 @@ export type Li = {
 export type DroppedSourceInfo = {
     node: OutlineNode,
     namePath: string,
-    destination: 'chapter' | 'snip',
+    destination: 'chapter' | 'chapterGroup' | 'snip',
 };
 
 export class ImportForm {

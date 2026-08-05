@@ -3,7 +3,8 @@ import { Config } from "../workspace";
 
 export type WorkspaceExport = {
     config: Config,
-    chapters: ChaptersRecord,
+    chapters?: (ChaptersRecord[]) | ChaptersGroupRecord,
+    chapterGroups?: ChaptersGroupRecord[],
     snips: SnipsRecord,
     scratchPad: FragmentRecord
     notebook: SerializedNote[],
@@ -16,7 +17,12 @@ export type ChaptersRecord = {
     description?: string,
     fragments: FragmentRecord,
     snips: SnipsRecord
-}[];
+};
+
+export type ChaptersGroupRecord = {
+    groupName: string,
+    chapters: ChaptersRecord[],
+}
 
 // Ordered array of snip data
 export type SnipsExport = {

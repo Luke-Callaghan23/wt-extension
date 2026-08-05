@@ -28,8 +28,12 @@ export async function getChildren (this: OutlineNode, filter: boolean, insertInt
             // Collect all chapters and snips
             const root = data as RootNode;
             
+            const chapterGroups = root.chapterGroups.sort((a, b) => {
+                return a.data.ids.ordering - b.data.ids.ordering;
+            });
+
             // Simply return both of the container nodes for the root type
-            return [ root.chapters, root.snips ];
+            return [ ...chapterGroups, root.snips ];
         }
         else if (data.ids.type === 'container') {
             // Collect all the children of this container

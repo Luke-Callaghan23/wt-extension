@@ -65,7 +65,8 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
 
                 // Only try to import valid file types that come from outside WTANIWE
                 let keepGeneral = !(
-                    isSubdirectory(this.workspace.chaptersFolder, uri)
+                    isSubdirectory(this.workspace.mainChaptersFolder, uri)
+                    || isSubdirectory(this.workspace.chapterGroupsFolder, uri)
                     || isSubdirectory(this.workspace.workSnipsFolder, uri)
                     || isSubdirectory(this.workspace.scratchPadFolder, uri)
                     || isSubdirectory(this.workspace.recyclingBin, uri)

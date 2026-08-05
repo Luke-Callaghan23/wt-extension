@@ -23,6 +23,7 @@ import { defaultProgress } from '../miscTools/help';
 
 // Data provided by the export form webview
 export type ExportDocumentInfo = {
+    chapterGroupUri: vscode.Uri,
     fileName: string,
     ext: 'md' | 'txt' | 'docx' | 'html' | 'odt',
     separateChapters: boolean,
@@ -60,7 +61,7 @@ async function stitchFragments (node: ChapterNode, ex: ExportDocumentInfo): Prom
             let fragmentText = Extension.decoder.decode(fragmentBuffer);
             
             // Do a quick convert from markdown to wt
-            if (fragment.data.ids.uri.fsPath.toLocaleLowerCase().endsWith(".md")) {
+            if (!fragment.data.ids.uri.fsPath.toLocaleLowerCase().endsWith(".md")) {
                 const tmpString = uuid();
                 fragmentText = fragmentText
                     .replaceAll("~~~", tmpString)
@@ -68,7 +69,7 @@ async function stitchFragments (node: ChapterNode, ex: ExportDocumentInfo): Prom
                     .replaceAll("~~", "~")
                     .replaceAll(tmpString, "~~~");
             }
-            fragmentsData.push();
+            fragmentsData.push(fragmentText);
         }
         catch (e) {
             vscode.window.showErrorMessage(`ERROR: an error occurred while reading the contents of fragment '${fragment.data.ids.display}' with path '${fragmentUri}': ${e}`);
@@ -142,8 +143,7 @@ async function doProcessMd (
 
     // Read all fragments from all chapters
     const root: RootNode = outline.rootNodes[0].data as RootNode;
-    const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
-    const chaptersNodes: OutlineNode[] = chaptersContainer.contents;
+    const chapterGroupsContainer: OutlineNode[] = root.chapterGroups;
 
     // Sort the chapters
     chaptersNodes.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);

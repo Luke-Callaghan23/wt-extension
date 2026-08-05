@@ -153,9 +153,30 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         }
         
         // Only import the incoming document as a chapter if it was dropped directly into the '/data/chapters' folder
-        const destinationKind: 'snip' | 'chapter' = compareFsPath(dropped.data.ids.uri, Extension.workspace.chaptersFolder)
-            ? 'chapter'
-            : 'snip'
+        // const destinationKind: 'snip' | 'chapter' = compareFsPath(dropped.data.ids.uri, Extension.workspace.chaptersFolder)
+        //     ? 'chapter'
+        //     : 'snip';
+        
+        let destinationKind: 'snip' | 'chapter' | 'chapterGroup';
+        if (compareFsPath(dropped.data.ids.uri, Extension.workspace.mainChaptersFolder)) {
+            // Dropped directly into the main chapters folder, import it as a chapter
+            destinationKind = 'chapter';
+        }
+        else if (isSubdirectory(Extension.workspace.chapterGroupsFolder, dropped.data.ids.uri)) {
+            if (compareFsPath(Extension.workspace.chapterGroupsFolder, dropped.data.ids.uri)) {
+                // The path is exactly the chapter groups folder, we try to import as a chapter group
+                destinationKind = 'chapterGroup';
+            }
+            else {
+                // Otherwise, import as a chapter into the chaptergroup it was dropped into
+                destinationKind = 'chapter';
+            }
+        }
+        else {
+            // Otherwise it's a snip in either 
+            destinationKind = 'snip';
+        }
+
         const nodeNamePath = await getNodeNamePath(dropped);
         
         for (let index = 0; index < docs.length; index++) {

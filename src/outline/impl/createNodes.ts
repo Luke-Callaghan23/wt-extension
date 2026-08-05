@@ -1,6 +1,6 @@
 /* eslint-disable curly */
 import * as vscode from 'vscode';
-import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig, compareFsPath } from '../../miscTools/help';
+import { ConfigFileInfo, readDotConfig, getLatestOrdering, writeDotConfig, compareFsPath, isSubdirectory } from '../../miscTools/help';
 import { ChapterNode, OutlineNode, RootNode, ContainerNode, SnipNode, FragmentNode } from '../nodes_impl/outlineNode';
 import { OutlineView } from '../outlineView';
 // import * as console from '../../vsconsole';
@@ -63,10 +63,43 @@ export async function newChapter (
     // Creating a new chapter is simple as new chapters are the "highest" level in the node structure
     // Create a new chapter folder with a new text fragment and an empty snips folder and we're all done
 
-    const chaptersContainer = (this.rootNodes[0].data as RootNode).chapters;
-    const chaptersContainerUri = chaptersContainer.getUri();
+    const chapterGroups = (this.rootNodes[0].data as RootNode).chapterGroups
+        .sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
 
-    const chaptersContainerDotConfigUri = vscode.Uri.joinPath(chaptersContainerUri, '.config');
+    // Search for which chapter group to insert the new chapter into
+    let selectedChapterGroup: OutlineNode | null = null;
+    if (resource) {
+        for (const chapterGroup of chapterGroups) {
+            const cgUri = chapterGroup.data.ids.uri;
+            if (isSubdirectory(cgUri, resource.data.ids.uri)) {
+                selectedChapterGroup = chapterGroup;
+            }
+        }
+    }
+    
+    // Next, try to get the chapter group via FileAccessManager.lastAccessedChapter
+    // (Whatever chapter was last accessed will be a part of the chapter group that we
+    //      insert the new chapter into)
+    if (selectedChapterGroup === null) {
+        if (FileAccessManager.lastAccessedChapter) {
+            const chapterNode = await this.getTreeElementByUri(FileAccessManager.lastAccessedChapter);
+            if (chapterNode) {
+                const selectedChapterGroupUri = chapterNode.data.ids.parentUri;
+                const chapterGroup = await this.getTreeElementByUri(selectedChapterGroupUri);
+                if (chapterGroup && chapterGroup.data.ids.type === 'container') {
+                    selectedChapterGroup = chapterGroup;
+                }
+            }
+        }
+    }
+
+    // If we still haven't found a chapter group to insert the chapter into, just use the first chapter group
+    if (selectedChapterGroup === null) {
+        selectedChapterGroup = chapterGroups[0];
+    }
+
+
+    const chaptersContainerDotConfigUri = vscode.Uri.joinPath(selectedChapterGroup.data.ids.uri, '.config');
     const chaptersContainerDotConfig = await readDotConfig(chaptersContainerDotConfigUri);
     if (!chaptersContainerDotConfig) return null; 
 
@@ -88,8 +121,7 @@ export async function newChapter (
         }
         
         // Then, update internal node structure
-        const chapterContainer = (this.rootNodes[0].data as RootNode).chapters.data as ContainerNode;
-        chapterContainer.contents.forEach(chapter => {
+        (selectedChapterGroup.data as ContainerNode).contents.forEach(chapter => {
             if (chapter.data.ids.ordering > selectedChapterNumber) {
                 chapter.data.ids.ordering++;
             }
@@ -104,9 +136,9 @@ export async function newChapter (
     // Create a generic chapter name for the new file
     const chapterTitle = options?.defaultName ?? `New Chapter (${chapterNumber})`;
     const chapterFileName = getUsableFileName(`chapter`);
-    const chapterUri = vscode.Uri.joinPath(chaptersContainerUri, chapterFileName);
+    const chapterUri = vscode.Uri.joinPath(selectedChapterGroup.data.ids.uri, chapterFileName);
     const chapterFragmentsDotConfigUri = vscode.Uri.joinPath(chapterUri, '.config');
-    const chapterRelativePath = `${chaptersContainer.data.ids.relativePath}/${chaptersContainer.data.ids.fileName}`;
+    const chapterRelativePath = `${selectedChapterGroup.data.ids.relativePath}/${selectedChapterGroup.data.ids.fileName}`;
 
     // Store the chapter name and write it to disk
     chaptersContainerDotConfig[chapterFileName] = {
@@ -146,7 +178,7 @@ export async function newChapter (
             fileName: chapterFileName,
             ordering: chapterNumber,
             parentTypeId: 'container',
-            parentUri: chaptersContainerUri,
+            parentUri: selectedChapterGroup.data.ids.uri,
             relativePath: chapterRelativePath,
             type: 'chapter',
             uri: chapterUri,
@@ -167,7 +199,7 @@ export async function newChapter (
         const snipsWriteDotConfigPromise = writeDotConfig(snipsContainerDotConfigUri, {});
         awaitables.push(snipsWriteDotConfigPromise);
         
-        const fragmentsDotConfig: { [index: string]: ConfigFileInfo } = {};
+        const fragmentsDotConfig: Record<string, ConfigFileInfo> = {};
         // Create the fragment, as long as it is not being skipped
         if (!options?.skipFragment) {
             
@@ -229,11 +261,11 @@ export async function newChapter (
 
     // Use splice instead of push, in order to allow for values of `chapterNumber` !== len(chapters)
     //      splice with second arg == 0 -> 0 elements are removed, but the following args are inserted
-    (chaptersContainer.data as ContainerNode).contents.splice(chapterNumber, 0, chapter);
+    (selectedChapterGroup.data as ContainerNode).contents.splice(chapterNumber, 0, chapter);
 
     if (!options?.preventRefresh) {
         vscode.window.showInformationMessage(`Successfully created new chapter with name 'New Chapter' (file name: ${chapterFileName})`);
-        this.refresh(false, [ chaptersContainer ]);
+        this.refresh(false, [ selectedChapterGroup ]);
     }
 
     await Promise.all(awaitables);
@@ -338,20 +370,23 @@ export async function newSnip (
                         const rootNode: OutlineNode = await this.getTreeElementByUri(resource.data.ids.parentUri)! as OutlineNode;
                         const root: RootNode = rootNode.data as RootNode;
 
-                        // Check the id of the chapters container and the work snips container of the root node against
-                        //        the id of the selected resource
-                        if (compareFsPath(resource.data.ids.uri, (root.chapters as OutlineNode).data.ids.uri)) {
-                            // If the id matches against the chapters container, then there's nothing we can do
-                            // Cannot add snips to the chapters container
-                            vscode.window.showErrorMessage('Error: cannot add a new snip directly to the chapters container.  Select a specific chapter to add the new snip to.');
-                            return null;
-                        }
-                        else if (compareFsPath(resource.data.ids.uri, (root.snips as OutlineNode).data.ids.uri)) {
+                        if (compareFsPath(resource.data.ids.uri, (root.snips as OutlineNode).data.ids.uri)) {
                             // If the id matches the work snips container, add the new snip to that container
                             parentNode = root.snips as OutlineNode;
                         }
                         else {
                             throw new Error('Not possible');
+                        }
+
+                        // Check the id of the chapters container and the work snips container of the root node against
+                        //        the id of the selected resource
+                        for (const chapterGroup of root.chapterGroups) {
+                            if (compareFsPath(resource.data.ids.uri, chapterGroup.data.ids.uri)) {
+                                // If the id matches against one of the chapter groups, then there's nothing we can do
+                                // Cannot add snips to the chapters container
+                                vscode.window.showErrorMessage('Error: cannot add a new snip directly to the chapters container.  Select a specific chapter to add the new snip to.');
+                                return null;
+                            }
                         }
                     }
                     else if (resource.data.ids.parentTypeId === 'chapter') {
@@ -414,7 +449,7 @@ export async function newSnip (
     
     // Create .config file for this new snip
     const snipDotConfigUri = vscode.Uri.joinPath(snipUri, `.config`);
-    const snipDotConfig: { [index: string]: ConfigFileInfo } = {};
+    const snipDotConfig: Record<string, ConfigFileInfo> = {};
 
     // Internal object which represents this snip:
     const snipNode = <SnipNode> {
@@ -560,7 +595,10 @@ export async function newFragment (
 
             // If we couldn't find a "last accessed" fragment, then create a different resource instead
             // If the selected resource is the chapters container, then create a new chapter
-            if (compareFsPath(this.workspace.chaptersFolder, originalResource.data.ids.uri)) {
+            if (
+                compareFsPath(this.workspace.mainChaptersFolder, originalResource.data.ids.uri)
+                || compareFsPath(this.workspace.chapterGroupsFolder, originalResource.data.ids.uri)
+            ) {
                 vscode.window.showWarningMessage("[WARN] Cannot place fragment directly into a the 'Chapters' container, creating a new chapter instead.");
                 return this.newChapter(originalResource);
             }

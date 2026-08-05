@@ -81,7 +81,7 @@ implements
             const logItem = orderedLog[nodeIdx];
             let node: OutlineNode;
 
-            const dotConfig: { [index: string]: ConfigFileInfo } = {
+            const dotConfig: Record<string, ConfigFileInfo> = {
                 [logItem.recycleBinName]: {
                     ordering: nodeIdx,
                     title: logItem.title,

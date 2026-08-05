@@ -221,7 +221,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
         this.rootNodes[0].data.ids = { ...updated.data.ids };
             
         const outlineRoot = updated.data as RootNode<OutlineNode>;
-        const outlineChapters = outlineRoot.chapters;
+        const outlineChapters: OutlineNode[] = outlineRoot.chapterGroups;
         const outlineWorkSnips = outlineRoot.snips;
 
         // Converts an array of fragment OutlineNodes to an array of TODONodes for those fragments
@@ -253,27 +253,29 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
         }
 
         // Converts a chapter container OutlineNode into a chapter container TODONode
-        const convertChapters = (chapters: OutlineNode) => {
-            return new TODONode(<ContainerNode<TODONode>> {
-                ids: { ...chapters.data.ids },
-                contents: (chapters.data as ContainerNode<OutlineNode>).contents.map(outlineChapter => {
-                    const chapter: ChapterNode<OutlineNode> = outlineChapter.data as ChapterNode<OutlineNode>;
-                    return new TODONode(<ChapterNode<TODONode>> {
-                        ids: { ...outlineChapter.data.ids },
-                        textData: convertFragments(chapter.textData),
-                        snips: new TODONode(<ContainerNode<TODONode>> {
-                            ids: { ...chapter.snips.data.ids },
-                            contents: convertSnips((chapter.snips.data as SnipNode<OutlineNode>).contents),
-                        })
-                    });
-                })
-            })
+        const convertChapters = (chaptersGroups: OutlineNode[]): TODONode[] => {
+            return chaptersGroups.map(chapters => {
+                return new TODONode(<ContainerNode<TODONode>> {
+                    ids: { ...chapters.data.ids },
+                    contents: (chapters.data as ContainerNode<OutlineNode>).contents.map(outlineChapter => {
+                        const chapter: ChapterNode<OutlineNode> = outlineChapter.data as ChapterNode<OutlineNode>;
+                        return new TODONode(<ChapterNode<TODONode>> {
+                            ids: { ...outlineChapter.data.ids },
+                            textData: convertFragments(chapter.textData),
+                            snips: new TODONode(<ContainerNode<TODONode>> {
+                                ids: { ...chapter.snips.data.ids },
+                                contents: convertSnips((chapter.snips.data as SnipNode<OutlineNode>).contents),
+                            })
+                        });
+                    })
+                });
+            });
         }
 
         // Convert the outline's Outline nodes into TODO nodes and swap out the TODO tree's data
         //        with those converted nodes
         if (this.rootNodes[0].data) {
-            (this.rootNodes[0].data as RootNode<TODONode>).chapters = convertChapters(outlineChapters);
+            (this.rootNodes[0].data as RootNode<TODONode>).chapterGroups = convertChapters(outlineChapters);
             (this.rootNodes[0].data as RootNode<TODONode>).snips = new TODONode(<ContainerNode<TODONode>> {
                 ids: { ...outlineWorkSnips.data.ids },
                 contents: convertSnips((outlineWorkSnips.data as SnipNode<OutlineNode>).contents),

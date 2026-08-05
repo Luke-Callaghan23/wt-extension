@@ -9,7 +9,7 @@ import { Workspace } from '../../../workspace/workspaceClass';
 import { DestinationResult, MoveNodeResult, allowedMoves } from './common';
 import { handleInternalContainerReorder } from './handleInternalReorder';
 import { determineDestinationContainer } from './determineDestinationContainer';
-import { handleContainerSwap } from './containerSwap';
+import { moveNode } from './containerSwap';
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
 import { containerMove } from './containerMove';
 import { chapterMove } from './chapterMove';
@@ -26,7 +26,7 @@ export async function generalMoveNode (
     moveOffset: number,
     overrideDestination: TreeNode | null,
     rememberedMoveDecision: 'Reorder' | 'Insert' | null
-): Promise<MoveNodeResult> {
+): Promise<MoveNodeResult | null> {
     const newParentNode = newParent as OutlineNode;
     const newParentType = newParentNode.data.ids.type;
     const newParentUri = newParentNode.data.ids.uri;
@@ -44,30 +44,7 @@ export async function generalMoveNode (
         return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
     }
 
-    let chapterDestination: DestinationResult | undefined;
-    if (moverType === 'container') {
-        if (operation === 'scratch') throw 'unreachable';
-        return containerMove(operation, this, recycleView, outlineView, newParent, moveOffset);
-    }
-    else if (moverType === 'chapter') {
-        if (operation === 'scratch') throw 'unreachable';
-        const chapterMoveResult = await chapterMove(
-            operation, this, 
-            recycleView, outlineView,
-            newParentType, newParentNode, 
-            moveOffset,
-            rememberedMoveDecision
-        );
-        if (chapterMoveResult.kind === 'move') {
-            return chapterMoveResult.result;
-        }
-        else {
-            chapterDestination = chapterMoveResult.result;
-        }
-    }
-    
-
-    const destinationResult = chapterDestination || await determineDestinationContainer(
+    const destinationResult = await determineDestinationContainer(
         this, moverType, newParentType, 
         outlineView, newParent, 
         newParentNode, newParentUri, 
@@ -79,7 +56,9 @@ export async function generalMoveNode (
 
 
     if (operation === 'recover') {
-        const swapResult = await handleContainerSwap('recover', this, outlineView, recycleView, destinationContainer, moveDecision);
+        const swapResult = await moveNode('recover', this, outlineView, recycleView, destinationContainer, moveDecision);
+        if (!swapResult) return null;
+
         return { 
             moveOffset: swapResult.moveOffset, 
             createdDestination: newOverride || null,
@@ -105,12 +84,13 @@ export async function generalMoveNode (
     }
 
     try {
-        const swapResult = await handleContainerSwap(
+        const swapResult = await moveNode(
             operation, this, 
             outlineView, outlineView as any as UriBasedView<OutlineNode>,
             destinationContainer,
             moveDecision
         );
+        if (!swapResult) return null;
 
         // Add the new override's parent to the effected containers if that container exists (and its parent does as well)
         const effectedContainers = swapResult.effectedContainers;
