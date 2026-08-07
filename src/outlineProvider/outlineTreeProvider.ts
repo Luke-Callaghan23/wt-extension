@@ -19,7 +19,7 @@ export abstract class TreeNode {
     abstract getChildren(filter: boolean, insertIntoNodeMap: (node: TreeNode, uri: vscode.Uri)=>void): Promise<TreeNode[]>;
     abstract hasChildren(): boolean;
     abstract getDroppableUris(): vscode.Uri[];
-    abstract generalMoveNode (
+    abstract moveNode (
         this: TreeNode,
         operation: 'move' | 'recover',
         newParent: TreeNode, 

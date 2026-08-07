@@ -95,7 +95,7 @@ export async function pasteNew (
     copied: CopiedSelection,
 ) {
     for (const copiedNode of copied.nodes) {
-        const moveResult = await copiedNode.generalMoveNode(
+        const moveResult = await copiedNode.moveNode(
             'paste', 
             destination,
             Extension.recyclingBinView,

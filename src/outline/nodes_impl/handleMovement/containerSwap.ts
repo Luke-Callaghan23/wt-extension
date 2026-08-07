@@ -15,7 +15,7 @@ import { Extension } from '../../../extension';
 //      not the same as its original parent
 // In this case we need to shift internal contents of the outline tree as well as the
 //      config files for both the destination and the original parent containers
-export async function moveNode (
+export async function swapContainers (
     operation: NodeMoveKind,
     node: OutlineNode,
     destinationProvider: OutlineTreeProvider<TreeNode>,
@@ -226,11 +226,10 @@ export async function moveNode (
     return { moveOffset: 0, createdDestination: null, effectedContainers: containers, rememberedMoveDecision: rememberedMoveDecision };
 }
 
-const handlePaste = async (
+export const handlePaste = async (
     src: OutlineNode,
     originalNewOrdering: number,
-    originalDestination: OutlineNode,
-    destName: string,               // Name already created for the outer-most node being copied
+    destination: OutlineNode,
 ): Promise<OutlineNode> => {
 
     const chapterPaste = async (
@@ -485,10 +484,10 @@ const handlePaste = async (
     };
 
     if (src.data.ids.type === 'fragment') {
-        return fragmentPaste (src, originalNewOrdering, originalDestination, destName);
+        return fragmentPaste (src, originalNewOrdering, destination, destName);
     }
     else if (src.data.ids.type === 'snip') {
-        return snipPaste(src, originalNewOrdering, originalDestination, destName);
+        return snipPaste(src, originalNewOrdering, destination, destName);
     }
     else throw `Unexpected paste type: ${src.data.ids.type}`;
 };

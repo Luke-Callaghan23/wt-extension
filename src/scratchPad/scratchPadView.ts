@@ -241,7 +241,7 @@ implements
         if (chose === null) return;
         if (chose.data.ids.type === 'root') return;
         
-        const moveResult = await resource.generalMoveNode("scratch", chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
+        const moveResult = await resource.moveNode("scratch", chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
         if (moveResult.moveOffset === -1) return;
         const effectedContainers = moveResult.effectedContainers;
         return Promise.all([

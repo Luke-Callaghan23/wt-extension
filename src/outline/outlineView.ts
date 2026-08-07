@@ -196,7 +196,7 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
         if (chose === null) return;
         if (chose.data.ids.type === 'root') return;
         
-        const moveResult = await resource.generalMoveNode(nodeMoveKind, chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
+        const moveResult = await resource.moveNode(nodeMoveKind, chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
         if (moveResult.moveOffset === -1) return;
         const effectedContainers = moveResult.effectedContainers;
         const outline =  Extension.outlineView;

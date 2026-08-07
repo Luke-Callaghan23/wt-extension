@@ -39,7 +39,7 @@ export async function containerMove (
     // Move each snip one by one
     let acc = 0;
     for (const snip of snips) {
-        let { moveOffset, createdDestination, effectedContainers } = await snip.generalMoveNode(
+        let { moveOffset, createdDestination, effectedContainers } = await snip.moveNode(
             operation,
             containerTarget, 
             recycleView,

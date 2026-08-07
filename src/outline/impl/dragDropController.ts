@@ -242,13 +242,14 @@ export async function handleDropController (this: OutlineView, target: OutlineNo
                 reporter(`${actualOperationGerund} '${mover.data.ids.display}'`);
     
                 // Do the move on the target destination with the selected operation
-                const res: MoveNodeResult = await mover.generalMoveNode(
+                const res: MoveNodeResult | null = await mover.moveNode(
                     actualOperation, targ, sourceProvider,                // the source is either the outline tree for 'move's or the recycling bin for 'recovers'
                     this, offset, overrideDestination,
                     rememberedMoveDecision,
                 );
+                if (!res) break;
+
                 const { moveOffset, createdDestination, effectedContainers, rememberedMoveDecision: moveDecision } = res;
-                if (moveOffset === -1) break;
                 offset += moveOffset;
     
                 rememberedMoveDecision = moveDecision || rememberedMoveDecision;

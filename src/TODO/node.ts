@@ -42,7 +42,7 @@ export class TODONode extends TreeNode {
         return this.tooltip || `${this.data.ids.type} | '${this.data.ids.display}'`;
     }
     
-    async generalMoveNode (
+    async moveNode (
         this: TODONode,
         _operation: 'move' | 'recover',
         _newParent: TreeNode, 

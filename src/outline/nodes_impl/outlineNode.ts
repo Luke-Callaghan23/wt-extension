@@ -3,16 +3,16 @@ import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import * as console from '../../miscTools/vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../../outlineProvider/outlineTreeProvider';
-import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../miscTools/help';
+import { ConfigFileInfo, DotConfig, getLatestOrdering, readDotConfig, writeDotConfig } from '../../miscTools/help';
 import { OutlineView } from '../outlineView';
 import * as fsNodes from '../../outlineProvider/fsNodes';
 import { Extension } from   '../../extension';
 import { getChildren } from './getChildren';
 import { shiftTrailingNodesDown } from './shiftTrailingNodes';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';
-import { generalMoveNode } from './handleMovement/generalMoveNode';
+import { moveNode, NodeMoveKind } from './handleMovement/generalMoveNode';
 import { updateChildrenToReflectNewUri } from './updateChildrenToReflectNewUri';
-import { MoveNodeResult } from './handleMovement/common';
+import { allowedMoves, MoveNodeResult } from './handleMovement/common';
 
 export const usedIds: { [index: string]: boolean } = {};
 
@@ -27,9 +27,61 @@ export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentNode | Conta
 
 export class OutlineNode extends TreeNode {
     updateChildrenToReflectNewUri = updateChildrenToReflectNewUri;
-    generalMoveNode = generalMoveNode;
     getChildren = getChildren;
     shiftTrailingNodesDown = shiftTrailingNodesDown;
+
+    async duplicateInto (newContainer: OutlineNode): Promise<OutlineNode | null> {
+        if (this.data.ids.type === 'root' || !allowedMoves[this.data.ids.type].includes(newContainer.data.ids.type)) {
+            throw "Invalid duplication";
+        }
+
+        const destinationUri = newContainer.data.ids.uri;
+        if (newContainer.data.ids.type === 'root') {
+            if (this.data.ids.type === "chapter") {
+                // Copy into the latest 
+            }
+            else if (this.data.ids.type === "container") {
+                // If this is a snip container, copy all the snips into work snips
+                // If this is a chapter container, copy all the chapters into a new chapter group
+            }
+            else if (this.data.ids.type === "fragment") {
+    
+            }
+            else if (this.data.ids.type === "snip") {
+    
+            }
+        }
+        else if (newContainer.data.ids.type === "chapter") {
+
+        }
+        else if (newContainer.data.ids.type === "container") {
+
+        }
+        else if (newContainer.data.ids.type === "fragment") {
+
+        }
+        else if (newContainer.data.ids.type === "snip") {
+
+        }
+
+
+    }
+
+    async updateUriCascaseChanges (newUri: vscode.Uri) {
+        throw "not implemented";
+    }
+
+    async moveNode (
+        operation: NodeMoveKind,
+        newParent: TreeNode, 
+        recycleView: UriBasedView<OutlineNode>,
+        outlineView: OutlineTreeProvider<TreeNode>,
+        moveOffset: number,
+        overrideDestination: TreeNode | null,
+        rememberedMoveDecision: 'Reorder' | 'Insert' | null
+    ): Promise<MoveNodeResult | null> {
+        
+    }
 
     // Assumes this is a 'snip' or a 'fragment'
     // Traverses up the parent tree until a 'chapter' or 'root' element is found

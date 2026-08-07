@@ -9,7 +9,7 @@ import { Workspace } from '../../../workspace/workspaceClass';
 import { DestinationResult, MoveNodeResult, allowedMoves } from './common';
 import { handleInternalContainerReorder } from './handleInternalReorder';
 import { determineDestinationContainer } from './determineDestinationContainer';
-import { moveNode } from './containerSwap';
+import { swapContainers } from './containerSwap';
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
 import { containerMove } from './containerMove';
 import { chapterMove } from './chapterMove';
@@ -17,7 +17,7 @@ import { chapterMove } from './chapterMove';
 
 export type NodeMoveKind = 'move' | 'recover' | 'scratch' | 'paste';
 
-export async function generalMoveNode (
+export async function moveNode (
     this: OutlineNode,
     operation: NodeMoveKind,
     newParent: TreeNode, 
@@ -56,7 +56,7 @@ export async function generalMoveNode (
 
 
     if (operation === 'recover') {
-        const swapResult = await moveNode('recover', this, outlineView, recycleView, destinationContainer, moveDecision);
+        const swapResult = await swapContainers('recover', this, outlineView, recycleView, destinationContainer, moveDecision);
         if (!swapResult) return null;
 
         return { 
@@ -84,7 +84,7 @@ export async function generalMoveNode (
     }
 
     try {
-        const swapResult = await moveNode(
+        const swapResult = await swapContainers(
             operation, this, 
             outlineView, outlineView as any as UriBasedView<OutlineNode>,
             destinationContainer,

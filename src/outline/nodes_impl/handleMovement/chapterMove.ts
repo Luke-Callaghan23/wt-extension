@@ -37,7 +37,7 @@ async function convertChapterToSnip (
     let acc = 0;
     const moveFragments: OutlineNode[] = [...chapterNode.textData];                                 // Need to copy into a new array because we're moving content in the loops below -- when moved, we'll skip every other one
     for (const moveFragment of moveFragments) {
-        let { moveOffset, createdDestination, effectedContainers } = await moveFragment.generalMoveNode(
+        let { moveOffset, createdDestination, effectedContainers } = await moveFragment.moveNode(
             operation, chapterSnip, 
             recycleView, outlineView,
             off, null,
@@ -59,7 +59,7 @@ async function convertChapterToSnip (
     acc = 0;
     const moveSnips: OutlineNode[] = [...(chapterNode.snips.data as ContainerNode).contents];
     for (const moveSnip of moveSnips) {
-        let { moveOffset, createdDestination, effectedContainers } = await moveSnip.generalMoveNode(
+        let { moveOffset, createdDestination, effectedContainers } = await moveSnip.moveNode(
             operation, chapterSnipContainer, 
             recycleView, outlineView, 
             off, null, rememberedMoveDecision
