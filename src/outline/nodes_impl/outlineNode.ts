@@ -13,6 +13,9 @@ import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { moveNode, NodeMoveKind } from './handleMovement/generalMoveNode';
 import { updateChildrenToReflectNewUri } from './updateChildrenToReflectNewUri';
 import { allowedMoves, MoveNodeResult } from './handleMovement/common';
+import { newSnip } from '../impl/createNodes';
+import { RecyclingBinView } from '../../recyclingBin/recyclingBinView';
+import { ScratchPadView } from '../../scratchPad/scratchPadView';
 
 export const usedIds: { [index: string]: boolean } = {};
 
@@ -30,40 +33,79 @@ export class OutlineNode extends TreeNode {
     getChildren = getChildren;
     shiftTrailingNodesDown = shiftTrailingNodesDown;
 
-    async duplicateInto (newContainer: OutlineNode): Promise<OutlineNode | null> {
+    // Duplicate this node into a new container, using new file names
+    // When containerDotConfig is provided by the caller, this function assumes that this is a part of a bulk operation
+    //      and this function will NOT write the updated .config file to the parent location
+    async duplicateInto (newContainer: OutlineNode, view: OutlineView | RecyclingBinView | ScratchPadView, options?: {
+        operation?: string,
+        bulkDotConfig?: DotConfig, 
+        ordering?: number
+    }): Promise<OutlineNode | null> {
         if (this.data.ids.type === 'root' || !allowedMoves[this.data.ids.type].includes(newContainer.data.ids.type)) {
             throw "Invalid duplication";
         }
 
+        
         const destinationUri = newContainer.data.ids.uri;
-        if (newContainer.data.ids.type === 'root') {
-            if (this.data.ids.type === "chapter") {
-                // Copy into the latest 
+        const dotConfigUri = vscode.Uri.joinPath(destinationUri, '.config');
+        
+        let containerDotConfig: DotConfig;
+        if (!bulkDotConfig) {
+            const containerDotConfigTmp = await readDotConfig(dotConfigUri);
+            if (!containerDotConfigTmp) {
+                vscode.window.showErrorMessage(`Could not read container .config file at: ${dotConfigUri}`);
+                throw `Could not read container .config file at: ${dotConfigUri}`;
             }
-            else if (this.data.ids.type === "container") {
-                // If this is a snip container, copy all the snips into work snips
-                // If this is a chapter container, copy all the chapters into a new chapter group
-            }
-            else if (this.data.ids.type === "fragment") {
-    
-            }
-            else if (this.data.ids.type === "snip") {
-    
-            }
+            containerDotConfig = containerDotConfigTmp;
         }
-        else if (newContainer.data.ids.type === "chapter") {
+        else {
+            containerDotConfig = bulkDotConfig;
+        }
 
+        let result: OutlineNode;
+        if (newContainer.data.ids.type === "chapter") {
+            if (this.data.ids.type === 'snip') {
+                const duplicateSnip = view.newSnip(newContainer, {
+                    defaultName: `${this.data.ids.display} (${options?.operation || 'duplicate'})`
+                });
+            }
+            else if (this.data.ids.type === 'fragment') {
+
+            }
         }
         else if (newContainer.data.ids.type === "container") {
+            if (this.data.ids.type === 'chapter') {
 
-        }
-        else if (newContainer.data.ids.type === "fragment") {
+            }
+            else if (this.data.ids.type === 'snip') {
 
+            }
         }
         else if (newContainer.data.ids.type === "snip") {
+            if (this.data.ids.type === 'chapter') {
 
+            }
+            else if (this.data.ids.type === 'snip') {
+
+            }
+            else if (this.data.ids.type === 'fragment') {
+
+            }
         }
 
+        // if (!result) {
+        //     vscode.window.showErrorMessage(`Failed to duplicate ${this.data.ids.display} into ${destinationUri}`);
+        //     throw `Failed to duplicate ${this.data.ids.display} into ${destinationUri}`
+        // }
+
+        // As mentioned above, if the caller provided a .config file for us, we assume that this is a bulk operation
+        //      and we will not write the .config back to disk
+        if (!bulkDotConfig) {
+            // No provided .config, then do write the config back to disk
+            writeDotConfig(dotConfigUri, containerDotConfig);
+        }
+
+        return result;
 
     }
 
