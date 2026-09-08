@@ -251,7 +251,7 @@ export function getFilesQPOptions (bases: OutlineNode[], filterGeneric: boolean,
         // =========================== CHAPTERS SECTION =========================== 
         /* Chapters Folder */
 
-        const orderedChapterGroups = root.chapterGroups.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+        const orderedChapterGroups = (root.chapterGroups.data as ContainerNode).contents.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
         for (const chapterGroup of orderedChapterGroups) {
 
             const qpItemChapterGroup: IFragmentPick = {

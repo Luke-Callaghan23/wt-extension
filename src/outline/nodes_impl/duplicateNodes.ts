@@ -29,10 +29,9 @@ export async function duplicateChapter (
     let snipsContainerDotConfigUri: vscode.Uri;
 
     // Chapter -> chapter paste
-    if (destinationContainer.data.ids.type === 'container' && destinationContainer.data.ids.parentTypeId === 'root' && (
-        isSubdirectory(Extension.workspace.chapterGroupsFolder, destinationContainer.data.ids.uri) 
-        || compareFsPath(Extension.workspace.mainChaptersFolder, destinationContainer.data.ids.uri)
-    )) {
+    // The destination container is a chapter group container if the container itself is a container and its parent is also another
+    //      container
+    if (destinationContainer.data.ids.type === 'container' && destinationContainer.data.ids.parentTypeId === 'container') {
 
         const snipsContainerUri = vscode.Uri.joinPath(chapterDestinationPath, "snips");
         const snipsContainerNode = new OutlineNode({

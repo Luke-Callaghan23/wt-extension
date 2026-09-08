@@ -1,22 +1,19 @@
 import * as vscode from 'vscode';
-import * as vscodeUri from 'vscode-uri';
 import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from "../outlineNode";
 import { OutlineTreeProvider, TreeNode } from '../../../outlineProvider/outlineTreeProvider';
 import { MoveNodeResult } from './common';
-import { compareFsPath, ConfigFileInfo, DotConfig, getLatestOrdering, isSubdirectory, readDotConfig, writeDotConfig } from '../../../miscTools/help';
+import { compareFsPath, ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../../miscTools/help';
 import { RecyclingBinView } from '../../../recyclingBin/recyclingBinView';
 import { getUsableFileName } from '../../impl/createNodes';
 import { UriBasedView } from '../../../outlineProvider/UriBasedView';
 import { updateChapterTextFragments, updateSnipContent } from '../updateChildrenToReflectNewUri';
-import { NodeMoveKind } from './generalMoveNode';
-import { Extension } from '../../../extension';
 
 // Handles the case when a node is moved (dragged and dropped) into a container which is 
 //      not the same as its original parent
 // In this case we need to shift internal contents of the outline tree as well as the
 //      config files for both the destination and the original parent containers
-export async function swapContainers (
-    operation: NodeMoveKind,
+export async function handleContainerSwap (
+    operation: 'move' | 'recover' | 'scratch' | 'paste',
     node: OutlineNode,
     destinationProvider: OutlineTreeProvider<TreeNode>,
     sourceProvider: UriBasedView<OutlineNode>,
@@ -31,37 +28,10 @@ export async function swapContainers (
     const destinationContainerUri = destinationContainer.getUri();
     const destinationDotConfigUri = vscode.Uri.joinPath(destinationContainerUri, '.config');
     
-    let newFileName: string;
-    if (node.data.ids.type === 'chapter' && !(destinationContainer.data.ids.type === 'container' && destinationContainer.data.ids.parentTypeId === 'root' && (
-        isSubdirectory(Extension.workspace.chapterGroupsFolder, destinationContainer.data.ids.uri) 
-        || compareFsPath(Extension.workspace.mainChaptersFolder, destinationContainer.data.ids.uri)
-    )) && (operation === 'move' || operation === 'paste')) {
-        // If the moving node is a chapter, and it is going into a container that is not the chaptergroups or the legacy chapter container,
-        //      then it will be converted into a snip, and will need a "snip-" file name
-        newFileName = getUsableFileName("snip");
-    }
-    else if (operation === 'move' || operation === 'scratch') {
-        // Moves and scratches we can just reuse the original file name, because the old file name won't exist any more
-        newFileName = node.data.ids.fileName;
-    }
-    else {
-        // Other operations we'll need to generate a new file name to reduce the possibility of collision
-
-        // If the mover is a fragment, need to match the new file extension to the original
-        let newExtension: 'wt' | 'md' | undefined = undefined;
-        if (node.data.ids.type === 'fragment') {
-            const fragExt = vscodeUri.Utils.extname(node.data.ids.uri).toLocaleLowerCase();
-            if (fragExt.endsWith('md')) {
-                newExtension = 'md';
-            }
-            else if (fragExt.endsWith('wt')) {
-                newExtension = 'wt';
-            }
-        }
-
-        newFileName = getUsableFileName(node.data.ids.type, newExtension);
-    }
-
+    // Uri where the mover will be moved to
+    const newFileName = operation === 'move' || operation === 'scratch'
+        ? node.data.ids.fileName
+        : getUsableFileName(node.data.ids.type, node.data.ids.type === 'fragment');
     const moverDestinationUri = vscode.Uri.joinPath(destinationContainerUri, newFileName);
     
     // Set the opened status of the destination to the original open status
@@ -102,10 +72,9 @@ export async function swapContainers (
         log.splice(removeLogIndex, 1);
         await RecyclingBinView.writeRecycleLog(log);    
     }
-    
-    // For all other non-paste operations, update the .config and ingernal "ordering" values for the moved node's original parents
-    //      Shift all following nodes' "ordering" and .config "order" properties down by one, to account for the node being moved away
-    // Do not do this for paste, as we are not removing any nodes in the case of a paste
+    // Update the internal container and .config file for the removed node, if the moved node is not a root
+    //      item in the recycling bin
+    // Only do this if this is a non-paste operation -- as paste operations do not require splicing from the original container
     else if (operation !== 'paste') {
         const movedRecordTitle = await node.shiftTrailingNodesDown(sourceProvider);
         if (movedRecordTitle === '') {
@@ -189,24 +158,39 @@ export async function swapContainers (
         }
     }
     else if (node.data.ids.type === 'chapter') {
-        (((destinationProvider.rootNodes[0] as OutlineNode).data as RootNode).chapters.data as ContainerNode).contents.push(node);
-        if (operation === 'move' || spliceFromContainer) {
-            oldParentContents = (((destinationProvider.rootNodes[0] as OutlineNode).data as RootNode).chapters.data as ContainerNode).contents;
+        if (destinationContainer.data.ids.type !== 'container') {
+            throw `unsupported parent type ${destinationContainer.data.ids.type}`;
         }
 
-        if (operation === 'recover') {
-            // When recovering, we need to push the updates to the chapter's new location down to all the children nodes of 
-            //      the recovered chapter
-            // Only need to do this when recovering because that is the only time when a chapter's internal
-            //      location data (relative path/uri/parent uri) updates
-            //      when operation === 'move' the destination container for a chapter is always, always 
-            //      going to be the same container that it originated in because chapters can only
-            //      exist in the recycling bin or in the root chapters container node
+        const destinationNode = destinationContainer.data as ContainerNode;
+        destinationNode.contents.push(node);
+
+        if (operation === 'move' || spliceFromContainer) {
+            if (oldParentNode && oldParentNode.data.ids.type === 'container') {
+                oldParentContents = (oldParentNode.data as ContainerNode).contents;
+            }
+        }
+
+        if (!compareFsPath(destinationContainer.data.ids.uri, oldParentUri)) {
+            // If the new container is different than the old parent, then we need to also update all children nodes of the moved
+            //      chapter to reflect the new parent
             node.updateChildrenToReflectNewUri();
         }
+
     }
+    else if (node.data.ids.type === 'container') {
+        const destinationNode = destinationContainer.data as ContainerNode;
+        destinationNode.contents.push(node);
+
+        if (!compareFsPath(destinationContainer.data.ids.uri, oldParentUri)) {
+            // If the new container is different than the old parent, then we need to also update all children nodes of the moved
+            //      chapter to reflect the new parent
+            node.updateChildrenToReflectNewUri();
+        }
+    } 
     else throw new Error(`Not possible`);
 
+    // For move operations, we need to remove the node from the old container as well
     if (operation === 'move' || spliceFromContainer) {
         if (!oldParentContents) return null;
         // Get the index of the mover in the parent's contents
@@ -226,173 +210,12 @@ export async function swapContainers (
     return { moveOffset: 0, createdDestination: null, effectedContainers: containers, rememberedMoveDecision: rememberedMoveDecision };
 }
 
-export const handlePaste = async (
+const handlePaste = async (
     src: OutlineNode,
     originalNewOrdering: number,
-    destination: OutlineNode,
+    originalDestination: OutlineNode,
+    destName: string,               // Name already created for the outer-most node being copied
 ): Promise<OutlineNode> => {
-
-    const chapterPaste = async (
-        chapter: OutlineNode,
-        ordering: number,
-        destinationContainer: OutlineNode,
-        fn: string,
-    ): Promise<OutlineNode> => {
-        const originalChapterNode = chapter.data as ChapterNode;
-
-        const chapterDestinationPath = vscode.Uri.joinPath(destinationContainer.data.ids.uri, fn);
-        await vscode.workspace.fs.createDirectory(chapterDestinationPath);
-
-        let textFragmentContents: OutlineNode[] = [];
-        let snipsContainerContent: OutlineNode[] = [];
-
-        let textFragmentContainer: OutlineNode;
-        let snipsContainer: OutlineNode;            // Will be a 'container' node if we are pasting as a chapter, and a 'snip' when pasting as a snip
-
-        const textFragmentDotConfig: DotConfig = {};
-        const snipsContainerDotConfig: DotConfig = {};
-
-        const textFragmentDotConfigUri: vscode.Uri = vscode.Uri.joinPath(chapterDestinationPath, '.config');
-        let snipsContainerDotConfigUri: vscode.Uri;
-
-        // Chapter -> chapter paste
-        if (destinationContainer.data.ids.type === 'container' && destinationContainer.data.ids.parentTypeId === 'root' && (
-            isSubdirectory(Extension.workspace.chapterGroupsFolder, destinationContainer.data.ids.uri) 
-            || compareFsPath(Extension.workspace.mainChaptersFolder, destinationContainer.data.ids.uri)
-        )) {
-
-            const snipsContainerUri = vscode.Uri.joinPath(chapterDestinationPath, "snips");
-            const snipsContainerNode = new OutlineNode({
-                ids: {
-                    type: 'container',
-                    display: "Snips",
-                    fileName: 'snips',
-                    uri: snipsContainerUri,
-                    ordering: 1000000,
-                    parentUri: chapterDestinationPath,
-                    parentTypeId: 'chapter',
-                    relativePath: `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}/${fn}`,
-                },
-                contents: textFragmentContents
-            });
-            snipsContainerDotConfigUri = vscode.Uri.joinPath(snipsContainerUri, '.config');
-
-            const chapterNode = new OutlineNode({
-                ids: {
-                    fileName: fn,
-                    parentUri: destinationContainer.data.ids.uri,
-                    parentTypeId: destinationContainer.data.ids.type,
-                    uri: chapterDestinationPath,
-                    relativePath: `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}`,
-                    ordering: ordering,
-                    display: `${chapter.data.ids.display} (copy)`,
-                    description: chapter.data.ids.description ? `${chapter.data.ids.description} (copy)` : undefined,
-                    type: 'chapter'
-                },
-                textData: snipsContainerContent,
-                snips: snipsContainerNode
-            });
-
-            textFragmentContainer = chapterNode;
-            snipsContainer = snipsContainerNode;
-        }
-        // Chapter -> snip paste
-        else {
-
-            let maxOrdering = -1;
-            originalChapterNode.textData.forEach(text => {
-                if (text.data.ids.ordering > maxOrdering) {
-                    maxOrdering = text.data.ids.ordering;
-                }
-            });
-            
-
-            const snipsContainerFileName = getUsableFileName("snip");
-            const snipsContainerUri = vscode.Uri.joinPath(chapterDestinationPath, snipsContainerFileName);
-            const snipsContainerNode = new OutlineNode({
-                ids: {
-                    type: 'snip',
-                    display: "Snips",
-                    fileName: snipsContainerFileName,
-                    uri: snipsContainerUri,
-                    ordering: maxOrdering + 1,
-                    parentUri: chapterDestinationPath,
-                    parentTypeId: 'snip',
-                    relativePath: `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}/${fn}`,
-                },
-                contents: snipsContainerContent
-            });
-            snipsContainerDotConfigUri = vscode.Uri.joinPath(snipsContainerUri, '.config');
-
-            const chapterNode = new OutlineNode({
-                ids: {
-                    fileName: fn,
-                    parentUri: destinationContainer.data.ids.uri,
-                    parentTypeId: destinationContainer.data.ids.type,
-                    uri: chapterDestinationPath,
-                    relativePath: `${destinationContainer.data.ids.relativePath}/${destinationContainer.data.ids.fileName}`,
-                    ordering: ordering,
-                    display: `${chapter.data.ids.display} (copy)`,
-                    description: chapter.data.ids.description ? `${chapter.data.ids.description} (copy)` : undefined,
-                    type: 'snip'
-                },
-                contents: textFragmentContents
-            });
-
-            textFragmentContainer = chapterNode;
-            snipsContainer = snipsContainerNode;
-
-            // For chapter -> snip conversions, we also need to add the snips "container" (really just a regular snip)
-            //      to the .config
-            // Usually for chapters, the snips container is NOT in the .config, but it needs to be when recreated as a snip
-            textFragmentDotConfig[snipsContainerFileName] = {
-                ordering: maxOrdering + 1,
-                title: "Snips",
-            };
-        }
-
-        const textFragmentContentsPromise: Promise<OutlineNode>[] = [];
-        const snipsContainerContentPromise: Promise<OutlineNode>[] = [];
-
-        for (const fragment of originalChapterNode.textData) {
-
-            let copiedFragmentExtension: "md" | "wt";
-            const fragExt = vscodeUri.Utils.extname(fragment.data.ids.uri).toLocaleLowerCase();
-            if (fragExt.endsWith('md')) {
-                copiedFragmentExtension = 'md';
-            }
-            else {
-                copiedFragmentExtension = 'wt';
-            }
-
-            const destinationFileName = getUsableFileName(fragment.data.ids.type, copiedFragmentExtension);
-            textFragmentDotConfig[destinationFileName] = {
-                ordering: fragment.data.ids.ordering,
-                title: `${fragment.data.ids.display} (copy)`,
-                description: fragment.data.ids.description ? `${fragment.data.ids.description} (copy)` : undefined
-            };
-            textFragmentContentsPromise.push(fragmentPaste(fragment, fragment.data.ids.ordering, textFragmentContainer, destinationFileName));
-        }
-
-        for (const snip of (originalChapterNode.snips.data as ContainerNode).contents) {
-            const destinationFileName = getUsableFileName("snip");
-            snipsContainerDotConfig[destinationFileName] = {
-                ordering: snip.data.ids.ordering,
-                title: `${snip.data.ids.display} (copy)`,
-            };
-            snipsContainerContentPromise.push(snipPaste(snip, snip.data.ids.ordering, snipsContainer, destinationFileName));
-        }
-
-        await Promise.all([
-            writeDotConfig(textFragmentDotConfigUri, textFragmentDotConfig),
-            writeDotConfig(snipsContainerDotConfigUri, snipsContainerDotConfig),
-        ]);
-
-        textFragmentContents.push(...(await Promise.all(textFragmentContentsPromise)));
-        snipsContainerContent.push(...(await Promise.all(snipsContainerContentPromise)));
-
-        return textFragmentContainer;
-    }
 
     // Should be called under the assumption that the snip has been added to .config of destination already
     const snipPaste = async (
@@ -420,22 +243,10 @@ export const handlePaste = async (
             }
         });
 
-        const newConfig: Record<string, ConfigFileInfo> = {};
+        const newConfig: { [index: string]: ConfigFileInfo } = {};
         for (const content of (snip.data as SnipNode).contents) {
             const contentType = content.data.ids.type;
-
-            let copiedFragmentExtension: "md" | "wt" | undefined = undefined;
-            if (contentType === 'fragment') {
-                const fragExt = vscodeUri.Utils.extname(content.data.ids.uri).toLocaleLowerCase();
-                if (fragExt.endsWith('md')) {
-                    copiedFragmentExtension = 'md';
-                }
-                else if (fragExt.endsWith('wt')) {
-                    copiedFragmentExtension = 'wt';
-                }
-            }
-
-            const destinationFileName = getUsableFileName(contentType, copiedFragmentExtension);
+            const destinationFileName = getUsableFileName(contentType, contentType === 'fragment');
             const contentOrdering = content.data.ids.ordering;
             newConfig[destinationFileName] = {
                 ordering: contentOrdering,
@@ -484,10 +295,10 @@ export const handlePaste = async (
     };
 
     if (src.data.ids.type === 'fragment') {
-        return fragmentPaste (src, originalNewOrdering, destination, destName);
+        return fragmentPaste(src, originalNewOrdering, originalDestination, destName);
     }
     else if (src.data.ids.type === 'snip') {
-        return snipPaste(src, originalNewOrdering, destination, destName);
+        return snipPaste(src, originalNewOrdering, originalDestination, destName);
     }
     else throw `Unexpected paste type: ${src.data.ids.type}`;
 };

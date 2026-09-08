@@ -13,7 +13,7 @@ export async function initializeOutline<T extends TreeNode>(viewId: string, init
     return progressOnViews(viewId, async () => {
         const dataFolderUri = vscode.Uri.joinPath(Extension.rootPath, `data`);
         
-        const legacyChaptersContainerUri = Extension.workspace.mainChaptersFolder;
+        const legacyChaptersContainerUri = Extension.workspace.legacyChaptersFolder;
         const chapterGroupsContainerUri = Extension.workspace.chapterGroupsFolder;
 
         const workSnipsContainerUri = vscode.Uri.joinPath(dataFolderUri, `snips`);
@@ -84,7 +84,6 @@ export async function initializeOutline<T extends TreeNode>(viewId: string, init
         // The entry for the legacy chapter group will be "../chapters"
         
         type ChapterGroupEntry = {
-            relativePath: 'data/chaptergroups' | 'data',
             fileName: string,
             fileType: vscode.FileType
         };
@@ -94,8 +93,7 @@ export async function initializeOutline<T extends TreeNode>(viewId: string, init
         
         if (legacyChaptersFound) {
             const legacyChaptersEntry: ChapterGroupEntry = {
-                fileName: "chapters",
-                relativePath: "data/chaptergroups",
+                fileName: "../chapters",
                 fileType: vscode.FileType.Directory
             };
 
@@ -116,13 +114,16 @@ export async function initializeOutline<T extends TreeNode>(viewId: string, init
                 }
                 
                 const chapterGroupFolderEntries = (await vscode.workspace.fs.readDirectory(chapterGroupsContainerUri))
-                    .map<ChapterGroupEntry>(([ fileName, fileType ]) => {
+                    .map<ChapterGroupEntry | []>(([ fileName, fileType ]) => {
+                        if (fileType !== vscode.FileType.Directory) {
+                            return [];
+                        }
                         return {
                             fileName: fileName,
                             relativePath: 'data/chaptergroups',
                             fileType: fileType
                         };
-                    });
+                    }).flat();
 
                 chapterGroupEntries = [
                     legacyChaptersEntry,
@@ -149,7 +150,6 @@ export async function initializeOutline<T extends TreeNode>(viewId: string, init
                 .map<ChapterGroupEntry>(([ fileName, fileType ]) => {
                     return {
                         fileName: fileName,
-                        relativePath: 'data/chaptergroups',
                         fileType: fileType
                     };
                 });
@@ -164,19 +164,34 @@ export async function initializeOutline<T extends TreeNode>(viewId: string, init
         }
 
         const chapterGroups: ContainerNode<T>[] = [];
-        for (const { fileName, fileType, relativePath } of chapterGroupEntries) {
+        for (const { fileName, fileType } of chapterGroupEntries) {
             if (fileType !== vscode.FileType.Directory) continue;
 
             const cg = await initalizeChapterGroup({
                 fileName: fileName,
-                relativePath: relativePath,
                 init: init,
                 parentDotConfig: chapterGroupsDotConfig,
                 parentUri: chapterGroupsContainerUri,
+                relativePath: "data/chaptergroups",
                 dontFail: dontFail
             });
             chapterGroups.push(cg);
         }
+
+        const chapterGroupsContainerNode: ContainerNode<T> = {
+            ids: {
+                display: "Chapters",
+                fileName: 'chaptergroups',
+                ordering: 0,
+                type: 'container',
+                parentTypeId: 'root',
+                relativePath: 'data',
+                parentUri: dataFolderUri,
+                uri: chapterGroupsContainerUri,
+            },
+            contents: chapterGroups.map(init),
+        };
+        const chapterGroupsContainer = init(chapterGroupsContainerNode);
 
         const dotConfigSnipsUri = vscode.Uri.joinPath(workSnipsContainerUri, '.config');
         const dotConfigSnips = await readDotConfig(dotConfigSnipsUri);
@@ -225,7 +240,7 @@ export async function initializeOutline<T extends TreeNode>(viewId: string, init
                 parentUri: vscodeUris.Utils.joinPath(Extension.rootPath, 'data'),
                 ordering: 0,
             },
-            chapterGroups: chapterGroups.map(init),
+            chapterGroups: chapterGroupsContainer,
             snips: snipContainer as T
         };
         return init(outlineNode);
@@ -242,7 +257,7 @@ type ChapterGroupParams<T extends TreeNode> = {
     dontFail?: boolean
 };
 
-async function initalizeChapterGroup <T extends TreeNode> ({
+export async function initalizeChapterGroup <T extends TreeNode> ({
     parentDotConfig,
     relativePath,
     fileName,
@@ -286,7 +301,7 @@ async function initalizeChapterGroup <T extends TreeNode> ({
             uri: chapterGroupUri,
             ordering: ordering,
             parentUri: parentUri,
-            parentTypeId: 'root',
+            parentTypeId: 'container',
             relativePath: relativePath
         },
         contents: chapterNodes

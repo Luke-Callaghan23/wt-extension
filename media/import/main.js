@@ -19,7 +19,7 @@
     const formContainer = document.getElementById('form-container');
     formContainer.innerHTML = `<div class="loader"></div>`;
 
-    function loadDocuments (documents, chapterUris, droppedSource) {
+    function loadDocuments (documents, chapterGroupsData, droppedSource) {
 
         const allDocInfo = {};
         
@@ -35,11 +35,11 @@
                 //      then we use that destination as default instead
                 outputType: droppedSource ? droppedSource.destination : 'snip',
                 
-                outputIntoChapter: false,
+                outputSnipIntoChapter: false,
                 outputSnipPath: '/data/snips/',
                 outputSnipName: `${name} (Imported)`,
 
-                outputChapterName: `${name} (Imported)`,
+                outputChapterTitle: `${name} (Imported)`,
                 useNonGenericFragmentNames: true,
 
                 outputIntoDroppedSource: !!droppedSource,
@@ -51,9 +51,9 @@
 
                 elideSingleFragmentSnips: true,
             };
-            if (chapterUris.length !== 0) {
-                allDocInfo[fullPath].outputChapterName = `${name} (Imported)`;
-                allDocInfo[fullPath].outputChapter = chapterUris[0][0];
+            if (chapterGroupsData.length !== 0) {
+                allDocInfo[fullPath].outputChapterTitle = `${name} (Imported)`;
+                allDocInfo[fullPath].outputSnipIntoChapterFileName = chapterGroupsData[0][0];
             }
             docs.push(`<vscode-option value="${fullPath}">${name} (${fullPath})</vscode-option>`);
         });
@@ -93,9 +93,9 @@
         let elideSingleFragmentSnipsElement = document.getElementById("checkbox-elide-single-fragment-snip");
         let useDroppedSourceElement = document.getElementById("checkbox-use-dropped-location");
         let useNonGenericFragmentNamesElement = document.getElementById("checkbox-non-generic-fragment-names");
-        let outputIntoChapterElement = document.getElementById("checkbox-output-into-chapter");
-        let outputChapterElement = document.getElementById("select-chapter");
-        let outputChapterNameElement = document.getElementById("input-output-chapter-name");
+        let outputSnipIntoChapterElement = document.getElementById("checkbox-output-into-chapter");
+        let outputSnipIntoChapterFileNameElement = document.getElementById("select-chapter");
+        let outputChapterTitleElement = document.getElementById("input-output-chapter-name");
         let outputSnipNameElement = document.getElementById("input-output-snip-name");
         let shouldSplitFragmentsElement = document.getElementById("checkbox-split-document");
         let fragmentSplitRegexElement = document.getElementById("input-fragment-split");
@@ -112,8 +112,8 @@
             // Otherwise, retain the old value that exists in the doc info struct
             docInfo.ext = extElement?.value || docInfo.ext;
             docInfo.outputType = outputTypeElement?.value || docInfo.outputType;
-            docInfo.outputChapter = outputChapterElement?.value || docInfo.outputChapter;
-            docInfo.outputChapterName = outputChapterNameElement?.value || docInfo.outputChapterName;
+            docInfo.outputSnipIntoChapterFileName = outputSnipIntoChapterFileNameElement?.value || docInfo.outputSnipIntoChapterFileName;
+            docInfo.outputChapterTitle = outputChapterTitleElement?.value || docInfo.outputChapterTitle;
             docInfo.outputSnipName = outputSnipNameElement?.value || docInfo.outputSnipName;
             docInfo.fragmentSplitRegex = fragmentSplitRegexElement?.value || docInfo.fragmentSplitRegex;
             docInfo.outerSplitRegex = outerSplitRegexElement?.value || docInfo.outerSplitRegex;
@@ -128,8 +128,8 @@
             if (useDroppedSourceElement?.ariaChecked !== undefined && useDroppedSourceElement?.ariaChecked !== null) {
                 docInfo.outputIntoDroppedSource = useDroppedSourceElement?.ariaChecked === 'true';
             }
-            if (outputIntoChapterElement?.ariaChecked !== undefined && outputIntoChapterElement?.ariaChecked !== null) {
-                docInfo.outputIntoChapter = outputIntoChapterElement?.ariaChecked === 'true';
+            if (outputSnipIntoChapterElement?.ariaChecked !== undefined && outputSnipIntoChapterElement?.ariaChecked !== null) {
+                docInfo.outputSnipIntoChapter = outputSnipIntoChapterElement?.ariaChecked === 'true';
             }
             if (useNonGenericFragmentNamesElement?.ariaChecked !== undefined && useNonGenericFragmentNamesElement?.ariaChecked !== null) {
                 docInfo.useNonGenericFragmentNames = useNonGenericFragmentNamesElement?.ariaChecked === 'true';
@@ -166,9 +166,9 @@
 
             // Create a string for the select of chapter output destination
             let chapterSelectString = '';
-            if (docInfo.outputIntoChapter) {
-                chapterSelectString = chapterUris.map(([ uri, chapterName ]) => {
-                    if (docInfo.outputChapter === uri) {
+            if (docInfo.outputSnipIntoChapter) {
+                chapterSelectString = chapterGroupsData.map(([ uri, chapterName ]) => {
+                    if (docInfo.outputSnipIntoChapterFileName === uri) {
                         return `<vscode-option selected value="${uri}">${chapterName}</vscode-option>`;
                     }
                     return `<vscode-option value="${uri}">${chapterName}</vscode-option>`;
@@ -249,7 +249,7 @@
                                     <div class="spacer"></div>
                     
                                     ${
-                                        docInfo.outputType !== 'chapter' && chapterUris.length > 0
+                                        docInfo.outputType !== 'chapter' && chapterGroupsData.length > 0
                                             ? `
                                                 <vscode-label for="checkbox-output-into-chapter" class="label">Output into Chapter?</vscode-label>
                                                 <vscode-checkbox 
@@ -257,13 +257,13 @@
                                                     id="checkbox-output-into-chapter" 
                                                     name="output-into-chapter" 
                                                     class="checkbox"
-                                                    ${docInfo.outputIntoChapter && 'checked'}
+                                                    ${docInfo.outputSnipIntoChapter && 'checked'}
                                                 ></vscode-checkbox>`
                                             : ''
                                     }
                     
                                     ${
-                                        docInfo.outputIntoChapter 
+                                        docInfo.outputSnipIntoChapter 
                                             ? `
                                                 <vscode-label for="select-chapter" class="label">Output Chapter:</vscode-label>
                                                 <vscode-form-helper>
@@ -286,7 +286,7 @@
                                                             <p>Name of the new chapter to be created.</p>
                                                         </vscode-form-helper>
                                                         <vscode-textfield 
-                                                            value="${docInfo.outputChapterName}" 
+                                                            value="${docInfo.outputChapterTitle}" 
                                                             id="input-output-chapter-name" 
                                                             name="tail" 
                                                             class="input input-tail"
@@ -398,8 +398,8 @@
             extElement = document.getElementById("select-ext-type");
             useDroppedSourceElement = document.getElementById("checkbox-use-dropped-location");
             outputTypeElement = document.getElementById("select-output-type");
-            outputChapterElement = document.getElementById("select-chapter");
-            outputChapterNameElement = document.getElementById("input-output-chapter-name");
+            outputSnipIntoChapterFileNameElement = document.getElementById("select-chapter");
+            outputChapterTitleElement = document.getElementById("input-output-chapter-name");
             outputSnipNameElement = document.getElementById("input-output-snip-name");
             fragmentSplitRegexElement = document.getElementById("input-fragment-split");
             outerSplitRegexElement = document.getElementById("input-outer-split");
@@ -408,7 +408,7 @@
             elideSingleFragmentSnipsElement = document.getElementById("checkbox-elide-single-fragment-snip");
             
             useNonGenericFragmentNamesElement = document.getElementById("checkbox-non-generic-fragment-names");
-            outputIntoChapterElement = document.getElementById("checkbox-output-into-chapter");
+            outputSnipIntoChapterElement = document.getElementById("checkbox-output-into-chapter");
             shouldSplitFragmentsElement = document.getElementById("checkbox-split-document");
             shouldSplitSnipsElement = document.getElementById("checkbox-split-snips");
 
@@ -419,7 +419,7 @@
                 skipElement, 
                 elideSingleFragmentSnipsElement,
                 useNonGenericFragmentNamesElement,
-                outputIntoChapterElement, 
+                outputSnipIntoChapterElement, 
                 shouldSplitFragmentsElement, 
                 shouldSplitSnipsElement,
                 useDroppedSourceElement
@@ -436,8 +436,8 @@
             [
                 extElement,
                 outputTypeElement,
-                outputChapterElement,
-                outputChapterNameElement,
+                outputSnipIntoChapterFileNameElement,
+                outputChapterTitleElement,
                 outputSnipNameElement,
                 fragmentSplitRegexElement,
                 outerSplitRegexElement,
@@ -596,8 +596,8 @@
     window.addEventListener('message', event => {
         const message = event.data; // The json data that the extension sent
         switch (message.type) {
-            case 'sentDocuments':
-                loadDocuments(message.documents, message.chapterUris, message.droppedSource);
+            case 'importDocuments':
+                loadDocuments(message.documents, message.chapterGroupsData, message.droppedSource);
                 break;
         }
     });

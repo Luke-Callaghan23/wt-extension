@@ -158,7 +158,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         //     : 'snip';
         
         let destinationKind: 'snip' | 'chapter' | 'chapterGroup';
-        if (compareFsPath(dropped.data.ids.uri, Extension.workspace.mainChaptersFolder)) {
+        if (compareFsPath(Extension.workspace.legacyChaptersFolder, dropped.data.ids.uri)) {
             // Dropped directly into the main chapters folder, import it as a chapter
             destinationKind = 'chapter';
         }
@@ -219,8 +219,13 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         // Since we are importing with the import form we will want that document in the imports folder
         //      and out of the data folder
         // So, we want to do a move operation
+
         let fsUpdateFunction: (source: vscode.Uri, target: vscode.Uri, options?: { overwrite?: boolean; }) => Thenable<void>;
-        if (isSubdirectory(firstUri, Extension.workspace.chaptersFolder) || isSubdirectory(firstUri, Extension.workspace.workSnipsFolder)) {
+        if (
+            isSubdirectory(firstUri, Extension.workspace.chapterGroupsFolder) 
+            || isSubdirectory(firstUri, Extension.workspace.legacyChaptersFolder)
+            || isSubdirectory(firstUri, Extension.workspace.workSnipsFolder)
+        ) {
             fsUpdateFunction = vscode.workspace.fs.rename;
         }
         // Otherwise, the document is coming from somewhere outside of our control.  We do not want to move the user's data
@@ -273,8 +278,8 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 
             // For chapters container, assume the user is dropping data for creating a new chapter
             // In which case we can just create a new chapter node and drop the text inside of there
-            if (compareFsPath(dropped.data.ids.uri, this.workspace.chaptersFolder)) {
-                const chapterUri = await outlineView.newChapter(undefined, {
+            if (compareFsPath(dropped.data.ids.uri, this.workspace.chapterGroupsFolder) || compareFsPath(dropped.data.ids.uri, this.workspace.legacyChaptersFolder)) {
+                const chapterUri = await outlineView.newChapter(dropped, {
                     skipFragment: true,
                     defaultName: newDirectoryTitle + " (Chapter)",
                     preventRefresh: true,
@@ -287,6 +292,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 
                 finalParentNode = chapter.data as ChapterNode;
             }
+
             // The only containers in the project are the chapters container or a snips container
             // So, if it's not the chapters container, we can create a new snip at the dropped 
             //        container node and use that as the parent
@@ -456,7 +462,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
                 // If the document is not currently in the destination folder, 
                 //         BUT it IS under the chapters or snips folder, then we MOVE
                 //        the document from where it is now into the destination folder
-                if (isSubdirectory(originalUri, this.workspace.chaptersFolder) || isSubdirectory(originalUri, this.workspace.workSnipsFolder)) {
+                if (isSubdirectory(originalUri, this.workspace.legacyChaptersFolder) || isSubdirectory(originalUri, this.workspace.chapterGroupsFolder) || isSubdirectory(originalUri, this.workspace.workSnipsFolder)) {
                     fsOperations.push({
                         operation: "move",
                         dest: finalUri,

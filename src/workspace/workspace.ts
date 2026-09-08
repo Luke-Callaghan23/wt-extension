@@ -1,7 +1,7 @@
 
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
-import { defaultProgress, getSectionedProgressReporter, prompt, statFile } from '../miscTools/help';
+import { defaultProgress, DotConfig, getSectionedProgressReporter, prompt, statFile } from '../miscTools/help';
 import * as vsconsole from '../miscTools/vsconsole';
 import { Extension } from   '../extension';
 import { gitiniter } from '../gitTransactions';
@@ -195,15 +195,35 @@ export async function loadWorkspace (context: vscode.ExtensionContext): Promise<
         };
         workspace.config = config;
 
+        const chaptersContainerDotConfigUri = vscode.Uri.joinPath(workspace.chapterGroupsFolder, '.config');
+        const chapterGroupsFolderStat = await statFile(workspace.chapterGroupsFolder);
+        if (chapterGroupsFolderStat === null) {
+            // Chapter groups folder is a new thing relatively, so there are probably old
+            //      versions of WTANIWE workspaces without this folder
+            await vscode.workspace.fs.createDirectory(workspace.chapterGroupsFolder);
+
+            const chapterGroupsDotConfig: DotConfig = {
+                "../chapters": {
+                    ordering: 0,
+                    title: 'Chapters',
+                }
+            };
+            const chapterGroupsDotConfigJSON = JSON.stringify(chapterGroupsDotConfig);
+            await vscode.workspace.fs.writeFile(chaptersContainerDotConfigUri, Extension.encoder.encode(chapterGroupsDotConfigJSON));
+        }
+
         // Check for the existence of all the necessary folders
         let attempting: vscode.Uri | undefined;
         try {
-            const folderStats: vscode.FileStat[] = [];
+            const folderStats: Thenable<vscode.FileStat>[] = [];
             for (const folder of workspace.getFolders()) {
                 attempting = folder;
-                folderStats.push(await vscode.workspace.fs.stat(folder));
+                folderStats.push(vscode.workspace.fs.stat(folder));
             }
-            valid = folderStats.every(({ type }) => type === vscode.FileType.Directory);
+
+            valid = (
+                await Promise.all(folderStats)
+            ).every(({ type }) => type === vscode.FileType.Directory);
 
             try {
                 await loadWorkspaceContext(context, workspace.contextValuesFilePath, true);

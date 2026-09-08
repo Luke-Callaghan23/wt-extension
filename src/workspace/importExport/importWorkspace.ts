@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import * as console from '../../miscTools/vsconsole';
 import { createWorkspace } from './../workspace';
 import { Workspace } from './../workspaceClass';
-import { ChaptersRecord, FragmentRecord, FragmentsExport, SnipsExport, SnipsRecord, WorkspaceExport } from './types';
+import { ChaptersExport, FragmentsExport, SnipsExport, WorkspaceExport } from './types';
 import { getUsableFileName } from '../../outline/impl/createNodes';
 import { ConfigFileInfo, DotConfig } from '../../miscTools/help';
 import { Extension } from   './../../extension';
@@ -12,7 +12,7 @@ import { Buff } from '../../Buffer/bufferSource'
 import { SerializedNote } from '../../notebook/notebookApi/notebookSerializer';
 
 async function initializeFragments (
-    fragments: FragmentRecord, 
+    fragments: FragmentsExport[], 
     parentUri: vscode.Uri,         // assumes the caller has created this directory already
 ): Promise<void> {
     
@@ -45,7 +45,7 @@ async function initializeFragments (
 }
 
 async function initializeSnips (
-    snips: SnipsRecord,
+    snips: SnipsExport[],
     parentUri: vscode.Uri,
 ): Promise<void> {
     
@@ -97,7 +97,7 @@ async function initializeSnips (
 }
 
 async function initializeChapters (
-    chapters: ChaptersRecord[],
+    chapters: ChaptersExport[],
     parentUri: vscode.Uri,
 ) {
     const configMap: { [ index: string ]: ConfigFileInfo } = {};
@@ -207,7 +207,7 @@ export async function importWorkspace (
         // There is an initial chapter group now, so all other chapter orderings need to be pushed back once
         chapterGroupIdx++;
 
-        let mainChapters: ChaptersRecord[];
+        let mainChapters: ChaptersExport[];
         if ("groupName" in iweRecord.chapters) {
             chapterGroupsDotConfig['../chapters'] = {
                 ordering: 0,

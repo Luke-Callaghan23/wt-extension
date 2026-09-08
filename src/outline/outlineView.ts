@@ -23,7 +23,7 @@ import { handleDragController, handleDropController } from './impl/dragDropContr
 import { TODOsView } from '../TODO/TODOsView';
 import * as search from '../miscTools/searchFiles';
 import { NodeMoveKind } from './nodes_impl/handleMovement/generalMoveNode';
-import { defaultProgress, getRelativePath, RevealOptions } from '../miscTools/help';
+import { compareFsPath, defaultProgress, formatFsPathForCompare, getRelativePath, isSubdirectory, RevealOptions } from '../miscTools/help';
 import { CopiedSelection, genericPaste } from './impl/copyPaste';
 
 export interface ChapterGroupUris {
@@ -39,9 +39,10 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
     removeResource = removeFunctions.removeResource;
 
     // Creating nodes
-    public newChapter = createFunctions.newChapter;
-    public newSnip =  createFunctions.newSnip;
-    public newFragment = createFunctions.newFragment;
+    public newFragment     = createFunctions.newFragment;
+    public newSnip         = createFunctions.newSnip;
+    public newChapter      = createFunctions.newChapter;
+    public newChapterGroup = createFunctions.newChapterGroup;
 
     // Editing node visual data
     renameResource = renameFunctions.renameResource;
@@ -79,9 +80,18 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
             Extension.todoView.updateTree(this.rootNodes, updates);
         }
 
+        // Since the chapter groups container is technically elided in the outline view's tree structure (there is no container at 
+        //      the root level that holds all the chapter groups, instead the chapter groups themselves are at root level), we 
+        //      cannot pass the chapter groups container into `this._onDidChangeTreeData.fire` -- it won't have anything to update
+        // So, if one of the updates was for the chapter group container, just update the full tree
+        const updatesIncludeChapterGroups = updates.find(node => {
+            return compareFsPath(node.data.ids.uri, this.workspace.chapterGroupsFolder)
+                || compareFsPath(node.data.ids.parentUri, this.workspace.chapterGroupsFolder);
+        });
+        
         // If there are specific nodes to update from the callee, then fire tree data updates
         //        on those one at a time
-        if (updates.length > 0) {
+        if (updates.length > 0 && !updatesIncludeChapterGroups) {
             // No clue why this is necessary but when doing multiple updates sometimes the second/third/fifth update 
             //        kills the children created by earlier updates (gruesome, ik)
             // Reversing the updates seems to fix this for some reason
@@ -108,7 +118,16 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
             treeItem.contextValue = 'file';
         }
         else if (element.data.ids.type === 'container') {
-            treeItem.contextValue = 'container';
+
+            // Chapter groups need to behave as if they're a directory for the purpose of the context items and 
+            //      inline items in the tree view
+            if (element.data.ids.parentTypeId === 'container') {
+                treeItem.contextValue = 'dir';
+            }
+            // Other container items need to be treated as containers
+            else {
+                treeItem.contextValue = 'container';
+            }
         }
         else {
             treeItem.contextValue = 'dir';
@@ -152,8 +171,8 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
     ) {
         super(context, OutlineView.viewId, "Outline");
         this._onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
-        this.context.subscriptions.push(this._onDidChangeFile)
-        this.context.subscriptions.push(this._onDidChangeTreeData)
+        this.context.subscriptions.push(this._onDidChangeFile);
+        this.context.subscriptions.push(this._onDidChangeTreeData);
 
         // Set up callback for text editor change that displays the opened document in the outline view
         this.context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -197,7 +216,8 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
         if (chose.data.ids.type === 'root') return;
         
         const moveResult = await resource.moveNode(nodeMoveKind, chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
-        if (moveResult.moveOffset === -1) return;
+        if (!moveResult) return;
+        
         const effectedContainers = moveResult.effectedContainers;
         const outline =  Extension.outlineView;
         return outline.refresh(false, effectedContainers);
@@ -230,11 +250,14 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
         const root: RootNode = this.rootNodes[0].data as RootNode;
 
         const chapterGroupUris: ChapterGroupUris[] = [];
-        for (const chapterGroup of root.chapterGroups) {
+
+        const chapterGroupsContent = (root.chapterGroups.data as ContainerNode).contents;
+        for (const chapterGroup of chapterGroupsContent) {
             const chaptersContainer = chapterGroup.data as ContainerNode;
             const chapterData = chaptersContainer.contents.map(c => {
                 const title = c.data.ids.display;
-                const relativePath = c.getUri().fsPath.split(Extension.rootPath.fsPath)[1];
+                //c.getUri().fsPath.split(Extension.rootPath.fsPath)[1]
+                const relativePath = chapterGroup.data.ids.relativePath + '/' + chapterGroup.data.ids.fileName;
                 return { relativePath, title, ordering: c.data.ids.ordering };
             });
             chapterData.sort((a, b) => a.ordering - b.ordering);

@@ -19,11 +19,11 @@ import { OutlineView } from '../outline/outlineView';
 import { wtToHtml } from './wtToHtml';
 import { ChapterNode, ContainerNode, OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
 import { wtToMd } from '../miscTools/wtToMd';
-import { defaultProgress } from '../miscTools/help';
+import { defaultProgress, getSectionedProgressReporter } from '../miscTools/help';
 
 // Data provided by the export form webview
 export type ExportDocumentInfo = {
-    chapterGroupUri: vscode.Uri,
+    selectedChapterGroups: vscode.Uri[],
     fileName: string,
     ext: 'md' | 'txt' | 'docx' | 'html' | 'odt',
     separateChapters: boolean,
@@ -133,6 +133,7 @@ type ProcessedDocx = SingleFile | MultipleFiles;
 
 async function doProcessMd (
     workspace: Workspace,
+    chapterGroup: OutlineNode,
     ex: ExportDocumentInfo, 
     exportUri: vscode.Uri,
     outline: OutlineView
@@ -142,14 +143,13 @@ async function doProcessMd (
     const exportFileType: string = ex.ext;
 
     // Read all fragments from all chapters
-    const root: RootNode = outline.rootNodes[0].data as RootNode;
-    const chapterGroupsContainer: OutlineNode[] = root.chapterGroups;
+    const chapterNodes = (chapterGroup.data as ContainerNode).contents;
 
     // Sort the chapters
-    chaptersNodes.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+    chapterNodes.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
 
     // Stitch all chapter fragments together
-    const chaptersData: (ChapterInfo | null)[] = await Promise.all(chaptersNodes.map(node => {
+    const chaptersData: (ChapterInfo | null)[] = await Promise.all(chapterNodes.map(node => {
         const chapter = node.data as ChapterNode;
         return stitchFragments(chapter, ex);
     }));
@@ -254,7 +254,7 @@ async function doProcessMd (
         }
 
         // Return the multiple files
-        return <MultipleFiles>{
+        return {
             type: 'multiple',
             exportUri: exportContainerUri,
             cleanedChapterInfo: cleanedChapters,
@@ -295,12 +295,12 @@ async function doProcessMd (
             fullFileMarkdown = fullFileMarkdown.replaceAll("\n#", "\n\n\n#");
         }
 
-        return <SingleFile>{
+        return {
             type: 'single',
             exportUri: exportUri,
             fileName: ex.fileName,
             fullData: fullFileMarkdown,
-        } as SingleFile;
+        };
     }
 }
 
@@ -313,12 +313,12 @@ async function doProcessHtml (processedMd: ProcessedMd, destinationKind: "html" 
             pageBreaks: true,
             destinationKind: destinationKind
         });
-        return <SingleFile>{
+        return {
             type: 'single',
             fileName: singleMd.fileName,
             fullData: convertedHtml,
             exportUri: singleMd.exportUri
-        } as SingleFile;
+        };
     }
     else {
         // Process all html files into separate html strings
@@ -337,11 +337,11 @@ async function doProcessHtml (processedMd: ProcessedMd, destinationKind: "html" 
         });
 
         // Return new MultipleFiles with the converted html
-        return <MultipleFiles>{
+        return {
             type: "multiple",
             cleanedChapterInfo: convertedChapters,
             exportUri: multipleMd.exportUri
-        } as MultipleFiles;
+        };
     }
 }
 
@@ -365,7 +365,7 @@ async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDo
             fontSize: 29,
             orientation: 'portrait'
         });
-        return <SingleFile>{
+        return {
             type: 'single',
             exportUri: processedHtml.exportUri,
             fileName: processedHtml.fileName,
@@ -405,7 +405,7 @@ async function doProcessDocx (processedHtml: ProcessedHtml): Promise<ProcessedDo
             });
         }
 
-        return <MultipleFiles>{
+        return {
             type: 'multiple',
             exportUri: processedHtml.exportUri,
             cleanedChapterInfo: convertedDocx
@@ -425,7 +425,7 @@ async function doProcessOdt (processedHtml: ProcessedHtml): Promise<ProcessedDoc
             buf = singleHtml;
         }
         const odt = await libreofficeConvert.convertAsync(buf, "odt", "");
-        return <SingleFile>{
+        return {
             type: 'single',
             exportUri: processedHtml.exportUri,
             fileName: processedHtml.fileName,
@@ -456,7 +456,7 @@ async function doProcessOdt (processedHtml: ProcessedHtml): Promise<ProcessedDoc
             });
         }
 
-        return <MultipleFiles>{
+        return {
             type: 'multiple',
             exportUri: processedHtml.exportUri,
             cleanedChapterInfo: convertedDocx
@@ -557,40 +557,83 @@ export async function handleDocumentExport (
 
     // Create the export folder
     const dirname = `export (${dateString})`;
-    const dirUri = vscode.Uri.joinPath(workspace.exportFolder, dirname);
+    let exportDirectoryUri = vscode.Uri.joinPath(workspace.exportFolder, dirname);
 
-    return defaultProgress(`Exporting to '${dirUri.fsPath}'`, async () => {
-        let dirExists = true;
-        try { await vscode.workspace.fs.stat(dirUri) }
-        catch (err: any) {
-            dirExists = false;
+    const selectedGroupsSearch = await Promise.all(exportInfo.selectedChapterGroups.map(uri => Extension.outlineView.getTreeElementByUri(uri)));
+    const selectedGroups: OutlineNode[] = selectedGroupsSearch.filter(x => x) as OutlineNode[];
+    const sortedGroups: OutlineNode[] = selectedGroups.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
+
+    return vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: `Writing chapter groups 1/${selectedGroups.length}: ${sortedGroups[0].data.ids.display}`
+    }, async (progress) => {
+
+        for (let idx = 0; idx < sortedGroups.length; idx++) {
+
+            let exportDirectoryUri = vscode.Uri.joinPath(workspace.exportFolder, dirname);
+
+            const chapterGroup = sortedGroups[idx];
+            progress.report({
+                message: `Writing chapter groups ${idx+1}/${selectedGroups.length}: ${chapterGroup.data.ids.display}`,
+                increment: Math.ceil((idx / selectedGroups.length) * 100)
+            });
+            
+            // If there is more than one chapter group to export, and we are separating the chapters in those groups into their own
+            //      separate files, then we cannot simply write all those separated chapters into the same directory or else they
+            //      will be mixed up
+            // Instead, create inner directories per chapter group
+            if (sortedGroups.length > 0 && exportInfo.separateChapters) {
+                // Replace all illegal characters in the chapter title with the very legal character '-'
+                const cleanedTitle = chapterGroup.data.ids.display.replaceAll(workspace.illegalCharacters.join(''), '-');
+                if (cleanedTitle !== chapterGroup.data.ids.display) {
+                    vscode.window.showWarningMessage(`Chapter group titled '${chapterGroup.data.ids.display}' contained illegal characters for file name, using file name '${cleanedTitle}' instead.`);
+                }
+                
+                const padCount = (sortedGroups.length - 1).toString().length;
+                const groupNumberString = (chapterGroup.data.ids.ordering).toString().padStart(padCount, '0');
+                const groupFileName = `${groupNumberString}__${cleanedTitle}`
+
+                const groupDirectoryUri = vscode.Uri.joinPath(exportDirectoryUri, groupFileName);
+                await vscode.workspace.fs.createDirectory(groupDirectoryUri);
+
+                // Then overwrite the current export directory for this iteration of the loop so that the rest of the export processing
+                //      uses the new folder as the export destination
+                exportDirectoryUri = groupDirectoryUri;
+            }
+
+            try {
+                await vscode.workspace.fs.createDirectory(exportDirectoryUri);
+            }
+            catch (e) {
+                vscode.window.showErrorMessage(`ERROR an error occurred while creating the export directory: ${e}`);
+                return;
+            }
+        
+            // Process all the markdown in this work
+            const processed: Processed = await doProcessMd(workspace, chapterGroup, exportInfo, exportDirectoryUri, outline);
+            if (!processed) {
+                return;
+            }
+            const success: ProcessedMd = processed as ProcessedMd;
+        
+            // Get the correct export function and perform the export
+            let exportFunction: (processed: ProcessedMd) => Promise<void>;
+            switch (exportInfo.ext) {
+                case 'md': exportFunction = exportMd; break;
+                case 'txt': exportFunction = exportTxt; break;
+                case 'docx': exportFunction = exportDocx; break;
+                case 'html': exportFunction = exportHtml; break;
+                case 'odt': exportFunction = exportOdt; break;
+            }
+            await exportFunction(success);
+            vscode.window.showInformationMessage(`Successfully exported files into '${exportDirectoryUri.fsPath}'`);
+
         }
-    
-        try {
-            await vscode.workspace.fs.createDirectory(dirUri);
-        }
-        catch (e) {
-            vscode.window.showErrorMessage(`ERROR an error occurred while creating the export directory: ${e}`);
-            return;
-        }
-    
-        // Process all the markdown in this work
-        const processed: Processed = await doProcessMd(workspace, exportInfo, dirUri, outline);
-        if (!processed) {
-            return;
-        }
-        const success: ProcessedMd = processed as ProcessedMd;
-    
-        // Get the correct export function and perform the export
-        let exportFunction: (processed: ProcessedMd) => Promise<void>;
-        switch (exportInfo.ext) {
-            case 'md': exportFunction = exportMd; break;
-            case 'txt': exportFunction = exportTxt; break;
-            case 'docx': exportFunction = exportDocx; break;
-            case 'html': exportFunction = exportHtml; break;
-            case 'odt': exportFunction = exportOdt; break;
-        }
-        await exportFunction(success);
-        vscode.window.showInformationMessage(`Successfully exported files into '${dirUri.fsPath}'`);
+
+        progress.report({
+            message: `Writing chapter groups ${selectedGroups.length}/${selectedGroups.length}: Finished`,
+            increment: 100
+        });
+        await new Promise(resolve => setTimeout(resolve, 1000));
     });
 }

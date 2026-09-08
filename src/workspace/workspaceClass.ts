@@ -77,7 +77,7 @@ export class Workspace {
     public dotWtconfigPath: vscode.Uri;
 
     // Path to all the necessary folders for a workspace to function
-    public mainChaptersFolder: vscode.Uri;
+    public legacyChaptersFolder: vscode.Uri;
     public chapterGroupsFolder: vscode.Uri;
     public workSnipsFolder: vscode.Uri;
     public importFolder: vscode.Uri;
@@ -228,7 +228,7 @@ export class Workspace {
     // Simply initializes all the paths of necessary 
     constructor(context: vscode.ExtensionContext) {
         this.dotWtconfigPath = vscode.Uri.joinPath(Extension.rootPath, `.wtconfig`);
-        this.mainChaptersFolder = vscode.Uri.joinPath(Extension.rootPath, `data/chapters`);
+        this.legacyChaptersFolder = vscode.Uri.joinPath(Extension.rootPath, `data/chapters`);
         this.chapterGroupsFolder = vscode.Uri.joinPath(Extension.rootPath, `data/chaptergroups`);
         this.workSnipsFolder = vscode.Uri.joinPath(Extension.rootPath, `data/snips`);
         this.importFolder = vscode.Uri.joinPath(Extension.rootPath, `data/import`);

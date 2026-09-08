@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import * as console from '../miscTools/vsconsole';
 import { Extension } from '../extension';
-import { getNonce } from '../miscTools/help';
+import { __, getNonce } from '../miscTools/help';
 import { DocInfo, handleImport, handlePreview, ImportDocumentInfo } from './importFiles';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { ChapterGroupUris } from '../outline/outlineView';
 
 type RequestDocuments = {
     type: 'requestDocuments'
@@ -23,7 +24,7 @@ type Preview = {
 
 type Message = RequestDocuments | Submit | Preview;
 
-type SentDocument = {
+type ImportDocument = {
     fullPath: string,
     name: string,
     ext: string,
@@ -40,6 +41,13 @@ export type DroppedSourceInfo = {
     namePath: string,
     destination: 'chapter' | 'chapterGroup' | 'snip',
 };
+
+interface DocumentRequestMessage {
+    type: 'importDocuments',
+    chapterGroupsData: ChapterGroupUris[],
+    importDocuments: ImportDocument[],
+    droppedSource: Omit<DroppedSourceInfo, 'node'> | null
+}
 
 export class ImportForm {
 
@@ -68,9 +76,8 @@ export class ImportForm {
     async handleDocumentRequest () {
 
         // Retrieve chapter uris and names from the outline view
-        const chapterUris: [string, string][] = Extension.outlineView.collectChapterUris();
-        const sentDocs = this.documents.map(documentUri => {
-
+        const chapterGroupsData: ChapterGroupUris[] = Extension.outlineView.collectChapterUris();
+        const importDocuments = this.documents.map(documentUri => {
             const name = vscodeUris.Utils.basename(documentUri);
             const ext = vscodeUris.Utils.extname(documentUri);
             const fullPath = documentUri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');;
@@ -78,25 +85,18 @@ export class ImportForm {
                 fullPath, name, ext
             };
         });
-        return this.sendDocuments({
-            chapterUris: chapterUris,
-            documents: sentDocs,
-            droppedSource: this.droppedSource ? {
-                namePath: this.droppedSource.namePath,
-                destination: this.droppedSource.destination
-            } : null
-        });
-    }
-    
-    async sendDocuments (sentDocuments: {
-        chapterUris: [ string, string ][],
-        documents: SentDocument[],
-        droppedSource: Omit<DroppedSourceInfo, 'node'> | null,
-    }) {
-        this.panel.webview.postMessage({
-            type: 'sentDocuments',
-            ...sentDocuments
-        });
+
+        const droppedSource: Omit<DroppedSourceInfo, 'node'> | null = this.droppedSource ? {
+            namePath: this.droppedSource.namePath,
+            destination: this.droppedSource.destination
+        } : null;
+
+        return this.panel.webview.postMessage(__<DocumentRequestMessage>({
+            type: 'importDocuments',
+            chapterGroupsData: chapterGroupsData,
+            importDocuments: importDocuments,
+            droppedSource: droppedSource,
+        }));
     }
     
     async handleMessage (data: Message) {

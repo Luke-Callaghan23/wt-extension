@@ -242,7 +242,8 @@ implements
         if (chose.data.ids.type === 'root') return;
         
         const moveResult = await resource.moveNode("scratch", chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
-        if (moveResult.moveOffset === -1) return;
+        if (!moveResult) return;
+        
         const effectedContainers = moveResult.effectedContainers;
         return Promise.all([
             outline.refresh(false, effectedContainers),

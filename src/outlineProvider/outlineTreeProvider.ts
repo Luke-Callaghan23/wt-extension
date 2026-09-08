@@ -7,9 +7,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { ResourceType } from './fsNodes';
 import { UriBasedView } from './UriBasedView';
 import { RecyclingBinView } from '../recyclingBin/recyclingBinView';
-import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
 import { MoveNodeResult } from '../outline/nodes_impl/handleMovement/common';
-import { setFsPathKey } from '../miscTools/help';
+import { formatFsPathForCompare, setFsPathKey } from '../miscTools/help';
+import { NodeMoveKind } from '../outline/nodes_impl/handleMovement/generalMoveNode';
 
 export abstract class TreeNode {
     abstract getParentUri(): vscode.Uri;
@@ -21,7 +22,7 @@ export abstract class TreeNode {
     abstract getDroppableUris(): vscode.Uri[];
     abstract moveNode (
         this: TreeNode,
-        operation: 'move' | 'recover',
+        operation: NodeMoveKind,
         newParent: TreeNode, 
         recycleView: UriBasedView<TreeNode>,
         outlineView: OutlineTreeProvider<TreeNode>,
@@ -63,6 +64,14 @@ implements vscode.TreeDataProvider<T>, vscode.TreeDragAndDropController<T>, Pack
     abstract init(): Promise<void>;
     async _init (): Promise<void> {
         this.rootNodes = [await this.initializeTree()];
+
+        try {
+            const chapterGroupsFolderUri = formatFsPathForCompare(Extension.workspace.chapterGroupsFolder);
+            this.nodeMap = {
+                [chapterGroupsFolderUri]: ((this.rootNodes[0] as unknown as OutlineNode).data as RootNode).chapterGroups as unknown as T
+            };
+        }
+        catch (err: unknown) {}
 
         const view = vscode.window.createTreeView(this.viewName, { 
             treeDataProvider: this, 

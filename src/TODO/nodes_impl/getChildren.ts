@@ -56,8 +56,9 @@ export async function getChildren(
         const root = data as RootNode;
 
         // Get TODO counts for each chapter group
+        const chapterGroupContent = (root.chapterGroups.data as ContainerNode).contents;
         const chapterCounts = (
-            await Promise.all(root.chapterGroups.map(chapters => chapters.getTODOCounts()))
+            await Promise.all(chapterGroupContent.map(chapters => chapters.getTODOCounts()))
         ).reduce((acc, count) => acc + count, 0);
         
         // Get TODO counts for the work snips container
@@ -66,7 +67,7 @@ export async function getChildren(
         // Return the chapter and root containers, as long as they have at least one
         //      marked TODO 
         const children: TreeNode[] = [];
-        if (chapterCounts > 0) children.push(...root.chapterGroups);
+        if (chapterCounts > 0) children.push(...chapterGroupContent);
         if (snipCounts > 0) children.push(root.snips);
         ret = children;
     }

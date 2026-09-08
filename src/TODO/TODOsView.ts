@@ -221,7 +221,7 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
         this.rootNodes[0].data.ids = { ...updated.data.ids };
             
         const outlineRoot = updated.data as RootNode<OutlineNode>;
-        const outlineChapters: OutlineNode[] = outlineRoot.chapterGroups;
+        const outlineChapters: OutlineNode = outlineRoot.chapterGroups;
         const outlineWorkSnips = outlineRoot.snips;
 
         // Converts an array of fragment OutlineNodes to an array of TODONodes for those fragments
@@ -253,8 +253,8 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
         }
 
         // Converts a chapter container OutlineNode into a chapter container TODONode
-        const convertChapters = (chaptersGroups: OutlineNode[]): TODONode[] => {
-            return chaptersGroups.map(chapters => {
+        const convertChapters = (chaptersGroups: OutlineNode): TODONode[] => {
+            return (chaptersGroups.data as ContainerNode<OutlineNode>).contents.map(chapters => {
                 return new TODONode(<ContainerNode<TODONode>> {
                     ids: { ...chapters.data.ids },
                     contents: (chapters.data as ContainerNode<OutlineNode>).contents.map(outlineChapter => {
@@ -275,14 +275,20 @@ export class TODOsView extends OutlineTreeProvider<TODONode> implements Timed {
         // Convert the outline's Outline nodes into TODO nodes and swap out the TODO tree's data
         //        with those converted nodes
         if (this.rootNodes[0].data) {
-            (this.rootNodes[0].data as RootNode<TODONode>).chapterGroups = convertChapters(outlineChapters);
+            (this.rootNodes[0].data as RootNode<TODONode>).chapterGroups = new TODONode(<ContainerNode<TODONode>> {
+                ids: { ...outlineChapters.data.ids },
+                contents: convertChapters(outlineChapters)
+            });
+
             (this.rootNodes[0].data as RootNode<TODONode>).snips = new TODONode(<ContainerNode<TODONode>> {
                 ids: { ...outlineWorkSnips.data.ids },
                 contents: convertSnips((outlineWorkSnips.data as SnipNode<OutlineNode>).contents),
-            })
+            });
+
             targets.forEach(target => {
                 this.invalidateNode(target.data.ids.uri);
-            })
+            });
+
             this.refresh(false, []);
         }
     }

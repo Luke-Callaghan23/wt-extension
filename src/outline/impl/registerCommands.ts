@@ -32,17 +32,6 @@ export function registerCommands (this: OutlineView) {
         this.editNodeMarkdownDescription(resource);
     }));
 
-    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.newChapter", (resource) => {
-        this.newChapter(resource);
-    }));
-    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.newSnip", (resource) => {
-        if (!resource && this.view.selection.length > 0) {
-            // If the resource of the command is undefined, but there are selected items in the view
-            //      then use the first selected item as the resource
-            resource = this.view.selection[0];
-        }
-        this.newSnip(resource);
-    }));
     this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.newFragment", (resource) => {
         if (!resource && this.view.selection.length > 0) {
             // If the resource of the command is undefined, but there are selected items in the view
@@ -58,6 +47,33 @@ export function registerCommands (this: OutlineView) {
             resource = this.view.selection[0];
         }
         this.newFragment(resource, { markdown: true });
+    }));
+
+    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.newSnip", (resource) => {
+        if (!resource && this.view.selection.length > 0) {
+            // If the resource of the command is undefined, but there are selected items in the view
+            //      then use the first selected item as the resource
+            resource = this.view.selection[0];
+        }
+        this.newSnip(resource);
+    }));
+
+    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.newChapter", (resource) => {
+        if (!resource && this.view.selection.length > 0) {
+            // If the resource of the command is undefined, but there are selected items in the view
+            //      then use the first selected item as the resource
+            resource = this.view.selection[0];
+        }
+        this.newChapter(resource);
+    }));
+
+    this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.newChapterGroup", (resource) => {
+        if (!resource && this.view.selection.length > 0) {
+            // If the resource of the command is undefined, but there are selected items in the view
+            //      then use the first selected item as the resource
+            resource = this.view.selection[0];
+        }
+        this.newChapterGroup(resource);
     }));
 
     this.context.subscriptions.push(vscode.commands.registerCommand("wt.outline.moveUp", async (resource: OutlineNode) => {

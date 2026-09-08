@@ -5,6 +5,7 @@ import { compareFsPath, formatFsPathForCompare, getFsPathKey, getRelativePath, i
 import * as search from './../miscTools/searchFiles';
 import * as vscodeUri from 'vscode-uri';
 import { throws } from 'assert';
+import { Workspace } from '../workspace/workspaceClass';
 
 export interface HasGetUri {
     getUri(): vscode.Uri;
@@ -40,6 +41,7 @@ export class UriBasedView<T extends HasGetUri> {
             this.uriToVisibility[usableUri] = true;
             // Also save the state of all collapse and expands to workspace context state
             context.workspaceState.update(`${viewName}.collapseState`, this.uriToVisibility);
+            Workspace.forcePackaging();
         }));
 
         context.subscriptions.push(view.onDidCollapseElement((event: vscode.TreeViewExpansionEvent<T>) => {
@@ -47,6 +49,7 @@ export class UriBasedView<T extends HasGetUri> {
             const usableUri = collapsedElementUri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');
             this.uriToVisibility[usableUri] = false;            
             context.workspaceState.update(`${viewName}.collapseState`, this.uriToVisibility);
+            Workspace.forcePackaging();
         }));
     }
     

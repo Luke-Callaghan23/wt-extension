@@ -3,19 +3,16 @@ import * as vscode from 'vscode';
 import * as vscodeUris from 'vscode-uri';
 import * as console from '../../miscTools/vsconsole';
 import { OutlineTreeProvider, TreeNode } from '../../outlineProvider/outlineTreeProvider';
-import { ConfigFileInfo, DotConfig, getLatestOrdering, readDotConfig, writeDotConfig } from '../../miscTools/help';
+import { ConfigFileInfo, getLatestOrdering, readDotConfig, writeDotConfig } from '../../miscTools/help';
 import { OutlineView } from '../outlineView';
 import * as fsNodes from '../../outlineProvider/fsNodes';
 import { Extension } from   '../../extension';
 import { getChildren } from './getChildren';
 import { shiftTrailingNodesDown } from './shiftTrailingNodes';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';
-import { moveNode, NodeMoveKind } from './handleMovement/generalMoveNode';
+import { generalMoveNode, NodeMoveKind } from './handleMovement/generalMoveNode';
 import { updateChildrenToReflectNewUri } from './updateChildrenToReflectNewUri';
-import { allowedMoves, MoveNodeResult } from './handleMovement/common';
-import { newSnip } from '../impl/createNodes';
-import { RecyclingBinView } from '../../recyclingBin/recyclingBinView';
-import { ScratchPadView } from '../../scratchPad/scratchPadView';
+import { MoveNodeResult } from './handleMovement/common';
 
 export const usedIds: { [index: string]: boolean } = {};
 
@@ -30,100 +27,9 @@ export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentNode | Conta
 
 export class OutlineNode extends TreeNode {
     updateChildrenToReflectNewUri = updateChildrenToReflectNewUri;
+    moveNode = generalMoveNode;
     getChildren = getChildren;
     shiftTrailingNodesDown = shiftTrailingNodesDown;
-
-    // Duplicate this node into a new container, using new file names
-    // When containerDotConfig is provided by the caller, this function assumes that this is a part of a bulk operation
-    //      and this function will NOT write the updated .config file to the parent location
-    async duplicateInto (newContainer: OutlineNode, view: OutlineView | RecyclingBinView | ScratchPadView, options?: {
-        operation?: string,
-        bulkDotConfig?: DotConfig, 
-        ordering?: number
-    }): Promise<OutlineNode | null> {
-        if (this.data.ids.type === 'root' || !allowedMoves[this.data.ids.type].includes(newContainer.data.ids.type)) {
-            throw "Invalid duplication";
-        }
-
-        
-        const destinationUri = newContainer.data.ids.uri;
-        const dotConfigUri = vscode.Uri.joinPath(destinationUri, '.config');
-        
-        let containerDotConfig: DotConfig;
-        if (!bulkDotConfig) {
-            const containerDotConfigTmp = await readDotConfig(dotConfigUri);
-            if (!containerDotConfigTmp) {
-                vscode.window.showErrorMessage(`Could not read container .config file at: ${dotConfigUri}`);
-                throw `Could not read container .config file at: ${dotConfigUri}`;
-            }
-            containerDotConfig = containerDotConfigTmp;
-        }
-        else {
-            containerDotConfig = bulkDotConfig;
-        }
-
-        let result: OutlineNode;
-        if (newContainer.data.ids.type === "chapter") {
-            if (this.data.ids.type === 'snip') {
-                const duplicateSnip = view.newSnip(newContainer, {
-                    defaultName: `${this.data.ids.display} (${options?.operation || 'duplicate'})`
-                });
-            }
-            else if (this.data.ids.type === 'fragment') {
-
-            }
-        }
-        else if (newContainer.data.ids.type === "container") {
-            if (this.data.ids.type === 'chapter') {
-
-            }
-            else if (this.data.ids.type === 'snip') {
-
-            }
-        }
-        else if (newContainer.data.ids.type === "snip") {
-            if (this.data.ids.type === 'chapter') {
-
-            }
-            else if (this.data.ids.type === 'snip') {
-
-            }
-            else if (this.data.ids.type === 'fragment') {
-
-            }
-        }
-
-        // if (!result) {
-        //     vscode.window.showErrorMessage(`Failed to duplicate ${this.data.ids.display} into ${destinationUri}`);
-        //     throw `Failed to duplicate ${this.data.ids.display} into ${destinationUri}`
-        // }
-
-        // As mentioned above, if the caller provided a .config file for us, we assume that this is a bulk operation
-        //      and we will not write the .config back to disk
-        if (!bulkDotConfig) {
-            // No provided .config, then do write the config back to disk
-            writeDotConfig(dotConfigUri, containerDotConfig);
-        }
-
-        return result;
-
-    }
-
-    async updateUriCascaseChanges (newUri: vscode.Uri) {
-        throw "not implemented";
-    }
-
-    async moveNode (
-        operation: NodeMoveKind,
-        newParent: TreeNode, 
-        recycleView: UriBasedView<OutlineNode>,
-        outlineView: OutlineTreeProvider<TreeNode>,
-        moveOffset: number,
-        overrideDestination: TreeNode | null,
-        rememberedMoveDecision: 'Reorder' | 'Insert' | null
-    ): Promise<MoveNodeResult | null> {
-        
-    }
 
     // Assumes this is a 'snip' or a 'fragment'
     // Traverses up the parent tree until a 'chapter' or 'root' element is found

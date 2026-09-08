@@ -20,7 +20,7 @@ export async function producePaths (isFilteringSnips: boolean, selected: readonl
         const root = rootNode.data as RootNode;
         const snips = collectPathsContainer(root.snips);
         const chapters: string[] = [];
-        root.chapterGroups.forEach(cg => chapters.push(...collectPathsContainer(cg)));
+        (root.chapterGroups.data as ContainerNode).contents.forEach(cg => chapters.push(...collectPathsContainer(cg)));
         return [
             ...chapters,
             ...snips

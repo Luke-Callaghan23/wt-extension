@@ -108,7 +108,7 @@ export async function nodeGrep (
                 )
                 && 
                 (
-                    isSubdirectory(Extension.workspace.mainChaptersFolder, uri)
+                    isSubdirectory(Extension.workspace.legacyChaptersFolder, uri)
                     || isSubdirectory(Extension.workspace.chapterGroupsFolder, uri)
                     || isSubdirectory(Extension.workspace.workSnipsFolder, uri)
                     || isSubdirectory(Extension.workspace.notebookFolder, uri)

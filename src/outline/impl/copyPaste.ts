@@ -102,7 +102,7 @@ export async function pasteNew (
             Extension.outlineView,
             0, null, 'Insert'
         );
-        if (moveResult.moveOffset === -1) return;
+        if (!moveResult) return;
     }
 }
 

@@ -34,8 +34,8 @@
     window.addEventListener('message', event => {
         const message = event.data; // The json data that the extension sent
         switch (message.type) {
-            case 'sentDocuments':
-                loadDocuments(message.documents, message.chapterUris);
+            case 'exportChapterGroups':
+                loadChapterGroups(message.documents, message.chapterGroupsData);
                 break;
         }
     });

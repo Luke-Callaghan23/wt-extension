@@ -2,19 +2,29 @@
 import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
 import  * as extension from '../extension';
-import { getNonce } from '../miscTools/help';
+import { __, getNonce } from '../miscTools/help';
 import { handleDocumentExport, ExportDocumentInfo } from './exportDocuments';
 import { handleWorkspaceExport } from '../workspace/importExport/exportWorkspace';
 import { Workspace } from '../workspace/workspaceClass';
-import { OutlineView } from '../outline/outlineView';
+import { ChapterGroupUris, OutlineView } from '../outline/outlineView';
+import { Extension } from '../extension';
 
 type Submit = {
     type: 'submit',
     exportInfo: ExportDocumentInfo
 };
 
-type Message = Submit;
+type RequestDocuments = {
+    type: 'requestDocuments'
+};
 
+type Message = Submit | RequestDocuments;
+
+
+interface DocumentRequestMessage {
+    type: 'exportChapterGroups',
+    chapterGroupsData: ChapterGroupUris[],
+}
 
 export class ExportForm {
 
@@ -68,12 +78,24 @@ export class ExportForm {
     handleDocumentExport = handleDocumentExport;
     async handleMessage (data: Message) {
         switch (data.type) {
+            case 'requestDocuments':
+                await this.handleDocumentRequest();
+                break;
             // On submit message, call the document export handler and close the window
             case 'submit':
                 await this.handleDocumentExport(this.workspace, data.exportInfo, this.outline);
                 this.panel.dispose();
                 break;
         }
+    }
+        
+    async handleDocumentRequest () {
+        // Retrieve chapter uris and names from the outline view
+        const chapterGroupsData: ChapterGroupUris[] = Extension.outlineView.collectChapterUris();
+        return this.panel.webview.postMessage(__<DocumentRequestMessage>({
+            type: 'exportChapterGroups',
+            chapterGroupsData: chapterGroupsData,
+        }));
     }
 
     // Creates an html string for the webview panel

@@ -491,16 +491,6 @@
                 "title": "Edit Markdown Description"
             },
             {
-                "command": "wt.outline.newSnip",
-                "title": "Create New Snip",
-                "icon": "$(output-view-icon)"
-            },
-            {
-                "command": "wt.outline.newChapter",
-                "title": "Create New Chapter",
-                "icon": "$(open-editors-view-icon)"
-            },
-            {
                 "command": "wt.outline.newFragment",
                 "title": "Create New Fragment",
                 "icon": "$(search-new-editor)"
@@ -511,8 +501,24 @@
                 "icon": "$(search-new-editor)"
             },
             {
+                "command": "wt.outline.newSnip",
+                "title": "Create New Snip",
+                "icon": "$(output-view-icon)"
+            },
+            {
+                "command": "wt.outline.newChapter",
+                "title": "Create New Chapter",
+                "icon": "$(open-editors-view-icon)"
+            },
+            {
+                "command": "wt.outline.newChapterGroup",
+                "title": "Create New Chapter Group",
+                "icon": "$(folder-library)"
+            },
+            {
                 "command": "wt.outline.removeResource",
-                "title": "Move to Recycling"
+                "title": "Move to Recycling",
+                "icon": "$(trashcan)"
             },
             {
                 "command": "wt.outline.copyItems",
@@ -1613,6 +1619,11 @@
                     "group": "navigation@3"
                 },
                 {
+                    "command": "wt.outline.newChapterGroup",
+                    "when": "wt.valid && view == wt.outline",
+                    "group": "navigation@4"
+                },
+                {
                     "command": "wt.outline.refresh",
                     "when": "wt.valid && view == wt.outline",
                     "group": "navigation@4"
@@ -1737,11 +1748,6 @@
             ],
             "view/item/context": [
                 {
-                    "command": "wt.outline.refresh",
-                    "when": "view == wt.outline && (viewItem == dir || viewItem == container)",
-                    "group": "inline@3"
-                },
-                {
                     "command": "wt.outline.moveUp",
                     "when": "view == wt.outline && viewItem != container",
                     "group": "inline@1"
@@ -1750,6 +1756,16 @@
                     "command": "wt.outline.moveDown",
                     "when": "view == wt.outline && viewItem != container",
                     "group": "inline@2"
+                },
+                {
+                    "command": "wt.outline.refresh",
+                    "when": "view == wt.outline && (viewItem == dir || viewItem == container)",
+                    "group": "inline@3"
+                },
+                {
+                    "command": "wt.outline.removeResource",
+                    "when": "view == wt.outline && viewItem != container",
+                    "group": "inline@4"
                 },
                 {
                     "command": "wt.outline.newFragment",
