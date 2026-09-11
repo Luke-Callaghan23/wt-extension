@@ -23,7 +23,7 @@ import { defaultProgress, getSectionedProgressReporter } from '../miscTools/help
 
 // Data provided by the export form webview
 export type ExportDocumentInfo = {
-    selectedChapterGroups: vscode.Uri[],
+    selectedChapterGroupRelativePaths: string[],
     fileName: string,
     ext: 'md' | 'txt' | 'docx' | 'html' | 'odt',
     separateChapters: boolean,
@@ -559,7 +559,11 @@ export async function handleDocumentExport (
     const dirname = `export (${dateString})`;
     let exportDirectoryUri = vscode.Uri.joinPath(workspace.exportFolder, dirname);
 
-    const selectedGroupsSearch = await Promise.all(exportInfo.selectedChapterGroups.map(uri => Extension.outlineView.getTreeElementByUri(uri)));
+    const selectedGroupsSearch = await Promise.all(exportInfo.selectedChapterGroupRelativePaths.map(relativePath => {
+        const uri = vscode.Uri.joinPath(Extension.rootPath, relativePath);
+        return Extension.outlineView.getTreeElementByUri(uri);
+    }));
+    
     const selectedGroups: OutlineNode[] = selectedGroupsSearch.filter(x => x) as OutlineNode[];
     const sortedGroups: OutlineNode[] = selectedGroups.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
 

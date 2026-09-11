@@ -14,11 +14,7 @@ type Submit = {
     exportInfo: ExportDocumentInfo
 };
 
-type RequestDocuments = {
-    type: 'requestDocuments'
-};
-
-type Message = Submit | RequestDocuments;
+type Message = Submit;
 
 
 interface DocumentRequestMessage {
@@ -78,9 +74,6 @@ export class ExportForm {
     handleDocumentExport = handleDocumentExport;
     async handleMessage (data: Message) {
         switch (data.type) {
-            case 'requestDocuments':
-                await this.handleDocumentRequest();
-                break;
             // On submit message, call the document export handler and close the window
             case 'submit':
                 await this.handleDocumentExport(this.workspace, data.exportInfo, this.outline);
@@ -88,16 +81,6 @@ export class ExportForm {
                 break;
         }
     }
-        
-    async handleDocumentRequest () {
-        // Retrieve chapter uris and names from the outline view
-        const chapterGroupsData: ChapterGroupUris[] = Extension.outlineView.collectChapterUris();
-        return this.panel.webview.postMessage(__<DocumentRequestMessage>({
-            type: 'exportChapterGroups',
-            chapterGroupsData: chapterGroupsData,
-        }));
-    }
-
     // Creates an html string for the webview panel
     private _getHtmlForWebview (webview: vscode.Webview, _extensionUri: string): string {
         // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
@@ -115,6 +98,8 @@ export class ExportForm {
         // Use a nonce to only allow a specific script to be run.
         const nonce = getNonce();
 
+        const chapterGroupsData: ChapterGroupUris[] = Extension.outlineView.collectChapterUris();
+
         // Webview html
         return `<!DOCTYPE html>
             <html lang="en">
@@ -131,8 +116,7 @@ export class ExportForm {
                             default-src 'none'; 
                             font-src ${webview.cspSource}; 
                             style-src 'unsafe-inline' ${webview.cspSource}; 
-                            script-src ${webview.cspSource}
-                            nonce-${nonce};
+                            script-src ${webview.cspSource} 'nonce-${nonce}';
                             style-src-elem 'unsafe-inline' ${webview.cspSource};
                         "
                     >
@@ -142,85 +126,109 @@ export class ExportForm {
                     <link href="${styleVSCodeUri}" rel="stylesheet">
                     <link href="${styleMainUri}" rel="stylesheet">
                     <link href="${codiconsUri}" rel="stylesheet">
-                    <title>Cat Colors</title>
+                    <title>Export Form</title>
                 </head>
+                <script nonce="${nonce}">
+                    const chapterGroupData = ${JSON.stringify(chapterGroupsData)};
+                </script>
                 <body class="doc-body">
                     <div id="form-container" class="form-container">
-                    <div class="head">Export Work</div>
-                    <vscode-form-container id="log-settings-form">
-                        <vscode-label for="output-name" class="label">Export File Name:</vscode-label>
-                        <vscode-form-helper>
-                            <p>Name of the exported file created.</p>
-                        </vscode-form-helper>
-                        <vscode-textfield  
-                            id="input-export-file-name" 
-                            name="export-file-name" 
-                            class="input input-tail error"
-                        ></vscode-textfield>
-                        <vscode-label id="error-label" class="label error-label">
-                            Exported files cannot have any of the following characters in their names: 
-                            '#', '%', '&', '{', '}', '\\', '<', '>', '*', '?', '/', ' ', '$', '!', '\'', '"', ':', '@', '+', '\`', '|', '=', '.'.
-                        </vscode-label>
-                        <vscode-label for="select-ext-type" class="label">File Type:</vscode-label>
-                        <vscode-form-helper>
-                            <p>The file type format that your work will be exported as.</p>
-                        </vscode-form-helper>
-                        <vscode-single-select 
-                            id="select-ext-type" 
-                            name="select-ext-type" 
-                            class="select select-ext-type"
-                        >
-                            <vscode-option selected value="docx">.docx</vscode-option>
-                            <vscode-option  value="odt">.odt</vscode-option>
-                            <vscode-option  value="md">.md</vscode-option>
-                            <vscode-option  value="txt">.txt</vscode-option>
-                            <vscode-option  value="html">.html</vscode-option>
-                        </vscode-single-select>
-                        <div class="spacer"></div>
-                        <div id="odt-warning" style="display: none;">
-                            <vscode-label id="error-label" class="label error-label">
-                                To export to odt format, you will need libreoffice installed on your machine.  Otherwise we cannot make the conversion from .wt files to .odt.<br/>
-                                Also, ODT files take vastly more time to export than any other kind of document.  You might want to export as MS Word then convert to ODT.
+                        <div class="head">Export Work</div>
+                        <vscode-form-container id="log-settings-form">
+                            <vscode-label for="output-name" class="label">Export File Name:</vscode-label>
+                            <vscode-form-helper>
+                                <p>Name of the exported file created.</p>
+                            </vscode-form-helper>
+                            <vscode-textfield  
+                                id="input-export-file-name" 
+                                name="export-file-name" 
+                                class="input input-tail error"
+                            ></vscode-textfield>
+                            <vscode-label id="filename-error-label" class="label error-label">
+                                Exported files cannot have any of the following characters in their names: 
+                                '#', '%', '&', '{', '}', '\\', '<', '>', '*', '?', '/', ' ', '$', '!', '\'', '"', ':', '@', '+', '\`', '|', '=', '.'.
                             </vscode-label>
-                        </div>
-                        <vscode-label for="combine-fragments-on" class="label">Fragment Glue:</vscode-label>
-                        <vscode-form-helper>
-                            <p>Specifies the string that you would like to join that fragments of each chapter with.  This is the string that will be inserted between each fragment of each chapter when the fragments are stitched together.  Default is a newline.</p>
-                        </vscode-form-helper>
-                        <vscode-textfield
-                            id="input-combine-fragments-on" 
-                            name="combine-fragments-on" 
-                            class="input input-tail"
-                        ></vscode-textfield>
-                        <vscode-label for="checkbox-separate-chapter" class="label">Separate Chapters?</vscode-label>
-                        <vscode-checkbox 
-                            label="Indicates that you want to separate the export of this work into separate files, one chapter per file"
-                            id="checkbox-separate-chapter" 
-                            name="separate-chapter" 
-                            class="checkbox"
-                        ></vscode-checkbox>
-                        <div class="spacer"></div>
-                        <vscode-label for="checkbox-title-chapters" class="label">Include chapter tags?</vscode-label>
-                        <vscode-checkbox 
-                            label="Indicates that you want the titles of your chapters in the output prefixed with 'Chapter {chapter_number}: '"
-                            id="checkbox-title-chapters" 
-                            name="title-chapters" 
-                            class="checkbox"
-                        ></vscode-checkbox>
-                        <div class="spacer"></div>
-                        <div id="logue-options"></div> 
-                        <vscode-label for="checkbox-add-indents" class="label">Indent paragraphs?</vscode-label>
-                        <vscode-checkbox 
-                            label="Indicates that you want all paragraphs to be indented with a tab character in the final output."
-                            id="checkbox-add-indents" 
-                            name="add-indents" 
-                            class="checkbox"
-                            checked
-                        ></vscode-checkbox>
-                        <div class="spacer"></div>
-                        <vscode-label class="label">Export:</vscode-label>
-                        <vscode-button id="export-button">Export Your Work</vscode-button>
-                    </vscode-form-container>
+                            <vscode-label for="select-ext-type" class="label">File Type:</vscode-label>
+                            <vscode-form-helper>
+                                <p>The file type format that your work will be exported as.</p>
+                            </vscode-form-helper>
+                            <vscode-single-select 
+                                id="select-ext-type" 
+                                name="select-ext-type" 
+                                class="select select-ext-type"
+                            >
+                                <vscode-option selected value="docx">.docx</vscode-option>
+                                <vscode-option  value="odt">.odt</vscode-option>
+                                <vscode-option  value="md">.md</vscode-option>
+                                <vscode-option  value="txt">.txt</vscode-option>
+                                <vscode-option  value="html">.html</vscode-option>
+                            </vscode-single-select>
+                            <div class="spacer"></div>
+                            ${
+                                chapterGroupsData.length > 1
+                                    ? `
+                                        <vscode-label for="select-chapter-group">Select Chapter Groups:</vscode-label>
+                                        <vscode-form-helper>
+                                            <p>Select which chapter groups you wish to export.</p>
+                                        </vscode-form-helper>
+                                        <vscode-multi-select id="select-chapter-group" name="select-chapter-group">
+                                            ${
+                                                chapterGroupsData.map(cgd => {
+                                                    return `<vscode-option selected value="${cgd.relativePath}">${cgd.groupName} (${cgd.orderedChapterData.length} chapters)</vscode-option>`
+                                                }).join("\n")
+                                            }
+                                        </vscode-multi-select>
+                                        <vscode-label id="chaptergroup-error-label" class="label error-label" style="display: none;">
+                                            Must select at least one chapter group to export.
+                                        </vscode-label>
+                                        <div class="spacer"></div>
+                                    `
+                                    : ``
+                            }
+                            <div id="odt-warning" style="display: none;">
+                                <vscode-label id="error-label" class="label error-label">
+                                    To export to odt format, you will need libreoffice installed on your machine.  Otherwise we cannot make the conversion from .wt files to .odt.<br/>
+                                    Also, ODT files take vastly more time to export than any other kind of document.  You might want to export as MS Word then convert to ODT.
+                                </vscode-label>
+                            </div>
+                            <vscode-label for="combine-fragments-on" class="label">Fragment Glue:</vscode-label>
+                            <vscode-form-helper>
+                                <p>Specifies the string that you would like to join that fragments of each chapter with.  This is the string that will be inserted between each fragment of each chapter when the fragments are stitched together.  Default is a newline.</p>
+                            </vscode-form-helper>
+                            <vscode-textfield
+                                id="input-combine-fragments-on" 
+                                name="combine-fragments-on" 
+                                class="input input-tail"
+                            ></vscode-textfield>
+                            <vscode-label for="checkbox-separate-chapter" class="label">Separate Chapters?</vscode-label>
+                            <vscode-checkbox 
+                                label="Indicates that you want to separate the export of this work into separate files, one chapter per file"
+                                id="checkbox-separate-chapter" 
+                                name="separate-chapter" 
+                                class="checkbox"
+                            ></vscode-checkbox>
+                            <div class="spacer"></div>
+                            <vscode-label for="checkbox-title-chapters" class="label">Include chapter tags?</vscode-label>
+                            <vscode-checkbox 
+                                label="Indicates that you want the titles of your chapters in the output prefixed with 'Chapter {chapter_number}: '"
+                                id="checkbox-title-chapters" 
+                                name="title-chapters" 
+                                class="checkbox"
+                            ></vscode-checkbox>
+                            <div class="spacer"></div>
+                            <div id="logue-options"></div> 
+                            <vscode-label for="checkbox-add-indents" class="label">Indent paragraphs?</vscode-label>
+                            <vscode-checkbox 
+                                label="Indicates that you want all paragraphs to be indented with a tab character in the final output."
+                                id="checkbox-add-indents" 
+                                name="add-indents" 
+                                class="checkbox"
+                                checked
+                            ></vscode-checkbox>
+                            <div class="spacer"></div>
+                            <vscode-label class="label">Export:</vscode-label>
+                            <vscode-button id="export-button">Export Your Work</vscode-button>
+                        </vscode-form-container>
                     </div>
                     <script src="${elementsUri}" nonce="${nonce}" type="module"></script>
                     <script nonce="${nonce}" src="${scriptUri}"></script>

@@ -7,7 +7,7 @@ import { grepExtensionDirectory, grepSingleFile } from '../miscTools/grepper/gre
 import { FileResultLocationNode, FileResultNode, MatchedMetadataNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { __, addSingleWorkspaceEdit, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, getFsPathKey, isSubdirectory, setFsPathKey, showTextDocumentWithPreview, UriFsPathFormatted, vagueNodeSearch } from '../miscTools/help';
-import { ConfigNodeInfo, CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
+import { ConfigNodeInfo, SearchNodeGenerator } from './searchNodeGenerator';
 import { Timed } from '../timedView';
 import { BounceOnIt } from '../miscTools/bounceOnIt';
 import { SearchResultsTree } from './searchResultsTree';

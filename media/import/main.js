@@ -19,12 +19,15 @@
     const formContainer = document.getElementById('form-container');
     formContainer.innerHTML = `<div class="loader"></div>`;
 
-    function loadDocuments (documents, chapterGroupsData, droppedSource) {
+    function loadDocuments (importDocuments, chapterGroupsData, droppedSource) {
 
         const allDocInfo = {};
         
+        const selectedChapterGroup = chapterGroupsData[0];
+        const selectedChapter = selectedChapterGroup.orderedChapterData[0];
+
         const docs = [];
-        documents.forEach(({ name, fullPath, ext }) => {
+        importDocuments.forEach(({ name, fullPath, ext }) => {
             allDocInfo[fullPath] = {
                 skip: false,
                 
@@ -35,14 +38,18 @@
                 //      then we use that destination as default instead
                 outputType: droppedSource ? droppedSource.destination : 'snip',
                 
+                outputChapterTitle: `${name} (Imported)`,
+                outputChapterIntoChapterGroupTitle: `${name} Chapter Group (Imported)`,
+                outputChapterIntoChapterGroupRelativePath: selectedChapterGroup.relativePath,
+
                 outputSnipIntoChapter: false,
                 outputSnipPath: '/data/snips/',
                 outputSnipName: `${name} (Imported)`,
-
-                outputChapterTitle: `${name} (Imported)`,
-                useNonGenericFragmentNames: true,
-
+                outputSnipIntoChapterGroupRelativePath: selectedChapterGroup.relativePath,
+                outputSnipIntoChapterFileName: selectedChapter.fileName,
+                
                 outputIntoDroppedSource: !!droppedSource,
+                useNonGenericFragmentNames: true,
                 
                 shouldSplitFragments: false,
                 outerSplitRegex: '\\[{3,}?([^\\[\\]]*)\\]{3,}?',
@@ -95,6 +102,9 @@
         let useNonGenericFragmentNamesElement = document.getElementById("checkbox-non-generic-fragment-names");
         let outputSnipIntoChapterElement = document.getElementById("checkbox-output-into-chapter");
         let outputSnipIntoChapterFileNameElement = document.getElementById("select-chapter");
+        let outputSnipIntoChapterGroupRelativePathElement = document.getElementById("select-chapter-group-for-snip");
+        let outputChapterIntoChapterGroupTitleElement = document.getElementById("input-output-chapter-group-name");
+        let outputChapterIntoChapterGroupRelativePathElement = document.getElementById("input-output-chapter-group-relative-path");
         let outputChapterTitleElement = document.getElementById("input-output-chapter-name");
         let outputSnipNameElement = document.getElementById("input-output-snip-name");
         let shouldSplitFragmentsElement = document.getElementById("checkbox-split-document");
@@ -113,10 +123,16 @@
             docInfo.ext = extElement?.value || docInfo.ext;
             docInfo.outputType = outputTypeElement?.value || docInfo.outputType;
             docInfo.outputSnipIntoChapterFileName = outputSnipIntoChapterFileNameElement?.value || docInfo.outputSnipIntoChapterFileName;
+            docInfo.outputSnipIntoChapterGroupRelativePath = outputSnipIntoChapterGroupRelativePathElement?.value || docInfo.outputSnipIntoChapterGroupRelativePath;
             docInfo.outputChapterTitle = outputChapterTitleElement?.value || docInfo.outputChapterTitle;
+            docInfo.outputChapterIntoChapterGroupTitle = outputChapterIntoChapterGroupTitleElement?.value || docInfo.outputChapterIntoChapterGroupTitle;
             docInfo.outputSnipName = outputSnipNameElement?.value || docInfo.outputSnipName;
             docInfo.fragmentSplitRegex = fragmentSplitRegexElement?.value || docInfo.fragmentSplitRegex;
             docInfo.outerSplitRegex = outerSplitRegexElement?.value || docInfo.outerSplitRegex;
+
+            docInfo.outputChapterIntoChapterGroupRelativePath = outputChapterIntoChapterGroupRelativePathElement?.value === ''
+                ? ''
+                : docInfo.outputChapterIntoChapterGroupRelativePath;
 
             // Checkboxes need a little more probing
             if (elideSingleFragmentSnipsElement?.ariaChecked !== undefined && elideSingleFragmentSnipsElement?.ariaChecked !== null) {
@@ -165,14 +181,151 @@
             }).join('');
 
             // Create a string for the select of chapter output destination
-            let chapterSelectString = '';
+            let snipIntoChapterSelectHTML = '';
             if (docInfo.outputSnipIntoChapter) {
-                chapterSelectString = chapterGroupsData.map(([ uri, chapterName ]) => {
-                    if (docInfo.outputSnipIntoChapterFileName === uri) {
-                        return `<vscode-option selected value="${uri}">${chapterName}</vscode-option>`;
+
+                function getChapterSelectString (chapterGroup) {
+                    return chapterGroup.map(({ fileName, title }) => {
+                        if (docInfo.outputSnipIntoChapterFileName === fileName) {
+                            return `<vscode-option selected value="${fileName}">${title}</vscode-option>`;
+                        }
+                        return `<vscode-option value="${fileName}">${title}</vscode-option>`;
+                    }).join('')
+                }
+
+                if (chapterGroupsData.length === 1) {
+                    const chapterSelectString = getChapterSelectString(chapterGroupsData[0].orderedChapterData);
+                    snipIntoChapterSelectHTML = `
+                        <vscode-label for="select-chapter" class="label">Output Chapter:</vscode-label>
+                        <vscode-form-helper>
+                            <p>Chapter that the importer will insert the new snip(s) into.</p>
+                        </vscode-form-helper>
+                        <vscode-single-select 
+                            id="select-chapter" 
+                            name="filter" 
+                            class="select select-chapter"
+                        >
+                            ${chapterSelectString}
+                        </vscode-single-select>
+                        <div class="spacer"></div>
+                    `;
+                }
+                else {
+
+                    const chapterGroupSelectString = chapterGroupsData.map(({ relativePath, groupName }) => {
+                        if (docInfo.outputSnipIntoChapterGroupRelativePath === relativePath) {
+                            return `<vscode-option selected value="${relativePath}">${groupName}</vscode-option>`;
+                        }
+                        return `<vscode-option value="${relativePath}">${groupName}</vscode-option>`;
+                    }).join('');
+
+
+                    const selectedChapterGroup = chapterGroupsData.find(cg => {
+                        return docInfo.outputSnipIntoChapterGroupRelativePath === cg.relativePath;
+                    });
+
+                    const chapterSelectString = selectedChapterGroup 
+                        ? getChapterSelectString(selectedChapterGroup.orderedChapterData)
+                        : '';
+
+                    snipIntoChapterSelectHTML = `
+                        <vscode-label for="select-chapter-group-for-snip" class="label">Output Chapter Group:</vscode-label>
+                        <vscode-form-helper>
+                            <p>Chapter group for the chapter you want to import the snip into..</p>
+                        </vscode-form-helper>
+                        <vscode-single-select 
+                            id="select-chapter-group-for-snip" 
+                            name="filter" 
+                            class="select select-chapter-group-for-snip"
+                        >
+                            ${chapterGroupSelectString}
+                        </vscode-single-select>
+                        <div class="spacer"></div>
+                        
+                        <vscode-label for="select-chapter" class="label">Output Chapter:</vscode-label>
+                        <vscode-form-helper>
+                            <p>Chapter that the importer will insert the new snip(s) into.</p>
+                        </vscode-form-helper>
+                        <vscode-single-select 
+                            id="select-chapter" 
+                            name="filter" 
+                            class="select select-chapter"
+                        >
+                            ${chapterSelectString}
+                        </vscode-single-select>
+                        <div class="spacer"></div>
+                    `;
+                }
+
+            }
+
+            let chapterIntoChapterGroupSelectHTML = '';
+            if (!docInfo.outputSnipIntoChapter && docInfo.outputType === 'chapter') {
+                
+                const chapterGroupSelectArray = chapterGroupsData.map(({ relativePath, groupName }) => {
+                    if (docInfo.outputChapterIntoChapterGroupRelativePath === relativePath) {
+                        return `<vscode-option selected value="${relativePath}">${groupName}</vscode-option>`;
                     }
-                    return `<vscode-option value="${uri}">${chapterName}</vscode-option>`;
-                }).join('');
+                    return `<vscode-option value="${relativePath}">${groupName}</vscode-option>`;
+                });
+
+                const newChapterGroupSelected = docInfo.outputChapterIntoChapterGroupRelativePath === '';
+                if (newChapterGroupSelected) {
+                    chapterGroupSelectArray.push(`
+                        <vscode-option selected value="">&lt;New Chapter Group&gt;</vscode-option>
+                    `);
+                }
+                else {
+                    chapterGroupSelectArray.push(`
+                        <vscode-option value="">&lt;New Chapter Group&gt;</vscode-option>
+                    `);
+                }
+
+                
+                const chapterGroupSelectString = chapterGroupSelectArray.join('');
+                
+                chapterIntoChapterGroupSelectHTML = `
+                    <vscode-label for="select-output-chapter-group-relative-path" class="label">Output Chapter Group:</vscode-label>
+                    <vscode-form-helper>
+                        <p>Chapter group for you want to import the chapter into.</p>
+                    </vscode-form-helper>
+                    <vscode-single-select 
+                        id="select-output-chapter-group-relative-path" 
+                        name="filter" 
+                        class="select select-output-chapter-group-relative-path"
+                    >
+                        ${chapterGroupSelectString}
+                    </vscode-single-select>
+                    <div class="spacer"></div>
+
+                    ${
+                        newChapterGroupSelected
+                            ? `
+                                <vscode-label for="input-output-chapter-group-name" class="label">New Chapter Group Name:</vscode-label>
+                                <vscode-form-helper>
+                                    <p>Name of the new chapter group to be created, where your imported chapter content will be inserted.</p>
+                                </vscode-form-helper>
+                                <vscode-textfield 
+                                    value="${docInfo.outputChapterIntoChapterGroupTitle}" 
+                                    id="input-output-chapter-group-name" 
+                                    name="tail" 
+                                    class="input input-tail"
+                                ></vscode-textfield>
+                            `
+                            : ''
+                    }
+
+                    <vscode-label for="output-name" class="label">New Chapter Name:</vscode-label>
+                    <vscode-form-helper>
+                        <p>Name of the new chapter to be created.</p>
+                    </vscode-form-helper>
+                    <vscode-textfield 
+                        value="${docInfo.outputChapterTitle}" 
+                        id="input-output-chapter-name" 
+                        name="tail" 
+                        class="input input-tail"
+                    ></vscode-textfield>
+                `;
             }
 
             docInfoContainer.innerHTML = `
@@ -262,48 +415,29 @@
                                             : ''
                                     }
                     
+                                    <!-- 
+                                        Section: determine destination of the imported content
+                                    -->
                                     ${
                                         docInfo.outputSnipIntoChapter 
-                                            ? `
-                                                <vscode-label for="select-chapter" class="label">Output Chapter:</vscode-label>
-                                                <vscode-form-helper>
-                                                    <p>Chapter that the importer will insert the new snip(s) into.</p>
-                                                </vscode-form-helper>
-                                                <vscode-single-select 
-                                                    id="select-chapter" 
-                                                    name="filter" 
-                                                    class="select select-chapter"
-                                                >
-                                                    ${chapterSelectString}
-                                                </vscode-single-select>
-                                                <div class="spacer"></div>
-                                            `
-                                            : 
-                                                docInfo.outputType === 'chapter' 
-                                                    ? `
-                                                        <vscode-label for="output-name" class="label">New Chapter Name:</vscode-label>
-                                                        <vscode-form-helper>
-                                                            <p>Name of the new chapter to be created.</p>
-                                                        </vscode-form-helper>
-                                                        <vscode-textfield 
-                                                            value="${docInfo.outputChapterTitle}" 
-                                                            id="input-output-chapter-name" 
-                                                            name="tail" 
-                                                            class="input input-tail"
-                                                        ></vscode-textfield>
-                                                    `
-                                                    :  `
-                                                        <vscode-label for="output-name" class="label">New Snip Name:</vscode-label>
-                                                        <vscode-form-helper>
-                                                            <p>Name of the new imported snip.  If you choose to separate the imported document into multiple snips, then the new snip names will follow the pattern of '[name] (0)', '[name] (1)', etc.  For example 'Imported Snip (0)', 'Imported Snip (1)'.</p>
-                                                        </vscode-form-helper>
-                                                        <vscode-textfield 
-                                                            value="${docInfo.outputSnipName}" 
-                                                            id="input-output-snip-name" 
-                                                            name="tail" 
-                                                            class="input input-tail"
-                                                        ></vscode-textfield>
-                                                    `
+                                            // Output snip into existing chapter --> select a chapter group, select which chapter to insert into
+                                            ? snipIntoChapterSelectHTML
+                                            : docInfo.outputType === 'chapter' 
+                                                // Output chapter --> select a chapter group, enter a chapter group name
+                                                ? chapterIntoChapterGroupSelectHTML
+                                                // Output into work snips --> type the name of the created snip
+                                                : `
+                                                    <vscode-label for="output-name" class="label">New Snip Name:</vscode-label>
+                                                    <vscode-form-helper>
+                                                        <p>Name of the new imported snip.  If you choose to separate the imported document into multiple snips, then the new snip names will follow the pattern of '[name] (0)', '[name] (1)', etc.  For example 'Imported Snip (0)', 'Imported Snip (1)'.</p>
+                                                    </vscode-form-helper>
+                                                    <vscode-textfield 
+                                                        value="${docInfo.outputSnipName}" 
+                                                        id="input-output-snip-name" 
+                                                        name="tail" 
+                                                        class="input input-tail"
+                                                    ></vscode-textfield>
+                                                `
                                     }`
                                 : ''
                         }
@@ -399,6 +533,9 @@
             useDroppedSourceElement = document.getElementById("checkbox-use-dropped-location");
             outputTypeElement = document.getElementById("select-output-type");
             outputSnipIntoChapterFileNameElement = document.getElementById("select-chapter");
+            outputSnipIntoChapterGroupRelativePathElement = document.getElementById("select-chapter-group-for-snip");
+            outputChapterIntoChapterGroupTitleElement = document.getElementById("input-output-chapter-group-name");
+            outputChapterIntoChapterGroupRelativePathElement = document.getElementById("select-output-chapter-group-relative-path");
             outputChapterTitleElement = document.getElementById("input-output-chapter-name");
             outputSnipNameElement = document.getElementById("input-output-snip-name");
             fragmentSplitRegexElement = document.getElementById("input-fragment-split");
@@ -441,6 +578,8 @@
                 outputSnipNameElement,
                 fragmentSplitRegexElement,
                 outerSplitRegexElement,
+                outputSnipIntoChapterGroupRelativePathElement,
+                outputChapterIntoChapterGroupRelativePathElement
             ].forEach(element => {
                 try {
                     element.addEventListener('change', () => {
@@ -469,7 +608,7 @@
                 preview.click();
             }, 100);
         }
-        let currentDoc = documents[0].fullPath;
+        let currentDoc = importDocuments[0].fullPath;
         displayDocumentInfo(currentDoc);
         
         // File selecor
@@ -492,16 +631,16 @@
 
         // Next and previous button event listeners
         document.getElementById('next-button').addEventListener('click', () => {
-            const currentIndex = documents.findIndex(doc => doc.fullPath === currentDoc);
-            const newIndex = currentIndex !== documents.length - 1 ? currentIndex + 1 : 0;
-            const newDoc = documents[newIndex].fullPath;
+            const currentIndex = importDocuments.findIndex(doc => doc.fullPath === currentDoc);
+            const newIndex = currentIndex !== importDocuments.length - 1 ? currentIndex + 1 : 0;
+            const newDoc = importDocuments[newIndex].fullPath;
             changeDoc(newDoc);
         });
 
         document.getElementById('prev-button').addEventListener('click', () => {
-            const currentIndex = documents.findIndex(doc => doc.fullPath === currentDoc);
-            const newIndex = currentIndex !== 0 ? currentIndex - 1 : documents.length - 1;
-            const newDoc = documents[newIndex].fullPath;
+            const currentIndex = importDocuments.findIndex(doc => doc.fullPath === currentDoc);
+            const newIndex = currentIndex !== 0 ? currentIndex - 1 : importDocuments.length - 1;
+            const newDoc = importDocuments[newIndex].fullPath;
             changeDoc(newDoc);
         });
 
@@ -519,15 +658,26 @@
 
         const preview = document.getElementById('preview-button');
         preview.addEventListener('click', async (event) => {
-            event.preventDefault;
-
+            event.preventDefault();
+            
             previewContainer.style.display = '';
 
             saveDocumentInfoState(currentDoc);
+
+            // The outer layer extension expects the indicator for inserting the chapter(s) into a 
+            //      new chapter group to be a `null` value, but you cannot assign a `null` @value
+            //      attribute in html by default
+            // So, before passing the document info back to the extension, replace '' with null
+            const internalDocInfo = allDocInfo[currentDoc];
+            const previewDocInfo = { ...internalDocInfo, };
+            if (previewDocInfo.outputChapterIntoChapterGroupRelativePath === '') {
+                previewDocInfo.outputChapterIntoChapterGroupRelativePath = null;
+            }
+
             vscode.postMessage({ 
                 type: 'preview', 
                 docName: currentDoc,
-                singleDoc: allDocInfo[currentDoc]
+                singleDoc: previewDocInfo
             });
 
             const preview = await new Promise((resolve) => {
@@ -572,7 +722,7 @@
                 <hr />
                 <div class="spacer"></div>
             `;
-        })
+        });
 
         const submit = document.getElementById('import-button');
         submit.addEventListener('click', (event) => {
@@ -581,11 +731,26 @@
             // Put spinner back up 
             formContainer.innerHTML = `<div class="loader"></div>`;
 
-            // Post the submission to the import webview
+            // Save the currently displayed document info 
             saveDocumentInfoState(currentDoc);
+
+            const submitDocInfo = {};
+            for (const [ path, currentDocInfo ] of Object.entries(allDocInfo)) {
+                // The outer layer extension expects the indicator for inserting the chapter(s) into a 
+                //      new chapter group to be a `null` value, but you cannot assign a `null` @value
+                //      attribute in html by default
+                // So, before passing the document info back to the extension, replace '' with null
+                const docInfo = { ...currentDocInfo };
+                if (docInfo.outputChapterIntoChapterGroupRelativePath === '') {
+                    docInfo.outputChapterIntoChapterGroupRelativePath = null;
+                }
+                submitDocInfo[path] = docInfo;
+            }
+            
+            // Post the submission to the import webview
             vscode.postMessage({ 
                 type: 'submit', 
-                docInfo: allDocInfo
+                docInfo: submitDocInfo
             });
         });
     }
@@ -597,7 +762,7 @@
         const message = event.data; // The json data that the extension sent
         switch (message.type) {
             case 'importDocuments':
-                loadDocuments(message.documents, message.chapterGroupsData, message.droppedSource);
+                loadDocuments(message.importDocuments, message.chapterGroupsData, message.droppedSource);
                 break;
         }
     });

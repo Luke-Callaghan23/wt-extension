@@ -309,7 +309,7 @@ export async function statFile (uri: vscode.Uri): Promise<vscode.FileStat | null
     }
 }
 
-export function getRelativePath (uri: vscode.Uri): string {
+export function getPathRelativeToRoot (uri: vscode.Uri): string {
     return uri.fsPath.replace(Extension.rootPath.fsPath, '').replaceAll("\\", '/');
 }
 

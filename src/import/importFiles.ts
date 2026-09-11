@@ -41,7 +41,7 @@ TurndownService.prototype.escape = function (string: string) {
 
 import { Buff } from '../Buffer/bufferSource';
 import { commonReplacements } from '../autocorrect/autocorrect';
-import { multiSplitChapterDescription, multiSplitSnipContainerDescription, mutliSplitSnipDescription, noSplitChapterDescription, noSplitSnipDescription, singleSplitChapterDescription, singleSplitSnipDescription } from './importDescriptions';
+import { multiSplitChapterDescription, multiSplitSnipContainerDescription, mutliSplitSnipDescription, noSplitChapterDescription, noSplitChapterGroupDescription, noSplitSnipDescription, singleSplitChapterDescription, singleSplitSnipDescription, splitChapterGroupDescription } from './importDescriptions';
 
 export type DocInfo = {
     skip: boolean,
@@ -51,15 +51,16 @@ export type DocInfo = {
     // outputType === 'chapter' data
     outputChapterTitle: string,                                 // name pattern used for creating the chapter names, when a chapter title was not specified by the document splitter
     outputChapterIntoChapterGroupTitle: string,                 // title of the chapter group to put the imported chapters into
-    outputChapterIntoChapterGroupRelativePath: string,          // file name of the chapter group to put the imported chatpers into
+    outputChapterIntoChapterGroupRelativePath: string | null,   // file name of the chapter group to put the imported chatpers into, when null -> new chapter group
     
     // outputType === 'snip' data
     outputSnipIntoChapter: boolean,
     outputSnipPath: '/data/snips/',
     outputSnipName: string,
+    outputSnipIntoChapterGroupRelativePath: string,
     outputSnipIntoChapterFileName: string,
-    outputIntoDroppedSource: boolean,
     
+    outputIntoDroppedSource: boolean,
     useNonGenericFragmentNames: boolean,
 
     // Split info
@@ -440,6 +441,7 @@ export type SnipInfo = {
     output: {
         dest: 'chapter',
         outputSnipIntoChapterFileName: string,
+        outputSnipIntoChapterGroupRelativePath: string,
     } | {
         dest: 'snip'
         outputSnipPath: '/data/snips/',
@@ -451,12 +453,28 @@ type ChapterInfo = {
     type: 'chapter',
     outputChapterTitle: string,         // title of the chapter to create
     outputChapterIntoChapterGroupTitle: string,
-    outputChapterIntoChapterGroupRelativePath: string
+    outputChapterIntoChapterGroupRelativePath: string | null
 };
 
 type WriteInfo = ChapterInfo | SnipInfo;
 
-async function resolveChapterGroup (chapterInfo: ChapterInfo): Promise<OutlineNode> {
+// Returns null when the chapter group to output into doesn't exist yet
+async function resolveChapterGroup (chapterInfo: ChapterInfo, droppedSource: DroppedSourceInfo | null): Promise<OutlineNode | null> {
+    // If a dropped source is provided, we need to get the chapter group of the dropped source
+    if (droppedSource) {
+        // Iterate over all chapter groups, and return the first one that the dropped source is a subdirectory of
+        const chapterGroups = (((Extension.outlineView.rootNodes[0].data as RootNode).chapterGroups).data as ContainerNode).contents;
+        for (const chapterGroup of chapterGroups) {
+            if (isSubdirectory(chapterGroup.data.ids.uri, droppedSource.node.data.ids.uri)) {
+                return chapterGroup;
+            }
+        }
+        // If the dropped source is not inside of a chapter group, then just continue with normal resolve
+    }
+
+    // `outputChapterIntoChapterGroupRelativePath` will be null when the user is attempting to insert
+    //      the chapter into a new chapter group that doesn't yet exist
+    if (chapterInfo.outputChapterIntoChapterGroupRelativePath === null) return null;
 
     const chapterGroupUri = vscode.Uri.joinPath(Extension.rootPath, chapterInfo.outputChapterIntoChapterGroupRelativePath);
     const chapterGroup = await Extension.outlineView.getTreeElementByUri(chapterGroupUri);
@@ -470,36 +488,6 @@ async function resolveChapterGroup (chapterInfo: ChapterInfo): Promise<OutlineNo
     }
 
     return chapterGroup;
-
-    // const legacyUri = vscode.Uri.joinPath(Extension.workspace.legacyChaptersFolder, chapterInfo.outputChapterIntoChapterGroupFileName);
-    // const chapterGroupsUri = vscode.Uri.joinPath(Extension.workspace.chapterGroupsFolder, chapterInfo.outputChapterIntoChapterGroupFileName);
-    // if (await statFile(legacyUri)) {
-    //     const group = await Extension.outlineView.getTreeElementByUri(legacyUri);
-    //     if (!group) {
-    //         chapterGroup = (Extension.outlineView.rootNodes[0].data as RootNode).chapterGroups[0];
-    //         vscode.window.showWarningMessage(`[WARN] Could not find chapter group '${chapterInfo.outputChapterIntoChapterGroupTitle}' (${chapterInfo.outputChapterIntoChapterGroupFileName}), using chapter group '${chapterGroup.data.ids.display}' instead`);
-    //     }
-    //     else {
-    //         chapterGroup = group;
-    //     }
-    // }
-    // else if (await statFile(chapterGroupsUri)) {
-    //     const group = await Extension.outlineView.getTreeElementByUri(chapterGroupsUri);
-    //     if (!group) {
-    //         chapterGroup = (Extension.outlineView.rootNodes[0].data as RootNode).chapterGroups[0];
-    //         vscode.window.showWarningMessage(`[WARN] Could not find chapter group '${chapterInfo.outputChapterIntoChapterGroupTitle}' (${chapterInfo.outputChapterIntoChapterGroupFileName}), using chapter group '${chapterGroup.data.ids.display}' instead`);
-    //     }
-    //     else {
-    //         chapterGroup = group;
-    //     }
-    // }
-    // else {
-    //     // If we cannot find the chapter group anywhere, then just use the first in the chapter groups
-    //     //      array at the root of the outline node
-    //     chapterGroup = (Extension.outlineView.rootNodes[0].data as RootNode).chapterGroups[0];
-    //     vscode.window.showWarningMessage(`[WARN] Could not find chapter group '${chapterInfo.outputChapterIntoChapterGroupTitle}' (${chapterInfo.outputChapterIntoChapterGroupFileName}), using chapter group '${chapterGroup.data.ids.display}' instead`);
-    // }
-    // return chapterGroup;
 }
 
 function getWriteInfo (docInfo: DocInfo): WriteInfo {
@@ -518,7 +506,8 @@ function getWriteInfo (docInfo: DocInfo): WriteInfo {
             output: docInfo.outputSnipIntoChapter
                 ? {
                     dest: 'chapter',
-                    outputSnipIntoChapterFileName: docInfo.outputSnipIntoChapterFileName
+                    outputSnipIntoChapterFileName: docInfo.outputSnipIntoChapterFileName,
+                    outputSnipIntoChapterGroupRelativePath: docInfo.outputSnipIntoChapterGroupRelativePath
                 }
                 : {
                     dest: 'snip',
@@ -558,6 +547,7 @@ async function createFragmentFromSource (
 async function writeChapter (
     docSplits: DocSplit, 
     chapterInfo: ChapterInfo,
+    droppedSource: DroppedSourceInfo | null,
     idx?: number,
 ) {
 
@@ -582,7 +572,7 @@ async function writeChapter (
                 data: data,
                 source: docSplits.source,
             };
-            await writeChapter(currentChapterFragments, currentChapter);
+            await writeChapter(currentChapterFragments, currentChapter, droppedSource);
 
         }
         return;
@@ -591,23 +581,49 @@ async function writeChapter (
     const dateString = getDateString();
 
     let chapterDescription: string;
+    let chapterGroupDescription: string;
     if (idx === undefined) {
         if (docSplits.type === 'none') {
             chapterDescription = noSplitChapterDescription(dateString, docSplits);
+            chapterGroupDescription = noSplitChapterGroupDescription(dateString, docSplits);
         }
         else {
             chapterDescription = singleSplitChapterDescription(dateString, docSplits);
+            chapterGroupDescription = splitChapterGroupDescription(dateString, docSplits);
         }
     }
     else {
         if (docSplits.type !== 'single') throw 'uncreachable';
         chapterDescription = multiSplitChapterDescription(dateString, docSplits, idx);
+        chapterGroupDescription = splitChapterGroupDescription(dateString, docSplits);
     }
 
-    
-    const chapterGroup = await resolveChapterGroup(chapterInfo);
-
     const outlineView: OutlineView = Extension.outlineView;
+    
+    let chapterGroup: OutlineNode;
+    
+    const resolvedChapterGroup: OutlineNode | null = await resolveChapterGroup(chapterInfo, droppedSource);
+    if (resolvedChapterGroup === null) {
+        // If the resolved chapter group from the user input is null, that means they want to write
+        //      the new chapter to a new chapter group
+        // So, create the chapter group with the specified name
+        const chapterGroupUri = await outlineView.newChapterGroup(undefined, {
+            defaultName: chapterInfo.outputChapterIntoChapterGroupTitle,
+            preventRefresh: true,
+            overrideDescription: chapterGroupDescription
+        });
+        if (!chapterGroupUri) return;
+        
+        const chapterGroupSearch = await outlineView.getTreeElementByUri(chapterGroupUri);
+        if (!chapterGroupSearch) return;
+
+        chapterGroup = chapterGroupSearch;
+    }
+    else {
+        // Otherwise, use the existing chapter group that was resolved by the query
+        chapterGroup = resolvedChapterGroup;
+    }
+
     const chapterUri: vscode.Uri | null = await outlineView.newChapter(chapterGroup, {
         preventRefresh: false, 
         defaultName: chapterInfo.outputChapterTitle,
@@ -656,13 +672,12 @@ async function writeSnip (docSplits: DocSplit, snipInfo: SnipInfo, droppedSource
     else if (output.dest === 'chapter') {
         // dest = 'chapter' -> inserted snips are inserted into the specified chapter
         // Find the chapter by its uri and use that as the parent node
-        const chapterUri = vscode.Uri.joinPath(Extension.rootPath, output.outputSnipIntoChapterFileName);
+        const chapterUri = vscode.Uri.joinPath(Extension.rootPath, output.outputSnipIntoChapterGroupRelativePath, output.outputSnipIntoChapterFileName);
         const chapterNode: OutlineNode | null = await outlineView.getTreeElementByUri(chapterUri);
         if (!chapterNode) return;
         parentNode = chapterNode;
     }
 
-    
     const dateString = getDateString();
 
     // If this is a multi split, then we want to store all splits in a newly created snip container in the `parentNode` calculated above
@@ -925,7 +940,7 @@ export async function handleImport (docInfo: ImportDocumentInfo, droppedSource: 
                 // Finally, write the document to the file system
                 // Call the chapter/snip specific write function
                 if (writeInfo.type === 'chapter') {
-                    await writeChapter(docSplits, writeInfo);
+                    await writeChapter(docSplits, writeInfo, doc.outputIntoDroppedSource ? droppedSource : null);
                 }
                 else if (writeInfo.type === 'snip') {
                     await writeSnip(docSplits, writeInfo, doc.outputIntoDroppedSource ? droppedSource : null);
@@ -990,7 +1005,19 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
         const docSplits = splits;
         if (writeInfo.type === 'chapter') {
             const chapterInfo = writeInfo;
-            const chapterGroup = await resolveChapterGroup(chapterInfo);
+
+            let chapterGroupTitle: string;
+            let chapterGroupLength: number;
+
+            let chapterGroup: OutlineNode | null = await resolveChapterGroup(chapterInfo, droppedSource);
+            if (chapterGroup) {
+                chapterGroupTitle = chapterGroup.data.ids.display;
+                chapterGroupLength = (chapterGroup.data as ContainerNode).contents.length;
+            }
+            else {
+                chapterGroupTitle = chapterInfo.outputChapterIntoChapterGroupTitle;
+                chapterGroupLength = 1;
+            }
 
             const transcribeChapter = (singleOrNoneSplit: NoSplit | SingleSplit): Li[] => {
                 if (singleOrNoneSplit.type === 'none') {
@@ -1026,8 +1053,7 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
                 });
             }
             else {
-                const chapterNumber = (chapterGroup.data as ContainerNode).contents.length;
-                const chapterName = `(chapter) New Chapter (${chapterNumber})`;
+                const chapterName = `(chapter) New Chapter (${chapterGroupLength})`;
                 chapters = [{
                     name: chapterName,
                     children: transcribeChapter(docSplits)
@@ -1035,7 +1061,7 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
             }
 
             return __<Li>({ 
-                name: `${Extension.workspace.config.title}/${chapterGroup.data.ids.display}`,
+                name: `${Extension.workspace.config.title}/${chapterGroupTitle}`,
                 children: chapters
             });
         }
@@ -1064,7 +1090,7 @@ export async function handlePreview (docName: string, singleDoc: DocInfo, droppe
             else if (output.dest === 'chapter') {
                 // dest = 'chapter' -> inserted snips are inserted into the specified chapter
                 // Find the chapter by its uri and use that as the parent node
-                const chapterUri = vscode.Uri.joinPath(Extension.rootPath, output.outputSnipIntoChapterFileName);
+                const chapterUri = vscode.Uri.joinPath(Extension.rootPath, output.outputSnipIntoChapterGroupRelativePath, output.outputSnipIntoChapterFileName);
                 let parent: OutlineNode = await outlineView.getTreeElementByUri(chapterUri) || outlineView.rootNodes[0];
                 if (parent.data.ids.type === 'chapter') {
                     const chapter = parent.data as ChapterNode

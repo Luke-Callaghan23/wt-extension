@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Extension } from   '../extension';
 import * as vsconsole from '../miscTools/vsconsole';
-import { compareFsPath, formatFsPathForCompare, getFsPathKey, getRelativePath, isSubdirectory, RevealOptions, setFsPathKey } from '../miscTools/help';
+import { compareFsPath, formatFsPathForCompare, getFsPathKey, getPathRelativeToRoot, isSubdirectory, RevealOptions, setFsPathKey } from '../miscTools/help';
 import * as search from './../miscTools/searchFiles';
 import * as vscodeUri from 'vscode-uri';
 import { throws } from 'assert';
@@ -139,11 +139,11 @@ export class UriBasedView<T extends HasGetUri> {
         return null;
     }
 
-    async expandAndRevealOutlineNode (node: T, options?: RevealOptions, recursion?: boolean) {
-        if (!this.view.visible) return;
+    async expandAndRevealOutlineNode (node: T, options?: RevealOptions & { ignoreVisibleCheck?: boolean  }) {
+        if (!options?.ignoreVisibleCheck && !this.view.visible) return;
 
         const nodeUri = node.getUri();
-        const relativePath = getRelativePath(nodeUri);
+        const relativePath = getPathRelativeToRoot(nodeUri);
         const segments = relativePath.split('/');
 
         const nodeUriString = formatFsPathForCompare(node.getUri());
@@ -165,7 +165,7 @@ export class UriBasedView<T extends HasGetUri> {
                     // Copy the options of the main call, but override and set `select` to false
                     // (If `select` is true, then we get a strange visual effect where all the parent nodes get highlighted
                     //        one by one before settling on the final node -- it's a little distracting)
-                    return this.expandAndRevealOutlineNode(node, {...options, select: false}, true);
+                    return this.expandAndRevealOutlineNode(node, {...options, select: false});
                 });
             }
         }

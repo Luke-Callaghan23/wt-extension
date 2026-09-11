@@ -23,14 +23,15 @@ import { handleDragController, handleDropController } from './impl/dragDropContr
 import { TODOsView } from '../TODO/TODOsView';
 import * as search from '../miscTools/searchFiles';
 import { NodeMoveKind } from './nodes_impl/handleMovement/generalMoveNode';
-import { compareFsPath, defaultProgress, formatFsPathForCompare, getRelativePath, isSubdirectory, RevealOptions } from '../miscTools/help';
+import { compareFsPath, defaultProgress, formatFsPathForCompare, getPathRelativeToRoot, isSubdirectory, RevealOptions } from '../miscTools/help';
 import { CopiedSelection, genericPaste } from './impl/copyPaste';
 
 export interface ChapterGroupUris {
     groupName: string,
+    relativePath: string,
     orderedChapterData: {
         title: string,
-        relativePath: string
+        fileName: string,
     }[]
 }
 
@@ -256,16 +257,16 @@ export class OutlineView extends OutlineTreeProvider<OutlineNode> implements Ren
             const chaptersContainer = chapterGroup.data as ContainerNode;
             const chapterData = chaptersContainer.contents.map(c => {
                 const title = c.data.ids.display;
-                //c.getUri().fsPath.split(Extension.rootPath.fsPath)[1]
-                const relativePath = chapterGroup.data.ids.relativePath + '/' + chapterGroup.data.ids.fileName;
-                return { relativePath, title, ordering: c.data.ids.ordering };
+                const fileName = c.data.ids.fileName;
+                return { fileName, title, ordering: c.data.ids.ordering };
             });
             chapterData.sort((a, b) => a.ordering - b.ordering);
     
             chapterGroupUris.push({
                 groupName: chapterGroup.data.ids.display,
+                relativePath: `${chapterGroup.data.ids.relativePath}/${chapterGroup.data.ids.fileName}`,
                 orderedChapterData: chapterData.map(cd => ({
-                    relativePath: cd.relativePath,
+                    fileName: cd.fileName,
                     title: cd.title
                 }))
             });

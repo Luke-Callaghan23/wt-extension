@@ -601,8 +601,36 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         }));
 
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.openFileExplorer', () => {
-            vscode.commands.executeCommand('revealFileInOS', this.workspace.importFolder);
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.openFileExplorer', async () => {
+            
+            // VS Code's 'revealFileInOS' command when used on a directory reveals the parent directory
+            //      with the child directory (in this case, the import folder) highlighted
+            // We want to open the os window with the imports folder already open, instead
+            // So, try to find a file inside of the import's folder
+
+            // Most WTANIWE workspaces should have a .gitkeep file inside of the "imports" folder,
+            //      so first try to reveal that file
+            const gitkeepUri = vscode.Uri.joinPath(this.workspace.importFolder, '.gitkeep');
+            const gitkeepStat = await statFile(gitkeepUri);
+            if (gitkeepStat) {
+                return vscode.commands.executeCommand('revealFileInOS', gitkeepUri);
+            }
+            
+            // If .gitkeep is missing, then just reveal the first entry in the imports folder
+            const dirents = await vscode.workspace.fs.readDirectory(this.workspace.importFolder);
+            if (dirents.length > 0) {
+                const sorted = dirents
+                    .map(([ fileName, _fileType ]) => fileName)
+                    .sort((a, b) => a.localeCompare(b));
+
+                const firstDirent = sorted[0];
+                const firstDirentUri = vscode.Uri.joinPath(this.workspace.importFolder, firstDirent);
+                return vscode.commands.executeCommand('revealFileInOS', firstDirentUri);
+            }
+            
+            // If there are no entries in the imports folder, the best we can do is reveal the 
+            //      imports folder outside of the folder
+            return vscode.commands.executeCommand('revealFileInOS', this.workspace.importFolder);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.revealFileExplorer', (tabUri: Entry | undefined) => {

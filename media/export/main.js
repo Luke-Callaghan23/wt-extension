@@ -29,20 +29,18 @@
         '.'
     ];
 
-    // Message handling
-    // Handle messages sent from the extension to the webview
-    window.addEventListener('message', event => {
-        const message = event.data; // The json data that the extension sent
-        switch (message.type) {
-            case 'exportChapterGroups':
-                loadChapterGroups(message.documents, message.chapterGroupsData);
-                break;
-        }
-    });
+    const fileNameErrorHelpText = document.getElementById('filename-error-label');
+    const chapterGroupErrorHelpText = document.getElementById('chaptergroup-error-label');
 
-    const errorHelpText = document.getElementById('error-label');
     const submit = document.getElementById('export-button');
-    let error = true;
+    let errors = new Set([
+        "fileName"
+    ]);
+
+    const errorKinds = {
+        "fileName": "fileName",
+        "chapterGroup": "chapterGroup",
+    };
 
     // On keyup of the file name input, add or remove appropriate error elements
     // Such as the red border around the input box and the red message underneath the input box
@@ -50,15 +48,31 @@
     document.getElementById('input-export-file-name').addEventListener('keyup', (event) => {
         if (event.target.value === '' || illegalCharacters.find(illegal => event.target.value.includes(illegal))) {
             event.target.classList.add('error');
-            errorHelpText.style.display = '';
-            error = true;
+            fileNameErrorHelpText.style.display = '';
+            errors.add(errorKinds.fileName);
         }
         else {
             event.target.classList.remove('error');
-            errorHelpText.style.display = 'none';
-            error = false;
+            fileNameErrorHelpText.style.display = 'none';
+            errors.delete(errorKinds.fileName);
         }
     });
+
+    const chapterGroupMultiSelect = document.getElementById("select-chapter-group");
+    if (chapterGroupMultiSelect) {
+        chapterGroupMultiSelect.addEventListener('change', (event) => {
+            if (event.target.value.length === 0) {
+                event.target.classList.add('error');
+                chapterGroupErrorHelpText.style.display = '';
+                errors.add(errorKinds.chapterGroup);
+            }
+            else {
+                event.target.classList.remove('error');
+                chapterGroupErrorHelpText.style.display = 'none';
+                errors.delete(errorKinds.chapterGroup);
+            }
+        });
+    }
 
     // Handle showing the additional "skip first" or "skip last" options which will display
     //      when the "title chapters" option is set
@@ -104,11 +118,14 @@
 
     const formContainer = document.getElementById("form-container");
 
-
     const form = document.getElementById('log-settings-form');
     submit.addEventListener('click', (event) => {
         event.preventDefault();
-        if (error) return;
+
+        console.log(errors);
+        if (errors.size > 0) return;
+
+        const chapterGroupsRelativePaths = chapterGroupMultiSelect.value;
 
         // Format the form data
         const fd = form.data;
@@ -124,6 +141,7 @@
             skipChapterTitleFirst: fd["skip-first"]?.length > 0, 
             skipChapterTitleLast: fd["skip-last" ]?.length > 0,
             addIndents: fd["add-indents"]?.length > 0,
+            selectedChapterGroupRelativePaths: chapterGroupsRelativePaths
         };
 
         // Put spinner back up 

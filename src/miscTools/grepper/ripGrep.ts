@@ -4,7 +4,7 @@ import * as childProcess from 'child_process';
 import { Extension } from   '../../extension';
 import { getBinPath, binName } from "vscode-ripgrep-utils";
 import { buildMarkdownIgnoringRegex } from './common';
-import { getRelativePath, statFile } from '../help';
+import { getPathRelativeToRoot, statFile } from '../help';
 import { nodeGrep, nodeGrepExtensionDirectory } from './nodeGrep';
 
 
@@ -326,7 +326,7 @@ export class RipGrep {
                     return {
                         status: "success",
                         lines: res.map(([ loc, matchedText ]) => {
-                            const relativePath = getRelativePath(loc.uri);
+                            const relativePath = getPathRelativeToRoot(loc.uri);
                             return `${relativePath}:${loc.range.start.line+1}:${loc.range.start.character+1}:${matchedText}`;
                         })
                     }

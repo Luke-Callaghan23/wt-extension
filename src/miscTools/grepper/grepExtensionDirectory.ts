@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Extension } from   '../../extension';
-import { formatFsPathForCompare, getRelativePath, isSubdirectory } from '../help';
+import { formatFsPathForCompare, getPathRelativeToRoot, isSubdirectory } from '../help';
 import { RipGrep } from './ripGrep';
 import { buildMarkdownIgnoringRegex } from './common';
 
@@ -14,7 +14,7 @@ export async function grepSingleFile (
     useIgnoreStyleCharacters: boolean,
     cancellationToken: vscode.CancellationToken
 ): Promise<[vscode.Location, string][] | null> {
-    const fmtUri = './' + getRelativePath(uri);
+    const fmtUri = './' + getPathRelativeToRoot(uri);
     return grep__impl(searchBarValue, useRegex, useCaseInsensitive, useWholeWord, useIgnoreStyleCharacters, cancellationToken, fmtUri);
 }
 
