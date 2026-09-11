@@ -1275,8 +1275,7 @@
             {
                 "command": "wt.outline.commandPalette.moveNode",
                 "title": "Writing Tool: Outline: Move Resource",
-                "enablement": "editorLangId == wt",
-                "enablement": "wt.valid"
+                "enablement": "editorLangId == wt && wt.valid"
             },
             {
                 "command": "wt.outline.commandPalette.moveCurrentNode",

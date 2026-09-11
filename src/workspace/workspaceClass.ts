@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as console from '../miscTools/vsconsole';
 import { statFile } from '../miscTools/help';
 import * as vsconsole from '../miscTools/vsconsole';
-import { Extension } from   '../extension';
+import { Extension } from '../extension';
 import { Config, loadWorkspaceContext, PositionInfo, SavedTabState, TabPositions } from './workspace';
 import { Buff } from './../Buffer/bufferSource';
 import { ReloadWatcher } from '../miscTools/reloadWatcher';
@@ -223,7 +223,6 @@ export class Workspace {
         }
         return Workspace.packageContextItems();
     }
-    
 
     // Simply initializes all the paths of necessary 
     constructor(context: vscode.ExtensionContext) {

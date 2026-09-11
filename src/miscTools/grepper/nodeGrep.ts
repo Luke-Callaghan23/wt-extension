@@ -1,5 +1,5 @@
 import { __, isSubdirectory } from '../help';
-import { Extension } from   './../../extension'
+import { Extension } from './../../extension'
 import * as vscode from 'vscode';
 import { buildMarkdownIgnoringRegex } from './common';
 

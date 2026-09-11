@@ -3,7 +3,6 @@ import { Extension } from './../../extension'
 import * as vscode from 'vscode';
 import { buildMarkdownIgnoringRegex } from './common';
 
-
 export async function nodeGrep (
     document: vscode.TextDocument,
     searchBarValue: string, 
@@ -47,7 +46,7 @@ export async function nodeGrep (
         useCaseInsensitive = useCaseInsensitive!;
         useWholeWord = useWholeWord!;
         cancellationToken = cancellationToken!;
-        
+
         // inline search regex is a secondary regex which makes use of NodeJS's regex capture groups
         //      to do additional searches inside of CONTENTS_OF_LINE for the actual matched text
         let inlineSource = searchBarValue;
@@ -109,7 +108,8 @@ export async function nodeGrep (
                 )
                 && 
                 (
-                    isSubdirectory(Extension.workspace.chaptersFolder, uri)
+                    isSubdirectory(Extension.workspace.legacyChaptersFolder, uri)
+                    || isSubdirectory(Extension.workspace.chapterGroupsFolder, uri)
                     || isSubdirectory(Extension.workspace.workSnipsFolder, uri)
                     || isSubdirectory(Extension.workspace.notebookFolder, uri)
                     || isSubdirectory(Extension.workspace.scratchPadFolder, uri)
