@@ -39,6 +39,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     private forceSelectIndex: boolean = false;
     private requestId = 0;
     private lastCompletionRequest = new Map<string, number>();
+    private completionRefreshTimers = new Map<string, NodeJS.Timeout>();
 
     constructor (
         private context: vscode.ExtensionContext,
@@ -47,17 +48,57 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     ) { 
         this.registerCommands();
 
-        let timeout: NodeJS.Timeout | null = null;
         this.context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => {
-            if (timeout) {
-                clearTimeout(timeout);
-                timeout = null;
+            if (!event.contentChanges.some(change => change.text.length === 1 && !/[\r\n]/.test(change.text))) return;
+
+            const documentKey = event.document.uri.toString();
+            const lastRequest = this.lastCompletionRequest.get(documentKey);
+            if (!lastRequest) {
+                console.log(`[synonyms] edit observed without prior completion request: ${documentKey}`);
+                return;
             }
-            timeout = setTimeout(() => {
-                if (vscode.window.activeTextEditor?.document === event.document) {
-                    vscode.commands.executeCommand('editor.action.triggerSuggest');
+
+            const existingTimer = this.completionRefreshTimers.get(documentKey);
+            if (existingTimer) clearTimeout(existingTimer);
+            console.log(`[synonyms] scheduling idle refresh for document version ${event.document.version}`);
+
+            const timer = setTimeout(() => {
+                this.completionRefreshTimers.delete(documentKey);
+                const editor = vscode.window.activeTextEditor;
+                const latestRequest = this.lastCompletionRequest.get(documentKey);
+                if (editor?.document !== event.document) {
+                    console.log('[synonyms] idle refresh skipped: document is no longer active');
+                    return;
                 }
-            }, 100);
+                if (!latestRequest || !editor.selection.isEmpty) {
+                    console.log('[synonyms] idle refresh skipped: missing request state or active selection');
+                    return;
+                }
+
+                console.log(`[synonyms] idle refresh firing at ${editor.selection.active.line}:${editor.selection.active.character}`);
+                void vscode.commands.executeCommand('hideSuggestWidget').then(() => {
+                    console.log('[synonyms] existing suggest widget hidden');
+                    return vscode.commands.executeCommand('editor.action.triggerSuggest');
+                }).then(() => {
+                    console.log('[synonyms] triggerSuggest command completed');
+                }, error => {
+                    console.log(`[synonyms] suggest refresh failed: ${error}`);
+                });
+            }, 250);
+            this.completionRefreshTimers.set(documentKey, timer);
+        }));
+
+        this.context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(document => {
+            const documentKey = document.uri.toString();
+            const timer = this.completionRefreshTimers.get(documentKey);
+            if (timer) clearTimeout(timer);
+            this.completionRefreshTimers.delete(documentKey);
+            this.lastCompletionRequest.delete(documentKey);
+        }));
+
+        this.context.subscriptions.push(new vscode.Disposable(() => {
+            for (const timer of this.completionRefreshTimers.values()) clearTimeout(timer);
+            this.completionRefreshTimers.clear();
         }));
     }
 
@@ -69,6 +110,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     ): Promise<vscode.CompletionList<vscode.CompletionItem> | vscode.CompletionItem[]> {
         const requestId = ++this.requestId;
         this.lastCompletionRequest.set(document.uri.toString(), Date.now());
+        console.log(`[synonyms] provider requested at ${position.line}:${position.character}, trigger=${context.triggerKind}`);
         return this.provideCompletionItems__impl(document, position, token, context, requestId);
     }
 
@@ -502,17 +544,12 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 }
             }
 
-            
             this.activationState.ts = Date.now();
-            
-            // `forceSelectIndex` forces `provideCompletionItems__impl` to select the index specified in the activation state
-            // This will override any other selections that this function will try to use
-            this.forceSelectIndex = true;
 
+            this.forceSelectIndex = true;
             await vscode.commands.executeCommand('hideSuggestWidget');
             await vscode.commands.executeCommand('editor.action.triggerSuggest');
 
-            // Set a small timeout for `provideCompletionItems__impl` to finish
             setTimeout(() => {
                 this.forceSelectIndex = false;
             }, 100);
