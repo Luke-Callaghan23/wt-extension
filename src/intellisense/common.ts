@@ -17,73 +17,32 @@ export function getHoveredWord (document: vscode.TextDocument, position: vscode.
     const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/;
 
     const text = document.getText();
-    const off = document.offsetAt(position);
-    const char = text[off];
+    const offset = document.offsetAt(position);
+    let anchor = offset;
 
-    
-    let start: number | undefined;
-    let end: number | undefined;
-    let goBack = true;
-    let goLeft = true;
-
-    // Test to see if we should go back or go left
-    if (stops.test(char)) {
-
-        // Check to see of the character before the cursor is a stopping character
-        let beforeStops = false;
-        if (off !== 0) {
-            const before = text[off - 1];
-            beforeStops = stops.test(before);
+    if (offset === text.length) {
+        if (offset === 0 || stops.test(text[offset - 1])) return null;
+        anchor = offset - 1;
+    }
+    else if (stops.test(text[offset])) {
+        if (offset > 0 && !stops.test(text[offset - 1])) {
+            anchor = offset - 1;
         }
-        
-        // Check to see if the character after the cursor is a stopping character
-        let afterStops = false;
-        if (off !== text.length - 1) {
-            const after = text[off + 1];
-            afterStops = stops.test(after);
+        else if (offset + 1 < text.length && !stops.test(text[offset + 1])) {
+            anchor = offset + 1;
         }
-
-        if (!beforeStops) {
-            // If the before character is not stopping, then don't go left
-            goLeft = false;
-            end = off;
+        else {
+            return null;
         }
-        // Going rights is given precedence over going rights
-        // Ex: 'word| other words'
-        //      where '|' is the hover
-        else if (!afterStops) {
-            // If the after character is not stopping, then don't go right
-            goBack = false;
-            start = off + 1;
-        }
-        // If the cursor is on a stopping character and surrounded by stopping characters
-        //      then return a new empty hover
-        else return null;
     }
 
-    // If we should go back, then loop backawards until we find a stopping character -- 
-    //      use that as the start of the hover string
-    if (goBack) {
-        let current = off - 1;
-        while (text[current] && !stops.test(text[current])) {
-            current -= 1;
-        }
-        start = current + 1;
-        goBack = false;
-    }
+    let start = anchor;
+    while (start > 0 && !stops.test(text[start - 1])) start--;
 
-    // If we should go left, then loop lefts until we find a stopping character --
-    //      use that as the end of the hover string
-    if (goLeft) {
-        let current = off + 1;
-        while (text[current] && !stops.test(text[current])) {
-            current += 1;
-        }
-        end = current;
-        goLeft = false;
-    }
+    let end = anchor;
+    while (end < text.length && !stops.test(text[end])) end++;
 
-    if (goBack || goLeft || !start || !end) return null;
+    if (start === end) return null;
 
     const originalText = text.substring(start, end);
     const strippedText = stripDiacritics(originalText);
@@ -91,6 +50,28 @@ export function getHoveredWord (document: vscode.TextDocument, position: vscode.
         start, end,
         text: originalText,
         strippedText: strippedText
+    };
+}
+
+export function getWordBeforePosition (document: vscode.TextDocument, position: vscode.Position): HoverPosition | null {
+    const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/;
+    const text = document.getText();
+    let end = document.offsetAt(position);
+    let current = end - 1;
+
+    while (current >= 0 && stops.test(text[current])) current--;
+    if (current < 0) return null;
+
+    end = current + 1;
+    let start = current;
+    while (start > 0 && !stops.test(text[start - 1])) start--;
+
+    const originalText = text.substring(start, end);
+    return {
+        start,
+        end,
+        text: originalText,
+        strippedText: stripDiacritics(originalText),
     };
 }
 

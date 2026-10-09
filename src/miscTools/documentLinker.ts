@@ -14,7 +14,11 @@ export const markdownFormattedFragmentLinkRegex = /\[(?<description>.*?)\]\((?<l
 
 export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
 
-    public static documentLinkRanges: vscode.Range[] = [];
+    private static documentLinkRanges = new Map<string, vscode.Range[]>();
+
+    static getDocumentLinkRanges (documentUri: vscode.Uri): vscode.Range[] {
+        return this.documentLinkRanges.get(documentUri.toString()) || [];
+    }
 
     enabled: boolean;
     constructor (private context: vscode.ExtensionContext) {
@@ -62,13 +66,13 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
     async gatherLinks (document: vscode.TextDocument): Promise<vscode.DocumentLink[]> {
 
         const documentLinks: vscode.DocumentLink[] = [];
+        const linkRanges: vscode.Range[] = [];
 
         const lineText = document.getText();
-
-        DocumentLinker.documentLinkRanges = [];
+        const fragmentLinkRegex = new RegExp(markdownFormattedFragmentLinkRegex.source, markdownFormattedFragmentLinkRegex.flags);
 
         let match: RegExpMatchArray | null;
-        while ((match = markdownFormattedFragmentLinkRegex.exec(lineText))) {
+        while ((match = fragmentLinkRegex.exec(lineText))) {
             if (!match || match.index === undefined) continue;
 
             const description = match.groups?.['description']
@@ -103,10 +107,11 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
                 target: uri,
                 range: range
             });
-            DocumentLinker.documentLinkRanges.push(range);
+            linkRanges.push(range);
         }
 
-        while ((match = Extension.urlRegex.exec(lineText)) !== null) {
+        const urlRegex = new RegExp(Extension.urlRegex.source, Extension.urlRegex.flags);
+        while ((match = urlRegex.exec(lineText)) !== null) {
             if (!match || match.index === undefined) continue;
 
             const link = match?.groups?.['link'];
@@ -126,14 +131,15 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
                 target: vscode.Uri.parse(link),
                 range: range
             });
-            DocumentLinker.documentLinkRanges.push(range);
+            linkRanges.push(range);
         }
+        DocumentLinker.documentLinkRanges.set(document.uri.toString(), linkRanges);
         return documentLinks;
     }
 
     async update(editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
         const _ = await this.gatherLinks(editor.document);
-        editor.setDecorations(notebookDecorations, DocumentLinker.documentLinkRanges);
+        editor.setDecorations(notebookDecorations, DocumentLinker.getDocumentLinkRanges(editor.document.uri));
     }
 
     async provideDocumentLinks(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.DocumentLink[]> {

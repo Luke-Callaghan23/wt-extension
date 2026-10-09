@@ -163,7 +163,7 @@ export async function update (this: WordWatcher, editor: vscode.TextEditor, comm
             hoverMessage: new vscode.MarkdownString(tag)
         };
 
-        if (Spellcheck.currentMisspelledWordRanges.find(misspelledRange => misspelledRange.contains(decorationOptions.range))) {
+        if (Spellcheck.getMisspelledWordRanges(editor.document.uri).find(misspelledRange => misspelledRange.contains(decorationOptions.range))) {
             continue;
         }
         

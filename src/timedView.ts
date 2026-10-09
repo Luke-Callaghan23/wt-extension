@@ -10,6 +10,11 @@ export interface Timed {
 }
 
 export class TimedView implements Packageable<any> {
+    private scheduledUpdates = new Map<string, ReturnType<typeof setTimeout>>();
+    private pendingEditors = new Map<string, Set<vscode.TextEditor>>();
+    private queuedEditors = new Map<string, Set<vscode.TextEditor>>();
+    private processingUpdates = false;
+
     constructor (
         private context: vscode.ExtensionContext,
         private timedViews: [string, string, Timed ][]
@@ -33,13 +38,15 @@ export class TimedView implements Packageable<any> {
         // If the active editor changed, then change the internal activeEditor value and trigger updates
         this.context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
             setTimeout(() => {
-                this.triggerUpdates();
+                if (editor) this.scheduleEditorUpdate(editor);
             }, 0);
         }, null, context.subscriptions));
     
         // On text document change within the editor, update decorations with throttle
         this.context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => {
-            this.triggerUpdates(true);
+            for (const editor of vscode.window.visibleTextEditors) {
+                if (editor.document === event.document) this.scheduleEditorUpdate(editor);
+            }
         }, null, context.subscriptions));
 
 
@@ -59,8 +66,7 @@ export class TimedView implements Packageable<any> {
                     timed.enabled = true;
                     
                     for (const editor of vscode.window.visibleTextEditors) {
-                        const commentedRanges = TimedView.findCommentedRanges(editor);
-                        timed.update(editor, commentedRanges);
+                        this.scheduleEditorUpdate(editor);
                     }
                 }
                 else {
@@ -69,21 +75,24 @@ export class TimedView implements Packageable<any> {
                     timed.enabled = false;
         
                     // Clear decorations
-                    timed.disable?.();
+                    void timed.disable?.().catch(err => {
+                        console.log(`[ERR] Failed to disable timed view '${viewName}': ${err}`);
+                    });
                 }
             });
         }));
 
         this.registerCommands();
-        this.triggerUpdates();
+        this.context.subscriptions.push(new vscode.Disposable(() => this.dispose()));
+        for (const editor of vscode.window.visibleTextEditors) this.scheduleEditorUpdate(editor);
     }
 
-    private static commentRegex = /(?<comment>\[.*\])+/g;
     public static findCommentedRanges (editor: vscode.TextEditor): vscode.Range[] {
         const text = editor.document.getText();
         const commentedRanges: vscode.Range[] = [];
+        const commentRegex = /(?<comment>\[.*\])+/g;
         let m;
-        while ((m = TimedView.commentRegex.exec(text)) !== null) {
+        while ((m = commentRegex.exec(text)) !== null) {
             const match: RegExpExecArray = m;
             commentedRanges.push(new vscode.Range(
                 editor.document.positionAt(match.index),
@@ -93,58 +102,81 @@ export class TimedView implements Packageable<any> {
         return commentedRanges;
     }
 
-    private doUpdates (editor: vscode.TextEditor, uncommentedRanges: vscode.Range[]) {
-        // Only do updates on supported file type -- wt, wtnote, md
-        if (
-            !editor.document.fileName.toLocaleLowerCase().endsWith('.wt')  
-            && !editor.document.fileName.toLocaleLowerCase().endsWith('.wtnote')  
-            && !editor.document.fileName.toLocaleLowerCase().endsWith('.md')           // added markdown support
-        ) return;
+    private async doUpdates (editor: vscode.TextEditor, uncommentedRanges: vscode.Range[]): Promise<void> {
+        if (!this.isSupportedDocument(editor.document)) return;
 
         // Iterate over all timed views and call their update functions if they're enabled
-        this.timedViews.forEach(([ id, viewId, timed ]) => {
-            console.log(`UPDATE: ${id} (${timed.enabled ? 'enabled' : 'disabled'})`);
+        for (const [id, _viewId, timed] of this.timedViews) {
             // If the view's timer function is not enabled, then skip
-            if (!timed.enabled) return;
-            if (!timed.getUpdatesAreVisible()) return;
-            timed.update(editor, uncommentedRanges);
-        })
-    }
-    
-    private timeout: NodeJS.Timer | undefined = undefined;
-    private triggerUpdates(throttle: boolean = false) {
-
-        // Clear timeout if it exists
-        // This is the 'throttling' part of the function
-        // If there was a throttled call to triggerUpdates in the last 500 ms, then
-        //      clear that timer (preventing the call), and use the timer generated 
-        //      in this call instead
-        if (this.timeout) {
-            //@ts-ignore
-            clearTimeout(this.timeout);
-            this.timeout = undefined;
-        }
-        
-        this.timeout = setTimeout(() => {
-            for (const editor of vscode.window.visibleTextEditors) {
-                const commentedRanges = TimedView.findCommentedRanges(editor);
-        
-                // If this call is throttled, use a timeout to call the update function
-                if (throttle) {
-                    try {
-                        this.doUpdates(editor, commentedRanges);
-                    }
-                    catch (err: any) {}
-                } 
-                else {
-                    this.doUpdates(editor, commentedRanges);
-                }
+            if (!timed.enabled || !timed.getUpdatesAreVisible()) continue;
+            try {
+                await timed.update(editor, uncommentedRanges);
             }
-        }, 250);
+            catch (err: any) {
+                console.log(`[ERR] Timed view '${id}' failed to update: ${err}`);
+            }
+        }
     }
 
-    public updateTimedViews () {
-        return this.triggerUpdates(true);
+    private scheduleEditorUpdate (editor: vscode.TextEditor): void {
+        if (!this.isSupportedDocument(editor.document)) return;
+
+        const documentKey = editor.document.uri.toString();
+        const editors = this.pendingEditors.get(documentKey) || new Set<vscode.TextEditor>();
+        editors.add(editor);
+        this.pendingEditors.set(documentKey, editors);
+
+        const existingTimeout = this.scheduledUpdates.get(documentKey);
+        if (existingTimeout) clearTimeout(existingTimeout);
+
+        this.scheduledUpdates.set(documentKey, setTimeout(() => {
+            this.scheduledUpdates.delete(documentKey);
+            const readyEditors = this.pendingEditors.get(documentKey);
+            if (readyEditors) {
+                this.pendingEditors.delete(documentKey);
+                this.queuedEditors.set(documentKey, readyEditors);
+            }
+            void this.processPendingUpdates();
+        }, 250));
+    }
+
+    private isSupportedDocument (document: vscode.TextDocument): boolean {
+        const fileName = document.fileName.toLocaleLowerCase();
+        return fileName.endsWith('.wt') || fileName.endsWith('.wtnote') || fileName.endsWith('.md');
+    }
+
+    private async processPendingUpdates (): Promise<void> {
+        if (this.processingUpdates) return;
+        this.processingUpdates = true;
+
+        try {
+            while (this.queuedEditors.size > 0) {
+                const batches = [...this.queuedEditors.entries()];
+                this.queuedEditors.clear();
+                await Promise.all(batches.map(async ([, editors]) => {
+                    for (const editor of editors) {
+                        if (!vscode.window.visibleTextEditors.includes(editor)) continue;
+                        const commentedRanges = TimedView.findCommentedRanges(editor);
+                        await this.doUpdates(editor, commentedRanges);
+                    }
+                }));
+            }
+        }
+        finally {
+            this.processingUpdates = false;
+            if (this.queuedEditors.size > 0) void this.processPendingUpdates();
+        }
+    }
+
+    private dispose (): void {
+        for (const timeout of this.scheduledUpdates.values()) clearTimeout(timeout);
+        this.scheduledUpdates.clear();
+        this.pendingEditors.clear();
+        this.queuedEditors.clear();
+    }
+
+    public updateTimedViews (): void {
+        for (const editor of vscode.window.visibleTextEditors) this.scheduleEditorUpdate(editor);
     }
 
     private registerCommands () {

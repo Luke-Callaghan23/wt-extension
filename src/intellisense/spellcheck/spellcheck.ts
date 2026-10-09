@@ -15,7 +15,11 @@ import { DocumentLinker } from '../../miscTools/documentLinker';
 export class Spellcheck implements Timed {
     enabled: boolean;
 
-    static currentMisspelledWordRanges: vscode.Range[] = [];
+    private static currentMisspelledWordRanges = new Map<string, vscode.Range[]>();
+
+    static getMisspelledWordRanges (documentUri: vscode.Uri): vscode.Range[] {
+        return this.currentMisspelledWordRanges.get(documentUri.toString()) || [];
+    }
 
     private static RedUnderline: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
         overviewRulerLane: vscode.OverviewRulerLane.Right,
@@ -27,14 +31,14 @@ export class Spellcheck implements Timed {
 
     lastUpdate: WordRange[];
     async update (editor: vscode.TextEditor, commentedRanges: vscode.Range[]): Promise<void> {
-        Spellcheck.currentMisspelledWordRanges = [];
-
         const stops = /[\^\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_#~]/g;
 
         const document = editor.document;
         if (!document) return;
 
+        Spellcheck.currentMisspelledWordRanges.set(document.uri.toString(), []);
         const errorDecorations: vscode.DecorationOptions[] = [];
+        const misspelledRanges: vscode.Range[] = [];
 
         const fullText: string = document.getText();
         const visible: vscode.Range[] = [ ...editor.visibleRanges ];
@@ -59,7 +63,7 @@ export class Spellcheck implements Timed {
                 });
                 if (isCommented !== undefined) return;
 
-                const isUrl = DocumentLinker.documentLinkRanges.find(ur => {
+                const isUrl = DocumentLinker.getDocumentLinkRanges(document.uri).find(ur => {
                     if (ur.contains(start)) {
                         return ur;
                     }
@@ -117,7 +121,7 @@ export class Spellcheck implements Timed {
                     }
                 }
 
-                Spellcheck.currentMisspelledWordRanges.push(range)
+                misspelledRanges.push(range);
                 errorDecorations.push({
                     range: range,
                     hoverMessage: `Unrecognized word: ${text}`
@@ -126,6 +130,7 @@ export class Spellcheck implements Timed {
     
         }
         // Set all red underlines
+        Spellcheck.currentMisspelledWordRanges.set(document.uri.toString(), misspelledRanges);
         editor.setDecorations(Spellcheck.RedUnderline, errorDecorations);
     }
 

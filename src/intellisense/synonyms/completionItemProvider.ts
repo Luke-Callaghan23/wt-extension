@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
-import { HoverPosition, getHoverMarkdown, getHoveredWord } from '../common';
+import { HoverPosition, getHoverMarkdown, getHoveredWord, getWordBeforePosition } from '../common';
 import { Capitalization, formatFsPathForCompare, getTextCapitalization, stripDiacritics, transformToCapitalization } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
 import { SynonymError, SynonymSearchResult, Synonyms, SynonymsProvider } from '../synonymsProvider/provideSynonyms';
@@ -19,6 +19,7 @@ function numDigits(x: number): number {
 }
 
 type ActivationState = {
+    documentUri: string,
     hoverRange: vscode.Range,
     hoverPosition: HoverPosition,
     word: string, 
@@ -36,6 +37,8 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
     private allCompletionItems: vscode.CompletionItem[] = [];
     private forceSelectIndex: boolean = false;
+    private requestId = 0;
+    private lastCompletionRequest = new Map<string, number>();
 
     constructor (
         private context: vscode.ExtensionContext,
@@ -43,48 +46,48 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         private intellisense: SynonymsIntellisense
     ) { 
         this.registerCommands();
+
+        let timeout: NodeJS.Timeout | null = null;
+        this.context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => {
+            if (timeout) {
+                clearTimeout(timeout);
+                timeout = null;
+            }
+            timeout = setTimeout(() => {
+                if (vscode.window.activeTextEditor?.document === event.document) {
+                    vscode.commands.executeCommand('editor.action.triggerSuggest');
+                }
+            }, 100);
+        }));
     }
 
-    private debounce: NodeJS.Timeout | null = null;
     async provideCompletionItems(
         document: vscode.TextDocument, 
         position: vscode.Position, 
         token: vscode.CancellationToken, 
         context: vscode.CompletionContext
     ): Promise<vscode.CompletionList<vscode.CompletionItem> | vscode.CompletionItem[]> {
-        return new Promise(resolve => {
-            this.debounce && clearTimeout(this.debounce);
-            this.debounce = setTimeout(async () => {
-                resolve(this.provideCompletionItems__impl(document, position, token, context));
-            }, 20);
-        })
+        const requestId = ++this.requestId;
+        this.lastCompletionRequest.set(document.uri.toString(), Date.now());
+        return this.provideCompletionItems__impl(document, position, token, context, requestId);
     }
 
     private async provideCompletionItems__impl(
         document: vscode.TextDocument, 
         position: vscode.Position, 
         token: vscode.CancellationToken, 
-        context: vscode.CompletionContext
+        context: vscode.CompletionContext,
+        requestId: number
     ): Promise<vscode.CompletionList<vscode.CompletionItem> | vscode.CompletionItem[]> {
+        const documentVersion = document.version;
         let wordText: string;
         let strippedText: string;
         let hoverPosition: HoverPosition; 
         let hoverRange: vscode.Range;
         {
-            // 16m ~ 1 frame --> allow 10 frames to have passed between when .ts was set
-            if (this.activationState && Date.now() - this.activationState.ts < 16 * 10) {
-                // If the last activation of this compltion was less than 5 ms ago, then
-                //      use that activation state
-                // Hacky solution to allow the folders from #78 to word with word hippo
-                hoverPosition = this.activationState.hoverPosition;
-                hoverRange = this.activationState.hoverRange;
-                wordText = this.activationState.word;
-                strippedText = this.activationState.strippedWord;
-            }
-            else {
-
-                const selection = vscode.window.activeTextEditor?.selection;
-                if (this.intellisense.isWordHippo() && selection && !selection.isEmpty) {
+            const activeEditor = vscode.window.activeTextEditor;
+            const selection = activeEditor?.document === document ? activeEditor.selection : undefined;
+            if (this.intellisense.isWordHippo() && selection && !selection.isEmpty) {
                     // If we're using word hippo and the selection is not empty then call get hovered position on both the start
                     //      and end of the selection to get the full range of selected text
                     const start = getHoveredWord(document, selection.start);
@@ -112,22 +115,22 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                         text: wordText,
                         strippedText: strippedText
                     }
-                }
-                else {
-                    // Otherwise, simply call hover position on the provided position
-                    const hoveredWord = getHoveredWord(document, position);
-                    if (!hoveredWord) {
-                        console.log("REPORT ME!!!");
-                        return [];
-                    }
-                    hoverPosition = hoveredWord;
-                    wordText = hoveredWord.text;
-                    strippedText = hoveredWord.strippedText;
-                    hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
-                }
+            }
+            else {
+                const cursorOffset = document.offsetAt(position);
+                const followsWhitespace = cursorOffset > 0 && /\s/.test(document.getText()[cursorOffset - 1]);
+                const hoveredWord = context.triggerCharacter === ' ' || followsWhitespace
+                    ? getWordBeforePosition(document, position)
+                    : getHoveredWord(document, position);
+                if (!hoveredWord) return new vscode.CompletionList([], true);
+                hoverPosition = hoveredWord;
+                wordText = hoveredWord.text;
+                strippedText = hoveredWord.strippedText;
+                hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
             }
         }
 
+        if (token.isCancellationRequested || requestId !== this.requestId) return new vscode.CompletionList([], true);
         if (wordText === '' || wordText.length === 0) {
             // No need to emit an error for an empty word
             return [];
@@ -150,13 +153,13 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 const filt = document.getText(noteMatch.range);
 
                 const finalOptions = allOptions.filter(opt => opt.toLocaleLowerCase() !== strippedText.toLocaleLowerCase());
-                return finalOptions.map(option => __<vscode.CompletionItem>({
+                return new vscode.CompletionList(finalOptions.map(option => __<vscode.CompletionItem>({
                     label: option,
                     detail: `Alias of '${noteMatch.note.title}'`,
                     documentation: new vscode.MarkdownString(Extension.notebookPanel.getMarkdownForNote(noteMatch.note)),
                     range: noteMatch.range,
                     filterText: filt,
-                }));
+                })), true);
             }
         }
         
@@ -166,6 +169,9 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
         // Query the dictionary api for the selected word
         const res = await SynonymsProvider.provideSynonyms(strippedText, this.intellisense.getCurrentSynonymsProvider());
+        if (token.isCancellationRequested || requestId !== this.requestId || document.version !== documentVersion) {
+            return new vscode.CompletionList([], true);
+        }
         if (res.type === 'error') {
             // Pass unstripped text in here because users will see it
             // All the options come from the stripped query above
@@ -180,7 +186,11 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
         let activations: boolean[];
         let expansions: boolean[];
-        if (this.activationState && this.activationState.word === wordText && this.activationState.hoverRange.isEqual(hoverRange)) {
+        const documentUri = document.uri.toString();
+        if (this.activationState
+            && this.activationState.documentUri === documentUri
+            && this.activationState.word === wordText
+            && this.activationState.hoverRange.isEqual(hoverRange)) {
             // If the activation state of the current hover is for the same word and same range
             //      in the text document as the previous activation, use the activations of that 
             //      state for this call
@@ -206,6 +216,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
             // Also create a new activation state for this completion
             this.activationState = {
+                documentUri,
                 hoverPosition: hoverPosition,
                 hoverRange: hoverRange,
                 word: wordText,
@@ -218,6 +229,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             };
         }
 
+        if (this.activationState) this.activationState.ts = Date.now();
         let itemsCount = 0;
 
         const maxDigits = numDigits(defs.length);
@@ -268,6 +280,9 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             let synonymCompletions: vscode.CompletionItem[] = []
             if (activations[definitionIndex]) {
                 synonymCompletions = await this.resolveDefinitionItems(hoverRange, hoverPosition, wordText, strippedText, definitionIndex, indexStr);
+                if (token.isCancellationRequested || requestId !== this.requestId || document.version !== documentVersion) {
+                    return new vscode.CompletionList([], true);
+                }
                 const originalLength = synonymCompletions.length;
                 if (!expansions[definitionIndex] && originalLength > 5) {
                     synonymCompletions = synonymCompletions.slice(0, 5);
@@ -311,8 +326,11 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 ...synonymCompletions
             ].forEach(item => allItems.push(item));
         }
+        if (token.isCancellationRequested || requestId !== this.requestId || document.version !== documentVersion) {
+            return new vscode.CompletionList([], true);
+        }
         this.allCompletionItems = allItems;
-        return allItems;
+        return new vscode.CompletionList(allItems, true);
     }
 
     // Returns a list of completion items for each synonym for a selected word's selected definition

@@ -54,7 +54,11 @@ export class SynonymsIntellisense {
         ];
 
         await SynonymsProvider.init(this.workspace);
-        this.context.subscriptions.push(vscode.languages.registerCompletionItemProvider (wtSelector, new CompletionItemProvider(this.context, this.workspace, this)));
+        this.context.subscriptions.push(vscode.languages.registerCompletionItemProvider (
+            wtSelector,
+            new CompletionItemProvider(this.context, this.workspace, this),
+            ...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        ));
         this.context.subscriptions.push(vscode.languages.registerHoverProvider (wtSelector, new HoverProvider(this.context, this.workspace)));
         this.context.subscriptions.push(vscode.languages.registerCodeActionsProvider (wtSelector, new CodeActionProvider(this.context, this.workspace, this.personalDictionary)));
         this.registerCommands();
