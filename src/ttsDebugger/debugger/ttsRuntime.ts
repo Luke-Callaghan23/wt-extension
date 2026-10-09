@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import { EventEmitter } from 'events';
-import { speakText } from '../tts/tts';
+import { speakText, stopSpeaking } from '../tts/tts';
 // import * as console from './../../vsconsole';
 import * as vscode from 'vscode'
 import { WordMarker } from '../tts/windows';
@@ -157,81 +157,101 @@ export class TTSRuntime extends EventEmitter {
      */
     public async start(program: string, stopOnEntry: boolean, debug: boolean): Promise<{ start: boolean }> {
 
+        this.closed = false;
+        this._sourceFile = '';
         await this.loadSource(this.normalizePathAndCasing(program));
+        this.currentLine = 0;
 
         if (debug) {
             await this.verifyBreakpoints(this._sourceFile);
 
-            
-            if (this.breakPoints.size !== 0) {
-                let targets: IRuntimeBreakpoint[] = [];
-                this.breakPoints.forEach((val, key) => {
-                    if (key === program.toLocaleLowerCase()) {
-                        targets = val;
-                    }
-                });
-                targets.sort((a, b) => {
-                    return a.line - b.line;
-                });
-                const min = targets[0];
-                this._currentLine = min.line - 1;
+            const targets = [...(this.breakPoints.get(this._sourceFile) ?? [])].sort((a, b) => a.line - b.line);
+            if (targets.length > 0) {
+                this.currentLine = Math.max(0, Math.min(targets[0].line, this.sourceLines.length - 1));
             }
 
             if (stopOnEntry) {
                 this.findNextStatement(false, 'stopOnEntry');
-                return { start: this.breakPoints.size === 0 }
+                return { start: this.breakPoints.size === 0 };
             } 
-            else {
-                // we just start to run until we hit a breakpoint, an exception, or the end of the program
-                this.continue(false);
-                return { start: this.breakPoints.size === 0 }
-            }
-        } 
-        else {
-            this.continue(false);
-            return { start: this.breakPoints.size === 0 }
         }
+
+        // run until we hit a breakpoint or the end of the program
+        await this.continue(false);
+        return { start: this.breakPoints.size === 0 };
+    }
+
+    // Each run (continue/step) gets a token; bumping the token cancels the active run
+    private runToken = 0;
+    private activeRun: Promise<void> = Promise.resolve();
+
+    private isCancelled(token: number): boolean {
+        return token !== this.runToken || this.closed;
+    }
+
+    /**
+     * Cancel whatever is currently running (and speaking), then start the new run in the background.
+     * Resolves once the new run has been started, not when it finishes.
+     */
+    private async startRun(run: (token: number) => Promise<void>): Promise<void> {
+        const token = ++this.runToken;
+        await stopSpeaking().catch(() => {});
+        await this.activeRun;
+        if (token !== this.runToken || this.closed) {
+            return;
+        }
+        this.activeRun = run(token).catch(err => {
+            console.log(`TTS run failed: ${err}`);
+            if (!this.isCancelled(token)) {
+                this.sendEvent('stopOnStep');
+            }
+        });
+    }
+
+    /**
+     * Stops speaking and any active run without sending a stopped event.
+     */
+    public async cancelRun(): Promise<void> {
+        this.runToken++;
+        await stopSpeaking().catch(() => {});
+        await this.activeRun;
+    }
+
+    public async pause(): Promise<void> {
+        await this.cancelRun();
+        this.sendEvent('stopOnStep');
+    }
+
+    public async dispose(): Promise<void> {
+        this.closed = true;
+        await this.cancelRun();
     }
 
     /**
      * Continue execution to the end/beginning.
      */
-    private continueHitMap: { [index: number]: boolean } = {};
-    private breakNext = false;
-    public async continue (reverse: boolean) {
-        this.continueHitMap = {};
-        while ((this._currentLine < this.sourceLines.length || this.breakNext) && !this.closed) {
-            console.log(`HIT: ${this.currentLine}`);
-            if (this.continueHitMap[this._currentLine]) {
-                this._currentLine++;
-                continue;
+    public continue (reverse: boolean): Promise<void> {
+        return this.startRun(async token => {
+            while (!this.isCancelled(token)) {
+                await this.executeLine(this.currentLine, token);
+                if (this.isCancelled(token)) return;
+                if (this.updateCurrentLine(reverse)) return;
+                if (this.findNextStatement(reverse)) return;
             }
-            this.continueHitMap[this._currentLine] = true;
-            if (this._currentLine === this.sourceFile.length - 1) {
-                this.breakNext = true;
-            }
-            const exec = await this.executeLine(this.currentLine, reverse);
-            if (this.updateCurrentLine(reverse)) {
-                break;
-            }
-            if (this.findNextStatement(reverse)) {
-                break;
-            }
-        }
-        this.breakNext = false;
-        this.closed = false;
+        });
     }
 
     /**
      * Step to the next/previous non empty line.
      */
-    public async step (reverse: boolean) {
-        // await new Promise((resolve) => setTimeout(resolve, 1000));
-        if (!(await this.executeLine(this.currentLine, reverse))) {
+    public step (reverse: boolean): Promise<void> {
+        return this.startRun(async token => {
+            await this.executeLine(this.currentLine, token);
+            if (this.isCancelled(token)) return;
             if (!this.updateCurrentLine(reverse)) {
                 this.findNextStatement(reverse, 'stopOnStep');
             }
-        }
+        });
     }
 
     private updateCurrentLine (reverse: boolean): boolean {
@@ -328,7 +348,7 @@ export class TTSRuntime extends EventEmitter {
     // private methods
 
     private getLine(line?: number): string {
-        return this.sourceLines[line === undefined ? this.currentLine : line].trim();
+        return (this.sourceLines[line === undefined ? this.currentLine : line] ?? '').trim();
     }
 
     private getWords(l: number, line: string): Word[] {
@@ -408,25 +428,24 @@ export class TTSRuntime extends EventEmitter {
     }
 
     /**
-     * "execute a line" of the readme markdown.
-     * Returns true if execution sent out a stopped event and needs to stop.
+     * "execute a line": speak it, publishing a word event for every word spoken.
+     * Speaks the raw (untrimmed) line so word positions are columns in the source line.
      */
-    private async executeLine(ln: number, reverse: boolean): Promise<boolean> {
-        const line = this.getLine(ln);
-        if (line === '') return false;
+    private async executeLine(ln: number, token: number): Promise<void> {
+        const raw = this.sourceLines[ln] ?? '';
+        if (raw.trim() === '') return;
 
         this.wordMarkerStream = [];
-        await speakText(line, (wordMarker) => {
-            console.log(wordMarker);
-            this.sendEvent('stopped', {
-                reason: 'breakpoint',
-                threadId: 1
-            });
+        await speakText(raw, (wordMarker) => {
+            if (this.isCancelled(token)) return;
             this.wordMarkerStream?.push(wordMarker);
+            this.sendEvent('stopped');
         });
 
-        // nothing interesting found -> continue
-        return false;
+        // the finished line no longer has a current word
+        if (!this.isCancelled(token)) {
+            this.wordMarkerStream = null;
+        }
     }
 
     private async verifyBreakpoints(path: string): Promise<void> {
@@ -436,22 +455,12 @@ export class TTSRuntime extends EventEmitter {
             await this.loadSource(path);
             bps.forEach(bp => {
                 if (!bp.verified && bp.line < this.sourceLines.length) {
-                    const srcLine = this.getLine(bp.line);
-
-                    // if a line is empty or starts with '+' we don't allow to set a breakpoint but move the breakpoint down
-                    if (srcLine.length === 0 || srcLine.indexOf('+') === 0) {
+                    // breakpoints on empty lines move down to the next line with text
+                    while (bp.line < this.sourceLines.length - 1 && this.getLine(bp.line).length === 0) {
                         bp.line++;
                     }
-                    // if a line starts with '-' we don't allow to set a breakpoint but move the breakpoint up
-                    if (srcLine.indexOf('-') === 0) {
-                        bp.line--;
-                    }
-                    // don't set 'verified' to true if the line contains the word 'lazy'
-                    // in this case the breakpoint will be verified 'lazy' after hitting it once.
-                    if (srcLine.indexOf('lazy') < 0) {
-                        bp.verified = true;
-                        this.sendEvent('breakpointValidated', bp);
-                    }
+                    bp.verified = true;
+                    this.sendEvent('breakpointValidated', bp);
                 }
             });
         }

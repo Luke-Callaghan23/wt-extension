@@ -27,7 +27,6 @@ import { Subject } from 'await-notify';
 import { stopSpeaking } from '../tts/tts';
 import * as console from '../../miscTools/vsconsole';
 import * as vscode from 'vscode';
-import { threadId } from 'worker_threads';
 
 /**
  * This interface describes the tts-debug specific launch attributes
@@ -126,7 +125,7 @@ export class TTSDebugSession extends LoggingDebugSession {
             this.sendEvent(e);
         });
         this._runtime.on("stopped", () => {
-            this.sendEvent(new StoppedEvent('breakpoint', TTSDebugSession.threadID));
+            this.sendEvent(new StoppedEvent('step', TTSDebugSession.threadID));
         });
         this._runtime.on('end', () => {
             stopSpeaking();
@@ -164,8 +163,6 @@ export class TTSDebugSession extends LoggingDebugSession {
 
         response.body.supportSuspendDebuggee = true;
         response.body.supportTerminateDebuggee = true;
-        response.body.supportsFunctionBreakpoints = true;
-        response.body.supportsDelayedStackTraceLoading = true;
         response.body.supportsDelayedStackTraceLoading = true;
 
         this.sendResponse(response);
@@ -187,10 +184,10 @@ export class TTSDebugSession extends LoggingDebugSession {
         this._configurationDone.notify();
     }
 
-    protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): void {
+    protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
         console.log(`disconnectRequest suspend: ${args.suspendDebuggee}, terminate: ${args.terminateDebuggee}`);
-        stopSpeaking();
-        this._runtime.closed = true;
+        await this._runtime.dispose();
+        this.sendResponse(response);
     }
 
     protected async attachRequest(response: DebugProtocol.AttachResponse, args: IAttachRequestArguments) {
@@ -274,38 +271,35 @@ export class TTSDebugSession extends LoggingDebugSession {
     }
 
     protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
-
-        response.body = {
-            scopes: [
-                new Scope("Locals", this._variableHandles.create('locals'), false),
-                new Scope("Globals", this._variableHandles.create('globals'), true)
-            ]
-        };
+        // this runtime has no variables
+        response.body = { scopes: [] };
         this.sendResponse(response);
     }
 
     protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
-        this._runtime.continue(false).then(() => {
-            this.sendResponse(response);
-        })
+        response.body = { allThreadsContinued: true };
+        this.sendResponse(response);
+        this._runtime.continue(false);
     }
 
     protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments): void {
-        this._runtime.continue(true).then(() => {
-            this.sendResponse(response);
-        });
-     }
+        this.sendResponse(response);
+        this._runtime.continue(true);
+    }
 
     protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
-        this._runtime.step(false).then(() => {
-            this.sendResponse(response);
-        });
+        this.sendResponse(response);
+        this._runtime.step(false);
     }
 
     protected stepBackRequest(response: DebugProtocol.StepBackResponse, args: DebugProtocol.StepBackArguments): void {
-        this._runtime.step(true).then(() => {
-            this.sendResponse(response);
-        });
+        this.sendResponse(response);
+        this._runtime.step(true);
+    }
+
+    protected pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments): void {
+        this.sendResponse(response);
+        this._runtime.pause();
     }
 
     private async progressSequence() {
@@ -346,6 +340,7 @@ export class TTSDebugSession extends LoggingDebugSession {
         if (args.progressId) {
             this._cancelledProgressId= args.progressId;
         }
+        this.sendResponse(response);
     }
 
     protected customRequest (command: string, response: DebugProtocol.Response, args: any) {
@@ -361,9 +356,12 @@ export class TTSDebugSession extends LoggingDebugSession {
         }
     }
 
-    protected setFunctionBreakPointsRequest (response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request): void {}
-    protected async setExceptionBreakPointsRequest (response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments): Promise<void> {}
-    protected exceptionInfoRequest (response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments) {}
+    protected setExceptionBreakPointsRequest (response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments): void {
+        this.sendResponse(response);
+    }
+    protected exceptionInfoRequest (response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments) {
+        this.sendErrorResponse(response, { id: 1002, format: 'No exception info available' });
+    }
     protected threadsRequest (response: DebugProtocol.ThreadsResponse): void {
         // runtime supports no threads so just return a default thread.
         response.body = {
@@ -374,7 +372,6 @@ export class TTSDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
-    private idx = 0;
     protected stackTraceRequest (response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
         const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
         const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;

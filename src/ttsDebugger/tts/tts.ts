@@ -15,13 +15,13 @@ export const stopSpeaking = (): Promise<void> => {
     return windowsSpeak.stop();
 }
 
+// Substitutions must keep the text the same length so word marker positions still map onto the source line
 const substitutions: { [index: string]: string} = {
     '_': ' ',
-    '--': ' '
+    '--': '  '
 };
 
 const cleanText = (text: string): string => {
-    text = text.trim();
     for (let [pattern, replacement] of Object.entries(substitutions)) {
         //@ts-ignore
         text = text.replaceAll(pattern, replacement);
@@ -31,7 +31,7 @@ const cleanText = (text: string): string => {
 
 export const speakText = async (text: string, onWord?: (wordMarker: WordMarker)=>void): Promise<void> => {
     text = cleanText(text);
-    if (text.length <= 0) {
+    if (text.trim().length <= 0) {
         return;
     }
     await windowsSpeak.speak(text, getVoice(), getSpeed() || 1.05, onWord);
