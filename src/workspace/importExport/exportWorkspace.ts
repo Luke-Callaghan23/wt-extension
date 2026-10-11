@@ -5,7 +5,7 @@ import * as console from '../../miscTools/vsconsole';
 import { DiskContextType, Workspace } from '../workspaceClass';
 import { ChapterNode, ContainerNode, FragmentNode, OutlineNode, RootNode, SnipNode } from '../../outline/nodes_impl/outlineNode';
 import { OutlineView } from '../../outline/outlineView';
-import { ChaptersRecord, FragmentRecord, FragmentsExport, SnipsExport, SnipsRecord, WorkspaceExport as WorkspaceRecord } from './types';
+import { ChaptersExport, ChaptersGroupExport, FragmentsExport, SnipsExport, WorkspaceExport as WorkspaceRecord } from './types';
 import { Buff } from '../../Buffer/bufferSource';
 
 type FragmentsExportPromise = {
@@ -63,7 +63,7 @@ async function recordSnipData (node: SnipNode): Promise<SnipsExport> {
     }
 }
 
-async function recordFragmentContainer (fragments: OutlineNode[]): Promise<FragmentRecord> {
+async function recordFragmentContainer (fragments: OutlineNode[]): Promise<FragmentsExport[]> {
     // Read and sort fragment data from container
     fragments.sort((a, b) => a.data.ids.ordering - b.data.ids.ordering);
 
@@ -73,11 +73,11 @@ async function recordFragmentContainer (fragments: OutlineNode[]): Promise<Fragm
     }));
 
     // Pair sorted fragments with their data buffers
-    const record: FragmentRecord = [];
+    const records: FragmentsExport[] = [];
     for (let i = 0; i < fragments.length; i++) {
         const fragment = fragments[i];
         const markdown = fragmentBuffers[i];
-        record.push({
+        records.push({
             title: fragment.data.ids.display,
             description: fragment.data.ids.description,
             markdown: Extension.decoder.decode(markdown)
@@ -85,12 +85,12 @@ async function recordFragmentContainer (fragments: OutlineNode[]): Promise<Fragm
     }
 
     // Add record for this node to the map
-    return record;
+    return records;
 }
 
 
-async function recordSnipsContainer (container: ContainerNode): Promise<SnipsRecord> {
-    const snips: SnipsRecord = [];
+async function recordSnipsContainer (container: ContainerNode): Promise<SnipsExport[]> {
+    const snips: SnipsExport[] = [];
     for (const content of container.contents) {
         const snipNode = content.data as SnipNode;
         snips.push(await recordSnipData(snipNode));
@@ -99,20 +99,20 @@ async function recordSnipsContainer (container: ContainerNode): Promise<SnipsRec
 }
 
 
-async function recordChaptersContainer (container: ContainerNode): Promise<ChaptersRecord> {
-    const chaptersRecord: ChaptersRecord = [];
-    for (const content of container.contents) {
-        const chapterNode = content.data as ChapterNode;
+async function recordChaptersGroup (chapterGroup: ContainerNode): Promise<ChaptersExport[]> {
+    const chapterRecords: ChaptersExport[] = [];
+    for (const chapter of chapterGroup.contents) {
+        const chapterNode = chapter.data as ChapterNode;
         const fragementsRecord = await recordFragmentContainer(chapterNode.textData);
         const snipsRecord = await recordSnipsContainer(chapterNode.snips.data as ContainerNode);
-        chaptersRecord.push({
+        chapterRecords.push({
             title: chapterNode.ids.display,
             description: chapterNode.ids.description,
             fragments: fragementsRecord,
             snips: snipsRecord,
         });
     }
-    return chaptersRecord;
+    return chapterRecords;
 }
 
 async function getIweFileName (
@@ -164,13 +164,25 @@ export async function handleWorkspaceExport (
     outlineView: OutlineView
 ) {
     const root: RootNode = outlineView.rootNodes[0].data as RootNode;
-    const chaptersContainer: ContainerNode = root.chapters.data as ContainerNode;
     const snipsContainer: ContainerNode = root.snips.data as ContainerNode;
+    const chapterGroups: OutlineNode = root.chapterGroups;
+
+    const chapterGroupsContent = (root.chapterGroups.data as ContainerNode).contents;
 
     // Record the chapters and snips containers
-    const chaptersRecord: ChaptersRecord = await recordChaptersContainer(chaptersContainer);
-    const snipsRecord: SnipsRecord = await recordSnipsContainer(snipsContainer);
-    const scratchPadRecord: FragmentRecord = await recordFragmentContainer(Extension.scratchPadView.rootNodes);
+    const chapterGroupRecords: ChaptersGroupExport[] = [];
+    for (const group of chapterGroupsContent) {
+        const groupContainer = group.data as ContainerNode;
+
+        const groupInfo = await recordChaptersGroup(groupContainer);
+        chapterGroupRecords.push({
+            groupName: groupContainer.ids.display,
+            chapters: groupInfo
+        });
+    }
+
+    const snipsRecord: SnipsExport[] = await recordSnipsContainer(snipsContainer);
+    const scratchPadRecord: FragmentsExport[] = await recordFragmentContainer(Extension.scratchPadView.rootNodes);
     const serializedNotebook = await Extension.notebookSerializer.readSerializedNotebookPanel(workspace.notebookFolder);
     
 
@@ -180,7 +192,7 @@ export async function handleWorkspaceExport (
     // Create the iwe object
     const iwe: WorkspaceRecord = {
         config: workspace.config,
-        chapters: chaptersRecord,
+        chapterGroups: chapterGroupRecords,
         snips: snipsRecord,
         scratchPad: scratchPadRecord,
         notebook: serializedNotebook,

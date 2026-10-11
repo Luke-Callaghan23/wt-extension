@@ -107,10 +107,10 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
             // For full prefix, first add results count
             let fullPrefix: string = '';
             if (this.node.kind === 'searchContainer') {
-                fullPrefix += `(${this.node.results}) `;
+                fullPrefix += `[${this.node.results}] `;
             }
             else if (this.node.kind === 'file') {
-                fullPrefix += `(${this.node.locations.length}) `;
+                fullPrefix += `[${this.node.locations.length}] `;
             }
 
             // Then the actual prefix

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { __, capitalize, chunkArray, ConfigFileInfo, formatFsPathForCompare, getFullJSONStringFromLocation, getJSONContext, getRelativePath, getSurroundingTextInRange, isSubdirectory, JSONStringInfo, readDotConfig, UriFsPathFormatted, vagueNodeSearch, VagueNodeSearchResult, VagueSearchSource } from '../miscTools/help';
-import { OutlineNode } from '../outline/nodes_impl/outlineNode';
+import { __, capitalize, chunkArray, ConfigFileInfo, escapeUserTextForRegex, formatFsPathForCompare, getFullJSONStringFromLocation, getJSONContext, getPathRelativeToRoot, getSurroundingTextInRange, isSubdirectory, JSONStringInfo, readDotConfig, UriFsPathFormatted, vagueNodeSearch, VagueNodeSearchResult, VagueSearchSource } from '../miscTools/help';
+import { ContainerNode, OutlineNode, RootNode } from '../outline/nodes_impl/outlineNode';
 import { Extension } from   '../extension';
 import * as vscodeUri from 'vscode-uri';
 import { Buff } from '../Buffer/bufferSource';
@@ -44,7 +44,8 @@ export function createLabelFromTitleAndPrefix (title: string, prefix: string): s
 }
 
 
-type Categories = 'chapters' | 'snips' | 'scratchPad' | 'recycle' | 'notebook';
+// type Categories = 'chapters' | 'snips' | 'scratchPad' | 'recycle' | 'notebook';
+type RelativePath = string;
 type ConfigProvider = (uri: vscode.Uri) => Promise<ConfigDetails | null>;
 type ConfigDetails = {
     title: string,
@@ -112,26 +113,78 @@ export type ResultInfo = {
     headerMatches: WTNoteHeaderMatchInfo[]
 };
 
-export class CreateSearchResults {
+export class SearchNodeGenerator {
     
     private docMap: Record<string, vscode.TextDocument>;
-    private rootCategoryNodes: Record<Categories, SearchNode<SearchContainerNode>>;
-    private configNodes: Record<UriFsPathFormatted, ConfigDocMatchInfo>;
+    private rootCategoryNodes: Record<RelativePath, SearchNode<SearchContainerNode>>;
+
+    // Config providers are the functions we use to generically retrieve naming and ordering information for
+    //      any kind of node -- whether outline or notebook
+    // There is one config provider per relative path in the root category nodes
+    private configProviders: Record<RelativePath, ConfigProvider>;
+    
+    // Regex of all the relative paths that are used as keys in the rootCategoryNodes map
+    // When doing searches, we need to find which category node a given result belongs to
+    //      and then insert that result into that category
+    // Use this regex to find the category for a result
+    // Format is like '(?<categoryRelativePath>(relativePath1|relativePath2|...|relativePathN))'
+    private rootCategoryNodeRelativePathRegex: RegExp;
+    private rootCategoryNodeRelativePathRegexGroupName = 'categoryRelativePath';
 
     constructor (seedData?: SearchNode<SearchContainerNode>[]) {
-        this.configNodes = {};
-        this.rootCategoryNodes = {
-            'chapters': new SearchNode<SearchContainerNode>({
+
+        // Config
+        const mainConfigProvider = (view: UriBasedView<OutlineNode>) => {
+            return async (uri: vscode.Uri): Promise<ConfigDetails | null> => {
+                const node = await view.getTreeElementByUri(uri);
+                if (!node) return null;
+
+                if (node.data.ids.type !== 'container') {
+                    return {
+                        prefix: capitalize(node.data.ids.type), 
+                        description: node.data.ids.description,
+                        title: node.data.ids.display,
+                        ordering: node.data.ids.ordering
+                    }
+                }
+                else {
+                    return {
+                        prefix: '', 
+                        title: "Chapter Snips Container",
+                        description: node.data.ids.description,
+                        ordering: node.data.ids.ordering
+                    };
+                }
+            };
+        };
+
+        const chapterGroups = ((Extension.outlineView.rootNodes[0].data as RootNode).chapterGroups).data as ContainerNode;
+        const chapterGroupCategories: typeof this.rootCategoryNodes = {};
+        const chapterGroupConfigProviders: typeof this.configProviders = {};
+
+        for (const chapterGroup of chapterGroups.contents) {
+
+            // Remove the "data/" prefix form each of the root relative paths
+            const pathToChapterGroup = chapterGroup.data.ids.relativePath.replace(/^data(\/?)/, "");
+
+            const relativePath = `${pathToChapterGroup}/${chapterGroup.data.ids.fileName}`;
+            chapterGroupCategories[relativePath] = new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
-                uri: vscode.Uri.joinPath(Extension.rootPath, 'data', 'chapters'),
+                uri: vscode.Uri.joinPath(Extension.rootPath, 'data', relativePath),
                 contents: {},
                 results: 0,
                 parentLabels: [],
-                parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data'),
-                title: 'Chapters',
+                parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data', pathToChapterGroup),
+                title: chapterGroup.data.ids.display,
                 prefix: '',
-                ordering: 0,
-            }),
+                ordering: chapterGroup.data.ids.ordering,
+            });
+            chapterGroupConfigProviders[relativePath] = mainConfigProvider(Extension.outlineView);
+        }
+
+        let categoryNodeOrdering = chapterGroups.contents.length;
+        this.rootCategoryNodes = {
+            ...chapterGroupCategories,
             'snips': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
                 uri: vscode.Uri.joinPath(Extension.rootPath, 'data', 'snips'),
@@ -141,7 +194,7 @@ export class CreateSearchResults {
                 parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data'),
                 title: 'Work Snips',
                 prefix: '',
-                ordering: 0,
+                ordering: categoryNodeOrdering++,
             }),
             'scratchPad': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
@@ -152,7 +205,7 @@ export class CreateSearchResults {
                 parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data'),
                 title: 'Scratch Pad',
                 prefix: '',
-                ordering: 0,
+                ordering: categoryNodeOrdering++,
             }),
             'recycle': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
@@ -163,7 +216,7 @@ export class CreateSearchResults {
                 parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data'),
                 title: 'Recycling Bin',
                 prefix: '',
-                ordering: 0,
+                ordering: categoryNodeOrdering++,
             }),
             'notebook': new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
@@ -174,9 +227,27 @@ export class CreateSearchResults {
                 parentUri: vscode.Uri.joinPath(Extension.rootPath, 'data'),
                 title: 'Work Notebook',
                 prefix: '',
-                ordering: 0,
+                ordering: categoryNodeOrdering++,
             }),
         };
+        
+        this.configProviders =  {
+            ...chapterGroupConfigProviders,
+            'snips': mainConfigProvider(Extension.outlineView),
+            'scratchPad': mainConfigProvider(Extension.scratchPadView),
+            'recycle': mainConfigProvider(Extension.recyclingBinView),
+            // For the notebook, since OutlineNodes are not used, we can just take the "title" in the note as the label
+            'notebook': async (uri: vscode.Uri) => {
+                const note = Extension.notebookPanel.getNote(uri);
+                if (!note) return null;
+                return {
+                    prefix: 'Note', 
+                    title: note.title,
+                    ordering: 0
+                };
+            }
+        }
+
         this.docMap = {};
 
         if (seedData) {
@@ -185,13 +256,22 @@ export class CreateSearchResults {
             //      be root data anyways), then replace the initialized data above with the seed data
             for (const seed of seedData) {
                 for (const [ entryKey, rootValue ] of Object.entries(this.rootCategoryNodes)) {
-                    const entryKeyCategory = entryKey as Categories;
+                    const entryKeyCategory = entryKey;
                     if (seed.node.title === rootValue.node.title) {
                         this.rootCategoryNodes[entryKeyCategory] = seed;
                     }
                 }
             }
         }
+
+        // Construct the regex for searching which category node a search result belongs to
+        const rootRelativePaths = Object.keys(this.rootCategoryNodes);
+        const regexParts: string[] = rootRelativePaths.map(relativePath => {
+            return escapeUserTextForRegex(relativePath);
+        });
+        const regexRelativePathSource = regexParts.join('|');
+        const regexSource = `(?<${this.rootCategoryNodeRelativePathRegexGroupName}>(${regexRelativePathSource}))`;
+        this.rootCategoryNodeRelativePathRegex = new RegExp(regexSource);
     }
 
     public async refreshResults (
@@ -668,50 +748,6 @@ export class CreateSearchResults {
         });
     }
 
-    private getConfigProviders (): Record<Categories, ConfigProvider> {
-
-        const mainConfigProvider = (view: UriBasedView<OutlineNode>) => {
-            return async (uri: vscode.Uri): Promise<ConfigDetails | null> => {
-                const node = await view.getTreeElementByUri(uri);
-                if (!node) return null;
-
-                
-                if (node.data.ids.type !== 'container') {
-                    return {
-                        prefix: capitalize(node.data.ids.type), 
-                        description: node.data.ids.description,
-                        title: node.data.ids.display,
-                        ordering: node.data.ids.ordering
-                    }
-                }
-                else {
-                    return {
-                        prefix: '', 
-                        title: "Chapter Snips Container",
-                        description: node.data.ids.description,
-                        ordering: node.data.ids.ordering
-                    };
-                }
-            };
-        };
-
-        return {
-            'chapters': mainConfigProvider(Extension.outlineView),
-            'snips': mainConfigProvider(Extension.outlineView),
-            'scratchPad': mainConfigProvider(Extension.scratchPadView),
-            'recycle': mainConfigProvider(Extension.recyclingBinView),
-            // For the notebook, since OutlineNodes are not used, we can just take the "title" in the note as the label
-            'notebook': async (uri: vscode.Uri) => {
-                const note = Extension.notebookPanel.getNote(uri);
-                if (!note) return null;
-                return {
-                    prefix: 'Note', 
-                    title: note.title,
-                    ordering: 0
-                };
-            }
-        }
-    }
 
     private getResultsCount (node: SearchNode<SearchContainerNode | FileResultNode | MatchedMetadataNode>): number {
         if (node.node.kind === 'file') {
@@ -929,29 +965,38 @@ export class CreateSearchResults {
 
         const resultUri = result.uri;
         
-        const path = getRelativePath(resultUri);
-        let relativePath: string[] = [];
-        const pathSegments = path.split("/");
-
-        // First two segments should be '' and 'data' (/data/chapters/chapter-/snips/snip-/fragment-.wt => '', 'data', 'chapters', ... etc.)
-        //      but the first folder should the 'categories' folder (chapters/snips/etc.), so skip past them here
-        if (pathSegments[0] === '') pathSegments.shift();
-        if (pathSegments[0] === 'data') {
-            relativePath.push('data');
-            pathSegments.shift();
-        }
-
-        // Confirm the first folder is the category folder
-        const category: Categories = pathSegments.shift() as Categories;
-        if (!this.rootCategoryNodes[category]) {
+        const path = getPathRelativeToRoot(resultUri);
+        const categoryGroup = this.rootCategoryNodeRelativePathRegex.exec(path);
+        if (!categoryGroup || !categoryGroup.groups || !categoryGroup.groups[this.rootCategoryNodeRelativePathRegexGroupName]) {
             return null;
         }
 
-        relativePath.push(category);
-        const configProviders = this.getConfigProviders();
+        const categoryRelativePath = categoryGroup.groups[this.rootCategoryNodeRelativePathRegexGroupName];
+
+        // Confirm the first folder is the category folder
+        // const categoryRelativePath = pathSegments.shift();
+        if (!categoryRelativePath || !this.rootCategoryNodes[categoryRelativePath]) {
+            return null;
+        }
         
+        const afterCategory = path.split(categoryRelativePath)[1];
+
+        // Relative path holds all the path segments up until and including the category relative path
+        // Also add 'data' as the relative path will be used when retrieving data about each node along
+        //      the path when inserting into the category tree
+        // The uri will be constructed using relativePath, so the root level data folder is necessary
+        const relativePath = [
+            'data',
+            // `filter(x=>x)` removes the empty string at the beginning
+            ...categoryRelativePath.split('/').filter(x=>x)
+        ];
+        
+        // pathSegments is meant to hold all of the path segments *after* the category relative
+        //      path in the original uri
+        const pathSegments = afterCategory.split('/').filter(x=>x);
+
         let parentLabels: string[] = [];
-        let parentNode: SearchNode<SearchContainerNode> = this.rootCategoryNodes[category];
+        let parentNode: SearchNode<SearchContainerNode> = this.rootCategoryNodes[categoryRelativePath];
         let parentUri: vscode.Uri = parentNode.node.uri;
 
         // Iterate each segment of the path of the added location
@@ -960,10 +1005,11 @@ export class CreateSearchResults {
             const segment = pathSegments[index];
             relativePath.push(segment);
 
+            // Get the uri of this segment along the path
             const uri = vscode.Uri.joinPath(Extension.rootPath, ...relativePath);
             const isLeaf = index === pathSegments.length - 1;
 
-            const config = await configProviders[category](uri);
+            const config = await this.configProviders[categoryRelativePath](uri);
             if (!config) continue;
             
             let pairedMatchedMetadataNode: SearchNode<MatchedMetadataNode> | undefined;

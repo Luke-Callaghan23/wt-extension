@@ -1,5 +1,5 @@
 import { __, isSubdirectory } from '../help';
-import { Extension } from   './../../extension'
+import { Extension } from './../../extension'
 import * as vscode from 'vscode';
 import { buildMarkdownIgnoringRegex } from './common';
 
@@ -108,7 +108,8 @@ export async function nodeGrep (
                 )
                 && 
                 (
-                    isSubdirectory(Extension.workspace.chaptersFolder, uri)
+                    isSubdirectory(Extension.workspace.legacyChaptersFolder, uri)
+                    || isSubdirectory(Extension.workspace.chapterGroupsFolder, uri)
                     || isSubdirectory(Extension.workspace.workSnipsFolder, uri)
                     || isSubdirectory(Extension.workspace.notebookFolder, uri)
                     || isSubdirectory(Extension.workspace.scratchPadFolder, uri)

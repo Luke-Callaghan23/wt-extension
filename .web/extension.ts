@@ -211,8 +211,9 @@ export class Extension {
     }
     static get packageableItems () {
         if (!this._packageableItems) {
-            vscode.window.showErrorMessage("[ERROR] Attempted to access 'packageableItems' before initialized.  Only access global data after it's been initialized.");
-            throw "[ERROR] Attempted to access 'packageableItems' before initialized.  Only access global data after it's been initialized.";
+            // Don't throw an error for this one
+            // This can be called during startup and we don't want it crashing before `this._packageableItems` is initialized
+            return [];
         }
         return this._packageableItems;
     }
@@ -234,7 +235,7 @@ export class Extension {
     public static async getPackageableItems (): Promise<DiskContextType> {
         return packageForExport(this.packageableItems);
     }
-    
+
     public static async activateExtension (context: vscode.ExtensionContext) {
         this._notebookSerializer = new WTNotebookSerializer();
         this._notebookSerializerDispose = vscode.workspace.registerNotebookSerializer('wt.notebook', Extension.notebookSerializer)
@@ -303,7 +304,7 @@ export class Extension {
             });
         }));
     }
-    
+
     public static openIntro () {
         return vscode.commands.executeCommand(`workbench.action.openWalkthrough`, `luke-callaghan.wtaniwe#wt.introWalkthrough`, false);
     }
@@ -402,7 +403,7 @@ export class Extension {
 
             const fragmentOverview = new FragmentOverviewView(context, workspace);
             report("Loaded fragment overview");
-            
+
             this._tabStates = new TabStates(context, workspace);
             report("Loaded tab groups");
 
@@ -442,7 +443,7 @@ export class Extension {
                 ['wt.overview', 'overview', fragmentOverview],
                 ['wt.wtSearch.results', 'searchResults', this.searchResultsView],
             ]);
-            
+
             this._tabLabels = new TabLabels(context);
 
             // Register commands for the toolbar (toolbar that appears when editing a .wt file)
@@ -455,7 +456,7 @@ export class Extension {
             vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
 
             this._packageableItems = [
-                this.outlineView, this.synonymsWebview, this.timedViews, new FileAccessManager(), 
+                this.outlineView, this.synonymsWebview, this.timedViews, new FileAccessManager(),
                 this.personalDictionary, this.colorGroups, reloadWatcher, this.tabStates,
                 autocorrection, this.searchBarView
             ];
@@ -468,7 +469,7 @@ export class Extension {
 
             // Setting to make writing dialogue easier -- always skip past closing dialogue quotes
             const configuration = vscode.workspace.getConfiguration();
-            configuration.update("editor.autoClosingOvertype", "always", vscode.ConfigurationTarget.Workspace)
+            configuration.update("editor.autoClosingOvertype", "always", vscode.ConfigurationTarget.Workspace);
 
             await TabLabels.assignNamesForOpenTabs();
             report("Loaded tab labels");

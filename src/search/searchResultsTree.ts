@@ -7,7 +7,7 @@ import { grepExtensionDirectory, grepSingleFile } from '../miscTools/grepper/gre
 import { FileResultLocationNode, FileResultNode, MatchedMetadataNode, SearchContainerNode, SearchNode, SearchNodeTemporaryText } from './searchResultsNode';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { __, addSingleWorkspaceEdit, capitalize, chunkArray, compareFsPath, determineAuxViewColumn, formatFsPathForCompare, getFsPathKey, getFullJSONStringFromLocation, getJSONContext, isSubdirectory, JSONContextInfo, setFsPathKey, showTextDocumentWithPreview, UriFsPathFormatted, vagueNodeSearch } from '../miscTools/help';
-import { ConfigDocMatchInfo, ConfigNodeInfo, FileName, CreateSearchResults as SearchNodeGenerator } from './searchNodeGenerator';
+import { ConfigDocMatchInfo, ConfigNodeInfo, FileName, SearchNodeGenerator } from './searchNodeGenerator';
 import { Timed } from '../timedView';
 import { SearchNodeKind, SearchResultsView } from './searchResultsView';
 import { SearchContext } from './searchBarView';
@@ -183,7 +183,7 @@ export class SearchResultsTree
                 case 'recycle': provider = Extension.recyclingBinView; break;
                 case 'scratch': provider = Extension.scratchPadView; break;
             }
-            return provider.expandAndRevealOutlineNode(nodeResult.node);
+            return provider.expandAndRevealOutlineNode(nodeResult.node, { ignoreVisibleCheck: true });
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand("wt.wtSearch.results.hideNode", (node: SearchNode<SearchNodeKind>) => {

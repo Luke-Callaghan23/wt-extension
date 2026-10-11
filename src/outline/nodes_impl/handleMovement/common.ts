@@ -2,7 +2,7 @@ import { TreeNode } from "../../../outlineProvider/outlineTreeProvider";
 import { OutlineNode, ResourceType } from "../outlineNode";
 
 // Map of a resource type to all resource types that the key can be moved into
-export const allowedMoves: { [index: string]: ResourceType[] } = {
+export const allowedMoves: Record<ResourceType, ResourceType[]> = {
     'snip': [
         'chapter',
         'fragment',

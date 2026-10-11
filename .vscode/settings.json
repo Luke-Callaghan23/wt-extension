@@ -33,7 +33,8 @@
         "*/src/TODO/node.ts": "TODONode",
         "*/src/TODO/nodes_impl/getChildren.ts": "TODO getChildren",
         "*/media/import/main.js": "importFormScript.js",
-        "*/media/search/main.js": "searchViewScript.js"
+        "*/media/search/main.js": "searchViewScript.js",
+        "*/media/export/main.js": "exportFormScript.js"
     },
     "editor.detectIndentation": false,
     // "typescript.tsserver.experimental.enableProjectDiagnostics": true

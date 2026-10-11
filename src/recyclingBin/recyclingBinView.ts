@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import { Workspace } from '../workspace/workspaceClass';
 import { Extension } from   './../extension';
-import { InitializeNode, initializeChapter, initializeFragment, initializeSnip } from '../outlineProvider/initialize';
+import { InitializeNode, initalizeChapterGroup, initializeChapter, initializeFragment, initializeSnip } from '../outlineProvider/initialize';
 // import { OutlineNode, ResourceType } from '../outline/node';
 import { NodeTypes, ResourceType } from '../outlineProvider/fsNodes';
 import { ConfigFileInfo, progressOnViews, setFsPathKey } from '../miscTools/help';
@@ -81,7 +81,7 @@ implements
             const logItem = orderedLog[nodeIdx];
             let node: OutlineNode;
 
-            const dotConfig: { [index: string]: ConfigFileInfo } = {
+            const dotConfig: Record<string, ConfigFileInfo> = {
                 [logItem.recycleBinName]: {
                     ordering: nodeIdx,
                     title: logItem.title,
@@ -121,6 +121,16 @@ implements
                         parentUri: RecyclingBinView.recyclingUri,
                         relativePath: '',
                     }));
+                }
+                else if (logItem.resourceType === 'container') {
+                    node = new OutlineNode(await initalizeChapterGroup({
+                        parentDotConfig: dotConfig,
+                        fileName: logItem.recycleBinName,
+                        parentUri: RecyclingBinView.recyclingUri,
+                        dontFail: true,
+                        relativePath: '',
+                        init: init,
+                    }))
                 }
                 else throw `unreachable`;
                 nodes.push(node);
@@ -374,8 +384,9 @@ implements
         if (chose === null) return;
         if (chose.data.ids.type === 'root') return;
         
-        const moveResult = await resource.generalMoveNode("recover", chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
-        if (moveResult.moveOffset === -1) return;
+        const moveResult = await resource.moveNode("recover", chose, Extension.recyclingBinView, Extension.outlineView, 0, null, "Insert");
+        if (!moveResult) return;
+        
         const effectedContainers = moveResult.effectedContainers;
         return Promise.all([
             outline.refresh(false, effectedContainers),

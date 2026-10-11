@@ -153,9 +153,30 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         }
         
         // Only import the incoming document as a chapter if it was dropped directly into the '/data/chapters' folder
-        const destinationKind: 'snip' | 'chapter' = compareFsPath(dropped.data.ids.uri, Extension.workspace.chaptersFolder)
-            ? 'chapter'
-            : 'snip'
+        // const destinationKind: 'snip' | 'chapter' = compareFsPath(dropped.data.ids.uri, Extension.workspace.chaptersFolder)
+        //     ? 'chapter'
+        //     : 'snip';
+        
+        let destinationKind: 'snip' | 'chapter' | 'chapterGroup';
+        if (compareFsPath(Extension.workspace.legacyChaptersFolder, dropped.data.ids.uri)) {
+            // Dropped directly into the main chapters folder, import it as a chapter
+            destinationKind = 'chapter';
+        }
+        else if (isSubdirectory(Extension.workspace.chapterGroupsFolder, dropped.data.ids.uri)) {
+            if (compareFsPath(Extension.workspace.chapterGroupsFolder, dropped.data.ids.uri)) {
+                // The path is exactly the chapter groups folder, we try to import as a chapter group
+                destinationKind = 'chapterGroup';
+            }
+            else {
+                // Otherwise, import as a chapter into the chaptergroup it was dropped into
+                destinationKind = 'chapter';
+            }
+        }
+        else {
+            // Otherwise it's a snip in either 
+            destinationKind = 'snip';
+        }
+
         const nodeNamePath = await getNodeNamePath(dropped);
         
         for (let index = 0; index < docs.length; index++) {
@@ -198,8 +219,13 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         // Since we are importing with the import form we will want that document in the imports folder
         //      and out of the data folder
         // So, we want to do a move operation
+
         let fsUpdateFunction: (source: vscode.Uri, target: vscode.Uri, options?: { overwrite?: boolean; }) => Thenable<void>;
-        if (isSubdirectory(firstUri, Extension.workspace.chaptersFolder) || isSubdirectory(firstUri, Extension.workspace.workSnipsFolder)) {
+        if (
+            isSubdirectory(firstUri, Extension.workspace.chapterGroupsFolder) 
+            || isSubdirectory(firstUri, Extension.workspace.legacyChaptersFolder)
+            || isSubdirectory(firstUri, Extension.workspace.workSnipsFolder)
+        ) {
             fsUpdateFunction = vscode.workspace.fs.rename;
         }
         // Otherwise, the document is coming from somewhere outside of our control.  We do not want to move the user's data
@@ -252,8 +278,8 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 
             // For chapters container, assume the user is dropping data for creating a new chapter
             // In which case we can just create a new chapter node and drop the text inside of there
-            if (compareFsPath(dropped.data.ids.uri, this.workspace.chaptersFolder)) {
-                const chapterUri = await outlineView.newChapter(undefined, {
+            if (compareFsPath(dropped.data.ids.uri, this.workspace.chapterGroupsFolder) || compareFsPath(dropped.data.ids.uri, this.workspace.legacyChaptersFolder)) {
+                const chapterUri = await outlineView.newChapter(dropped, {
                     skipFragment: true,
                     defaultName: newDirectoryTitle + " (Chapter)",
                     preventRefresh: true,
@@ -266,6 +292,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
 
                 finalParentNode = chapter.data as ChapterNode;
             }
+
             // The only containers in the project are the chapters container or a snips container
             // So, if it's not the chapters container, we can create a new snip at the dropped 
             //        container node and use that as the parent
@@ -435,7 +462,7 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
                 // If the document is not currently in the destination folder, 
                 //         BUT it IS under the chapters or snips folder, then we MOVE
                 //        the document from where it is now into the destination folder
-                if (isSubdirectory(originalUri, this.workspace.chaptersFolder) || isSubdirectory(originalUri, this.workspace.workSnipsFolder)) {
+                if (isSubdirectory(originalUri, this.workspace.legacyChaptersFolder) || isSubdirectory(originalUri, this.workspace.chapterGroupsFolder) || isSubdirectory(originalUri, this.workspace.workSnipsFolder)) {
                     fsOperations.push({
                         operation: "move",
                         dest: finalUri,
@@ -574,8 +601,36 @@ export class ImportFileSystemView implements vscode.TreeDataProvider<Entry> {
         }));
 
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.openFileExplorer', () => {
-            vscode.commands.executeCommand('revealFileInOS', this.workspace.importFolder);
+        this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.openFileExplorer', async () => {
+            
+            // VS Code's 'revealFileInOS' command when used on a directory reveals the parent directory
+            //      with the child directory (in this case, the import folder) highlighted
+            // We want to open the os window with the imports folder already open, instead
+            // So, try to find a file inside of the import's folder
+
+            // Most WTANIWE workspaces should have a .gitkeep file inside of the "imports" folder,
+            //      so first try to reveal that file
+            const gitkeepUri = vscode.Uri.joinPath(this.workspace.importFolder, '.gitkeep');
+            const gitkeepStat = await statFile(gitkeepUri);
+            if (gitkeepStat) {
+                return vscode.commands.executeCommand('revealFileInOS', gitkeepUri);
+            }
+            
+            // If .gitkeep is missing, then just reveal the first entry in the imports folder
+            const dirents = await vscode.workspace.fs.readDirectory(this.workspace.importFolder);
+            if (dirents.length > 0) {
+                const sorted = dirents
+                    .map(([ fileName, _fileType ]) => fileName)
+                    .sort((a, b) => a.localeCompare(b));
+
+                const firstDirent = sorted[0];
+                const firstDirentUri = vscode.Uri.joinPath(this.workspace.importFolder, firstDirent);
+                return vscode.commands.executeCommand('revealFileInOS', firstDirentUri);
+            }
+            
+            // If there are no entries in the imports folder, the best we can do is reveal the 
+            //      imports folder outside of the folder
+            return vscode.commands.executeCommand('revealFileInOS', this.workspace.importFolder);
         }));
 
         this.context.subscriptions.push(vscode.commands.registerCommand('wt.import.fileExplorer.revealFileExplorer', (tabUri: Entry | undefined) => {

@@ -76,7 +76,8 @@ export class Workspace {
     public dotWtconfigPath: vscode.Uri;
 
     // Path to all the necessary folders for a workspace to function
-    public chaptersFolder: vscode.Uri;
+    public legacyChaptersFolder: vscode.Uri;
+    public chapterGroupsFolder: vscode.Uri;
     public workSnipsFolder: vscode.Uri;
     public exportFolder: vscode.Uri;
     public recyclingBin: vscode.Uri;
@@ -93,7 +94,7 @@ export class Workspace {
     // Returns a list of all 
     getFolders() {
         return [
-            this.chaptersFolder, 
+            this.chapterGroupsFolder, 
             this.workSnipsFolder, 
             this.exportFolder,
             this.recyclingBin,
@@ -212,11 +213,11 @@ export class Workspace {
         return Workspace.packageContextItems();
     }
 
-    
     // Simply initializes all the paths of necessary 
     constructor(context: vscode.ExtensionContext) {
         this.dotWtconfigPath = vscode.Uri.joinPath(Extension.rootPath, `.wtconfig`);
-        this.chaptersFolder = vscode.Uri.joinPath(Extension.rootPath, `data/chapters`);
+        this.legacyChaptersFolder = vscode.Uri.joinPath(Extension.rootPath, `data/chapters`);
+        this.chapterGroupsFolder = vscode.Uri.joinPath(Extension.rootPath, `data/chaptergroups`);
         this.workSnipsFolder = vscode.Uri.joinPath(Extension.rootPath, `data/snips`);
         this.exportFolder = vscode.Uri.joinPath(Extension.rootPath, `data/export`);
         this.recyclingBin = vscode.Uri.joinPath(Extension.rootPath, `data/recycling`);

@@ -10,7 +10,7 @@ import { Extension } from   '../../extension';
 import { getChildren } from './getChildren';
 import { shiftTrailingNodesDown } from './shiftTrailingNodes';
 import { UriBasedView } from '../../outlineProvider/UriBasedView';
-import { generalMoveNode } from './handleMovement/generalMoveNode';
+import { generalMoveNode, NodeMoveKind } from './handleMovement/generalMoveNode';
 import { updateChildrenToReflectNewUri } from './updateChildrenToReflectNewUri';
 import { MoveNodeResult } from './handleMovement/common';
 
@@ -27,7 +27,7 @@ export type NodeTypes = RootNode | SnipNode | ChapterNode | FragmentNode | Conta
 
 export class OutlineNode extends TreeNode {
     updateChildrenToReflectNewUri = updateChildrenToReflectNewUri;
-    generalMoveNode = generalMoveNode;
+    moveNode = generalMoveNode;
     getChildren = getChildren;
     shiftTrailingNodesDown = shiftTrailingNodesDown;
 

@@ -114,6 +114,9 @@ export async function handleInternalContainerReorder (
     else if (node.data.ids.type === 'snip') {
         unordered = (destinationContainer.data as ContainerNode).contents;
     }
+    else if (node.data.ids.type === 'container') {
+        unordered = (destinationContainer.data as ContainerNode).contents;
+    }
 
     // Now change the ordering of the items inside the `unordered` array found above
     //      in order to match the ordering of the items in `containerConfig`

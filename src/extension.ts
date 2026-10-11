@@ -358,7 +358,7 @@ export class Extension {
             progress.report({ message: "Loaded workspace" });
             if (workspace === null) return false;
             this._workspace = workspace;
-        
+
             await this.loadExtensionWorkspace(context, workspace, progress, 1);
             progress.report({ message: "Loaded extension" });
             return true;
@@ -405,7 +405,7 @@ export class Extension {
             this._todoView = new TODOsView(context, workspace);                        // wt.todo
             await this.todoView.init();
             report("Loaded TODO tree");
-            
+
             this._personalDictionary = new PersonalDictionary(context, workspace);
             const autocorrection = new Autocorrect(context, workspace);
             const spellcheck = new Spellcheck(context, workspace, this.personalDictionary, autocorrection);
@@ -472,7 +472,7 @@ export class Extension {
                 ['wt.wordWatcher', 'wordWatcher', this.wordWatcher],
                 ['wt.spacingHighlights', 'spacingHighlights', spacingHighlights],
                 // ['wt.proximity', 'proximity', proximity],
-                ['wt.very', 'very', veryIntellisense],  
+                ['wt.very', 'very', veryIntellisense],
                 ['wt.colors', 'colors', colorIntellisense],
                 ['wt.textStyle', 'textStyle', textStyles],
                 ['wt.autocorrections', 'autocorrections', autocorrection],
@@ -493,7 +493,7 @@ export class Extension {
             //        fragment/snips/chapters in the outline view
             FileAccessManager.initialize(context);
             vscode.commands.executeCommand('setContext', 'wt.todo.visible', false);
-            
+
             this._packageableItems = [
                 this.outlineView, this.synonymsWebview, this.timedViews, new FileAccessManager(),
                 this.personalDictionary, this.colorGroups, this.wh, reloadWatcher, this.tabStates,
@@ -556,7 +556,7 @@ export class Extension {
         // First thing to do, is to set wt.valid context value to false
         // This will display the welcome scene in the wt.outline view
         await vscode.commands.executeCommand('setContext', 'wt.valid', false);
-    
+
         // Tell the user about the load failure
         await vscode.window.showErrorMessage(`Error loading the IWE workspace: ${err}`);
     }

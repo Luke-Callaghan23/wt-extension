@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as console from './miscTools/vsconsole';
-import { defaultProgress } from './miscTools/help';
 
 
 export async function gitiniter () {

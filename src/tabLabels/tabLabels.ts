@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ConfigurationTarget, workspace } from 'vscode';
 import * as console from '../miscTools/vsconsole'
 import { OutlineView } from '../outline/outlineView';
-import { Extension } from   './../extension';
+import { Extension } from './../extension';
 import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
@@ -81,7 +81,7 @@ export class TabLabels {
         configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
 
         const showFullNameOfActive = !!configuration.get<boolean>('wt.tabLabels.alwaysShowFullNameOfActiveTab');
-    
+
         const newPatterns: { [index: string]: [ string, boolean ] } = {};
         for (const group of vscode.window.tabGroups.all) {
             for (const tab of group.tabs) {

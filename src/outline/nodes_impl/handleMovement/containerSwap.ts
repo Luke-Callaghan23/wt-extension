@@ -19,7 +19,7 @@ export async function handleContainerSwap (
     sourceProvider: UriBasedView<OutlineNode>,
     destinationContainer: OutlineNode, 
     rememberedMoveDecision: 'Reorder' | 'Insert' | null
-): Promise<MoveNodeResult> {
+): Promise<MoveNodeResult | null> {
     // Old path of the node we will be moving
     const moverOriginalUri = node.getUri();
     const moverOriginalOpenState = destinationProvider.getOpenedStatusOfNode(moverOriginalUri);
@@ -43,7 +43,7 @@ export async function handleContainerSwap (
     let movedFragmentNumber = 1000000;
     const destinationDotConfig = await readDotConfig(destinationDotConfigUri);
     {
-        if (!destinationDotConfig) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
+        if (!destinationDotConfig) return null;
     
         // Find the record in the new .config file with the highest ordering
         const latestFragmentNumber = getLatestOrdering(destinationDotConfig);
@@ -61,14 +61,14 @@ export async function handleContainerSwap (
     let spliceFromContainer: boolean = false;
     if (operation === 'recover' && node.data.ids.relativePath === '') {
         const log = await RecyclingBinView.readRecycleLog();
-        if (!log) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
+        if (!log) return null;
 
         const rootIndex = sourceProvider.rootNodes.findIndex(li => li.data.ids.fileName === node.data.ids.fileName);
-        if (rootIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
+        if (rootIndex === -1) return null;
         sourceProvider.rootNodes.splice(rootIndex, 1);
 
         const removeLogIndex = log.findIndex(li => li.recycleBinName === node.data.ids.fileName);
-        if (removeLogIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
+        if (removeLogIndex === -1) return null;
         log.splice(removeLogIndex, 1);
         await RecyclingBinView.writeRecycleLog(log);    
     }
@@ -78,7 +78,7 @@ export async function handleContainerSwap (
     else if (operation !== 'paste') {
         const movedRecordTitle = await node.shiftTrailingNodesDown(sourceProvider);
         if (movedRecordTitle === '') {
-            return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
+            return null;
         }
 
         // No need to splice from any containers if the operation is a scratch
@@ -158,30 +158,45 @@ export async function handleContainerSwap (
         }
     }
     else if (node.data.ids.type === 'chapter') {
-        (((destinationProvider.rootNodes[0] as OutlineNode).data as RootNode).chapters.data as ContainerNode).contents.push(node);
-        if (operation === 'move' || spliceFromContainer) {
-            oldParentContents = (((destinationProvider.rootNodes[0] as OutlineNode).data as RootNode).chapters.data as ContainerNode).contents;
+        if (destinationContainer.data.ids.type !== 'container') {
+            throw `unsupported parent type ${destinationContainer.data.ids.type}`;
         }
 
-        if (operation === 'recover') {
-            // When recovering, we need to push the updates to the chapter's new location down to all the children nodes of 
-            //      the recovered chapter
-            // Only need to do this when recovering because that is the only time when a chapter's internal
-            //      location data (relative path/uri/parent uri) updates
-            //      when operation === 'move' the destination container for a chapter is always, always 
-            //      going to be the same container that it originated in because chapters can only
-            //      exist in the recycling bin or in the root chapters container node
+        const destinationNode = destinationContainer.data as ContainerNode;
+        destinationNode.contents.push(node);
+
+        if (operation === 'move' || spliceFromContainer) {
+            if (oldParentNode && oldParentNode.data.ids.type === 'container') {
+                oldParentContents = (oldParentNode.data as ContainerNode).contents;
+            }
+        }
+
+        if (!compareFsPath(destinationContainer.data.ids.uri, oldParentUri)) {
+            // If the new container is different than the old parent, then we need to also update all children nodes of the moved
+            //      chapter to reflect the new parent
             node.updateChildrenToReflectNewUri();
         }
+
     }
+    else if (node.data.ids.type === 'container') {
+        const destinationNode = destinationContainer.data as ContainerNode;
+        destinationNode.contents.push(node);
+
+        if (!compareFsPath(destinationContainer.data.ids.uri, oldParentUri)) {
+            // If the new container is different than the old parent, then we need to also update all children nodes of the moved
+            //      chapter to reflect the new parent
+            node.updateChildrenToReflectNewUri();
+        }
+    } 
     else throw new Error(`Not possible`);
 
+    // For move operations, we need to remove the node from the old container as well
     if (operation === 'move' || spliceFromContainer) {
-        if (!oldParentContents) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
+        if (!oldParentContents) return null;
         // Get the index of the mover in the parent's contents
         const moverUri = node.getUri();
         const oldParentIndex = oldParentContents.findIndex(node => compareFsPath(node.getUri(), moverUri));
-        if (oldParentIndex === -1) return { moveOffset: -1, createdDestination: null, effectedContainers: [], rememberedMoveDecision: null };
+        if (oldParentIndex === -1) return null;
     
         // Remove this from parent
         oldParentContents.splice(oldParentIndex, 1);
@@ -280,7 +295,7 @@ const handlePaste = async (
     };
 
     if (src.data.ids.type === 'fragment') {
-        return fragmentPaste (src, originalNewOrdering, originalDestination, destName);
+        return fragmentPaste(src, originalNewOrdering, originalDestination, destName);
     }
     else if (src.data.ids.type === 'snip') {
         return snipPaste(src, originalNewOrdering, originalDestination, destName);

@@ -4,15 +4,15 @@ import * as vscode from 'vscode';
 import * as console from '../../miscTools/vsconsole';
 import { createWorkspace } from './../workspace';
 import { Workspace } from './../workspaceClass';
-import { ChaptersRecord, FragmentRecord, FragmentsExport, SnipsExport, SnipsRecord, WorkspaceExport } from './types';
+import { ChaptersExport, FragmentsExport, SnipsExport, WorkspaceExport } from './types';
 import { getUsableFileName } from '../../outline/impl/createNodes';
-import { ConfigFileInfo } from '../../miscTools/help';
+import { ConfigFileInfo, DotConfig } from '../../miscTools/help';
 import { Extension } from   './../../extension';
 import { Buff } from '../../Buffer/bufferSource'
 import { SerializedNote } from '../../notebook/notebookApi/notebookSerializer';
 
 async function initializeFragments (
-    fragments: FragmentRecord, 
+    fragments: FragmentsExport[], 
     parentUri: vscode.Uri,         // assumes the caller has created this directory already
 ): Promise<void> {
     
@@ -45,7 +45,7 @@ async function initializeFragments (
 }
 
 async function initializeSnips (
-    snips: SnipsRecord,
+    snips: SnipsExport[],
     parentUri: vscode.Uri,
 ): Promise<void> {
     
@@ -97,7 +97,7 @@ async function initializeSnips (
 }
 
 async function initializeChapters (
-    chapters: ChaptersRecord,
+    chapters: ChaptersExport[],
     parentUri: vscode.Uri,
 ) {
     const configMap: { [ index: string ]: ConfigFileInfo } = {};
@@ -195,10 +195,57 @@ export async function importWorkspace (
 
     progress.report({ message: "Created workspace configuration files", increment: inc * workDivision });
 
-    // Create all chapters
-    const chapterContainer = workspace.chaptersFolder;
-    await initializeChapters(iweRecord.chapters, chapterContainer);
+    
+
+    const chapterGroupsDotConfig: DotConfig = {};
+    const chapterGroupsContainer = workspace.chapterGroupsFolder;
+
+    let chapterGroupIdx = 0;
+
+    // Legacy support for the old "chapters/" folder
+    if (iweRecord.chapters) {
+        // There is an initial chapter group now, so all other chapter orderings need to be pushed back once
+        chapterGroupIdx++;
+
+        let mainChapters: ChaptersExport[];
+        if ("groupName" in iweRecord.chapters) {
+            chapterGroupsDotConfig['../chapters'] = {
+                ordering: 0,
+                title: iweRecord.chapters.groupName
+            };
+            mainChapters = iweRecord.chapters.chapters;
+        }
+        else {
+            chapterGroupsDotConfig['../chapters'] = {
+                ordering: 0,
+                title: "Chapters"
+            };
+            mainChapters = iweRecord.chapters;
+        }
+
+        const chaptersContainerFN = getUsableFileName('chaptergroups');
+        const chaptersContainerFolder = vscode.Uri.joinPath(chapterGroupsContainer, chaptersContainerFN);
+        await initializeChapters(mainChapters, chaptersContainerFolder);
+    }
+
+    // Create all other chapters
+    if (iweRecord.chapterGroups) {
+        for (const chaptergroup of iweRecord.chapterGroups) {
+    
+            const chapterGroupFN = getUsableFileName("chaptergroups");
+            chapterGroupsDotConfig[chapterGroupFN] = {
+                ordering: chapterGroupIdx,
+                title: chaptergroup.groupName || `Chapters ${chapterGroupIdx+1}`
+            };
+            
+            const chapterGroupsFolder = vscode.Uri.joinPath(chapterGroupsContainer, chapterGroupFN);
+            await initializeChapters(chaptergroup.chapters, chapterGroupsFolder);
+            chapterGroupIdx++;
+        }
+    }
+
     progress.report({ message: "Wrote chapter files", increment: inc * workDivision });
+
 
     // Create all work snips
     const workSnipsContainer = workspace.workSnipsFolder;

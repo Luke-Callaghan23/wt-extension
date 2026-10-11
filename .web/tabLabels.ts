@@ -50,7 +50,7 @@ export class TabLabels {
                 ]);
             }
             catch (err: any) {
-                vscode.window.showErrorMessage("[ERROR] Could not find selected item within Writing Tool's scope.  Please only use this command on .wt files within this project.");
+                vscode.window.showErrorMessage("[ERROR] Could not find selected item within Writing Tool's scope.  Please only use this command on .wt, .wtnote, or .md files within this project.");
                 return;
             }
 
@@ -76,7 +76,7 @@ export class TabLabels {
         configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
 
         const showFullNameOfActive = !!configuration.get<boolean>('wt.tabLabels.alwaysShowFullNameOfActiveTab');
-        
+
         const newPatterns: { [index: string]: [ string, boolean ] } = {};
         for (const group of vscode.window.tabGroups.all) {
             for (const tab of group.tabs) {
@@ -93,7 +93,7 @@ export class TabLabels {
                 }
 
                 console.log(`Tab labels: inspecting ${uri.fsPath}`);
-    
+
                 const { node: nodeOrNote, source } = await vagueNodeSearch(uri);
                 console.log(`Tab labels for ${uri.fsPath}:\n  node=${nodeOrNote}\n  source='${source}'`);
                 if (!nodeOrNote || !source) continue;
@@ -106,7 +106,7 @@ export class TabLabels {
                 if (relativePath.startsWith('/')) {
                     relativePath = relativePath.substring(1);
                 }
-    
+
                 // If the node was found in the recycling bin, mark it as deleted in the label so the user knows
                 let label: string;
                 if (source === 'outline') {
@@ -174,7 +174,7 @@ export class TabLabels {
     static async clearNamesForAllTabs () {
         const configuration = workspace.getConfiguration();
         configuration.update('workbench.editor.customLabels.enabled', true, ConfigurationTarget.Workspace);
-        
+    
         const oldPatterns: { [index: string]: string } = await configuration.get('workbench.editor.customLabels.patterns') || {};
         const filteredPatterns: { [index: string]: string } = {};
         for (const [ pattern, value ] of Object.entries(oldPatterns)) {

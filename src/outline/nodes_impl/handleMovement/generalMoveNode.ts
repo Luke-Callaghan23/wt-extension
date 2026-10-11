@@ -26,14 +26,14 @@ export async function generalMoveNode (
     moveOffset: number,
     overrideDestination: TreeNode | null,
     rememberedMoveDecision: 'Reorder' | 'Insert' | null
-): Promise<MoveNodeResult> {
+): Promise<MoveNodeResult | null> {
     const newParentNode = newParent as OutlineNode;
     const newParentType = newParentNode.data.ids.type;
     const newParentUri = newParentNode.data.ids.uri;
 
     if (isSubdirectory(this.data.ids.uri, newParentNode.data.ids.uri)) {
         vscode.window.showInformationMessage("[INFO] Unable to move node into itself or sub-node of itself")
-        return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
+        return null;
     }
     
     const moverType = this.data.ids.type;
@@ -41,13 +41,55 @@ export async function generalMoveNode (
     
     const thisAllowedMoves = allowedMoves[moverType];
     if (!thisAllowedMoves.find(allowed => allowed === newParentType)) {
-        return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
+        vscode.window.showWarningMessage(`[WARN] Cannot move '${moverType}' node '${this.data.ids.display}' into node of type '${newParentType}'.  Skipping . . . `);
+        return null;
     }
 
     let chapterDestination: DestinationResult | undefined;
     if (moverType === 'container') {
         if (operation === 'scratch') throw 'unreachable';
-        return containerMove(operation, this, recycleView, outlineView, newParent, moveOffset);
+
+        const chapterGroupsContainer = ((outlineView.rootNodes[0] as OutlineNode).data as RootNode).chapterGroups;
+
+        // If this node is a container and so is it's parent, it is a chapter group container
+        // There are special rules for moving these around
+        if (this.data.ids.parentTypeId === 'container') {
+            // If the destination is another chapter group, then it is just a re-order operation
+            if (operation !== 'recover' && newParentType === 'container' && newParentNode.data.ids.parentTypeId === 'container') {
+                return handleInternalContainerReorder(this, chapterGroupsContainer, newParentNode, moveOffset, "Reorder")
+            }
+            // If the the operation is recovery, 
+            // and destination is root, or the chapter group container, or a chapter group
+            //      then, recover the entire chapter group
+            else if (
+                operation === 'recover' && (
+                    (newParentType === 'container' && newParentNode.data.ids.parentTypeId === 'root')
+                    || (newParentType === 'container' && newParentNode.data.ids.parentTypeId === 'container')
+                    || newParentType === 'root' 
+                )
+            ) {
+                const swapResult = await handleContainerSwap('recover', this, outlineView, recycleView, chapterGroupsContainer, null);
+                if (!swapResult) return null;
+
+                return { 
+                    moveOffset: swapResult.moveOffset, 
+                    createdDestination: null,
+                    effectedContainers: swapResult.effectedContainers,
+                    rememberedMoveDecision: null,
+                };
+            }
+            else {
+                vscode.window.showErrorMessage
+                throw `[ERR] Cannot move chapter group into node of type '${newParentType}'`;
+            }
+        }
+        else {
+            // Otherwise a container move involves clearing out all the cointent inside of the container and moving it into
+            //      some other location
+            // Specific logic for that is contained within `containerMove`
+            return containerMove(operation, this, recycleView, outlineView, newParent, moveOffset);
+        }
+
     }
     else if (moverType === 'chapter') {
         if (operation === 'scratch') throw 'unreachable';
@@ -58,6 +100,8 @@ export async function generalMoveNode (
             moveOffset,
             rememberedMoveDecision
         );
+        if (!chapterMoveResult) return null;
+
         if (chapterMoveResult.kind === 'move') {
             return chapterMoveResult.result;
         }
@@ -74,12 +118,14 @@ export async function generalMoveNode (
         overrideDestination,
         rememberedMoveDecision
     );
-    if (destinationResult === null) return { moveOffset: -1, effectedContainers: [], createdDestination: null, rememberedMoveDecision: null };
+    if (destinationResult === null) return null;
     const { destinationContainer, newOverride, rememberedMoveDecision: moveDecision } = destinationResult;
 
 
     if (operation === 'recover') {
         const swapResult = await handleContainerSwap('recover', this, outlineView, recycleView, destinationContainer, moveDecision);
+        if (!swapResult) return null;
+
         return { 
             moveOffset: swapResult.moveOffset, 
             createdDestination: newOverride || null,
@@ -111,6 +157,7 @@ export async function generalMoveNode (
             destinationContainer,
             moveDecision
         );
+        if (!swapResult) return null;
 
         // Add the new override's parent to the effected containers if that container exists (and its parent does as well)
         const effectedContainers = swapResult.effectedContainers;

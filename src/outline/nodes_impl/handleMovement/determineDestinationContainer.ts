@@ -6,7 +6,6 @@ import { DestinationResult } from './common';
 import { compareFsPath } from '../../../miscTools/help';
 
 
-
 export async function determineDestinationContainer (
     mover: TreeNode,
     moverType: ResourceType,
@@ -118,9 +117,6 @@ export async function determineDestinationContainer (
         else {
             throw new Error('Not possible.');
         }
-    }  
-    else if (moverType === 'chapter') {
-        destinationContainer = ((provider.rootNodes[0] as OutlineNode).data as RootNode).chapters;
     }
     else {
         return null;

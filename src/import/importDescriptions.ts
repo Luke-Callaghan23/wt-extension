@@ -6,6 +6,41 @@ import { MultiSplit, NoSplit, SingleSplit, SnipInfo } from './importFiles';
 // Keeping these in a separate document to keep `importFiles.ts` cleaner
 
 
+export const splitChapterGroupDescription = (dateString: string, docSplits: SingleSplit) => {
+    return `
+Chapter Group imported from \`${vscodeUri.Utils.basename(docSplits.source)}\` on ${dateString}
+
+---
+
+Source document: \`(${docSplits.source.fsPath})\`
+
+---
+
+Imported ${docSplits.data.length} Fragments: 
+
+- ${docSplits.data.map(({ title }, index) => title && title.length !== 0 ? title : `Imported Fragment (${index})`).join("\n\n- ")}
+
+`;
+}
+
+export const noSplitChapterGroupDescription = (dateString: string, docSplits: NoSplit) => {
+    return `Chapter Group imported from \`${vscodeUri.Utils.basename(docSplits.source)}\` on ${dateString}
+
+---
+
+Source document: \`(${docSplits.source.fsPath})\`
+
+---
+
+Imported 1 fragment:
+
+- Imported Fragment (0)
+
+`;
+}
+
+
+
 export const multiSplitChapterDescription = (dateString: string, docSplits: SingleSplit, idx: number) => {
     return `
 ${getOrdinal(idx+1)} chapter imported from multi-split of \`${vscodeUri.Utils.basename(docSplits.source)}\` on ${dateString}

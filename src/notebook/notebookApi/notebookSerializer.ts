@@ -6,7 +6,7 @@ import { Buff } from '../../Buffer/bufferSource';
 import { wtToMd } from '../../miscTools/wtToMd';
 import { TabLabels } from '../../tabLabels/tabLabels';
 import { capitalize } from '../../miscTools/help';
-import { __, formatFsPathForCompare, getRelativePath, statFile, vagueNodeSearch, } from '../../miscTools/help';
+import { __, formatFsPathForCompare, getPathRelativeToRoot, statFile, vagueNodeSearch, } from '../../miscTools/help';
 import { TextMatchForNote } from '../timedViewUpdate';
 import { WTNotebookController } from './notebookController';
 import { DocumentLinker, markdownFormattedFragmentLinkRegex } from '../../miscTools/documentLinker';

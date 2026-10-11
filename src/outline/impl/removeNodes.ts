@@ -1,10 +1,10 @@
-import { ChapterNode, ContainerNode, OutlineNode, ResourceType, SnipNode } from "../nodes_impl/outlineNode";
+import { ChapterNode, ContainerNode, OutlineNode, ResourceType, RootNode, SnipNode } from "../nodes_impl/outlineNode";
 import * as vscode from 'vscode';
 import { OutlineView } from "../outlineView";
 import { Extension } from   '../../extension';
 import * as console from '../../miscTools/vsconsole';
 import { Buff } from "../../Buffer/bufferSource";
-import { compareFsPath, getSectionedProgressReporter, progressOnViews, writeDotConfig } from "../../miscTools/help";
+import { compareFsPath, getSectionedProgressReporter, isSubdirectory, progressOnViews, writeDotConfig } from "../../miscTools/help";
 import { RecycleLog, RecyclingBinView } from "../../recyclingBin/recyclingBinView";
 import { TabLabels } from "../../tabLabels/tabLabels";
 import * as vscodeUri from 'vscode-uri';
@@ -86,6 +86,21 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
         }
     }
 
+    let uniqueRootsChapterGroupsCount = 0;
+    for (const target of uniqueRoots) {
+        const isChapterGroup = target.data.ids.type === 'container'  && target.data.ids.parentTypeId === 'container';
+        if (isChapterGroup) {
+            uniqueRootsChapterGroupsCount++;
+        }
+    }
+
+    const chapterGroupsCount = ((this.rootNodes[0].data as RootNode).chapterGroups.data as ContainerNode).contents.length;
+    if (uniqueRootsChapterGroupsCount >= chapterGroupsCount) {
+        await vscode.window.showErrorMessage(`[ERROR] Attempting to delete all remaining chapter groups!  Skipping entire delete operation.`);
+        return;
+    }
+
+
     const newLogs: RecycleLog[] = [];
     const containers: OutlineNode[] = [];
     await progressOnViews([ OutlineView.viewId, RecyclingBinView.viewId ], `Removing Files From Outline`, async (progress) => {
@@ -97,6 +112,8 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
         for (const target of uniqueRoots) {
             reporter(`Removing '${target.data.ids.display}'`);
             const timestamp = Date.now();
+
+            const isChapterGroup = target.data.ids.type === 'container'  && target.data.ids.parentTypeId === 'container';
 
             if (target.data.ids.type === 'fragment') {
 
@@ -181,8 +198,8 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
                 // Splice that fragment away
                 fragmentParentTextNodes.splice(targetFragmentIndex, 1);
             }
-            else if (target.data.ids.type === 'chapter' || target.data.ids.type === 'snip') {
-                // Shift all the chapters or snips that come after this one up in the order
+            else if (target.data.ids.type === 'chapter' || target.data.ids.type === 'snip' || isChapterGroup) {
+                // Shift all the chapters or snips or chapter groups that come after this one up in the order
                 await target.shiftTrailingNodesDown(this);
 
                 // Delete the chapter or snip from the file system
@@ -314,6 +331,7 @@ export async function removeResource (this: OutlineView, targets: OutlineNode[])
     // Refresh the whole tree as it's hard to determine what the deepest root node is
     this.refresh(false, containers);
     Extension.todoView.refresh(true, []);
+    Extension.recyclingBinView.refresh(true, []);
 
     setTimeout(() => {
         // Reassign names in case if any of the opened fragments have just been deleted
