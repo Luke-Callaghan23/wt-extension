@@ -46,6 +46,12 @@ export function activateTTSDebug(context: vscode.ExtensionContext, factory?: vsc
                 });
             }
         }),
+        vscode.commands.registerCommand('extension.tts-debug.skipToNextBreakpoint', () => {
+            const ds = vscode.debug.activeDebugSession;
+            if (ds && ds.type === 'tts') {
+                ds.customRequest('skipToBreakpoint');
+            }
+        }),
         vscode.commands.registerCommand('extension.tts-debug.toggleFormatting', (variable) => {
             const ds = vscode.debug.activeDebugSession;
             if (ds) {

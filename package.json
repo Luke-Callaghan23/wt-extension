@@ -1987,6 +1987,11 @@
         ],
         "keybindings": [
             {
+                "command": "extension.tts-debug.skipToNextBreakpoint",
+                "key": "f5",
+                "when": "debugType == 'tts' && debugState == 'running'"
+            },
+            {
                 "command": "wt.notebook.cell.editCell",
                 "key": "f2",
                 "when": "wt.valid && (notebookType == 'wt.notebook' && notebookCellType == 'markup' && cellKindContextValue == 'input')"
@@ -2716,6 +2721,17 @@
                 "injectTo": [
                     "wt"
                 ]
+            }
+        ],
+        "breakpoints": [
+            {
+                "language": "wt"
+            },
+            {
+                "language": "markdown"
+            },
+            {
+                "language": "wtNote"
             }
         ],
         "debuggers": [

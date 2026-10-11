@@ -13,7 +13,7 @@
 import {
     Logger, logger,
     LoggingDebugSession,
-    InitializedEvent, TerminatedEvent, StoppedEvent, BreakpointEvent, OutputEvent,
+    InitializedEvent, TerminatedEvent, StoppedEvent, ContinuedEvent, BreakpointEvent, OutputEvent,
     ProgressStartEvent, ProgressUpdateEvent, ProgressEndEvent, InvalidatedEvent,
     StackFrame, Scope, Source, Handles, Breakpoint,
     Thread
@@ -25,6 +25,7 @@ import { TTSRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout,
 //@ts-ignore
 import { Subject } from 'await-notify';
 import { stopSpeaking } from '../tts/tts';
+import { WordMarker } from '../tts/windows';
 import * as console from '../../miscTools/vsconsole';
 import * as vscode from 'vscode';
 
@@ -88,13 +89,22 @@ export class TTSDebugSession extends LoggingDebugSession {
         this._runtime = new TTSRuntime(fileAccessor);
 
         // setup event handlers
+        this._runtime.on('running', () => {
+            this.sendEvent(new ContinuedEvent(TTSDebugSession.threadID, true));
+        });
+        this._runtime.on('wordSpoken', (line: number, marker: WordMarker) => {
+            this.highlightWord(line, marker);
+        });
         this._runtime.on('stopOnEntry', () => {
+            this.clearWordHighlight();
             this.sendEvent(new StoppedEvent('entry', TTSDebugSession.threadID));
         });
         this._runtime.on('stopOnStep', () => {
+            this.clearWordHighlight();
             this.sendEvent(new StoppedEvent('step', TTSDebugSession.threadID));
         });
         this._runtime.on('stopOnBreakpoint', () => {
+            this.clearWordHighlight();
             this.sendEvent(new StoppedEvent('breakpoint', TTSDebugSession.threadID));
         });
         this._runtime.on('stopOnInstructionBreakpoint', () => {
@@ -124,13 +134,44 @@ export class TTSDebugSession extends LoggingDebugSession {
             e.body.column = this.convertDebuggerColumnToClient(column);
             this.sendEvent(e);
         });
-        this._runtime.on("stopped", () => {
-            this.sendEvent(new StoppedEvent('step', TTSDebugSession.threadID));
-        });
         this._runtime.on('end', () => {
+            this.clearWordHighlight();
             stopSpeaking();
             this.sendEvent(new TerminatedEvent());
         });
+    }
+
+    private _program = '';
+    private _wordDecoration = vscode.window.createTextEditorDecorationType({
+        backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground')
+    });
+    private _arrowDecoration = vscode.window.createTextEditorDecorationType({
+        isWholeLine: true,
+        backgroundColor: new vscode.ThemeColor('editor.stackFrameHighlightBackground'),
+        gutterIconPath: vscode.Uri.parse('data:image/svg+xml;utf8,' + encodeURIComponent(
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='#FFCC00' d='M2 5h6V2l6 6-6 6v-3H2z'/></svg>"
+        )),
+        gutterIconSize: 'contain'
+    });
+
+    private programEditors(): vscode.TextEditor[] {
+        const program = this._program.toLowerCase();
+        return vscode.window.visibleTextEditors.filter(e => e.document.uri.fsPath.toLowerCase() === program);
+    }
+
+    private highlightWord(line: number, marker: WordMarker): void {
+        const range = new vscode.Range(line, marker.characterPosition, line, marker.characterPosition + marker.spokenText.length);
+        for (const editor of this.programEditors()) {
+            editor.setDecorations(this._wordDecoration, [range]);
+            editor.setDecorations(this._arrowDecoration, [new vscode.Range(line, 0, line, 0)]);
+        }
+    }
+
+    private clearWordHighlight(): void {
+        for (const editor of this.programEditors()) {
+            editor.setDecorations(this._wordDecoration, []);
+            editor.setDecorations(this._arrowDecoration, []);
+        }
     }
 
     /**
@@ -187,6 +228,9 @@ export class TTSDebugSession extends LoggingDebugSession {
     protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
         console.log(`disconnectRequest suspend: ${args.suspendDebuggee}, terminate: ${args.terminateDebuggee}`);
         await this._runtime.dispose();
+        this.clearWordHighlight();
+        this._wordDecoration.dispose();
+        this._arrowDecoration.dispose();
         this.sendResponse(response);
     }
 
@@ -203,6 +247,7 @@ export class TTSDebugSession extends LoggingDebugSession {
         await this._configurationDone.wait(1000);
 
         // start the program in the runtime
+        this._program = args.program;
         const { start } = await this._runtime.start(args.program, !!args.stopOnEntry, !args.noDebug);
 
         if (args.compileError) {
@@ -228,15 +273,20 @@ export class TTSDebugSession extends LoggingDebugSession {
     protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
 
         const path = args.source.path as string;
-        const clientLines = args.lines || [];
+        const requested = args.breakpoints ?? (args.lines ?? []).map(line => ({ line } as DebugProtocol.SourceBreakpoint));
 
         // clear all breakpoints for this file
         this._runtime.clearBreakpoints(path);
 
         // set and verify breakpoint locations
-        const actualBreakpoints0 = clientLines.map(async l => {
-            const { verified, line, id } = await this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(l));
-            const bp = new Breakpoint(verified, this.convertDebuggerLineToClient(line)) as DebugProtocol.Breakpoint;
+        const actualBreakpoints0 = requested.map(async r => {
+            const column = r.column === undefined ? undefined : this.convertClientColumnToDebugger(r.column);
+            const { verified, line, id, column: actualColumn } = await this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(r.line), column);
+            const bp = new Breakpoint(
+                verified,
+                this.convertDebuggerLineToClient(line),
+                actualColumn === undefined ? undefined : this.convertDebuggerColumnToClient(actualColumn)
+            ) as DebugProtocol.Breakpoint;
             bp.id = id;
             return bp;
         });
@@ -344,7 +394,11 @@ export class TTSDebugSession extends LoggingDebugSession {
     }
 
     protected customRequest (command: string, response: DebugProtocol.Response, args: any) {
-        if (command === 'toggleFormatting') {
+        if (command === 'skipToBreakpoint') {
+            this._runtime.continue(false, true);
+            this.sendResponse(response);
+        }
+        else if (command === 'toggleFormatting') {
             this._valuesInHex = ! this._valuesInHex;
             if (this._useInvalidatedEvent) {
                 this.sendEvent(new InvalidatedEvent( ['variables'] ));
