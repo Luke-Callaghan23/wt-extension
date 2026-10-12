@@ -1,4 +1,5 @@
-import * as childProcess from "child_process"
+import * as vscode from 'vscode';
+import * as childProcess from "child_process";
 import { getPowershellCommand } from "./windowsCommand";
 
 type DefaultCallback = ((err: Error | null)=>void) | null | undefined;
@@ -31,8 +32,8 @@ export class WindowsSpeak {
                     reject(new TypeError('say.speak(): must provide text parameter'))
                 })
             }
-    
-            const psCommand = getPowershellCommand(text, this.convertSpeed(speed));
+
+            const psCommand = getPowershellCommand(text, this.convertSpeed(speed), voice || "");
             // Encode the script so spoken text is passed as data, not shell syntax.
             const encoded = Buffer.from(psCommand, 'utf16le').toString('base64');
             const proc = childProcess.spawn('powershell', [ '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded ]);
@@ -60,6 +61,7 @@ export class WindowsSpeak {
                 }
             };
             proc.stdout.on('data', (data: string) => {
+                console.log(data);
                 buffer += data;
                 let nl: number;
                 while ((nl = buffer.indexOf('\n')) >= 0) {
@@ -69,6 +71,7 @@ export class WindowsSpeak {
             });
 
             proc.on('error', (err) => {
+                console.log('error', err);
                 // Remove failed processes so later stop calls only target live speech.
                 this.speakProcesses.delete(proc);
                 if (this.speakProcess === proc) this.speakProcess = null;
@@ -76,6 +79,7 @@ export class WindowsSpeak {
             });
     
             proc.on('exit', (code, signal) => {
+                console.log('exit', code, signal);
                 // Flush a final marker that may not end with a newline.
                 this.speakProcesses.delete(proc);
                 if (this.speakProcess === proc) this.speakProcess = null;

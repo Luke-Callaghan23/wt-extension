@@ -15,13 +15,13 @@ function escapeCSharp (text: string): string {
 // Each word marker is written as one line of JSON.
 // keep the C# in a literal here-string so powershell won't expand spoken text
 // emit each word marker as one JSON line
-export function getPowershellCommand (text: string, speed: number ): string { 
+export function getPowershellCommand (text: string, speed: number, voice: string): string { 
     const rate = Math.max(-10, Math.min(10, Math.round(speed)));
     return `&{
 $code = @'
 using System;
 using System.Speech.Synthesis;
-public class HelloWorld
+public class Speaker
 {
     static int WordCount = 0;
     static string Esc(string s)
@@ -33,6 +33,11 @@ public class HelloWorld
         var synthesizer = new SpeechSynthesizer();
         synthesizer.SpeakProgress += Synthesizer_SpeakProgress;
         synthesizer.Rate = ${rate};
+
+        if (!string.IsNullOrEmpty("${escapeCSharp(voice)}"))
+        {
+            synthesizer.SelectVoice("${escapeCSharp(voice)}");
+        }
         synthesizer.Speak("${escapeCSharp(text)}");
     }
     static void Synthesizer_SpeakProgress(object sender, SpeakProgressEventArgs e)
@@ -43,7 +48,7 @@ public class HelloWorld
 }
 '@
 Add-Type -TypeDefinition $code -Language CSharp -ReferencedAssemblies System.Speech;
-[HelloWorld]::Main()
+[Speaker]::Main()
 }
 `;
 }

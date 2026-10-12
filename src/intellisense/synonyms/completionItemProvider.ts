@@ -39,6 +39,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     private forceSelectIndex: boolean = false;
     private requestId = 0;
     private lastCompletionRequest = new Map<string, number>();
+    private completedCompletionRequests = new Map<string, { requestId: number, documentVersion: number, position: vscode.Position }>();
     private completionRefreshTimers = new Map<string, NodeJS.Timeout>();
 
     constructor (
@@ -80,6 +81,16 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                     return;
                 }
 
+                // Skip the refresh if the latest completed request matches this cursor and document version.
+                const completedRequest = this.completedCompletionRequests.get(documentKey);
+                if (completedRequest
+                    && completedRequest.requestId === latestRequest
+                    && completedRequest.documentVersion === event.document.version
+                    && completedRequest.position.isEqual(editor.selection.active)) {
+                    console.log('[synonyms] idle refresh skipped: current completion results were already returned');
+                    return;
+                }
+
                 console.log(`[synonyms] idle refresh firing at ${editor.selection.active.line}:${editor.selection.active.character}`);
                 // Reopen the widget to request completions for the updated word.
                 void vscode.commands.executeCommand('hideSuggestWidget').then(() => {
@@ -101,12 +112,14 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             if (timer) clearTimeout(timer);
             this.completionRefreshTimers.delete(documentKey);
             this.lastCompletionRequest.delete(documentKey);
+            this.completedCompletionRequests.delete(documentKey);
         }));
 
         this.context.subscriptions.push(new vscode.Disposable(() => {
             // Clear outstanding timers when the provider is disposed.
             for (const timer of this.completionRefreshTimers.values()) clearTimeout(timer);
             this.completionRefreshTimers.clear();
+            this.completedCompletionRequests.clear();
         }));
     }
 
@@ -118,9 +131,19 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     ): Promise<vscode.CompletionList<vscode.CompletionItem> | vscode.CompletionItem[]> {
         // A new request makes results from earlier requests stale.
         const requestId = ++this.requestId;
-        this.lastCompletionRequest.set(document.uri.toString(), Date.now());
+        const documentKey = document.uri.toString();
+        const documentVersion = document.version;
+        this.lastCompletionRequest.set(documentKey, requestId);
         console.log(`[synonyms] provider requested at ${position.line}:${position.character}, trigger=${context.triggerKind}`);
-        return this.provideCompletionItems__impl(document, position, token, context, requestId);
+        const result = await this.provideCompletionItems__impl(document, position, token, context, requestId);
+        if (!token.isCancellationRequested
+            && requestId === this.requestId
+            && this.lastCompletionRequest.get(documentKey) === requestId
+            && document.version === documentVersion) {
+            // Record only results that completed for the still-current request and document version.
+            this.completedCompletionRequests.set(documentKey, { requestId, documentVersion, position });
+        }
+        return result;
     }
 
     private async provideCompletionItems__impl(

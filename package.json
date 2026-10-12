@@ -418,6 +418,11 @@
         },
         "commands": [
             {
+                "command": "wt.tts.debugEditorContents",
+                "title": "TTS: Debug Current Sheet",
+                "icon": "$(play)"
+            },
+            {
                 "command": "wt.convert",
                 "title": "Writing Tool: Convert to New File names",
                 "enablement": "wt.valid"
@@ -2125,6 +2130,11 @@
                 }
             ],
             "editor/title": [
+                {
+                    "command": "wt.tts.debugEditorContents",
+                    "when": "editorLangId == wt || editorLangId == wtNote || editorLangId == markdown",
+                    "group": "navigation@1"
+                },
                 {
                     "command": "wt.editor.save",
                     "when": "(editorLangId == wt || editorLangId == wtNote || editorLangId == markdown) && config.wt.editor.showSaveAll",

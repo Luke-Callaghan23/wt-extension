@@ -46,7 +46,7 @@ export function activateTTSDebug(context: vscode.ExtensionContext, factory?: vsc
                 });
             }
         }),
-        vscode.commands.registerCommand('wt.tts.skipToNextBreakpoint`', () => {
+        vscode.commands.registerCommand('wt.tts.skipToNextBreakpoint', () => {
             const ds = vscode.debug.activeDebugSession;
             if (ds && ds.type === 'tts') {
                 // Ask the adapter to keep speaking until it reaches the next breakpoint.
