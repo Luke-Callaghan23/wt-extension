@@ -47,6 +47,7 @@ export class SynonymsIntellisense {
     }
 
     public async init () {
+        // Limit synonym features to the writing formats supported by the extension.
         const wtSelector: readonly vscode.DocumentFilter[] = [ 
             { language: 'wt' },
             { language: 'markdown' },
@@ -54,6 +55,7 @@ export class SynonymsIntellisense {
         ];
 
         await SynonymsProvider.init(this.workspace);
+        // Trigger completion after letters so lookup starts as the user types.
         this.context.subscriptions.push(vscode.languages.registerCompletionItemProvider (
             wtSelector,
             new CompletionItemProvider(this.context, this.workspace, this),

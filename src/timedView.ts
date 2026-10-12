@@ -37,6 +37,7 @@ export class TimedView implements Packageable<any> {
 
         // If the active editor changed, then change the internal activeEditor value and trigger updates
         this.context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
+            // Let VS Code finish switching editors before scheduling decoration updates.
             setTimeout(() => {
                 if (editor) this.scheduleEditorUpdate(editor);
             }, 0);
@@ -44,6 +45,7 @@ export class TimedView implements Packageable<any> {
     
         // On text document change within the editor, update decorations with throttle
         this.context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => {
+            // Update every visible editor showing the changed document.
             for (const editor of vscode.window.visibleTextEditors) {
                 if (editor.document === event.document) this.scheduleEditorUpdate(editor);
             }
@@ -74,7 +76,7 @@ export class TimedView implements Packageable<any> {
                     this.context.workspaceState.update(`${viewName}.enabled`, false);
                     timed.enabled = false;
         
-                    // Clear decorations
+                    // Clear decorations when the setting disables this view.
                     void timed.disable?.().catch(err => {
                         console.log(`[ERR] Failed to disable timed view '${viewName}': ${err}`);
                     });
@@ -121,6 +123,7 @@ export class TimedView implements Packageable<any> {
     private scheduleEditorUpdate (editor: vscode.TextEditor): void {
         if (!this.isSupportedDocument(editor.document)) return;
 
+        // group editors by document so split views share one debounce timer
         const documentKey = editor.document.uri.toString();
         const editors = this.pendingEditors.get(documentKey) || new Set<vscode.TextEditor>();
         editors.add(editor);
@@ -131,6 +134,7 @@ export class TimedView implements Packageable<any> {
 
         this.scheduledUpdates.set(documentKey, setTimeout(() => {
             this.scheduledUpdates.delete(documentKey);
+            // move this batch to the queue before starting asynchronous updates
             const readyEditors = this.pendingEditors.get(documentKey);
             if (readyEditors) {
                 this.pendingEditors.delete(documentKey);
@@ -153,8 +157,10 @@ export class TimedView implements Packageable<any> {
             while (this.queuedEditors.size > 0) {
                 const batches = [...this.queuedEditors.entries()];
                 this.queuedEditors.clear();
+                // process documents concurrently, but update each editor serially
                 await Promise.all(batches.map(async ([, editors]) => {
                     for (const editor of editors) {
+                        // closed editors no longer need decorations
                         if (!vscode.window.visibleTextEditors.includes(editor)) continue;
                         const commentedRanges = TimedView.findCommentedRanges(editor);
                         await this.doUpdates(editor, commentedRanges);
@@ -164,6 +170,7 @@ export class TimedView implements Packageable<any> {
         }
         finally {
             this.processingUpdates = false;
+            // drain updates queued during the final await
             if (this.queuedEditors.size > 0) void this.processPendingUpdates();
         }
     }

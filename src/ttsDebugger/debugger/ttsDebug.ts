@@ -90,9 +90,11 @@ export class TTSDebugSession extends LoggingDebugSession {
 
         // setup event handlers
         this._runtime.on('running', () => {
+            // tell VS Code the session is running while word decorations track speech
             this.sendEvent(new ContinuedEvent(TTSDebugSession.threadID, true));
         });
         this._runtime.on('wordSpoken', (line: number, marker: WordMarker) => {
+            // move the editor marker while speech is running without stopping the debug session
             this.highlightWord(line, marker);
         });
         this._runtime.on('stopOnEntry', () => {
@@ -142,6 +144,7 @@ export class TTSDebugSession extends LoggingDebugSession {
     }
 
     private _program = '';
+    // Highlight the active word separately from the moving gutter arrow.
     private _wordDecoration = vscode.window.createTextEditorDecorationType({
         backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground')
     });
@@ -156,10 +159,12 @@ export class TTSDebugSession extends LoggingDebugSession {
 
     private programEditors(): vscode.TextEditor[] {
         const program = this._program.toLowerCase();
+        // only decorate the file being spoken
         return vscode.window.visibleTextEditors.filter(e => e.document.uri.fsPath.toLowerCase() === program);
     }
 
     private highlightWord(line: number, marker: WordMarker): void {
+        // marker positions are measured against the source text
         const range = new vscode.Range(line, marker.characterPosition, line, marker.characterPosition + marker.spokenText.length);
         for (const editor of this.programEditors()) {
             editor.setDecorations(this._wordDecoration, [range]);
@@ -273,6 +278,7 @@ export class TTSDebugSession extends LoggingDebugSession {
     protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
 
         const path = args.source.path as string;
+        // Accept modern column breakpoints and the legacy line-only field.
         const requested = args.breakpoints ?? (args.lines ?? []).map(line => ({ line } as DebugProtocol.SourceBreakpoint));
 
         // clear all breakpoints for this file
@@ -280,6 +286,7 @@ export class TTSDebugSession extends LoggingDebugSession {
 
         // set and verify breakpoint locations
         const actualBreakpoints0 = requested.map(async r => {
+            // Convert DAP coordinates before storing the runtime breakpoint.
             const column = r.column === undefined ? undefined : this.convertClientColumnToDebugger(r.column);
             const { verified, line, id, column: actualColumn } = await this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(r.line), column);
             const bp = new Breakpoint(
@@ -302,6 +309,7 @@ export class TTSDebugSession extends LoggingDebugSession {
     protected breakpointLocationsRequest(response: DebugProtocol.BreakpointLocationsResponse, args: DebugProtocol.BreakpointLocationsArguments, request?: DebugProtocol.Request): void {
 
         if (args.source.path) {
+            // Report punctuation positions so the editor offers inline breakpoints there.
             const bps = this._runtime.getBreakpoints(args.source.path, this.convertClientLineToDebugger(args.line));
             response.body = {
                 breakpoints: bps.map(col => {
@@ -329,6 +337,7 @@ export class TTSDebugSession extends LoggingDebugSession {
     protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
         response.body = { allThreadsContinued: true };
         this.sendResponse(response);
+        // Start speech after replying; the run completes asynchronously.
         this._runtime.continue(false);
     }
 
@@ -395,6 +404,7 @@ export class TTSDebugSession extends LoggingDebugSession {
 
     protected customRequest (command: string, response: DebugProtocol.Response, args: any) {
         if (command === 'skipToBreakpoint') {
+            // This request backs the running-session F5 shortcut.
             this._runtime.continue(false, true);
             this.sendResponse(response);
         }

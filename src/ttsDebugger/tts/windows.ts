@@ -16,6 +16,7 @@ export class WindowsSpeak {
     }
 
     // Every live speak process, so overlapping speaks can all be stopped
+    // track every child process so stop() can cancel overlapping speech
     private speakProcesses = new Set<childProcess.ChildProcessWithoutNullStreams>();
 
     speak (
@@ -32,6 +33,7 @@ export class WindowsSpeak {
             }
     
             const psCommand = getPowershellCommand(text, this.convertSpeed(speed));
+            // Encode the script so spoken text is passed as data, not shell syntax.
             const encoded = Buffer.from(psCommand, 'utf16le').toString('base64');
             const proc = childProcess.spawn('powershell', [ '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded ]);
             this.speakProcess = proc;
@@ -45,6 +47,7 @@ export class WindowsSpeak {
             proc.stderr.on('data', (data: string) => { stderr += data; });
 
             // stdout chunks can contain partial or multiple lines, one JSON object per line
+            // stdout chunks may split or combine the JSON marker lines
             let buffer = '';
             const handleLine = (line: string) => {
                 line = line.trim();
@@ -66,12 +69,14 @@ export class WindowsSpeak {
             });
 
             proc.on('error', (err) => {
+                // Remove failed processes so later stop calls only target live speech.
                 this.speakProcesses.delete(proc);
                 if (this.speakProcess === proc) this.speakProcess = null;
                 reject(err);
             });
     
             proc.on('exit', (code, signal) => {
+                // Flush a final marker that may not end with a newline.
                 this.speakProcesses.delete(proc);
                 if (this.speakProcess === proc) this.speakProcess = null;
                 handleLine(buffer);
@@ -87,6 +92,7 @@ export class WindowsSpeak {
     }
 
     // Kills all running speech.  Resolves even if nothing is speaking.
+    // stop all speech processes; this resolves immediately if none are active
     stop (): Promise<void> {
         for (const proc of this.speakProcesses) {
             (proc as any).__stopped?.();

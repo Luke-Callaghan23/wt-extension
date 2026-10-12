@@ -13,6 +13,8 @@ function escapeCSharp (text: string): string {
 // The command is passed to powershell base64 encoded, and the C# is in a single quoted here-string so that
 // powershell never expands anything ($, backticks) inside the spoken text.
 // Each word marker is written as one line of JSON.
+// keep the C# in a literal here-string so powershell won't expand spoken text
+// emit each word marker as one JSON line
 export function getPowershellCommand (text: string, speed: number ): string { 
     const rate = Math.max(-10, Math.min(10, Math.round(speed)));
     return `&{

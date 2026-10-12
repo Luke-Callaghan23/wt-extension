@@ -15,6 +15,7 @@ import { DocumentLinker } from '../../miscTools/documentLinker';
 export class Spellcheck implements Timed {
     enabled: boolean;
 
+    // Keep ranges per document so other visible editors cannot overwrite them.
     private static currentMisspelledWordRanges = new Map<string, vscode.Range[]>();
 
     static getMisspelledWordRanges (documentUri: vscode.Uri): vscode.Range[] {
@@ -36,11 +37,13 @@ export class Spellcheck implements Timed {
         const document = editor.document;
         if (!document) return;
 
+        // Clear the previous result while this document is being checked again.
         Spellcheck.currentMisspelledWordRanges.set(document.uri.toString(), []);
         const errorDecorations: vscode.DecorationOptions[] = [];
         const misspelledRanges: vscode.Range[] = [];
 
         const fullText: string = document.getText();
+        // Check only visible text to keep updates responsive in large documents.
         const visible: vscode.Range[] = [ ...editor.visibleRanges ];
         for (const { start: visibleStart, end: visibleEnd } of visible) {
             const textStartOff = document.offsetAt(visibleStart);
@@ -68,6 +71,7 @@ export class Spellcheck implements Timed {
                         return ur;
                     }
                 })
+                // URLs are not prose and should not be sent to spellcheck.
                 if (isUrl !== undefined) return;
                 
                 const wordRange = new vscode.Range(start, end);
@@ -130,6 +134,7 @@ export class Spellcheck implements Timed {
     
         }
         // Set all red underlines
+        // Store ranges before applying decorations so other providers can reuse them.
         Spellcheck.currentMisspelledWordRanges.set(document.uri.toString(), misspelledRanges);
         editor.setDecorations(Spellcheck.RedUnderline, errorDecorations);
     }

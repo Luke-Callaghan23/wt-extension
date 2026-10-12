@@ -16,6 +16,7 @@ export const stopSpeaking = (): Promise<void> => {
 }
 
 // Substitutions must keep the text the same length so word marker positions still map onto the source line
+// keep substitutions length-preserving so word offsets still match the source
 const substitutions: { [index: string]: string} = {
     '_': ' ',
     '--': '  '

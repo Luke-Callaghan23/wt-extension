@@ -15,7 +15,7 @@ import { FileAccessor } from './ttsRuntime';
 export function activateTTSDebug(context: vscode.ExtensionContext, factory?: vscode.DebugAdapterDescriptorFactory) {
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('extension.tts-debug.runEditorContents', (resource: vscode.Uri) => {
+        vscode.commands.registerCommand('wt.tts.runEditorContents', (resource: vscode.Uri) => {
             let targetResource = resource;
             if (!targetResource && vscode.window.activeTextEditor) {
                 targetResource = vscode.window.activeTextEditor.document.uri;
@@ -31,7 +31,7 @@ export function activateTTSDebug(context: vscode.ExtensionContext, factory?: vsc
                 );
             }
         }),
-        vscode.commands.registerCommand('extension.tts-debug.debugEditorContents', (resource: vscode.Uri) => {
+        vscode.commands.registerCommand('wt.tts.debugEditorContents', (resource: vscode.Uri) => {
             let targetResource = resource;
             if (!targetResource && vscode.window.activeTextEditor) {
                 targetResource = vscode.window.activeTextEditor.document.uri;
@@ -46,13 +46,14 @@ export function activateTTSDebug(context: vscode.ExtensionContext, factory?: vsc
                 });
             }
         }),
-        vscode.commands.registerCommand('extension.tts-debug.skipToNextBreakpoint', () => {
+        vscode.commands.registerCommand('wt.tts.skipToNextBreakpoint`', () => {
             const ds = vscode.debug.activeDebugSession;
             if (ds && ds.type === 'tts') {
+                // Ask the adapter to keep speaking until it reaches the next breakpoint.
                 ds.customRequest('skipToBreakpoint');
             }
         }),
-        vscode.commands.registerCommand('extension.tts-debug.toggleFormatting', (variable) => {
+        vscode.commands.registerCommand('wt.tts.toggleFormatting', (variable) => {
             const ds = vscode.debug.activeDebugSession;
             if (ds) {
                 ds.customRequest('toggleFormatting');

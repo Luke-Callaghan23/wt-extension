@@ -48,17 +48,21 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
     ) { 
         this.registerCommands();
 
+        // Refresh suggestions after typing pauses so the latest word can be queried.
         this.context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => {
+            // Only typed single characters trigger the idle refresh.
             if (!event.contentChanges.some(change => change.text.length === 1 && !/[\r\n]/.test(change.text))) return;
 
             const documentKey = event.document.uri.toString();
             const lastRequest = this.lastCompletionRequest.get(documentKey);
+            // Don't reopen suggestions unless this document recently requested them.
             if (!lastRequest) {
                 console.log(`[synonyms] edit observed without prior completion request: ${documentKey}`);
                 return;
             }
 
             const existingTimer = this.completionRefreshTimers.get(documentKey);
+            // Restart the timer so rapid typing produces one refresh.
             if (existingTimer) clearTimeout(existingTimer);
             console.log(`[synonyms] scheduling idle refresh for document version ${event.document.version}`);
 
@@ -66,6 +70,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 this.completionRefreshTimers.delete(documentKey);
                 const editor = vscode.window.activeTextEditor;
                 const latestRequest = this.lastCompletionRequest.get(documentKey);
+                // The refresh only applies to the still-active document.
                 if (editor?.document !== event.document) {
                     console.log('[synonyms] idle refresh skipped: document is no longer active');
                     return;
@@ -76,6 +81,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 }
 
                 console.log(`[synonyms] idle refresh firing at ${editor.selection.active.line}:${editor.selection.active.character}`);
+                // Reopen the widget to request completions for the updated word.
                 void vscode.commands.executeCommand('hideSuggestWidget').then(() => {
                     console.log('[synonyms] existing suggest widget hidden');
                     return vscode.commands.executeCommand('editor.action.triggerSuggest');
@@ -90,6 +96,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
         this.context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(document => {
             const documentKey = document.uri.toString();
+            // Drop per-document state when the document closes.
             const timer = this.completionRefreshTimers.get(documentKey);
             if (timer) clearTimeout(timer);
             this.completionRefreshTimers.delete(documentKey);
@@ -97,6 +104,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         }));
 
         this.context.subscriptions.push(new vscode.Disposable(() => {
+            // Clear outstanding timers when the provider is disposed.
             for (const timer of this.completionRefreshTimers.values()) clearTimeout(timer);
             this.completionRefreshTimers.clear();
         }));
@@ -108,6 +116,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         token: vscode.CancellationToken, 
         context: vscode.CompletionContext
     ): Promise<vscode.CompletionList<vscode.CompletionItem> | vscode.CompletionItem[]> {
+        // A new request makes results from earlier requests stale.
         const requestId = ++this.requestId;
         this.lastCompletionRequest.set(document.uri.toString(), Date.now());
         console.log(`[synonyms] provider requested at ${position.line}:${position.character}, trigger=${context.triggerKind}`);
@@ -121,57 +130,60 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         context: vscode.CompletionContext,
         requestId: number
     ): Promise<vscode.CompletionList<vscode.CompletionItem> | vscode.CompletionItem[]> {
+        // Keep the version so results computed across an edit can be discarded.
         const documentVersion = document.version;
         let wordText: string;
         let strippedText: string;
-        let hoverPosition: HoverPosition; 
+        let hoverPosition: HoverPosition;
         let hoverRange: vscode.Range;
-        {
-            const activeEditor = vscode.window.activeTextEditor;
-            const selection = activeEditor?.document === document ? activeEditor.selection : undefined;
-            if (this.intellisense.isWordHippo() && selection && !selection.isEmpty) {
-                    // If we're using word hippo and the selection is not empty then call get hovered position on both the start
-                    //      and end of the selection to get the full range of selected text
-                    const start = getHoveredWord(document, selection.start);
-                    const end = getHoveredWord(document, selection.end);
-    
-                    if (!start || !end) {
-                        return getMisspellCorrections(null, selection, document.getText(selection));
-                    }
-    
-                    // Transform each to offsets
-                    start.start, start.end
-                    end.start, end.end
-    
-                    // Order start and end offsets
-                    const startOff = start.start < end.start ? start.start : end.start;
-                    const endOff = end.end < start.end ? start.end : end.end;
-    
-                    wordText = document.getText().substring(startOff, endOff);
-                    strippedText = stripDiacritics(wordText);
-                    hoverRange = new vscode.Range(document.positionAt(startOff), document.positionAt(endOff));
 
-                    hoverPosition = {
-                        start: startOff,
-                        end: endOff,
-                        text: wordText,
-                        strippedText: strippedText
-                    }
-            }
-            else {
-                const cursorOffset = document.offsetAt(position);
-                const followsWhitespace = cursorOffset > 0 && /\s/.test(document.getText()[cursorOffset - 1]);
-                const hoveredWord = context.triggerCharacter === ' ' || followsWhitespace
-                    ? getWordBeforePosition(document, position)
-                    : getHoveredWord(document, position);
-                if (!hoveredWord) return new vscode.CompletionList([], true);
-                hoverPosition = hoveredWord;
-                wordText = hoveredWord.text;
-                strippedText = hoveredWord.strippedText;
-                hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
-            }
+        const activeEditor = vscode.window.activeTextEditor;
+        const selection = activeEditor?.document === document ? activeEditor.selection : undefined;
+        if (this.intellisense.isWordHippo() && selection && !selection.isEmpty) {
+                // If we're using word hippo and the selection is not empty then call get hovered position on both the start
+                //      and end of the selection to get the full range of selected text
+            // expand both selection endpoints to their containing words
+                const start = getHoveredWord(document, selection.start);
+                const end = getHoveredWord(document, selection.end);
+
+                if (!start || !end) {
+                    return getMisspellCorrections(null, selection, document.getText(selection));
+                }
+
+                // Transform each to offsets
+                start.start, start.end
+                end.start, end.end
+
+                // Order start and end offsets
+                // normalize the word bounds to document order
+                const startOff = start.start < end.start ? start.start : end.start;
+                const endOff = end.end < start.end ? start.end : end.end;
+
+                wordText = document.getText().substring(startOff, endOff);
+                strippedText = stripDiacritics(wordText);
+                hoverRange = new vscode.Range(document.positionAt(startOff), document.positionAt(endOff));
+
+                hoverPosition = {
+                    start: startOff,
+                    end: endOff,
+                    text: wordText,
+                    strippedText: strippedText
+                }
+        }
+        else {
+            const cursorOffset = document.offsetAt(position);
+            const followsWhitespace = cursorOffset > 0 && /\s/.test(document.getText()[cursorOffset - 1]);
+            const hoveredWord = context.triggerCharacter === ' ' || followsWhitespace
+                ? getWordBeforePosition(document, position)
+                : getHoveredWord(document, position);
+            if (!hoveredWord) return new vscode.CompletionList([], true);
+            hoverPosition = hoveredWord;
+            wordText = hoveredWord.text;
+            strippedText = hoveredWord.strippedText;
+            hoverRange = new vscode.Range(document.positionAt(hoverPosition.start), document.positionAt(hoverPosition.end));
         }
 
+        // stop before querying if this request was cancelled or superseded
         if (token.isCancellationRequested || requestId !== this.requestId) return new vscode.CompletionList([], true);
         if (wordText === '' || wordText.length === 0) {
             // No need to emit an error for an empty word
@@ -210,7 +222,9 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
         let response: Synonyms;
 
         // Query the dictionary api for the selected word
+        // query the configured provider for the selected word
         const res = await SynonymsProvider.provideSynonyms(strippedText, this.intellisense.getCurrentSynonymsProvider());
+        // discard results if typing changed the document while the request was pending
         if (token.isCancellationRequested || requestId !== this.requestId || document.version !== documentVersion) {
             return new vscode.CompletionList([], true);
         }
@@ -223,6 +237,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
         // If there was no error querying for synonyms of the selected word, then store the response from
         //      the dictionary api and cache it for later
+        // use the provider's definitions to build this completion list
         response = res;
         const defs = response.definitions;
 
@@ -236,6 +251,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             // If the activation state of the current hover is for the same word and same range
             //      in the text document as the previous activation, use the activations of that 
             //      state for this call
+            // reuse toggles only for the same word and document range
             activations = this.activationState.definitionsActivated;
             expansions = this.activationState.definitionsExpanded;
         }
@@ -246,6 +262,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             // Since activation state is used to keep track of which definitions of the *current*
             //      hovered word are shown, we cannot allow those definitions and definition activation
             //      state to effect this new word
+            // a different word or range starts with fresh activation state
             this.activationState = undefined;
 
             // If there is only a single definition for the selected word, then have that definition open by default
@@ -254,6 +271,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
 
             // We can copy the falses from activations for the expansions array
             // Don't use the same array for obv reasons
+            // keep expansion toggles independent from activation toggles
             expansions = [...activations];
 
             // Also create a new activation state for this completion
@@ -322,6 +340,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
             let synonymCompletions: vscode.CompletionItem[] = []
             if (activations[definitionIndex]) {
                 synonymCompletions = await this.resolveDefinitionItems(hoverRange, hoverPosition, wordText, strippedText, definitionIndex, indexStr);
+                // synonym expansion is asynchronous too, so check for stale requests again
                 if (token.isCancellationRequested || requestId !== this.requestId || document.version !== documentVersion) {
                     return new vscode.CompletionList([], true);
                 }
@@ -368,6 +387,7 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 ...synonymCompletions
             ].forEach(item => allItems.push(item));
         }
+        // do not publish a list built for an outdated cursor or document version
         if (token.isCancellationRequested || requestId !== this.requestId || document.version !== documentVersion) {
             return new vscode.CompletionList([], true);
         }
@@ -544,12 +564,17 @@ export class CompletionItemProvider implements vscode.CompletionItemProvider<vsc
                 }
             }
 
+
             this.activationState.ts = Date.now();
 
+            // `forceSelectIndex` forces `provideCompletionItems__impl` to select the index specified in the activation state
+            // This will override any other selections that this function will try to use
             this.forceSelectIndex = true;
+
             await vscode.commands.executeCommand('hideSuggestWidget');
             await vscode.commands.executeCommand('editor.action.triggerSuggest');
 
+            // Set a small timeout for `provideCompletionItems__impl` to finish
             setTimeout(() => {
                 this.forceSelectIndex = false;
             }, 100);

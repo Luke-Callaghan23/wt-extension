@@ -160,19 +160,23 @@ export class TTSRuntime extends EventEmitter {
 
         this.closed = false;
         this._sourceFile = '';
+        // load source before verifying breakpoints or calculating start positions
         await this.loadSource(this.normalizePathAndCasing(program));
         this.currentLine = 0;
 
         if (debug) {
+            // empty-line breakpoints may move during verification
             await this.verifyBreakpoints(this._sourceFile);
 
             const first = this.adjacentBreakpoint(-1, undefined, false);
             if (first !== undefined) {
                 // begin speaking at the first breakpoint rather than the top of the document
+                // include the inline column when starting at the first breakpoint
                 this.currentLine = first.line;
                 this.currentColumn = first.column;
             }
             else if (stopOnEntry) {
+                // with no breakpoint, stop at the first non-empty statement
                 this.findNextStatement(false, 'stopOnEntry');
                 return { start: this.breakPoints.size === 0 };
             }
@@ -195,10 +199,13 @@ export class TTSRuntime extends EventEmitter {
      * Cancel whatever is currently running (and speaking), then start the new run in the background.
      * Resolves once the new run has been started, not when it finishes.
      */
+    // stop the previous run before starting another in the background
     private async startRun(run: (token: number) => Promise<void>): Promise<void> {
+        // invalidate the old run so late word events are ignored
         const token = ++this.runToken;
         await stopSpeaking().catch(() => {});
         await this.activeRun;
+        // a newer request or disposal may arrive while the old run stops
         if (token !== this.runToken || this.closed) {
             return;
         }
@@ -223,6 +230,7 @@ export class TTSRuntime extends EventEmitter {
     public async pause(): Promise<void> {
         await this.cancelRun();
         this.stoppedAtBreakpoint = false;
+        // resume after the last reported word rather than replaying the line
         const lastWord = this.wordMarkerStream?.[this.wordMarkerStream.length - 1];
         if (lastWord) {
             this.currentColumn = lastWord.characterPosition;
@@ -240,16 +248,19 @@ export class TTSRuntime extends EventEmitter {
      * With skip, jump to the next breakpoint first; without it, resume from the current position.
      * By default only a stop at a breakpoint skips; a pause resumes in place.
      */
+    // continue skips ahead after a breakpoint; after a pause, it resumes in place
     public continue (reverse: boolean, skip = this.stoppedAtBreakpoint): Promise<void> {
         return this.startRun(async token => {
             this.stoppedAtBreakpoint = false;
 
             // a run cancelled mid-line leaves its last spoken word behind
+            // resume after the last word spoken before cancellation
             const lastWord = this.wordMarkerStream?.[this.wordMarkerStream.length - 1];
             if (lastWord) {
                 this.currentColumn = lastWord.characterPosition;
             }
 
+            // skip only when continuing from a breakpoint, unless the caller explicitly requests it
             const next = skip ? this.adjacentBreakpoint(this.currentLine, this.currentColumn, reverse) : undefined;
             if (next !== undefined) {
                 this.currentLine = next.line;
@@ -283,6 +294,7 @@ export class TTSRuntime extends EventEmitter {
     private stoppedAtBreakpoint = false;
 
     private adjacentBreakpoint(line: number, column: number | undefined, reverse: boolean): IRuntimeBreakpoint | undefined {
+        // compare line and column so inline breakpoints sort within their line
         const pos = (l: number, c?: number) => l * 1_000_000 + (c ?? 0);
         const here = pos(line, column);
         let best: IRuntimeBreakpoint | undefined;
@@ -326,16 +338,19 @@ export class TTSRuntime extends EventEmitter {
     /*
      * Possible column breakpoint positions for the given line: every punctuation mark.
      */
+    // Inline breakpoints are available at punctuation marks.
     public getBreakpoints(path: string, line: number): number[] {
         return this.getSyntaxMarks(this.sourceLines[line] ?? '');
     }
 
     private getSyntaxMarks(line: string): number[] {
         // ellipses, dashes, sentence/clause punctuation, brackets and quotes
+        // sentence and clause punctuation, dashes, brackets, and quotes
         const SYNTAX_REGEXP = /\.{3}|…|-{2,}|[.,;:!?()\[\]"“”—–]/g;
         const marks: number[] = [];
         let match: RegExpExecArray | null;
         while (match = SYNTAX_REGEXP.exec(line)) {
+            // DAP columns are zero-based character offsets
             marks.push(match.index);
         }
         return marks;
@@ -358,13 +373,16 @@ export class TTSRuntime extends EventEmitter {
         await this.verifyBreakpoints(path);
 
         // snap a mid-line column to the nearest punctuation mark; a column at the line start means the whole line
+        // map a clicked column to nearby punctuation; line-start clicks remain whole-line breakpoints
         if (bp.column !== undefined) {
             const text = this.sourceLines[bp.line] ?? '';
             const col = bp.column;
             const marks = this.getSyntaxMarks(text);
             const atLineStart = col <= text.length - text.trimStart().length;
             // a column on the word right after a mark belongs to that mark, not the next one
+            // a click on the following word belongs to the preceding mark
             const justAfter = [...marks].reverse().find(m => m <= col && !/[\p{L}\p{N}]/u.test(text.slice(m, col)));
+            // fall back to the nearest available mark if the click is inside a word
             bp.column = atLineStart ? undefined : (justAfter ?? marks.find(m => m >= col) ?? [...marks].reverse().find(m => m < col));
         }
 
@@ -431,6 +449,7 @@ export class TTSRuntime extends EventEmitter {
         if (this._sourceFile !== file) {
             this._sourceFile = this.normalizePathAndCasing(file);
             // concurrent callers must wait on the same read, not see the empty source
+            // share one read so overlapping breakpoint requests see loaded source
             this.sourceLoad = this.fileAccessor.readFile(file).then(contents => this.initializeContents(contents));
         }
         await this.sourceLoad;
@@ -461,6 +480,7 @@ export class TTSRuntime extends EventEmitter {
         for (let ln = this.currentLine; reverse ? ln >= 0 : ln < this.sourceLines.length; reverse ? ln-- : ln++) {
 
             // is there a source breakpoint?
+            // whole-line breakpoints stop before the line is spoken
             const breakpoints = this.breakPoints.get(this._sourceFile);
             if (breakpoints) {
                 const bps = breakpoints.filter(bp => bp.line === ln && bp.column === undefined);
@@ -471,6 +491,7 @@ export class TTSRuntime extends EventEmitter {
 
                     // the following shows the use of 'breakpoint' events to update properties of a breakpoint in the UI
                     // if breakpoint is not yet verified, verify it now and send a 'breakpoint' update event
+                    // notify the client if this breakpoint was not verified earlier
                     if (!bps[0].verified) {
                         bps[0].verified = true;
                         this.sendEvent('breakpointValidated', bps[0]);
@@ -485,6 +506,7 @@ export class TTSRuntime extends EventEmitter {
 
             const line = this.getLine(ln);
             if (line.length > 0) {
+                // skip blank lines when looking for the next statement
                 this.currentLine = ln;
                 break;
             }
@@ -496,6 +518,7 @@ export class TTSRuntime extends EventEmitter {
         return false;
     }
 
+    // speak from the current column and report whether an inline breakpoint remains after the line
     /**
      * "execute a line": speak it, publishing a word event for every word spoken.
      * Speaks the raw (untrimmed) line so word positions are columns in the source line.
@@ -507,7 +530,9 @@ export class TTSRuntime extends EventEmitter {
         this.currentColumn = undefined;
         if (raw.trim() === '') return false;
 
+        // word markers are relative to sent text, so restore the source offset
         const offset = resumeAt ?? 0;
+        // only consider inline breakpoints at or after the resume position
         const marks = (this.breakPoints.get(this._sourceFile) ?? [])
             .filter(bp => bp.line === ln && bp.column !== undefined && (resumeAt === undefined || bp.column > resumeAt))
             .map(bp => bp.column!);
@@ -515,11 +540,13 @@ export class TTSRuntime extends EventEmitter {
         this.wordMarkerStream = [];
         await speakText(raw.substring(offset), (spoken) => {
             if (this.isCancelled(token)) return;
+            // keep the debugger highlight aligned with the original source line
             const wordMarker = { ...spoken, characterPosition: spoken.characterPosition + offset };
             this.wordMarkerStream?.push(wordMarker);
             this.sendEvent('wordSpoken', ln, wordMarker);
 
             // stop once speech has moved past a punctuation mark, resuming from the word after it
+            // resume at the word after this punctuation breakpoint
             if (marks.some(m => m < wordMarker.characterPosition)) {
                 this.currentColumn = wordMarker.characterPosition;
                 this.stoppedAtBreakpoint = true;
@@ -530,10 +557,12 @@ export class TTSRuntime extends EventEmitter {
         });
 
         // the finished line no longer has a current word
+        // keep the marker if cancellation interrupted speech before the line finished
         if (this.isCancelled(token)) return false;
         this.wordMarkerStream = null;
 
         // any mark still pending sits after the last word of the line
+        // a remaining mark follows the line's last spoken word
         return marks.length > 0;
     }
 

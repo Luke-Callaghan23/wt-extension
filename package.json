@@ -2201,7 +2201,7 @@
         ],
         "keybindings": [
             {
-                "command": "extension.tts-debug.skipToNextBreakpoint",
+                "command": "wt.tts.skipToNextBreakpoint",
                 "key": "f5",
                 "when": "debugType == 'tts' && debugState == 'running'"
             },

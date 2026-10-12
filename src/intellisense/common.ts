@@ -14,17 +14,22 @@ export type HoverPosition = {
 
 
 export function getHoveredWord (document: vscode.TextDocument, position: vscode.Position): HoverPosition | null {
+    // Treat punctuation and whitespace as boundaries between words.
     const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/;
 
     const text = document.getText();
+    // Convert the cursor position once so the scan can work across line breaks.
     const offset = document.offsetAt(position);
     let anchor = offset;
 
+    // keep the anchor inside the word when the cursor is at the end of the document
     if (offset === text.length) {
+        // The final offset is just past the last character, so anchor on that character.
         if (offset === 0 || stops.test(text[offset - 1])) return null;
         anchor = offset - 1;
     }
     else if (stops.test(text[offset])) {
+        // on a delimiter, prefer the word before it, then the word after it
         if (offset > 0 && !stops.test(text[offset - 1])) {
             anchor = offset - 1;
         }
@@ -32,10 +37,12 @@ export function getHoveredWord (document: vscode.TextDocument, position: vscode.
             anchor = offset + 1;
         }
         else {
+            // A delimiter between two delimiters is not part of a word.
             return null;
         }
     }
 
+    // expand from the anchor to the surrounding word boundaries
     let start = anchor;
     while (start > 0 && !stops.test(text[start - 1])) start--;
 
@@ -45,6 +52,7 @@ export function getHoveredWord (document: vscode.TextDocument, position: vscode.
     if (start === end) return null;
 
     const originalText = text.substring(start, end);
+    // Keep both forms so lookups can ignore accents without changing displayed text.
     const strippedText = stripDiacritics(originalText);
     return {
         start, end,
@@ -54,15 +62,19 @@ export function getHoveredWord (document: vscode.TextDocument, position: vscode.
 }
 
 export function getWordBeforePosition (document: vscode.TextDocument, position: vscode.Position): HoverPosition | null {
+    // Use the same boundaries as getHoveredWord so completion and hover agree.
     const stops = /[\.\?,\s\;'":\(\)\{\}\[\]\/\\\-!\*_]/;
     const text = document.getText();
     let end = document.offsetAt(position);
     let current = end - 1;
 
+    // skip delimiters before the cursor, then find the preceding word's start
     while (current >= 0 && stops.test(text[current])) current--;
+    // There is no preceding word when the cursor is at the start or after only delimiters.
     if (current < 0) return null;
 
     end = current + 1;
+
     let start = current;
     while (start > 0 && !stops.test(text[start - 1])) start--;
 

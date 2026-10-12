@@ -66,9 +66,11 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
     async gatherLinks (document: vscode.TextDocument): Promise<vscode.DocumentLink[]> {
 
         const documentLinks: vscode.DocumentLink[] = [];
+        // Build ranges locally before replacing this document's cached ranges.
         const linkRanges: vscode.Range[] = [];
 
         const lineText = document.getText();
+        // clone global regexes so concurrent scans don't share lastIndex
         const fragmentLinkRegex = new RegExp(markdownFormattedFragmentLinkRegex.source, markdownFormattedFragmentLinkRegex.flags);
 
         let match: RegExpMatchArray | null;
@@ -110,6 +112,7 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
             linkRanges.push(range);
         }
 
+        // Clone this global regex for the same reason as the fragment-link regex above.
         const urlRegex = new RegExp(Extension.urlRegex.source, Extension.urlRegex.flags);
         while ((match = urlRegex.exec(lineText)) !== null) {
             if (!match || match.index === undefined) continue;
@@ -133,6 +136,7 @@ export class DocumentLinker implements vscode.DocumentLinkProvider, Timed {
             });
             linkRanges.push(range);
         }
+        // keep ranges per document so one editor's links don't replace another's
         DocumentLinker.documentLinkRanges.set(document.uri.toString(), linkRanges);
         return documentLinks;
     }
