@@ -72,8 +72,6 @@ Using the debug adapter API, you can read out contents of a file with real-time 
 
 You can also use breakpoints to skip to certain points in the text. 
 
-Click the speech bubble:
-
 > [![TTS](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/TTS.jpeg)](https://github.com/user-attachments/assets/ebafc6ba-4a6b-4825-a8a3-43938601a98f)
 
 # Exporting Content
