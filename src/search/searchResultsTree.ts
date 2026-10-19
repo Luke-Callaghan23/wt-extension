@@ -397,6 +397,7 @@ WARNING: For best results.  Save ALL open .wtnote notebook files before doing th
         }
         else {
             collapseState = vscode.TreeItemCollapsibleState.Expanded;
+            icon = new vscode.ThemeIcon(element.node.kind === 'file' ? 'edit' : 'folder');
         }
 
         return {
@@ -404,7 +405,7 @@ WARNING: For best results.  Save ALL open .wtnote notebook files before doing th
             label: element.getLabel(),
             resourceUri: element.getUri(),
             tooltip: element.getTooltip(),
-            description: element.description && `(${element.description})`,
+            description: [ element.getResultsCount()?.toString(), element.description ].filter(Boolean).join('  ·  ') || undefined,
             iconPath: icon,
             collapsibleState: collapseState
         }

@@ -92,8 +92,8 @@ export class ExportForm {
         const styleIconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/webview/icons.css`));
         const styleMainUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/export/main.css`));
 
-        const codiconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode/codicons/dist/codicon.css`));
-        const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode-elements/elements/dist/bundled.js`));
+        const codiconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/vendor/codicon.css`));
+        const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/vendor/bundled.js`));
 
         // Use a nonce to only allow a specific script to be run.
         const nonce = getNonce();

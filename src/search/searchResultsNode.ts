@@ -100,47 +100,30 @@ export class SearchNode<T extends FileResultNode | SearchContainerNode | FileRes
         }
         else if (this.node.kind === 'file' || this.node.kind === 'searchContainer' || this.node.kind === 'matchedMetadata') {
 
-            // For containers and files, the label needs to be prfixed by a count of the results in that container
-            //      as well as the original prefix (fragment or snip or container, or whatever), which was created
-            //      when this node was originally created
+            // The count and path are shown in the description (see getResultsCount)
+            const fullPrefix = this.node.prefix.length > 0 ? `(${this.node.prefix}) ` : '';
 
-            // For full prefix, first add results count
-            let fullPrefix: string = '';
-            if (this.node.kind === 'searchContainer') {
-                fullPrefix += `[${this.node.results}] `;
-            }
-            else if (this.node.kind === 'file') {
-                fullPrefix += `[${this.node.locations.length}] `;
-            }
-
-            // Then the actual prefix
-            if (this.node.prefix.length > 0) {
-                fullPrefix += `(${this.node.prefix}) `
-            }
-
-            // If this is a matched title or a node with a paired matched title, then store the indeces to highlight
-            //      for below
             const highlightIndeces = this.node.kind === 'matchedMetadata' 
                 ? this.node.titleHighlightInfo
                 : this.node.pairedMatchedMetadataNode?.node.titleHighlightInfo;
 
             if (highlightIndeces) {
-                // Map the highlights by movinf all of them over by the length of the prefix
-                // (Highlights are originally calculated without a prefix in mind, so we need to adjust all highlights
-                //      to account for prefixes, once the prefixes are calculated)
-                const remappedHighlights = highlightIndeces.map(([ start, end ]) => {
-                    return [ start + fullPrefix.length, end + fullPrefix.length ];
-                });
+                // Highlights are calculated without the prefix, so shift them past it
                 return <vscode.TreeItemLabel> {
                     label: `${fullPrefix}${this.node.title}`,
-                    highlights: remappedHighlights
+                    highlights: highlightIndeces.map(([ start, end ]) => [ start + fullPrefix.length, end + fullPrefix.length ])
                 }
             }
 
-            // If no highlights, then just return the prefix followed immediately by the title of the node
             return `${fullPrefix}${this.node.title}`;
         }
         throw 'Not accessible';
+    }
+
+    getResultsCount (): number | undefined {
+        if (this.node.kind === 'searchContainer') return this.node.results;
+        if (this.node.kind === 'file') return this.node.locations.length;
+        return undefined;
     }
 
     getTooltip (): string | vscode.MarkdownString {

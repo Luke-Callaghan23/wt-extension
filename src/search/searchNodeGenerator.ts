@@ -167,7 +167,14 @@ export class SearchNodeGenerator {
             // Remove the "data/" prefix form each of the root relative paths
             const pathToChapterGroup = chapterGroup.data.ids.relativePath.replace(/^data(\/?)/, "");
 
-            const relativePath = `${pathToChapterGroup}/${chapterGroup.data.ids.fileName}`;
+            let relativePath: string;
+            if (chapterGroup.data.ids.fileName === '../chapters') {
+                relativePath = `chapters`;
+            }
+            else {
+                relativePath = `${pathToChapterGroup}/${chapterGroup.data.ids.fileName}`;
+            }
+            
             chapterGroupCategories[relativePath] = new SearchNode<SearchContainerNode>({
                 kind: 'searchContainer',
                 uri: vscode.Uri.joinPath(Extension.rootPath, 'data', relativePath),
