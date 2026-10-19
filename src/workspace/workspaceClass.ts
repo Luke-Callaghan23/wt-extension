@@ -7,7 +7,7 @@ import { Config, loadWorkspaceContext, PositionInfo, SavedTabState, TabPositions
 import { Buff } from './../Buffer/bufferSource';
 import { ReloadWatcher } from '../miscTools/reloadWatcher';
 import { SynonymsProvider } from '../intellisense/synonymsProvider/provideSynonyms';
-import * as fs from 'fs';
+import { writeFileOnShutdown } from '../platformFeatures';
 import { Autocorrect } from '../autocorrect/autocorrect';
 import { SearchBarView } from '../search/searchBarView';
 
@@ -175,9 +175,7 @@ export class Workspace {
 
         ReloadWatcher.disableReloadWatch();
         if (shuttingDown) {
-            // When the workspace is shutting down, we cannot rely on vscode.workspace.fs to still exist
-            // Use the default nodejs fs to write
-            fs.writeFileSync(contextUri.fsPath, contextJSON);
+            await writeFileOnShutdown(contextUri, contextJSON);
             await SynonymsProvider.closeCacheDb();
         }
         else {

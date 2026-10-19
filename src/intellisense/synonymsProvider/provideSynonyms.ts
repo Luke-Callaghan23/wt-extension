@@ -3,9 +3,9 @@ import { QuerySynonyms } from "./synonymsApi";
 import { Extension } from   './../../extension';
 import { Workspace } from '../../workspace/workspaceClass';
 import * as console from '../../miscTools/vsconsole';
-import * as fs from 'fs';
-import { Level } from 'level';
 import { statFile } from '../../miscTools/help';
+import { openSynonymCache } from './synonymCache';
+import { SynonymCache } from './synonymCacheTypes';
 export type SynonymProviderType = 'wh' | 'synonymsApi';
 
 export type Definition = {
@@ -36,7 +36,7 @@ export class SynonymsProvider {
 
     private static readonly cacheLocationConfigName = 'wt.synonyms.cacheLocation';
     private static readonly apiKeyConfigName = 'wt.synonyms.apiKey';
-    private static db: Level<[string, SynonymProviderType], SynonymSearchResult> | null;
+    private static db: SynonymCache | null;
     private static outgoingQueryCache: Record<SynonymProviderType, Record<string, Promise<SynonymSearchResult>>> = {
         synonymsApi: {},
         wh: {},
@@ -87,93 +87,15 @@ export class SynonymsProvider {
     }
 
     private static async openDB (cacheUri: vscode.Uri) {
-        try {
-            console.log(`Opening cache uri at ${cacheUri.fsPath}`)
-            this.db = new Level<[string, SynonymProviderType], SynonymSearchResult>(cacheUri.fsPath, {
-                keyEncoding: 'json',
-                valueEncoding: 'json',
-                compression: true,
-            });
-            await this.db.open();
-
-            vscode.window.showInformationMessage(`Successfully opened synonyms cache at '${cacheUri.fsPath}'`);
-        }
-        catch (err: any) {
-            if ("cause" in err && "code" in err.cause && err.cause.code === 'LEVEL_LOCKED') {
-
-                let cloned: vscode.Uri;
-                let checkIdx = 1;
-                do  {
-                    cloned = vscode.Uri.file(cacheUri.fsPath + ` (${checkIdx})`);
-                    checkIdx++;
-                }
-                while ((await statFile(cloned)) !== null);
-
-                const response = await vscode.window.showInformationMessage(
-                    `[WARN] Synonyms cache at '${cacheUri.fsPath}' already opened by another process`,
-                    {
-                        detail: `Would you like to clone that cache and use the copy instead?  Cloned location: '${cloned.fsPath}'`,
-                        modal: true,
-                    },
-                    "Yes, clone",
-                    "No, do not use a cache"
-                );
-                if (response !== 'Yes, clone') {
-                    vscode.window.showWarningMessage("[WARN] Cache already in use.  No cache will be used.");
-                    return;
-                }
-
-                // Set the new cache location, just for this workspace
-                const config = vscode.workspace.getConfiguration();
-                await config.update(this.cacheLocationConfigName, cloned.fsPath, vscode.ConfigurationTarget.Workspace);
-                this.cacheLocation = cloned;
-                
-                await vscode.workspace.fs.createDirectory(cloned);
-
-                // Clone all the files in the cacheUri into new folder `cloned`
-                const dbItems = await vscode.workspace.fs.readDirectory(cacheUri);
-                await Promise.all(dbItems.map(([ fileName, type ]) => {
-                    // 'LOCK' file is locked by the other level db process.  Cannot be cloned.
-                    // BUT, we can clone everything else :)
-                    if (fileName === 'LOCK') {
-                        // NOTE: it seems like level DB will create this file on its own if it does not exist in a DB,
-                        //      so neglecting to create it now is fine
-                        return [];
-                    }
-                    else {
-                        // Otherwise, just copy the file as is into the new directory
-                        return vscode.workspace.fs.copy(
-                            vscode.Uri.joinPath(cacheUri, fileName),
-                            vscode.Uri.joinPath(cloned, fileName),
-                        )
-                    }
-                }).flat());
-
-                // Open the cloned cache db
-                await this.openDB(cloned);
-                vscode.window.showInformationMessage(`[INFO] Opened cloned DB at path: '${cloned.fsPath}'`);
-            }
-            else {
-                const response = await vscode.window.showInformationMessage(
-                    `[ERR] An error occurred while opening synonyms cache DB at '${cacheUri.fsPath}'`, 
-                    {
-                        detail: `Message from LevelDB: '${err?.cause?.message}'.  JSON error: ${JSON.stringify(err)}.  Please resolve this or disable the synonyms cache.`,
-                        modal: true
-                    },
-                    "Continue, do not use cache"
-                );
-                if (response !== 'Continue, do not use cache') {
-                    vscode.window.showErrorMessage("[ERR] Please enter a valid snyonyms cache folder into 'wt.synonyms.cacheLocation' before continuing.");
-                    throw err;
-                }
-            }
-        }
+        const opened = await openSynonymCache(cacheUri, this.cacheLocationConfigName);
+        this.db = opened.cache;
+        this.cacheLocation = opened.location;
     }
 
     static async getCachedSynonym (word: string, provider: 'wh' | 'synonymsApi'): Promise<SynonymSearchResult | null> {
         return new Promise(async (resolve, reject) => {
             word = word.toLocaleLowerCase().trim();
-            const result: SynonymSearchResult | undefined = await this.db?.get([ word, provider ]);
+            const result: SynonymSearchResult | undefined = await this.db?.get(word, provider);
             if (result !== undefined && 
                 result !== null && 
                 typeof result === 'object' &&
@@ -223,7 +145,7 @@ export class SynonymsProvider {
 
             if (notInCache) {
                 if (result['type'] === 'success' && result['provider'] === provider) {
-                    this.db?.put([ word, provider ], result);
+                    this.db?.put(word, provider, result);
                 }
             }
 

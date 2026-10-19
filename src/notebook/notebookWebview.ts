@@ -126,8 +126,8 @@ export class NotebookWebview implements vscode.WebviewViewProvider {
         const styleVSCodeUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/webview/vscode.css`));
         const styleIconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/webview/icons.css`));
         const styleMainUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/synonyms/main.css`));
-        const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode-elements/elements/dist/bundled.js`));
-        const codiconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode/codicons/dist/codicon.css`));
+        const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/vendor/bundled.js`));
+        const codiconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/vendor/codicon.css`));
 
         let noteHtml: string | null = null;
 

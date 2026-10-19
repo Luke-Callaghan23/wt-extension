@@ -6,7 +6,7 @@ import { Extension } from './../extension';
 import { RecyclingBinView, Renamable } from '../recyclingBin/recyclingBinView';
 import { OutlineNode } from '../outline/nodes_impl/outlineNode';
 import { Ids } from '../outlineProvider/fsNodes';
-import { CodeModeState } from '../codeMode/codeMode';
+import { isCodeMode } from '../platformFeatures';
 import { ScratchPadView } from '../scratchPad/scratchPadView';
 import { NotebookPanelNote, NotebookPanel } from '../notebook/notebookPanel';
 import { vagueNodeSearch } from '../miscTools/help';
@@ -73,8 +73,7 @@ export class TabLabels {
 
     static async assignNamesForOpenTabs () {
         if (!TabLabels.enabled) return;
-        const codeModeState: CodeModeState = Extension.codeMode.getCodeModeState();
-        if (codeModeState === 'codeMode') return;
+        if (isCodeMode()) return;
 
 
         const configuration = workspace.getConfiguration();

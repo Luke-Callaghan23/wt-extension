@@ -1,80 +1,93 @@
-/*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-
 //@ts-check
 'use strict';
 
-//@ts-check
-/** @typedef {import('webpack').Configuration} WebpackConfig **/
-
 const path = require('path');
 const webpack = require('webpack');
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+
+/** @typedef {import('webpack').Configuration} WebpackConfig **/
+
+const production = process.argv.includes('production');
+
+// Dev builds transpile only and type-check in a separate process so rebuilds are not blocked on tsc
+const tsRule = (/** @type {string} */ configFile) => ({
+	test: /\.ts$/,
+	exclude: /node_modules/,
+	use: [{ loader: 'ts-loader', options: { configFile, transpileOnly: !production } }],
+});
+const typeChecker = (/** @type {string} */ configFile) => production
+	? []
+	: [new ForkTsCheckerWebpackPlugin({ typescript: { configFile } })];
 
 /** @type WebpackConfig */
-const webExtensionConfig = {
-	mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
-	target: 'webworker', // extensions run in a webworker context
-	entry: {
-		'extension': './src/extension.ts',
-	},
+const common = {
+	mode: 'none', // `--mode production` overrides this when packaging
+	entry: { extension: './src/extension.ts' },
 	output: {
 		filename: '[name].js',
-		path: path.join(__dirname, './dist/web'),
 		libraryTarget: 'commonjs',
-		devtoolModuleFilenameTemplate: '../../[resource-path]'
+		devtoolModuleFilenameTemplate: '../../[resource-path]',
 	},
-	resolve: {
-		mainFields: ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules
-		extensions: ['.ts', '.js'], // support ts-files and js-files
-		alias: {
-			// provides alternate implementation for node module and source files
-		},
-		fallback: {
-			// Webpack 5 no longer polyfills Node.js core modules automatically.
-			// see https://webpack.js.org/configuration/resolve/#resolvefallback
-			// for the list of Node.js core module polyfills.
-			'assert': require.resolve('assert'),
-			"crypto": require.resolve("crypto-browserify")
-		}
-	},
-	module: {
-		noParse: [
-			path.resolve(__dirname, 'src', 'import'),
-			path.resolve(__dirname, 'src', 'export'),
-			path.resolve(__dirname, 'src', 'workspace', 'importExport'),
-			path.resolve(__dirname, 'src', 'codeMode'),
-			path.resolve(__dirname, '.local')
-		],
-		rules: [{
-			test: /\.ts$/,
-			exclude: [
-				/node_modules/,
-			],
-			use: [{
-				loader: 'ts-loader'
-			}]
-		}]
-	},
-	plugins: [
-		new webpack.optimize.LimitChunkCountPlugin({
-			maxChunks: 1 // disable chunks by default since web extensions must be a single bundle
-		}),
-		new webpack.ProvidePlugin({
-			process: 'process/browser', // provide a shim for the global `process` variable
-		}),
-	],
-	externals: {
-		'vscode': 'commonjs vscode', // ignored because it doesn't exist
-	},
-	performance: {
-		hints: false
-	},
-	devtool: 'nosources-source-map', // create a source map that points to the original source file
-	infrastructureLogging: {
-		level: "log", // enables logging required for problem matchers
-	},
+	devtool: 'cheap-module-source-map', // `--devtool hidden-source-map` overrides this when packaging
+	cache: { type: 'filesystem' },
+	performance: { hints: false },
+	infrastructureLogging: { level: 'log' }, // required by the problem matchers
 };
 
-module.exports = [ webExtensionConfig ];
+/** @type WebpackConfig */
+const nodeConfig = {
+	...common,
+	name: 'node',
+	target: 'node',
+	output: { ...common.output, path: path.join(__dirname, 'dist', 'node') },
+	resolve: {
+		extensions: ['.ts', '.js'],
+		// Prefer CommonJS entries: `import * as x` / `require(x)` of an ES-module build yields a namespace object, not the class (e.g. turndown)
+		mainFields: ['main', 'module'],
+		// Optional native modules that jsdom and node-fetch probe for; jsdom checks require.resolve first, so externals would break it
+		alias: { canvas: false, encoding: false },
+	},
+	externals: {
+		vscode: 'commonjs vscode',
+		// level loads a native addon, so it is shipped in node_modules instead of being bundled
+		level: 'commonjs level',
+		// optional ws dependencies, already wrapped in try/catch by ws
+		bufferutil: 'commonjs bufferutil',
+		'utf-8-validate': 'commonjs utf-8-validate',
+	},
+	module: {
+		rules: [tsRule('tsconfig.json')],
+	},
+	plugins: [...typeChecker('tsconfig.json')],
+};
+
+/** @type WebpackConfig */
+const webConfig = {
+	...common,
+	name: 'web',
+	target: 'webworker',
+	output: { ...common.output, path: path.join(__dirname, 'dist', 'web') },
+	resolve: {
+		// `foo.web.ts` replaces `foo.ts` in the web bundle
+		extensions: ['.web.ts', '.ts', '.web.js', '.js'],
+		mainFields: ['browser', 'module', 'main'],
+		alias: {
+			// jsdom is desktop-only; callers already handle the resulting failure
+			jsdom: false,
+		},
+		fallback: {
+			path: require.resolve('path-browserify'),
+		},
+	},
+	externals: { vscode: 'commonjs vscode' },
+	module: {
+		rules: [tsRule('tsconfig.web.json')],
+	},
+	plugins: [
+		...typeChecker('tsconfig.web.json'),
+		new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }), // web extensions must be a single bundle
+		new webpack.ProvidePlugin({ process: 'process/browser' }),
+	],
+};
+
+module.exports = [nodeConfig, webConfig];

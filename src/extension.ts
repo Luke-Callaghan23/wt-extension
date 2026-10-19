@@ -2,12 +2,8 @@
 
 import * as vscode from 'vscode';
 // import * as console from './vsconsole';
-import { ImportFileSystemView } from './import/importFileSystemView';
 import { WHViewProvider } from './whWebview/whWebview';
-import { CoderModer } from './codeMode/codeMode';
-import { activateSpeak } from './ttsDebugger/tts/tts';
-import { activateDebug } from './ttsDebugger/debugger/debugExtention';
-import { ExportForm } from './export/exportFormView';
+import { activatePlatformFeatures, initPlatformEarly } from './platformFeatures';
 import { importWorkspace as importWorkspaceFromIWEFile } from './workspace/importExport/importWorkspace';
 
 import { OutlineView } from './outline/outlineView';
@@ -52,7 +48,6 @@ import * as console from './miscTools/vsconsole';
 import { SpacingHighlights } from './miscTools/spacingHighlights';
 import { NotebookWebview } from './notebook/notebookWebview';
 import { DefinitionsPanelWebview } from './intellisense/synonymsProvider/definitionPanel';
-import { getRipGrepBinarySearchPromise, RipGrep } from './miscTools/grepper/ripGrep';
 
 
 export class Extension {
@@ -81,9 +76,7 @@ export class Extension {
     private static _wh: WHViewProvider;
     private static _wordWatcher: WordWatcher;
     private static _colorGroups: ColorGroups;
-    private static _codeMode: CoderModer;
     private static _synonymsWebview: SynonymViewProvider;
-    private static _importFileSystemView: ImportFileSystemView;
     private static _tabLabels: TabLabels;
     private static _tabStates: TabStates;
     private static _statusBarTimer: StatusBarTimer;
@@ -184,26 +177,12 @@ export class Extension {
         }
         return this._colorGroups;
     }
-    static get codeMode () {
-        if (!this._codeMode) {
-            vscode.window.showErrorMessage("[ERROR] Attempted to access 'codeMode' before initialized.  Only access global data after it's been initialized.");
-            throw "[ERROR] Attempted to access 'codeMode' before initialized.  Only access global data after it's been initialized.";
-        }
-        return this._codeMode;
-    }
     static get synonymsWebview () {
         if (!this._synonymsWebview) {
             vscode.window.showErrorMessage("[ERROR] Attempted to access 'synonymsWebview' before initialized.  Only access global data after it's been initialized.");
             throw "[ERROR] Attempted to access 'synonymsWebview' before initialized.  Only access global data after it's been initialized.";
         }
         return this._synonymsWebview;
-    }
-    static get importFileSystemView () {
-        if (!this._importFileSystemView) {
-            vscode.window.showErrorMessage("[ERROR] Attempted to access 'importFileSystemView' before initialized.  Only access global data after it's been initialized.");
-            throw "[ERROR] Attempted to access 'importFileSystemView' before initialized.  Only access global data after it's been initialized.";
-        }
-        return this._importFileSystemView;
     }
     static get tabLabels () {
         if (!this._tabLabels) {
@@ -396,7 +375,7 @@ export class Extension {
             this._workspace = workspace;
             this._context = context;
 
-            RipGrep.init(context);
+            initPlatformEarly(context);
 
             this._outlineView = new OutlineView(context, workspace);                // wt.outline
             await this._outlineView.init();
@@ -420,7 +399,6 @@ export class Extension {
             const definitionsPanel = new DefinitionsPanelWebview(context, workspace);
             report("Loaded intellisense");
 
-            this._importFileSystemView = new ImportFileSystemView(context, workspace);        // wt.import.fileSystem
             this._synonymsWebview = new SynonymViewProvider(context, workspace);        // wt.synonyms
             this._wh = new WHViewProvider(context, workspace);        // wt.synonyms
             
@@ -456,7 +434,7 @@ export class Extension {
             this.searchResultsView.initialize();
             report("Loaded search bad");
 
-            this._codeMode = new CoderModer(context);
+            activatePlatformFeatures(context, workspace, this.outlineView);
             const wordCountStatus = new WordCount(context);
             this._statusBarTimer = new StatusBarTimer(context);
             report("Loaded status bar items");
@@ -485,9 +463,6 @@ export class Extension {
             // Register commands for the toolbar (toolbar that appears when editing a .wt file)
             Toolbar.registerCommands(context);
         
-            // Register commands for the export webview form
-            ExportForm.registerCommands(context.extensionUri, context, workspace, this.outlineView);
-        
             // Initialize the file access manager
             // Manages any accesses of .wt fragments, for various uses such as drag/drop in outline view or creating new
             //        fragment/snips/chapters in the outline view
@@ -510,34 +485,9 @@ export class Extension {
             const configuration = vscode.workspace.getConfiguration();
             configuration.update("editor.autoClosingOvertype", "always", vscode.ConfigurationTarget.Workspace);
 
-            // Add command for setting ripgrep location
-            // Command must go here because the web extension cannot use ripgrep and it's annoying to add it into the existing search controller code
-            this.context.subscriptions.push(vscode.commands.registerCommand("wt.wtSearch.setRipGrepLocation", async () => {
-                const configuration = vscode.workspace.getConfiguration();
-                const oldLocation: string | undefined = configuration.get<string>('wt.wtSearch.ripGrepLocation');
-    
-                const newLocation = await vscode.window.showOpenDialog({
-                    canSelectFiles: true,
-                    canSelectFolders: false,
-                    canSelectMany: false,
-                    defaultUri: oldLocation ? vscode.Uri.file(oldLocation) : undefined,
-                    openLabel: "Select",
-                    title: "Select 'rg' binary to use for WTANIWE searches",
-                });
-                if (!newLocation) return;
-
-                const newPath = newLocation[0].fsPath;
-                await configuration.update('wt.wtSearch.ripGrepLocation', newPath, vscode.ConfigurationTarget.Workspace);
-                RipGrep.rgPath = getRipGrepBinarySearchPromise(context);
-
-                vscode.window.showInformationMessage("[INFO] Successfully updated 'rg' path for WTANIWE searches!")
-            }));
-
             await TabLabels.assignNamesForOpenTabs();
             report("Loaded tab labels");
 
-            activateSpeak(context);
-            activateDebug(context);
             report("Loaded text-to-speech debugger");
 
             reloadWatcher.checkForRestoreTabs();

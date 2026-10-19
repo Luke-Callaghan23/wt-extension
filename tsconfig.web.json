@@ -1,0 +1,7 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        // `foo.web.ts` is preferred over `foo.ts` when resolving imports
+        "moduleSuffixes": [".web", ""]
+    }
+}

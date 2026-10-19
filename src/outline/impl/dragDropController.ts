@@ -6,9 +6,9 @@ import { UriBasedView } from '../../outlineProvider/UriBasedView';
 import { MoveNodeResult } from '../nodes_impl/handleMovement/common';
 import { ScratchPadView } from '../../scratchPad/scratchPadView';
 import { Extension } from '../../extension';
-import { defaultProgress, getNodeNamePath, getSectionedProgressReporter, isSubdirectory, progressOnViews, setFsPathKey } from '../../miscTools/help';
+import { defaultProgress, getSectionedProgressReporter, progressOnViews, setFsPathKey } from '../../miscTools/help';
 import { capitalize } from '../../miscTools/help';
-import * as vscodeUri from 'vscode-uri';
+import { handleImportDrops } from '../../platformFeatures';
 
 export type DataTransferType = 
     'application/vnd.code.tree.outline'
@@ -22,74 +22,8 @@ export type DataTransferType =
 export async function handleDropController (this: OutlineView, target: OutlineNode | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
     const targ = target || this.rootNodes[0];
 
-    // Handle drops from the import file system view
-    // These are handled specially because they do not involve messing with outline trees or internal nodes
-    //      it just opens the import form and goes through the normal importing process
-    // INFO: this entire block isn't using Entry or DroppedSourceInfo types from import views because if I imported them
-    //      in the main extension I'd have to do a lot of annoying stuff to avoid importing them in the
-    //      web extension
-    const importTreeData = dataTransfer.get('application/vnd.code.tree.import.fileexplorer');
-    if (importTreeData) {
-
-        // Parse the entries from the data transfer item
-        let entries: { uri: vscode.Uri }[];
-        if (typeof importTreeData.value === 'string') {
-            entries = JSON.parse(importTreeData.value);
-        }
-        else {
-            entries = importTreeData.value as { uri: vscode.Uri } [];
-        }
-
-        // Open the import form with all the dropped entry uris
-        const uris = entries.map(({ uri }) => uri);
-        Extension.importFileSystemView.importDroppedFolder(uris, {
-            node: targ,
-            namePath: await getNodeNamePath(targ),
-            destination: targ.data.ids.type === 'chapter'
-                ? 'chapter'
-                : 'snip'
-        });
-    }
-
-    // Handle drops from outside file system into Outline Tree
-    // See above comments
-    const importUriData = dataTransfer.get('text/uri-list');
-    if (importUriData) {
-        const importableUris: vscode.Uri[] = [];
-        const fragmentDocuments: vscode.Uri[] = [];
-        
-        importUriData.value.split('\n')
-            .map((uriString: string) => vscode.Uri.parse(uriString.trim()))
-            .forEach((uri: vscode.Uri) => {
-                const ext = vscodeUri.Utils.extname(uri).replace(".", "").toLocaleLowerCase();
-
-                // Only try to import valid file types that come from outside WTANIWE
-                let keepGeneral = !(
-                    isSubdirectory(this.workspace.legacyChaptersFolder, uri)
-                    || isSubdirectory(this.workspace.chapterGroupsFolder, uri)
-                    || isSubdirectory(this.workspace.workSnipsFolder, uri)
-                    || isSubdirectory(this.workspace.scratchPadFolder, uri)
-                    || isSubdirectory(this.workspace.recyclingBin, uri)
-                ) && this.workspace.importFileTypes.includes(ext)
-
-                if (!keepGeneral) return;
-
-                if (ext === 'md' || ext === 'wt' || ext === 'wtnote') {
-                    fragmentDocuments.push(uri);
-                }
-                else {
-                    importableUris.push(uri);
-                }
-            });
-
-        if (importableUris.length > 0) {
-            return Extension.importFileSystemView.importDroppedDocuments(importableUris, target);
-        }
-        if (fragmentDocuments.length > 0) {
-            await Extension.importFileSystemView.importDroppedFragmentDocuments("Outline", fragmentDocuments, target);
-        }
-    }
-
+    // Drops from the import file system view or the outside file system are imports (desktop only)
+    if (await handleImportDrops(this, target, targ, dataTransfer)) return;
 
     let overrideDestination: OutlineNode | null = null;
 

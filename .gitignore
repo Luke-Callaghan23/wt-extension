@@ -1,7 +1,10 @@
 out
 dist
 node_modules
+media/vendor
 .vscode-test/
+.vscode-test-web/
 *.vsix
 *.env
+*.log
 package-lock.json

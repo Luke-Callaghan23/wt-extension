@@ -2,7 +2,7 @@
     "name": "wtaniwe",
     "displayName": "WTANIWE - Writing Tool, An Integrated Writing Environment",
     "description": "Writing Tool, An Integrated Writing Environment",
-    "version": "0.0.163",
+    "version": "0.0.165",
     "publisher": "luke-callaghan",
     "icon": "media/icon.png",
     "private": false,
@@ -41,7 +41,8 @@
         "onView:wt",
         "onView:wtSearch"
     ],
-    "main": "./out/extension.js",
+    "main": "./dist/node/extension.js",
+    "browser": "./dist/web/extension.js",
     "contributes": {
         "configuration": {
             "title": "Writing Tool Configuration",
@@ -252,6 +253,17 @@
                 }
             }
         },
+        "configurationDefaults": {
+            "[wt]": {
+                "editor.wordBasedSuggestions": "off"
+            },
+            "[wtnote]": {
+                "editor.wordBasedSuggestions": "off"
+            },
+            "[markdown]": {
+                "editor.wordBasedSuggestions": "off"
+            }
+        },
         "viewsWelcome": [
             {
                 "view": "wt.welcome",
@@ -265,7 +277,8 @@
             },
             {
                 "view": "wt.export",
-                "contents": "Export your work into documents.\n[Export Documents](command:wt.export.exportDocuments)\nExport your work into a single .iwe file for portability.\n[Export Workspace](command:wt.export.exportWorkspace)"
+                "contents": "Export your work into documents.\n[Export Documents](command:wt.export.exportDocuments)\nExport your work into a single .iwe file for portability.\n[Export Workspace](command:wt.export.exportWorkspace)",
+                "when": "!isWeb"
             }
         ],
         "viewsContainers": {
@@ -353,14 +366,14 @@
                     "id": "wt.import.fileExplorer",
                     "name": "Import",
                     "contextualTitle": "Import",
-                    "when": "wt.valid && config.wt.showPanels.importFileExplorer",
+                    "when": "!isWeb && wt.valid && config.wt.showPanels.importFileExplorer",
                     "icon": "$(edit)"
                 },
                 {
                     "id": "wt.export",
                     "name": "Export",
                     "contextualTitle": "Export",
-                    "when": "wt.valid && config.wt.showPanels.export",
+                    "when": "!isWeb && wt.valid && config.wt.showPanels.export",
                     "icon": "$(edit)"
                 },
                 {
@@ -420,7 +433,8 @@
             {
                 "command": "wt.tts.debugEditorContents",
                 "title": "TTS: Debug Current Sheet",
-                "icon": "$(play)"
+                "icon": "$(play)",
+                "enablement": "!isWeb"
             },
             {
                 "command": "wt.convert",
@@ -450,12 +464,12 @@
             {
                 "command": "wt.export.exportDocuments",
                 "title": "Writing Tool: Export WTANIWE Content to Documents",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "command:wt.export.exportWorkspace",
                 "title": "Writing Tool: Export WTANIWE Workspace to File",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "wt.workspace.loadContextValues",
@@ -651,53 +665,53 @@
                 "command": "wt.import.fileExplorer.refresh",
                 "title": "Refresh Import File Explorer",
                 "icon": "$(refresh)",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "wt.import.fileExplorer.importFiles",
                 "title": "Import All Files",
                 "icon": "$(ports-left-icon)",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "wt.import.fileExplorer.importFile",
                 "title": "Writing Tool: Import Selected File",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "wt.import.fileExplorer.removeResource",
                 "title": "Remove File from Imports",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "wt.import.fileExplorer.help",
                 "title": "Import File Explorer Help",
                 "icon": "$(question)",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "wt.import.fileExplorer.openImportWindow",
                 "title": "Open Import Folder",
                 "icon": "$(folder-active)",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "wt.import.fileExplorer.filter",
                 "title": "Filter Selection from Imports Folder",
                 "icon": "$(close)",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "wt.import.fileExplorer.defilter",
                 "title": "Un-Filter Selection from Imports Folder",
                 "icon": "$(check)",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "wt.import.fileExplorer.openFileExplorer",
                 "title": "Open File Explorer",
                 "icon": "$(file-directory)",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "command": "wt.todo.refresh",
@@ -1000,25 +1014,25 @@
                 "title": "Writing Tool: Enter Code Mode",
                 "command": "wt.codeMode.enterCodeMode",
                 "when": "wt.valid && view == wt.wordWatcher",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "title": "Writing Tool: Change Code Mode Repo",
                 "command": "wt.codeMode.changeCodeModeRepo",
                 "when": "wt.valid && view == wt.wordWatcher",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "title": "Writing Tool: Exit Code Mode",
                 "command": "wt.codeMode.exitCodeMode",
                 "when": "wt.valid && view == wt.wordWatcher",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "title": "Writing Tool: Toggle Code Mode",
                 "command": "wt.codeMode.swapMode",
                 "when": "wt.valid && view == wt.wordWatcher",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "title": "Writing Tool: Display Options",
@@ -1422,7 +1436,7 @@
             {
                 "title": "Reveal in file explorer",
                 "command": "wt.import.fileExplorer.revealFileExplorer",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             },
             {
                 "title": "Writing Tool: Import Settings from Another Project",
@@ -1437,7 +1451,7 @@
             {
                 "title": "Writing Tool: Set RipGrep Location",
                 "command": "wt.wtSearch.setRipGrepLocation",
-                "enablement": "wt.valid"
+                "enablement": "wt.valid && !isWeb"
             }
         ],
         "menus": {
@@ -2997,9 +3011,17 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
+        "vscode:prepublish": "npm run package",
+        "copy-vendor": "node scripts/copyVendor.js",
+        "compile": "npm run copy-vendor && webpack",
+        "compile:node": "npm run copy-vendor && webpack --config-name node",
+        "compile:web": "npm run copy-vendor && webpack --config-name web",
+        "watch": "npm run copy-vendor && webpack --watch",
+        "watch:node": "npm run copy-vendor && webpack --watch --config-name node",
+        "watch:web": "npm run copy-vendor && webpack --watch --config-name web",
+        "package": "npm run copy-vendor && webpack --mode production --devtool hidden-source-map",
+        "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+        "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. .",
         "lint": "eslint \"src/**/*.ts\""
     },
     "devDependencies": {
@@ -3015,29 +3037,36 @@
         "@types/vscode": "^1.74.0",
         "@typescript-eslint/eslint-plugin": "^5.42.0",
         "@typescript-eslint/parser": "^5.42.0",
-        "eslint": "^8.26.0",
-        "typescript": "^4.8.4"
-    },
-    "dependencies": {
         "@vscode-elements/elements": "^1.16.1",
         "@vscode/codicons": "^0.0.32",
         "@vscode/debugadapter": "^1.65.0",
+        "@vscode/test-web": "^0.0.33",
         "await-notify": "^1.0.1",
         "base64-js": "^1.5.1",
+        "buffer": "^6.0.3",
+        "eslint": "^8.26.0",
+        "fork-ts-checker-webpack-plugin": "^9.1.0",
         "he": "^1.2.0",
         "html-to-docx": "^1.6.5",
         "istextorbinary": "^6.0.0",
         "jsdom": "^21.1.0",
-        "level": "^10.0.0",
         "libreoffice-convert": "^1.5.1",
         "mammoth": "^1.5.1",
         "markdown-it": "^14.1.0",
         "node-fetch-commonjs": "^3.2.4",
         "path-browserify": "^1.0.1",
+        "process": "^0.11.10",
+        "ts-loader": "^9.4.1",
         "turndown": "^7.1.2",
+        "typescript": "^4.8.4",
         "uuid": "^9.0.0",
         "vscode-debugadapter": "^1.51.0",
         "vscode-ripgrep-utils": "^0.6.0",
-        "vscode-uri": "^3.0.8"
+        "vscode-uri": "^3.0.8",
+        "webpack": "^5.75.0",
+        "webpack-cli": "^5.0.0"
+    },
+    "dependencies": {
+        "level": "^10.0.0"
     }
 }

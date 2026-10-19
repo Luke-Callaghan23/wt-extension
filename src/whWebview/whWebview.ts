@@ -205,8 +205,8 @@ export class WHViewProvider implements vscode.WebviewViewProvider, Packageable<'
         const styleVSCodeUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/webview/vscode.css`));
         const styleIconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/webview/icons.css`));
         const styleMainUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/wh/main.css`));
-        const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode-elements/elements/dist/bundled.js`));
-        const codiconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode/codicons/dist/codicon.css`));
+        const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/vendor/bundled.js`));
+        const codiconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/vendor/codicon.css`));
 
         // Use a nonce to only allow a specific script to be run.
         const nonce = getNonce();
