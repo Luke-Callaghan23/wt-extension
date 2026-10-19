@@ -2,25 +2,23 @@
 
 Writing Tool -- An Integrated Writing Environment (**WTANIWE**).  An extension tailor made to write fiction and prose in VSCode, from start to finish including: importing old work, tracking via git, and exporting into industry formats.
 
-## Features
+# Features
 
-### Git tracking
+# Familiar environment and Flexible keybindings
 
-Let's be honest, Google Docs and Microsoft Word version tracking is... flimsy at best.  It never seems to save a revision at the spot you wanted and it hardly ever has enough of a revision history for you to get an accurate view of the old version you're looking for.
+One of the main advantages of using VS Code for creative writing is not needing to context switch between a code editor you already use for work or other ventures to Google Docs or Microsoft Word to do your writing.  With **WTANIWE** you can use the features you know and love in VS Code, alongside a whole laundy list of new features added by this extension to write prose in the most comfortable environment possible.
 
-**WTANIWE** uses git.  You probably don't need me to explain much else.  Save revisions of your work how you want to, where you want to.  See exact diffs between the text.
+# Git tracking
 
-### Importing Work from outside sources
+Other document writing apps usually use some kind of flimsy time-based autosaving and version history to track history of documents.  This can lead to important content being stranded in endless indiscernible "versions" or lost entirely.  It never seems to save a revision at the spot you wanted and it hardly ever has enough of a revision history for you to get an accurate view of the old version you're looking for.  With **WTANIWE** in VS Code you can use git to fully control your version tracking and never lost content again.
 
-If you've gotten this far, you probably have some writing sitting in other document repositories that you don't want to entirely re-write if you switch to **WTANIWE**.  
+Sync to other machines easily using the same technology you're already used to for code editing.  See line by line changes in the editor yourself.  Easily track what changed when (and by who).  All the powerful features of git can be used with **WTANIWE**.
 
-**WTANIWE** offers *extensive* features for importing from many sources, including `.docx`, `.odt`, `.html`, and `.md`.
-
-Once **WTANIWE** is installed, run the command `wt.walkthroughs.openIntro` or open the Introduction Walkthrough from the welcome screen for more information about importing from outside source.
-
-### Organized writing structure
+# Organized writing structure
 
 The main reason **WTANIWE** was first created was to organize and name snippets of writing.  With **WTANIWE**, you can store all writing in organized, easily namable and searchable structure very much akin to a folder structure (because it is one).  
+
+When I was still using Google Docs for writing, it was incredibly difficult to track all of my writing and especially to find any specific bit of writing I was working on in the past.  It would involve opening sometimes dozens of different Google Documents, scrolling through, lagging my machine, not finding what I'm looking for, and then start all over again.  With **WTANIWE**'s clean tree structure, you can easily search through everything you've ever written for a project, by text or by fragment title, either in the Outline tree--or with the quick file pick menu (`ctrl+p`) and with the integrated Search Tree View (`ctrl+shift+h`), both of which have been re-implemented from the original VS Code design to work better with the **WTANIWE** environment.
 
 There are two sections to the **WTANIWE** outline tree: Chapters and Work Snips.  In "Work Snips" you can store snippets of text which have not yet been organized into a specific chapter yet.  "Chapters", on the other hand, will store the main text of your work.  In each section, you can also store folders of snips which can each store more fragments and snips.
 
@@ -32,7 +30,19 @@ Some more advanced features, such as moving and ordering content:
 
 > ![Outline Advanced](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/OutlineAdvanced.gif)
 
-### IntelliSense-based synonyms
+You can additionally create multiple groups of chapters to represent multiple larger works within a series.  Or, just to keep track of everything you've ever written inside a single repository.
+
+# Importing Work from outside sources
+
+If you've gotten this far, you probably have some writing sitting in other document repositories that you don't want to entirely re-write if you switch to **WTANIWE**.  
+
+**WTANIWE** offers *extensive* features for importing from many sources, including `.docx`, `.odt`, `.html`, and `.md`.
+
+Once **WTANIWE** is installed, run the command `wt.walkthroughs.openIntro` or open the Introduction Walkthrough from the welcome screen for more information about importing from outside source.
+
+****Note**: importing content is currently only supported by the in-app **WTANIWE** extension, and is unavailable for web extension users.
+
+# IntelliSense-based synonyms
 
 As you may have noticed in a previous gif, **WTANIWE** uses the dictionary API along with VSCode's inbuilt IntelliSense features to quickly query for synonyms and related words without having to leave the VSCode screen or disrupt your flow.
 
@@ -42,11 +52,11 @@ Here is an example:
 
 > ![Synonyms](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/synonyms.gif)
 
-### MarkDown-like styling tailored specifically to writing
+# MarkDown-like styling tailored specifically to writing
 
 More details on this below, but the basics is that **WTANIWE** uses MarkDown-like text styling to quickly insert obvious demarkations of stylized text.  Stylizations such as \**italics*\*, ^**bolds**^, \~~~strike throughs~~\~, and \_underlines\_ (uh oh that one doesn't exist in MarkDown).
 
-### TODO tracking
+# TODO tracking
 
 Mark areas of text you want to come back to later by surrounding "TODO" text with with square brackets.  All TODOs are stored in an organized tree panel and are immediately updated when square brackets are added or removed.
 
@@ -54,7 +64,7 @@ Only the brackets and text within brackets are shown in the TODO tree, so you ar
 
 > ![TODOs](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/TODO.gif)
 
-### Text-to-Speech
+# Text-to-Speech
 
 **[[ONLY ON WINDOWS AS OF NOW!!]]** 
 
@@ -62,13 +72,15 @@ Using the debug adapter API, you can read out contents of a file with real-time 
 
 You can also use breakpoints to skip to certain points in the text. 
 
-CLick the speech bubble:
+Click the speech bubble:
 
-> [![TTS](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/TTS.jpeg)](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/TTS.mp4)
+> ![TTS](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/README/TTS.mp4)
 
-### Exporting Workss
+# Exporting Content
 
 Export work developed in **WTANIWE** to many standard formats such as `.docx`, `.odt`, `.html`, and `.md` right in **WTANIWE** itself.
+
+****Note**: exporting content is currently only supported by the in-app **WTANIWE** extension, and is unavailable for web extension users.
 
 ## Working with Writing Tool fragment files (.wt and .wtnote)
 
@@ -76,11 +88,13 @@ There are two new file types introduced and mainly used in this extension, .wt f
 
 Fragment files are the main documents you will be writing in and they are meant to represent specific, named "fragments" of text.  When importing outside work, all work will be converted into WT fragments.  And when exporting WT into outside file types, the fragments of your project will be stitched together and converted into outside file types.  
 
-WT Note (.wtnote) files have all the same advantages of .wt fragment files, but they are used only for note taking.
+WT Note (.wtnote) files have all the same advantages of .wt fragment files, but they exist as cells in a Jupyter-like notebooks that are more convenient for note taking.  Run command (`wt.notebook.addNote`) to create a new notebook.
 
 Here are some of the tools built specifically for .wt and .wtnote files.
 
-### Styling
+You can also use .md markdown files with this extension.  Change the value of the setting `wt.editor.fragmentMode` to `.md` to begin using markdown files with **WTANIWE**.
+
+# Styling
 
 As mentioned above, **WTANIWE** uses similar text styling conventions as MarkDown, however they have been modified, reduced, and tailored specifically towards writing.
 
@@ -110,7 +124,7 @@ Example:
   
   > ![Text Styling example](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/intro/style_text.png)
 
-### Navigation
+# Navigation
 
 Something no other writing editor I have tried does is custom keybindings for nevigating text, and, honestly, this is a game changer.  If you've found this extension, chances are you know a thing or two about programming, and you know that navigating code with shortcuts is a blessing.  So why not navigating sentences in prose in the same way?
 
@@ -126,11 +140,11 @@ Example:
 
   >  ![Jumping](https://raw.githubusercontent.com/Luke-Callaghan23/wt-extension/master/media/walkthroughs/intro/use_navigations.gif)
 
-#### Dictionary
+## Dictionary
 
-Misspelled words are highlighted in red.  If you want to prevent certain words from being detected as misspelled, you can also add them to a personal dictionary.
+Misspelled words are highlighted in red.  If you want to prevent certain words from being detected as misspelled, you can also add them to a personal dictionary--or, for proper nouns, you can also create new notebook documents for a term or its alias to prevent red underlining.
 
-#### Word Watcher
+## Word Watcher
 
 If you know you have certain 'problem' words that you want to avoid, use word watching to automatically highlight all instances of that word in your text.
 
@@ -204,22 +218,23 @@ NOTE: side effects/commands related to these panels will still be active, even i
 
 - `wt.codeMode.slowMode`: Special setting for slower machines.  For some reason on slower machines when existing code mode, all automatic text styling and highlighting stops on currently opened tabs until the user swaps to another tab and then returns.  I can't figure this one out, and it only occurs on slow machines and with large **WTANIWE** directories.  The only workaround I've found is to open and close an 'Untitled' VSCode document when leaving code mode.  If you find that text highlighting has stopped when exiting code mode, then enable this.
 
+    - ****Note**: code mode is currently only supported by the in-app **WTANIWE** extension, and is unavailable for web extension users.
+
 ## Known Issues
 
 This extension is still technically in beta, even though I am confident in its general usability.  It is not perfect.
 
-### Multiple Actions at once:
+# Multiple Actions at once:
 
 It is very rare for an action with **WTANIWE** to cause problems in the workspace itself, but it does happen.  And, when it does happen, it's because I did too many things at once.  I have been actively using **WTANIWE** for my own use for many months now, and in that time I have "broken" my **WTANIWE** workspace maybe a couple of times, and it's always been on a slower machine with huge **WTANIWE** workspace directories when I got impatient and started messing around with the Outline tree structure without waiting for other updates to resolve.
 
-### On slower machines:
+# On slower machines:
 
 On a sufficiently slow machine with a sufficiently large **WTANIWE** Outline tree, you may experience slowness.  I am actively working to combat this, but it's difficult.  **WTANIWE** is a large extension which uses Javascript -- a very slow language -- as its main driver, so there is a limit to how much you can do.
 
 For reference, I use a huge **WTANIWE** workspace with hundreds of fragment files floating around the directory tree on a very old ThinkPad and it functioned fine for months before I experienced significant slow down.
 
-### My recommendations:
-
+# My recommendations:
 
 - Save to git frequently.
 
@@ -269,9 +284,5 @@ For reference, I use a huge **WTANIWE** workspace with hundreds of fragment file
   - Now, you should notice a significant increase in speed once you start operating under this clean workspace.
 
 ## Release Notes
-
-### 0.1.0
-
-> Initial "official" beta release of **WTANIWE**.
 
 **Enjoy!**
