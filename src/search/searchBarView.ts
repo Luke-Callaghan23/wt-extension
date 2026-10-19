@@ -9,6 +9,8 @@ import { ReloadWatcher } from '../miscTools/reloadWatcher';
 import { Buff } from '../Buffer/bufferSource';
 import { BounceOnIt } from '../miscTools/bounceOnIt';
 
+const SEARCH_DEBOUNCE_MS = 300;
+
 
 type WebviewMessage = {
     kind: 'textBoxChange',
@@ -72,7 +74,7 @@ implements
         private workspace: Workspace,
         private searchResults: SearchResultsView,
     ) { 
-        super();
+        super(SEARCH_DEBOUNCE_MS);
 
         this.latestSearchBarValue = this.context.workspaceState.get<string>('wt.wtSearch.search.latestSearchBarValue') || '';
         this.latestReplaceBarValue = this.context.workspaceState.get<string>('wt.wtSearch.search.latestReplaceBarValue') || '';
@@ -261,8 +263,8 @@ implements
         const styleVSCodeUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/webview/vscode.css`));
         const styleIconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/webview/icons.css`));
         const styleMainUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/search/main.css`));
-        const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode-elements/elements/dist/bundled.js`));
-        const codiconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/node_modules/@vscode/codicons/dist/codicon.css`));
+        const elementsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/vendor/bundled.js`));
+        const codiconsUri = webview.asWebviewUri(vscode.Uri.parse(`${this._extensionUri}/media/vendor/codicon.css`));
 
         // Use a nonce to only allow a specific script to be run.
         const nonce = getNonce();

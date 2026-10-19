@@ -136,6 +136,7 @@ async function doProcessMd (
     chapterGroup: OutlineNode,
     ex: ExportDocumentInfo, 
     exportUri: vscode.Uri,
+    exportFileName: string,
     outline: OutlineView
 ): Promise<Processed> {
     // Since the export md is also used for exporting txt, the actual ext type of the output file is 
@@ -182,14 +183,6 @@ async function doProcessMd (
     if (ex.separateChapters) {
         // CASE: exports the markdown chapters into separate files
         // Use the specified file name from the export form to create a folder that will contain all exported chapters
-        const exportContainerUri = vscode.Uri.joinPath(exportUri, ex.fileName);
-        try {
-            await vscode.workspace.fs.createDirectory(exportContainerUri);
-        }
-        catch (e) {
-            vscode.window.showErrorMessage(`ERROR: an error ocurred when creating a container for exported chapters: ${e}`);
-            return null;
-        }
 
         const padCount = (finalData.length - 1).toString().length;
 
@@ -256,7 +249,7 @@ async function doProcessMd (
         // Return the multiple files
         return {
             type: 'multiple',
-            exportUri: exportContainerUri,
+            exportUri: exportUri,
             cleanedChapterInfo: cleanedChapters,
         };
     }
@@ -298,7 +291,7 @@ async function doProcessMd (
         return {
             type: 'single',
             exportUri: exportUri,
-            fileName: ex.fileName,
+            fileName: exportFileName,
             fullData: fullFileMarkdown,
         };
     }
@@ -467,7 +460,7 @@ async function doProcessOdt (processedHtml: ProcessedHtml): Promise<ProcessedDoc
 
 async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | ProcessedDocx | ProcessedPdf, ext: string) {
 
-    const exportData = async (data: string | Buffer, destination: vscode.Uri, index: number, count: number, title: string) => {
+    const exportData = async (data: string | Buffer, destination: vscode.Uri) => {
         if (typeof data === 'string') {
             const result = Extension.encoder.encode(data.toString());
             await vscode.workspace.fs.writeFile(destination, result);
@@ -476,7 +469,6 @@ async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | Proc
             const result = data;
             await vscode.workspace.fs.writeFile(destination, result);
         }
-        vscode.window.showInformationMessage(`Finished Writing '${title}' [${index + 1} of ${count}]`);
     };
 
     if (fullyProcessed.type === 'single') {
@@ -484,18 +476,27 @@ async function exportGeneric (fullyProcessed: ProcessedMd | ProcessedHtml | Proc
         const destinationFolderUri = fullyProcessed.exportUri;
         const destinationUri = vscode.Uri.joinPath(destinationFolderUri, `${fullyProcessed.fileName}.${ext}`);
         const data = fullyProcessed.fullData;
-        await exportData(data, destinationUri, 0, 1, fullyProcessed.fileName);
+        await exportData(data, destinationUri);
+        vscode.window.showInformationMessage(`Finished Writing '${fullyProcessed.fileName}'`);
     }
     else {
         const destinationFolderUri = fullyProcessed.exportUri;
-        const count = fullyProcessed.cleanedChapterInfo.length;
-        await Promise.all(fullyProcessed.cleanedChapterInfo.map((chapter, index) => {
-            // Write the chapter to the disk
-            const chapterFileName = chapter.cleanedTitle;
-            const chapterData = chapter.data;
-            const fullChapterUri = vscode.Uri.joinPath(destinationFolderUri, `${chapterFileName}.${ext}`);
-            return exportData(chapterData, fullChapterUri, index, count, chapterFileName);
-        }));
+        const chapterCount = fullyProcessed.cleanedChapterInfo.length;
+
+        return defaultProgress("Writing chapter data", async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
+            const increment = 100 / chapterCount;
+            return Promise.all(fullyProcessed.cleanedChapterInfo.map(async (chapter, index) => {
+                // Write the chapter to the disk
+                const chapterFileName = chapter.cleanedTitle;
+                const chapterData = chapter.data;
+                const fullChapterUri = vscode.Uri.joinPath(destinationFolderUri, `${chapterFileName}.${ext}`);
+                await exportData(chapterData, fullChapterUri);
+                return progress.report({
+                    message: `Finished Writing '${chapterFileName}' [${index + 1} of ${chapterCount}]`,
+                    increment: increment
+                });
+            }));
+        });
     }
 }
 
@@ -556,8 +557,7 @@ export async function handleDocumentExport (
     const dateString = `${month}_${day}_${year}`;
 
     // Create the export folder
-    const dirname = `export (${dateString})`;
-    let exportDirectoryUri = vscode.Uri.joinPath(workspace.exportFolder, dirname);
+    const dateDirectoryFileName = `export (${dateString})`;
 
     const selectedGroupsSearch = await Promise.all(exportInfo.selectedChapterGroupRelativePaths.map(relativePath => {
         const uri = vscode.Uri.joinPath(Extension.rootPath, relativePath);
@@ -574,37 +574,43 @@ export async function handleDocumentExport (
 
         for (let idx = 0; idx < sortedGroups.length; idx++) {
 
-            let exportDirectoryUri = vscode.Uri.joinPath(workspace.exportFolder, dirname);
 
             const chapterGroup = sortedGroups[idx];
             progress.report({
                 message: `Writing chapter groups ${idx+1}/${selectedGroups.length}: ${chapterGroup.data.ids.display}`,
                 increment: Math.ceil((idx / selectedGroups.length) * 100)
             });
-            
+
+            let exportDirectoryUri: vscode.Uri;
+            let exportFileName = exportInfo.fileName;
+
             // If there is more than one chapter group to export, and we are separating the chapters in those groups into their own
             //      separate files, then we cannot simply write all those separated chapters into the same directory or else they
             //      will be mixed up
             // Instead, create inner directories per chapter group
-            if (sortedGroups.length > 0 && exportInfo.separateChapters) {
+            if (sortedGroups.length > 0) {
                 // Replace all illegal characters in the chapter title with the very legal character '-'
                 const cleanedTitle = chapterGroup.data.ids.display.replaceAll(workspace.illegalCharacters.join(''), '-');
                 if (cleanedTitle !== chapterGroup.data.ids.display) {
                     vscode.window.showWarningMessage(`Chapter group titled '${chapterGroup.data.ids.display}' contained illegal characters for file name, using file name '${cleanedTitle}' instead.`);
                 }
-                
+
                 const padCount = (sortedGroups.length - 1).toString().length;
                 const groupNumberString = (chapterGroup.data.ids.ordering).toString().padStart(padCount, '0');
                 const groupFileName = `${groupNumberString}__${cleanedTitle}`
-
-                const groupDirectoryUri = vscode.Uri.joinPath(exportDirectoryUri, groupFileName);
-                await vscode.workspace.fs.createDirectory(groupDirectoryUri);
-
-                // Then overwrite the current export directory for this iteration of the loop so that the rest of the export processing
-                //      uses the new folder as the export destination
-                exportDirectoryUri = groupDirectoryUri;
+                
+                if (exportInfo.separateChapters) {
+                    exportDirectoryUri = vscode.Uri.joinPath(workspace.exportFolder, dateDirectoryFileName, exportInfo.fileName, groupFileName);
+                }
+                else {
+                    exportDirectoryUri = vscode.Uri.joinPath(workspace.exportFolder, dateDirectoryFileName, exportInfo.fileName);
+                    exportFileName = groupFileName;
+                }
             }
-
+            else {
+                exportDirectoryUri = vscode.Uri.joinPath(workspace.exportFolder, dateDirectoryFileName);
+            }
+            
             try {
                 await vscode.workspace.fs.createDirectory(exportDirectoryUri);
             }
@@ -614,11 +620,11 @@ export async function handleDocumentExport (
             }
         
             // Process all the markdown in this work
-            const processed: Processed = await doProcessMd(workspace, chapterGroup, exportInfo, exportDirectoryUri, outline);
+            const processed: Processed = await doProcessMd(workspace, chapterGroup, exportInfo, exportDirectoryUri, exportFileName, outline);
             if (!processed) {
                 return;
             }
-            const success: ProcessedMd = processed as ProcessedMd;
+            const success: ProcessedMd = processed;
         
             // Get the correct export function and perform the export
             let exportFunction: (processed: ProcessedMd) => Promise<void>;
