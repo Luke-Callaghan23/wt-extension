@@ -283,4 +283,15 @@ For reference, I use a huge **WTANIWE** workspace with hundreds of fragment file
 
 ## Release Notes
 
+- 0.0.163
+    - Added concept of chapter groups to allow users to host more than one project in a single **WTANIWE** workspace.
+
+- 0.0.166 
+    - Reworked TTS system to work more reliably / easier to follow
+    - Fixed issue where different TTS voices were not being used
+    - Fixed long standing issue where completion provider would get stuck and lag behind the user's actual cursor.  Completion provider should now deactivate/reactivate after a short pause so it will never be disconnected from the cursor for too long.
+    - Combined the VS Code web and in-app extension into a single code base.
+    - Switched in-app extension to use webpack.
+    - Fixed bugs in the export and search view introduced with the chapter groups from last release.
+
 **Enjoy!**
